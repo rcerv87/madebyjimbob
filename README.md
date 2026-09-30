@@ -68,6 +68,8 @@ npm run dev:web        # app on :5173, proxies /api and /ws
 
 Set `ALLOW_TEST_TIERS=true` locally to get a tier picker at sign-in.
 
+Tests: create a second, disposable database (e.g. `createdb ... madebyjimbob_test`), set `DATABASE_URL_TEST`, then `npm test`.
+
 ## How chat sync works
 
 Every message stores `offset_ms`, its position in the video. YouTube's replay file already
