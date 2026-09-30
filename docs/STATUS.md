@@ -77,7 +77,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   `?t=` links, watched-progress bars on video cards.
 - Gestures (double-tap ±10s, hold for 2×), J/K/L keys, speed picker (0.75×–2×), Mini player (PiP).
 - **Listen only**: switches to Cloudflare's audio-only track at the same moment; keeps playing on a locked phone
-  with lock-screen controls. Chat stays in sync.
+  with lock-screen controls. Chat stays in sync. Locking a phone mid-video switches to it on its own (sound keeps
+  going); unlocking switches back to the video.
 - English auto-captions (CC in the player) on all 4 videos; transcripts stored in our database.
 - Phone layout: video, then live chat, then comments.
 
@@ -248,7 +249,8 @@ the site so far. Stream usage ≈ 270 of 1,000 stored minutes.
 - Videos never start muted; if the browser blocks sound, show a Play button.
 - Chat opens in **Live only**; later viewers' chat and timestamped comments are behind "Live + replay".
 - Replies always quote exactly what they answer (chat and comments).
-- Listen only switches to Cloudflare's audio-only track so phones keep playing when locked.
+- Listen only switches to Cloudflare's audio-only track so phones keep playing when locked; locking a phone
+  mid-video turns it on automatically and unlocking turns it off.
 - iPhone/iPad use Safari's native HLS; everything else uses hls.js.
 - Store checkout stays on Shopify; the platform shows products and links out.
 

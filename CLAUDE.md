@@ -102,7 +102,8 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - Server tests blank `VAPID_*` (no real pushes) and point `SHOP_URL` at a stub store; they never touch the
   real store or push services.
 - Autoplay rules: browsers allow sound only after a user gesture on the site; the player then waits with a
-  Play button (never muted). Phones pause `<video>` when locked; Listen only switches to `<audio>`.
+  Play button (never muted). Phones pause `<video>` when locked; Listen only switches to `<audio>`, and the player does that on its own
+  when a phone locks mid-video (back to video on unlock).
 
 ## Known POC shortcuts (tracked in backlog)
 

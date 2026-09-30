@@ -46,3 +46,43 @@ describe('Player autoplay', () => {
     expect(screen.getByRole('alert').textContent).toMatch(/can’t play this video/);
   });
 });
+
+describe('Player on a locked phone', () => {
+  const master = '#EXTM3U\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="a",URI="audio.m3u8"\n';
+
+  function setHidden(hidden) {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
+    document.dispatchEvent(new Event('visibilitychange'));
+  }
+
+  afterEach(() => {
+    delete document.hidden;
+    vi.restoreAllMocks();
+  });
+
+  async function playOn(userAgent) {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ text: () => Promise.resolve(master) });
+    const video = await renderReady(vi.fn(() => Promise.resolve()));
+    Object.defineProperty(video, 'paused', { configurable: true, get: () => false });
+    return video;
+  }
+
+  test('keeps the sound going as audio when the phone locks, and shows the video again on unlock', async () => {
+    const video = await playOn('Mozilla/5.0 (Linux; Android 14; Pixel 8) Mobile');
+    await act(async () => setHidden(true));
+    const audio = document.querySelector('audio');
+    expect(audio.src).toBe('https://x/audio.m3u8');
+    expect(screen.getByText('Listening')).toBeTruthy();
+
+    await act(async () => setHidden(false));
+    expect(screen.queryByText('Listening')).toBeNull();
+    expect(video.controls).toBe(true);
+  });
+
+  test('desktop keeps playing the video in a background tab', async () => {
+    await playOn('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140');
+    await act(async () => setHidden(true));
+    expect(screen.queryByText('Listening')).toBeNull();
+  });
+});

@@ -9,6 +9,9 @@ const isAppleMobile =
   (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
+// Phones pause <video> when the screen locks; desktop browsers keep playing it in background tabs.
+const isPhone = () => isAppleMobile || /Android/i.test(navigator.userAgent);
+
 // Use Safari's own HLS on Apple mobile; hls.js wherever Media Source Extensions exist (Chrome, Edge,
 // Firefox, desktop Safari), since other browsers' native HLS varies a lot (Chrome's is new).
 function prefersNativeHls(el) {
@@ -66,6 +69,7 @@ export async function findAudioUrl(masterUrl) {
 // Keys: J/L = -10s/+10s, K or Space = play/pause.
 // Listen only: switches to an audio-only player at the same position. Phones keep audio players
 // running when the screen locks (video players are paused), so this is what makes locked listening work.
+// Locking a phone mid-video switches to Listen only on its own, and unlocking switches back to video.
 // onEnded(wasListening) fires when the video or the audio-only player finishes; startInListen opens
 // straight into Listen only (autoplay-next keeps the mode); onNext/onPrevious drive the lock
 // screen's track buttons.
@@ -86,6 +90,11 @@ export default function Player({
   const audioUrl = useRef(null);
   const audioCleanup = useRef(null);
   const listenRef = useRef(false);
+  // Listen only that the screen lock turned on (so unlocking turns it off), and when the page was last
+  // hidden / the video last paused: phones pause the video around the same moment the page hides.
+  const lockListen = useRef(false);
+  const hiddenAt = useRef(0);
+  const pausedAt = useRef(0);
   // Where to begin (resume point or ?t=), read once when the stream attaches.
   const startRef = useRef(startMs);
   startRef.current = startMs;
@@ -215,6 +224,36 @@ export default function Player({
     }
   }
 
+  // The phone locked (or the viewer left the browser) while the video was playing: carry on as audio.
+  function listenWhileLocked() {
+    const video = videoRef.current;
+    if (!isPhone() || !video || video.ended || listenRef.current || lockListen.current) return;
+    if (document.pictureInPictureElement) return; // the mini player keeps the video going
+    lockListen.current = true;
+    actions.current.startListening({ play: true });
+  }
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) {
+        hiddenAt.current = Date.now();
+        const video = videoRef.current;
+        if (video && (!video.paused || hiddenAt.current - pausedAt.current < 1000)) listenWhileLocked();
+      } else if (lockListen.current) {
+        lockListen.current = false;
+        if (listenRef.current) actions.current.stopListening();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  function onVideoPause() {
+    pausedAt.current = Date.now();
+    // Paused by the phone as the page hid (not by the viewer from the lock screen later on).
+    if (document.hidden && pausedAt.current - hiddenAt.current < 1000) listenWhileLocked();
+  }
+
   // Lock-screen / notification controls act on whichever player is active.
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
@@ -273,7 +312,7 @@ export default function Player({
     v.paused ? v.play().catch(() => {}) : v.pause();
   }
 
-  actions.current = { seek, togglePlay, startListening };
+  actions.current = { seek, togglePlay, startListening, stopListening };
 
   const setRate = (rate) => {
     const v = active();
@@ -343,6 +382,7 @@ export default function Player({
         onTimeUpdate={reportTime}
         onSeeked={reportTime}
         onPlay={() => setNeedsTap(false)}
+        onPause={onVideoPause}
         onEnded={() => !listenRef.current && onEnded?.(false)}
       />
       {playError && (
