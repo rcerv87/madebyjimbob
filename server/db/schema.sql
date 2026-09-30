@@ -46,3 +46,6 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 CREATE INDEX IF NOT EXISTS chat_video_offset ON chat_messages (video_id, offset_ms);
 CREATE INDEX IF NOT EXISTS chat_author       ON chat_messages (author_name);
 CREATE INDEX IF NOT EXISTS chat_mentions     ON chat_messages USING GIN (mentions);
+
+-- MVP: password sign-in (replaced by real auth in MBJ-101)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;

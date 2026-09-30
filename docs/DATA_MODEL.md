@@ -13,7 +13,8 @@ columns are added by the story noted.
 | tier | text | `free | plus | premium` — derived from entitlements after MBJ-104 |
 | youtube_channel_id | text | set when user links YouTube (MBJ-305) |
 | xp | int | |
-| session_token | text unique | POC only; replaced by auth provider (MBJ-101) |
+| session_token | text unique | MVP only; replaced by auth provider (MBJ-101) |
+| password_hash | text | MVP only, `scrypt$salt$hash`; replaced by auth provider (MBJ-101) |
 | created_at | timestamptz | |
 
 ### videos

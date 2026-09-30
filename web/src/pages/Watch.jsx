@@ -14,6 +14,7 @@ export default function Watch({ session }) {
 
   useEffect(() => {
     setVideo(null);
+    setError('');
     setTimeMs(0);
     api(`/videos/${id}`).then((d) => setVideo(d.video)).catch((e) => setError(e.message));
     api(`/videos/${id}/view`, { method: 'POST' }).catch(() => {});

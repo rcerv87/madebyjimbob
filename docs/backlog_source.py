@@ -264,9 +264,12 @@ SPRINTS = [
     ("Sprint 7", "Go live", ["301", "205", "302", "303"]),
 ]
 
+# Story status lives here, not in BACKLOG.md (that file is regenerated). Example: {"001": "Done"}
+STATUS = {}
+
 def main():
     rows = [dict(id=f"MBJ-{i}", epic=EPICS[i[0]][0], phase=p, priority=pr, size=sz, title=t,
-                 story=st, ac=ac, deps=[f"MBJ-{d}" for d in dp], status="To do")
+                 story=st, ac=ac, deps=[f"MBJ-{d}" for d in dp], status=STATUS.get(i, "To do"))
             for i, p, pr, sz, t, st, ac, dp in S]
 
     out = ["# Backlog — MadeByJimBob", "",
@@ -278,6 +281,11 @@ def main():
            "- Chat replay synced to playback; native posting at playhead with WebSocket broadcast",
            "- Rate limiting, banned-word masking, @mention highlighting",
            "- Tier-gated video detail endpoint; Studio dashboard with per-video access control",
+           "", "## Done (MVP hardening)", "",
+           "- Username + password sign-in (scrypt); taken names need their password. Replaced by MBJ-101",
+           "- Tier picker only when `ALLOW_TEST_TIERS=true`; Studio restricted to `ADMIN_USERNAMES`",
+           "- Chat read, post, and WebSocket join enforce the video's tier",
+           "- Malformed or unknown video ids return 400/404 instead of 500",
            "", "## Suggested sprint plan", "", "| Sprint | Goal | Stories |", "|---|---|---|"]
     for name, goal, ids in SPRINTS:
         out.append(f"| {name} | {goal} | {', '.join('MBJ-' + i for i in ids)} |")
@@ -292,10 +300,12 @@ def main():
                     f"**Status:** {r['status']} · **{PHASES[r['phase']]}** · **Priority:** {r['priority']} · **Size:** {r['size']}"
                     + (f" · **Depends on:** {', '.join(r['deps'])}" if r['deps'] else ""),
                     "", r["story"], "", "Acceptance criteria:"]
-            out += [f"- [ ] {a}" for a in r["ac"]]
-    (ROOT / "BACKLOG.md").write_text("\n".join(out) + "\n")
+            box = "x" if r["status"] == "Done" else " "
+            out += [f"- [{box}] {a}" for a in r["ac"]]
+    with open(ROOT / "BACKLOG.md", "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(out) + "\n")
 
-    with open(ROOT / "docs" / "backlog.csv", "w", newline="") as f:
+    with open(ROOT / "docs" / "backlog.csv", "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(["Issue ID", "Summary", "Epic", "Phase", "Priority", "Size", "Status", "Description", "Acceptance Criteria", "Depends On"])
         for r in rows:
