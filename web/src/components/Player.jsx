@@ -10,14 +10,29 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
   const [ripple, setRipple] = useState(null);
   const [fast, setFast] = useState(false);
   const [listenOnly, setListenOnly] = useState(false);
+  const [playError, setPlayError] = useState('');
 
+  // Prefer hls.js wherever Media Source Extensions exist (Chrome, Edge, Firefox, desktop Safari).
+  // Browser-native HLS varies a lot (Chrome's is new); only iPhone Safari, which lacks MSE, needs it.
   useEffect(() => {
     const video = videoRef.current;
     if (!src || !video) return;
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src;
-    } else if (Hls.isSupported()) {
+    setPlayError('');
+    if (Hls.isSupported()) {
       const hls = new Hls({ capLevelToPlayerSize: true });
+      let mediaRecoveries = 0;
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (!data.fatal) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.startLoad();
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
+          mediaRecoveries += 1;
+          hls.recoverMediaError();
+        } else {
+          setPlayError(`This video couldn’t play (${data.details}). Refresh the page to try again.`);
+          hls.destroy();
+        }
+      });
       hls.loadSource(src);
       hls.attachMedia(video);
       hlsRef.current = hls;
@@ -26,6 +41,13 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
         hlsRef.current = null;
       };
     }
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src;
+      const onError = () => setPlayError('This video couldn’t play. Refresh the page to try again.');
+      video.addEventListener('error', onError);
+      return () => video.removeEventListener('error', onError);
+    }
+    setPlayError('This browser can’t play this video. Try a current Chrome, Edge, Firefox, or Safari.');
   }, [src]);
 
   useEffect(() => {
@@ -133,6 +155,11 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
         onTimeUpdate={(e) => onTime?.(e.currentTarget.currentTime)}
         onSeeked={(e) => onTime?.(e.currentTarget.currentTime)}
       />
+      {playError && (
+        <div className="player-error" role="alert">
+          {playError}
+        </div>
+      )}
       {listenOnly && (
         <div className="listen-cover" style={poster ? { backgroundImage: `url(${poster})` } : undefined}>
           <span>Listening</span>
