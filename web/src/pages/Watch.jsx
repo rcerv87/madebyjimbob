@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api, compact, timeAgo, TIER_LABEL } from '../api.js';
+import { api, count, timeAgo, TIER_LABEL } from '../api.js';
 import Player from '../components/Player.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
 
@@ -50,8 +50,8 @@ export default function Watch({ session }) {
         <h1 className="watch-title">{video.title}</h1>
         <div className={`description ${expanded ? 'open' : ''}`} onClick={() => setExpanded(true)}>
           <p className="desc-meta">
-            {compact(video.views)} views · {timeAgo(video.publishedAt)} · {compact(video.chatCount)} chat
-            messages
+            {count(video.views, 'view')} · {timeAgo(video.publishedAt)} ·{' '}
+            {count(video.chatCount, 'chat message')}
           </p>
           <p className="desc-text">{video.description || 'No description.'}</p>
           {!expanded && video.description?.length > 200 && <span className="more">Show more</span>}
