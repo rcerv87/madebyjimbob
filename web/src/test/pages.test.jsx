@@ -5,8 +5,15 @@ import Home from '../pages/Home.jsx';
 import Watch from '../pages/Watch.jsx';
 
 const card = (over = {}) => ({
-  id: '1', title: 'Guitar build day', durationS: 600, publishedAt: null,
-  minTier: 'free', views: 10, chatCount: 3, thumbnail: null, ...over,
+  id: '1',
+  title: 'Guitar build day',
+  durationS: 600,
+  publishedAt: null,
+  minTier: 'free',
+  views: 10,
+  chatCount: 3,
+  thumbnail: null,
+  ...over,
 });
 
 const session = { user: null, requireSignIn: () => {} };
@@ -14,15 +21,21 @@ const session = { user: null, requireSignIn: () => {} };
 function renderWatch(id = '1') {
   return render(
     <MemoryRouter initialEntries={[`/watch/${id}`]}>
-      <Routes><Route path="/watch/:id" element={<Watch session={session} />} /></Routes>
-    </MemoryRouter>
+      <Routes>
+        <Route path="/watch/:id" element={<Watch session={session} />} />
+      </Routes>
+    </MemoryRouter>,
   );
 }
 
 describe('Home', () => {
   test('lists videos with their tier badge', async () => {
     mockApi({ '/videos': { videos: [card(), card({ id: '2', title: 'Members stream', minTier: 'plus' })] } });
-    render(<MemoryRouter><Home /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
     expect(await screen.findByText('Guitar build day')).toBeTruthy();
     expect(screen.getByText('Members stream')).toBeTruthy();
     expect(screen.getByText('Plus')).toBeTruthy();
@@ -30,7 +43,11 @@ describe('Home', () => {
 
   test('filters by the search query', async () => {
     mockApi({ '/videos': { videos: [card(), card({ id: '2', title: 'Truck repair' })] } });
-    render(<MemoryRouter initialEntries={['/?q=truck']}><Home /></MemoryRouter>);
+    render(
+      <MemoryRouter initialEntries={['/?q=truck']}>
+        <Home />
+      </MemoryRouter>,
+    );
     expect(await screen.findByText('Truck repair')).toBeTruthy();
     expect(screen.queryByText('Guitar build day')).toBeNull();
     expect(screen.getByText(/1 result for/)).toBeTruthy();
@@ -38,7 +55,11 @@ describe('Home', () => {
 
   test('explains how to import when there are no videos', async () => {
     mockApi({ '/videos': { videos: [] } });
-    render(<MemoryRouter><Home /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
     expect(await screen.findByText('No streams yet')).toBeTruthy();
   });
 });
@@ -57,7 +78,9 @@ describe('Watch', () => {
 
   test('unlocked video shows the player and chat', async () => {
     mockApi({
-      '/videos/1': { video: { ...card(), description: 'Sides laminated', locked: false, hls: 'https://x/video.m3u8' } },
+      '/videos/1': {
+        video: { ...card(), description: 'Sides laminated', locked: false, hls: 'https://x/video.m3u8' },
+      },
       '/videos/1/view': { ok: true },
       '/videos/1/chat': { messages: [] },
     });

@@ -15,7 +15,9 @@ export default function App() {
 
   useEffect(() => {
     if (!getToken()) return;
-    api('/me').then((d) => setUser(d.user)).catch(() => setToken(null));
+    api('/me')
+      .then((d) => setUser(d.user))
+      .catch(() => setToken(null));
   }, []);
 
   const signOut = () => {
@@ -27,7 +29,12 @@ export default function App() {
 
   return (
     <div className={`shell ${navOpen ? 'nav-open' : ''}`}>
-      <TopBar user={user} onSignIn={() => setSigningIn(true)} onSignOut={signOut} onMenu={() => setNavOpen((o) => !o)} />
+      <TopBar
+        user={user}
+        onSignIn={() => setSigningIn(true)}
+        onSignOut={signOut}
+        onMenu={() => setNavOpen((o) => !o)}
+      />
       <Sidebar isAdmin={!!user?.isAdmin} onNavigate={() => setNavOpen(false)} />
       <main className="main">
         <Routes>
@@ -39,7 +46,10 @@ export default function App() {
       {signingIn && (
         <SignInDialog
           onClose={() => setSigningIn(false)}
-          onSignedIn={(u) => { setUser(u); setSigningIn(false); }}
+          onSignedIn={(u) => {
+            setUser(u);
+            setSigningIn(false);
+          }}
         />
       )}
     </div>

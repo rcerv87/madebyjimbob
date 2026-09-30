@@ -29,7 +29,9 @@ function isFlagValue(a) {
 }
 
 if (!url) {
-  console.error('Usage: npm run import:youtube -- <youtube-url> [--tier plus] [--stream-uid <uid>] [--chat-only]');
+  console.error(
+    'Usage: npm run import:youtube -- <youtube-url> [--tier plus] [--stream-uid <uid>] [--chat-only]',
+  );
   process.exit(1);
 }
 
@@ -52,7 +54,8 @@ try {
 } catch {
   console.warn('  yt-dlp could not fetch chat replay.');
 }
-if (!fs.existsSync(chatFile)) console.warn('  No chat replay found — the stream may have had chat replay disabled.');
+if (!fs.existsSync(chatFile))
+  console.warn('  No chat replay found — the stream may have had chat replay disabled.');
 
 // ---------- 3. video -> Cloudflare Stream ----------
 let streamUid = typeof flag('stream-uid') === 'string' ? flag('stream-uid') : null;
@@ -67,10 +70,19 @@ if (!streamUid && !chatOnly) {
   const videoFile = path.join(TMP, `${ytId}.mp4`);
   if (!fs.existsSync(videoFile)) {
     console.log('Downloading video (up to 1080p)…');
-    execFileSync('yt-dlp', [
-      '-f', 'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b',
-      '--merge-output-format', 'mp4', '-o', videoFile, url,
-    ], { stdio: 'inherit' });
+    execFileSync(
+      'yt-dlp',
+      [
+        '-f',
+        'bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b',
+        '--merge-output-format',
+        'mp4',
+        '-o',
+        videoFile,
+        url,
+      ],
+      { stdio: 'inherit' },
+    );
   }
   console.log('Uploading to Cloudflare Stream…');
   streamUid = await uploadToStream(videoFile, meta.title, CF_ACCOUNT_ID, CF_API_TOKEN);
@@ -80,9 +92,14 @@ if (!streamUid && !chatOnly) {
 // ---------- 4. database ----------
 await migrate();
 const tier = ['free', 'plus', 'premium'].includes(flag('tier')) ? flag('tier') : 'free';
-const publishedAt = meta.release_timestamp || meta.timestamp
-  ? new Date((meta.release_timestamp || meta.timestamp) * 1000)
-  : meta.upload_date ? new Date(`${meta.upload_date.slice(0, 4)}-${meta.upload_date.slice(4, 6)}-${meta.upload_date.slice(6, 8)}`) : null;
+const publishedAt =
+  meta.release_timestamp || meta.timestamp
+    ? new Date((meta.release_timestamp || meta.timestamp) * 1000)
+    : meta.upload_date
+      ? new Date(
+          `${meta.upload_date.slice(0, 4)}-${meta.upload_date.slice(4, 6)}-${meta.upload_date.slice(6, 8)}`,
+        )
+      : null;
 
 const { rows } = await pool.query(
   `INSERT INTO videos (youtube_id, stream_uid, title, description, duration_s, published_at, min_tier)
@@ -92,7 +109,7 @@ const { rows } = await pool.query(
      title = EXCLUDED.title, description = EXCLUDED.description,
      duration_s = EXCLUDED.duration_s, published_at = EXCLUDED.published_at
    RETURNING id`,
-  [ytId, streamUid, meta.title, meta.description || '', Math.round(meta.duration || 0), publishedAt, tier]
+  [ytId, streamUid, meta.title, meta.description || '', Math.round(meta.duration || 0), publishedAt, tier],
 );
 const videoId = rows[0].id;
 console.log(`Video saved as #${videoId}`);
@@ -135,15 +152,17 @@ function uploadToStream(filePath, name, accountId, token) {
 }
 
 function runsToText(runs = []) {
-  return runs.map((r) => {
-    if (r.text !== undefined) return r.text;
-    if (r.emoji) {
-      return r.emoji.isCustomEmoji
-        ? `:${(r.emoji.shortcuts?.[0] || 'emoji').replace(/:/g, '')}:`
-        : r.emoji.emojiId || '';
-    }
-    return '';
-  }).join('');
+  return runs
+    .map((r) => {
+      if (r.text !== undefined) return r.text;
+      if (r.emoji) {
+        return r.emoji.isCustomEmoji
+          ? `:${(r.emoji.shortcuts?.[0] || 'emoji').replace(/:/g, '')}:`
+          : r.emoji.emojiId || '';
+      }
+      return '';
+    })
+    .join('');
 }
 
 function parseItem(item) {
@@ -190,14 +209,26 @@ async function importChat(file, videoId) {
     batch.forEach((m, i) => {
       const b = i * cols;
       values.push(`(${Array.from({ length: cols }, (_, k) => `$${b + k + 1}`).join(',')})`);
-      params.push(videoId, 'youtube', m.externalId, m.author, m.channelId, m.photo, m.kind, m.body, m.amount, m.offsetMs, m.sentAt);
+      params.push(
+        videoId,
+        'youtube',
+        m.externalId,
+        m.author,
+        m.channelId,
+        m.photo,
+        m.kind,
+        m.body,
+        m.amount,
+        m.offsetMs,
+        m.sentAt,
+      );
     });
     await pool.query(
       `INSERT INTO chat_messages
          (video_id, source, external_id, author_name, author_channel_id, author_photo, kind, body, amount_text, offset_ms, sent_at)
        VALUES ${values.join(',')}
        ON CONFLICT (source, external_id) DO NOTHING`,
-      params
+      params,
     );
     // mentions in a second pass keeps the bulk insert simple
     for (const m of batch) {
@@ -205,7 +236,7 @@ async function importChat(file, videoId) {
       if (mentions.length) {
         await pool.query(
           `UPDATE chat_messages SET mentions = $1 WHERE source = 'youtube' AND external_id = $2`,
-          [mentions, m.externalId]
+          [mentions, m.externalId],
         );
       }
     }
@@ -217,7 +248,11 @@ async function importChat(file, videoId) {
   for await (const line of rl) {
     if (!line.trim()) continue;
     let obj;
-    try { obj = JSON.parse(line); } catch { continue; }
+    try {
+      obj = JSON.parse(line);
+    } catch {
+      continue;
+    }
     const replay = obj.replayChatItemAction;
     if (!replay) continue;
     const offsetMs = Math.max(0, Number(replay.videoOffsetTimeMsec) || 0);

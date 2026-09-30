@@ -9,7 +9,9 @@ class FakeWebSocket {
     this.sent = [];
     FakeWebSocket.instances.push(this);
   }
-  send(data) { this.sent.push(JSON.parse(data)); }
+  send(data) {
+    this.sent.push(JSON.parse(data));
+  }
   close() {}
 }
 globalThis.WebSocket = FakeWebSocket;
@@ -23,7 +25,9 @@ window.HTMLMediaElement.prototype.canPlayType = () => '';
 // Route API calls to per-test handlers: mockApi({ '/videos': {...} }).
 globalThis.mockApi = (routes) => {
   globalThis.fetch = vi.fn(async (url) => {
-    const path = String(url).replace(/^\/api/, '').split('?')[0];
+    const path = String(url)
+      .replace(/^\/api/, '')
+      .split('?')[0];
     const body = routes[path];
     if (body === undefined) return new Response(JSON.stringify({ error: 'Not mocked' }), { status: 404 });
     return new Response(JSON.stringify(body), { status: 200 });

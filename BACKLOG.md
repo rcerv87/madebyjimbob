@@ -110,14 +110,14 @@ Acceptance criteria:
 
 ### MBJ-002 — Lint and format
 
-**Status:** To do · **Phase 0 — Foundation** · **Priority:** Must · **Size:** S
+**Status:** Done · **Phase 0 — Foundation** · **Priority:** Must · **Size:** S
 
 As the developer, I want consistent code style enforced automatically.
 
 Acceptance criteria:
-- [ ] ESLint + Prettier configured for server and web
-- [ ] `npm run lint` and `npm run format` at root
-- [ ] Existing code passes lint
+- [x] ESLint + Prettier configured for server and web
+- [x] `npm run lint` and `npm run format` at root
+- [x] Existing code passes lint
 
 ### MBJ-003 — Database migrations
 

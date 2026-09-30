@@ -21,7 +21,10 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
       hls.loadSource(src);
       hls.attachMedia(video);
       hlsRef.current = hls;
-      return () => { hls.destroy(); hlsRef.current = null; };
+      return () => {
+        hls.destroy();
+        hlsRef.current = null;
+      };
     }
   }, [src]);
 
@@ -33,7 +36,9 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
-      title, artist: 'JimBob', artwork: poster ? [{ src: poster, sizes: '640x360', type: 'image/jpeg' }] : [],
+      title,
+      artist: 'JimBob',
+      artwork: poster ? [{ src: poster, sizes: '640x360', type: 'image/jpeg' }] : [],
     });
     const v = videoRef.current;
     navigator.mediaSession.setActionHandler('seekbackward', () => seek(-10));
@@ -54,7 +59,10 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
       const k = e.key.toLowerCase();
       if (k === 'j') seek(-10);
       else if (k === 'l') seek(10);
-      else if (k === 'k' || k === ' ') { e.preventDefault(); togglePlay(); }
+      else if (k === 'k' || k === ' ') {
+        e.preventDefault();
+        togglePlay();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -145,7 +153,9 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
       {fast && <div className="fast-badge">2× speed</div>}
       <div className="player-tools">
         {typeof document !== 'undefined' && document.pictureInPictureEnabled && (
-          <button onClick={() => videoRef.current?.requestPictureInPicture().catch(() => {})}>Mini player</button>
+          <button onClick={() => videoRef.current?.requestPictureInPicture().catch(() => {})}>
+            Mini player
+          </button>
         )}
         <button onClick={() => setListenOnly((l) => !l)}>{listenOnly ? 'Show video' : 'Listen only'}</button>
       </div>

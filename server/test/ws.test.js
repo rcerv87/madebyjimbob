@@ -23,7 +23,10 @@ async function join(videoId, token) {
   sockets.push(ws);
   const received = [];
   ws.on('message', (data) => received.push(JSON.parse(data)));
-  await new Promise((resolve, reject) => { ws.once('open', resolve); ws.once('error', reject); });
+  await new Promise((resolve, reject) => {
+    ws.once('open', resolve);
+    ws.once('error', reject);
+  });
   ws.send(JSON.stringify({ type: 'join', videoId, token }));
   await sleep(150);
   return received;
@@ -61,7 +64,9 @@ test('refuses joins below the video tier and never sends them chat', async () =>
   assert.equal(member.length, 0);
 
   await call(`/videos/${id}/chat`, {
-    method: 'POST', token: await signIn(call, 'ws_prem_poster', 'premium'), body: { text: 'secret' },
+    method: 'POST',
+    token: await signIn(call, 'ws_prem_poster', 'premium'),
+    body: { text: 'secret' },
   });
   await sleep(150);
   assert.ok(member.some((m) => m.type === 'chat' && m.message.body === 'secret'));

@@ -10,7 +10,9 @@ export default function SignInDialog({ onClose, onSignedIn }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api('/config').then((c) => setAllowTestTiers(c.allowTestTiers)).catch(() => {});
+    api('/config')
+      .then((c) => setAllowTestTiers(c.allowTestTiers))
+      .catch(() => {});
   }, []);
 
   const submit = async (e) => {
@@ -30,7 +32,10 @@ export default function SignInDialog({ onClose, onSignedIn }) {
     }
   };
 
-  const clearError = (set) => (e) => { set(e.target.value); setError(''); };
+  const clearError = (set) => (e) => {
+    set(e.target.value);
+    setError('');
+  };
 
   return (
     <div className="dialog-backdrop" onClick={onClose}>
@@ -39,11 +44,23 @@ export default function SignInDialog({ onClose, onSignedIn }) {
         <p className="muted">New here? Pick a chat name and password to create your account.</p>
         <label>
           Username
-          <input autoFocus autoComplete="username" value={username} onChange={clearError(setUsername)} maxLength={32} />
+          <input
+            autoFocus
+            autoComplete="username"
+            value={username}
+            onChange={clearError(setUsername)}
+            maxLength={32}
+          />
         </label>
         <label>
           Password
-          <input type="password" autoComplete="current-password" value={password} onChange={clearError(setPassword)} maxLength={200} />
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={clearError(setPassword)}
+            maxLength={200}
+          />
         </label>
         {allowTestTiers && (
           <label>
@@ -57,8 +74,12 @@ export default function SignInDialog({ onClose, onSignedIn }) {
         )}
         {error && <p className="error">{error}</p>}
         <div className="dialog-actions">
-          <button type="button" className="text-btn" onClick={onClose}>Cancel</button>
-          <button className="primary-btn" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+          <button type="button" className="text-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="primary-btn" disabled={busy}>
+            {busy ? 'Signing in…' : 'Sign in'}
+          </button>
         </div>
       </form>
     </div>
