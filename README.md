@@ -28,6 +28,7 @@ web/                               React app: home grid, watch page + chat, Stud
 2. Render → **New → Blueprint** → pick the repo. It creates the web service and Postgres.
 3. Set `CF_STREAM_CUSTOMER_CODE` and `ADMIN_USERNAMES` (e.g. `jimbob`) on the web service. Optionally `BANNED_WORDS`.
 4. Open the site and sign up with an admin username first, so nobody else can claim it.
+5. On GitHub: Settings → Branches → add a rule for `main` → require the **CI / check** status to pass before merging.
 
 ## 3. Import past streams (run on your machine)
 

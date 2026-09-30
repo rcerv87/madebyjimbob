@@ -144,7 +144,7 @@ Acceptance criteria:
 
 ### MBJ-005 — CI pipeline
 
-**Status:** To do · **Phase 0 — Foundation** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-001, MBJ-002
+**Status:** In progress · **Phase 0 — Foundation** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-001, MBJ-002
 
 As the developer, I want every PR checked before merge.
 

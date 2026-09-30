@@ -13,7 +13,7 @@ MBJ-003,Database migrations,Foundation,Phase 0 — Foundation,Must,M,Done,"As th
 MBJ-004,TypeScript and shared package,Foundation,Phase 0 — Foundation,Should,L,To do,"As the developer, I want shared types across server, web, and mobile so contracts can't drift.","- `packages/shared` exports types for User, Video, ChatMessage, WS events, and a typed API client
 - Server and web compile with `tsc --noEmit` in CI
 - No behavior change; all tests pass","MBJ-001, MBJ-002"
-MBJ-005,CI pipeline,Foundation,Phase 0 — Foundation,Must,S,To do,"As the developer, I want every PR checked before merge.","- GitHub Actions runs lint, test (with Postgres service), and build on PRs to main
+MBJ-005,CI pipeline,Foundation,Phase 0 — Foundation,Must,S,In progress,"As the developer, I want every PR checked before merge.","- GitHub Actions runs lint, test (with Postgres service), and build on PRs to main
 - Status check required to merge","MBJ-001, MBJ-002"
 MBJ-006,Extract YouTube replay parser,Foundation,Phase 0 — Foundation,Must,S,Done,"As the developer, I want the chat replay parser as a tested module so live ingest can reuse it.","- Parser lives in `server/src/ingest/youtubeReplay.js` with pure functions
 - Fixture-based tests cover text, emoji, super chat, membership, negative offsets
