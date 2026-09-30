@@ -58,6 +58,7 @@ Generated from `docs/backlog_source.py` — edit there and re-run `python3 docs/
 | MBJ-207 | Native tipped messages (web) | Chat & moderation | 1 | Should | L | MBJ-104 |
 | MBJ-208 | Chat search in Studio | Chat & moderation | 1 | Could | M | MBJ-102 |
 | MBJ-209 | Tier-based chat limits | Chat & moderation | 1 | Should | S | MBJ-104 |
+| MBJ-210 | Video comments | Chat & moderation | 1 | Must | M | MBJ-001 |
 | MBJ-701 | Content management | Studio & analytics | 1 | Should | M | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
@@ -370,6 +371,18 @@ As JimBob, I want free chatters slowed down and members rewarded.
 Acceptance criteria:
 - [ ] Free users: slow mode per PRD; Plus/Premium: normal rate
 - [ ] Tier badge shown next to native usernames
+
+### MBJ-210 — Video comments
+
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-001
+
+As a viewer, I want YouTube's comments and our members' comments under each video, like on YouTube.
+
+Acceptance criteria:
+- [x] Import pulls YouTube comments with replies, likes, pinned, and creator flag; re-import refreshes likes
+- [x] Comments section under the video: Top/Newest sort, 20 threads per page, replies collapsed per thread
+- [x] Signed-in members post comments and replies (one level); tier-gated like chat; rate limited
+- [x] YT/JB source tags and a Creator badge distinguish where each comment came from
 
 ## Epic 3xx — Live via YouTube
 

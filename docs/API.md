@@ -18,9 +18,21 @@ Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see 
 | GET | `/videos/:id/chat?from=&to=` | optional | Chat window by `offset_ms` (max 3,000). 403 if the viewer's tier can't watch the video |
 | GET | `/videos/:id/chat?afterId=` | optional | Messages with `id > afterId`, ordered by id (max 3,000). Used to catch up after a WebSocket reconnect |
 | POST | `/videos/:id/chat` | required | `{ text, offsetMs }` → `{ message }`; broadcast to room. 403 below the video's tier; `offsetMs` clamped to the video's length |
+| GET | `/videos/:id/comments?sort=top\|new&offset=` | optional | `{ total, comments, nextOffset }`: 20 top-level comments per page (top = pinned, then likes), each with all its `replies`. 403 below the video's tier |
+| POST | `/videos/:id/comments` | required | `{ text, parentId? }` → `{ comment }`. Native comment, or a reply to a top-level comment on the same video. Up to 2,000 chars, line breaks kept, banned words masked, one per 5s |
 | GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded) |
 | PATCH | `/studio/videos/:id` | admin | `{ minTier }` |
 | GET | `/health` | — | Liveness |
+
+### Comment shape
+```json
+{
+  "id": "88", "parentId": null, "source": "youtube", "author": "@MadebyJimbob",
+  "authorPhoto": "https://…", "isCreator": true, "body": "Thanks!
+See you Friday",
+  "likes": 104, "pinned": false, "postedAt": "2026-09-01T20:00:00Z", "replies": []
+}
+```
 
 ### Chat message shape
 ```json

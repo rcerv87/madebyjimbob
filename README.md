@@ -44,9 +44,10 @@ npm run import:youtube -- "https://www.youtube.com/watch?v=VIDEO_ID" --tier plus
 Options:
 - `--tier free|plus|premium` who can watch it (also editable in Studio)
 - `--stream-uid <uid>` video is already on Stream; only import metadata + chat
-- `--chat-only` re-import chat for a video already in the database
+- `--chat-only` skip the video; re-import chat and comments for a video already in the database
+- `--no-comments` don't import YouTube comments
 
-Re-running is safe: chat is de-duplicated by YouTube message ID.
+Re-running is safe: chat and comments are de-duplicated by YouTube ID (comment like counts refresh).
 Stream takes a few minutes to process an upload before it plays.
 
 ## 4. Run locally

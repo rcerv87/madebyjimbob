@@ -125,6 +125,12 @@ S = [
  "As JimBob, I want free chatters slowed down and members rewarded.",
  ["Free users: slow mode per PRD; Plus/Premium: normal rate", "Tier badge shown next to native usernames"], ["104"]),
 
+("210", 1, "Must", "M", "Video comments",
+ "As a viewer, I want YouTube's comments and our members' comments under each video, like on YouTube.",
+ ["Import pulls YouTube comments with replies, likes, pinned, and creator flag; re-import refreshes likes",
+  "Comments section under the video: Top/Newest sort, 20 threads per page, replies collapsed per thread",
+  "Signed-in members post comments and replies (one level); tier-gated like chat; rate limited",
+  "YT/JB source tags and a Creator badge distinguish where each comment came from"], ["001"]),
 # ---------------- 3 Live via YouTube ----------------
 ("301", 3, "Must", "M", "Live video model and live page",
  "As a viewer, I want to watch JimBob live without leaving the platform.",
@@ -265,7 +271,7 @@ SPRINTS = [
 ]
 
 # Story status lives here, not in BACKLOG.md (that file is regenerated). Example: {"001": "Done"}
-STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done", "201": "Done"}
+STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done", "201": "Done", "210": "Done"}
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():

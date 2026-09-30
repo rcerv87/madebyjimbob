@@ -74,6 +74,10 @@ MBJ-208,Chat search in Studio,Chat & moderation,Phase 1 — VOD platform,Could,M
 - Results link to the video at that timestamp",MBJ-102
 MBJ-209,Tier-based chat limits,Chat & moderation,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want free chatters slowed down and members rewarded.","- Free users: slow mode per PRD; Plus/Premium: normal rate
 - Tier badge shown next to native usernames",MBJ-104
+MBJ-210,Video comments,Chat & moderation,Phase 1 — VOD platform,Must,M,Done,"As a viewer, I want YouTube's comments and our members' comments under each video, like on YouTube.","- Import pulls YouTube comments with replies, likes, pinned, and creator flag; re-import refreshes likes
+- Comments section under the video: Top/Newest sort, 20 threads per page, replies collapsed per thread
+- Signed-in members post comments and replies (one level); tier-gated like chat; rate limited
+- YT/JB source tags and a Creator badge distinguish where each comment came from",MBJ-001
 MBJ-301,Live video model and live page,Live via YouTube,Phase 3 — Live via YouTube,Must,M,To do,"As a viewer, I want to watch JimBob live without leaving the platform.","- `videos.status` and `videos.source` added (see DATA_MODEL)
 - Live page embeds the YouTube IFrame player for the active broadcast
 - ""Live now"" banner on Home while a stream is live
