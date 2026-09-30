@@ -6,13 +6,15 @@ import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import { pool } from './db.js';
-import { filterText, extractMentions } from './moderation.js';
+import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback } from './stream.js';
 import { logger, httpLogger } from './logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TIER_RANK = { free: 0, plus: 1, premium: 2 };
 const CHAT_WINDOW_MAX = 3000;
+const COMMENTS_PAGE = 20;
+const COMMENT_MAX_CHARS = 2000;
 const MAX_OFFSET_MS = 2_147_483_647; // chat_messages.offset_ms is INT
 const ALLOW_TEST_TIERS = process.env.ALLOW_TEST_TIERS === 'true';
 const ADMINS = new Set(
@@ -108,6 +110,21 @@ function videoCard(v) {
     views: v.views,
     chatCount: Number(v.chat_count || 0),
     thumbnail: playback(v.stream_uid)?.thumbnail || null,
+  };
+}
+
+function commentRow(r) {
+  return {
+    id: r.id,
+    parentId: r.parent_id,
+    source: r.source,
+    author: r.author_name,
+    authorPhoto: r.author_photo,
+    isCreator: r.author_is_creator,
+    body: r.body,
+    likes: r.like_count,
+    pinned: r.pinned,
+    postedAt: r.posted_at,
   };
 }
 
@@ -313,6 +330,90 @@ app.post(
     const msg = chatRow(rows[0]);
     broadcast(video.id, { type: 'chat', message: msg });
     res.json({ message: msg });
+  }),
+);
+
+// ---------- comments ----------
+// Top-level comments, a page at a time, each with all its replies: ?sort=top|new&offset=0
+app.get(
+  '/api/videos/:id/comments',
+  wrap(async (req, res) => {
+    const video = await watchableVideo(req, res, await currentUser(req));
+    if (!video) return;
+    const sort = req.query.sort === 'new' ? 'new' : 'top';
+    const offset = Math.max(0, Math.floor(Number(req.query.offset) || 0));
+    const order =
+      sort === 'new' ? 'posted_at DESC, id DESC' : 'pinned DESC, like_count DESC, posted_at DESC, id DESC';
+    const [page, totals] = await Promise.all([
+      pool.query(
+        `SELECT * FROM comments WHERE video_id = $1 AND parent_id IS NULL AND NOT hidden
+         ORDER BY ${order} LIMIT $2 OFFSET $3`,
+        [video.id, COMMENTS_PAGE, offset],
+      ),
+      pool.query(
+        `SELECT count(*) AS total, count(*) FILTER (WHERE parent_id IS NULL) AS threads
+         FROM comments WHERE video_id = $1 AND NOT hidden`,
+        [video.id],
+      ),
+    ]);
+    const ids = page.rows.map((r) => r.id);
+    const replies = ids.length
+      ? await pool.query(
+          `SELECT * FROM comments WHERE parent_id = ANY($1::bigint[]) AND NOT hidden ORDER BY posted_at, id`,
+          [ids],
+        )
+      : { rows: [] };
+    const byParent = new Map(ids.map((id) => [id, []]));
+    for (const r of replies.rows) byParent.get(r.parent_id)?.push(commentRow(r));
+    const threads = Number(totals.rows[0].threads);
+    res.json({
+      total: Number(totals.rows[0].total),
+      comments: page.rows.map((r) => ({ ...commentRow(r), replies: byParent.get(r.id) })),
+      nextOffset: offset + page.rows.length < threads ? offset + page.rows.length : null,
+    });
+  }),
+);
+
+// Post a native comment, or a reply to a top-level comment: { text, parentId? }
+const lastComment = new Map();
+app.post(
+  '/api/videos/:id/comments',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to comment.' });
+    const video = await watchableVideo(req, res, user);
+    if (!video) return;
+
+    const body = filterComment(req.body.text || '');
+    if (!body) return res.status(400).json({ error: 'Write a comment first.' });
+    if (body.length > COMMENT_MAX_CHARS) {
+      return res.status(400).json({ error: `Keep comments under ${COMMENT_MAX_CHARS} characters.` });
+    }
+
+    let parentId = null;
+    if (req.body.parentId !== undefined && req.body.parentId !== null) {
+      const { rows } = /^\d{1,18}$/.test(String(req.body.parentId))
+        ? await pool.query(
+            'SELECT id FROM comments WHERE id = $1 AND video_id = $2 AND parent_id IS NULL AND NOT hidden',
+            [req.body.parentId, video.id],
+          )
+        : { rows: [] };
+      if (!rows[0]) return res.status(400).json({ error: 'That comment can’t be replied to.' });
+      parentId = rows[0].id;
+    }
+
+    const now = Date.now();
+    if (now - (lastComment.get(user.id) || 0) < 5000) {
+      return res.status(429).json({ error: 'Slow down — one comment every 5 seconds.' });
+    }
+    lastComment.set(user.id, now);
+
+    const { rows } = await pool.query(
+      `INSERT INTO comments (video_id, source, parent_id, user_id, author_name, body)
+       VALUES ($1, 'native', $2, $3, $4, $5) RETURNING *`,
+      [video.id, parentId, user.id, user.username, body],
+    );
+    res.json({ comment: { ...commentRow(rows[0]), replies: [] } });
   }),
 );
 

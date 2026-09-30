@@ -6,9 +6,22 @@ const banned = (process.env.BANNED_WORDS || '')
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const bannedRe = banned.length ? new RegExp(`\\b(${banned.map(escape).join('|')})\\b`, 'gi') : null;
 
+const mask = (text) => (bannedRe ? text.replace(bannedRe, (m) => '*'.repeat(m.length)) : text);
+
+// Chat: one line.
 export function filterText(text) {
-  const clean = String(text).replace(/\s+/g, ' ').trim();
-  return bannedRe ? clean.replace(bannedRe, (m) => '*'.repeat(m.length)) : clean;
+  return mask(String(text).replace(/\s+/g, ' ').trim());
+}
+
+// Comments: keep line breaks, but at most one blank line in a row.
+export function filterComment(text) {
+  const clean = String(text)
+    .replace(/\r\n?/g, '\n')
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return mask(clean);
 }
 
 // @name: 3–32 chars of letters, digits, _ and (inside, not at the ends) . and -, so YouTube

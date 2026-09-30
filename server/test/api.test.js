@@ -1,6 +1,6 @@
 import { test, before, after, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, stopServer, client, seedVideo, seedChat, signIn, sleep } from './helpers.js';
+import { startServer, stopServer, client, seedVideo, seedChat, signIn, sleep, pool } from './helpers.js';
 
 let call;
 let apiBase;
@@ -270,5 +270,124 @@ describe('request handling', () => {
       body: JSON.stringify({ username: 'x'.repeat(60_000) }),
     });
     assert.equal(res.status, 413);
+  });
+});
+
+describe('comments', () => {
+  async function seedComment(videoId, { ext, parent = null, body, likes = 0, pinned = false, hoursAgo = 1 }) {
+    const { rows } = await pool.query(
+      `INSERT INTO comments (video_id, source, external_id, parent_id, author_name, body, like_count, pinned, posted_at)
+       VALUES ($1, 'youtube', $2, $3, '@Viewer', $4, $5, $6, now() - make_interval(hours => $7)) RETURNING id`,
+      [videoId, ext, parent, body, likes, pinned, hoursAgo],
+    );
+    return rows[0].id;
+  }
+
+  test('lists threads by top (pinned first, then likes) or newest, with replies nested', async () => {
+    const id = await seedVideo();
+    const popular = await seedComment(id, { ext: 'c-pop', body: 'popular', likes: 50, hoursAgo: 5 });
+    await seedComment(id, { ext: 'c-new', body: 'newest', likes: 1, hoursAgo: 1 });
+    await seedComment(id, { ext: 'c-pin', body: 'pinned', likes: 0, pinned: true, hoursAgo: 9 });
+    await seedComment(id, { ext: 'c-r1', parent: popular, body: 'first reply', hoursAgo: 4 });
+    await seedComment(id, { ext: 'c-r2', parent: popular, body: 'second reply', hoursAgo: 2 });
+
+    const top = await call(`/videos/${id}/comments`);
+    assert.equal(top.status, 200);
+    assert.equal(top.data.total, 5);
+    assert.deepEqual(
+      top.data.comments.map((c) => c.body),
+      ['pinned', 'popular', 'newest'],
+    );
+    assert.deepEqual(
+      top.data.comments[1].replies.map((r) => r.body),
+      ['first reply', 'second reply'],
+    );
+    assert.equal(top.data.nextOffset, null);
+
+    const newest = await call(`/videos/${id}/comments?sort=new`);
+    assert.deepEqual(
+      newest.data.comments.map((c) => c.body),
+      ['newest', 'popular', 'pinned'],
+    );
+  });
+
+  test('pages 20 threads at a time', async () => {
+    const id = await seedVideo();
+    for (let i = 0; i < 25; i++) await seedComment(id, { ext: `page-${id}-${i}`, body: `c${i}`, likes: i });
+    const first = await call(`/videos/${id}/comments`);
+    assert.equal(first.data.comments.length, 20);
+    assert.equal(first.data.nextOffset, 20);
+    const second = await call(`/videos/${id}/comments?offset=20`);
+    assert.equal(second.data.comments.length, 5);
+    assert.equal(second.data.nextOffset, null);
+  });
+
+  test('are gated by the video tier', async () => {
+    const id = await seedVideo({ minTier: 'plus' });
+    assert.equal((await call(`/videos/${id}/comments`)).status, 403);
+    const free = await signIn(call, 'comment_free');
+    assert.equal(
+      (await call(`/videos/${id}/comments`, { method: 'POST', token: free, body: { text: 'hi' } })).status,
+      403,
+    );
+    const plus = await signIn(call, 'comment_plus', 'plus');
+    assert.equal((await call(`/videos/${id}/comments`, { token: plus })).status, 200);
+  });
+
+  test('members post comments and replies; line breaks kept, banned words masked', async () => {
+    const id = await seedVideo();
+    const token = await signIn(call, 'commenter');
+    assert.equal((await call(`/videos/${id}/comments`, { method: 'POST', body: { text: 'x' } })).status, 401);
+    assert.equal(
+      (await call(`/videos/${id}/comments`, { method: 'POST', token, body: { text: '  ' } })).status,
+      400,
+    );
+
+    const posted = await call(`/videos/${id}/comments`, {
+      method: 'POST',
+      token,
+      body: { text: 'Line one\r\n\r\n\r\n\r\nline   two badword' },
+    });
+    assert.equal(posted.status, 200);
+    assert.equal(posted.data.comment.body, 'Line one\n\nline two *******');
+    assert.equal(posted.data.comment.source, 'native');
+    assert.equal(posted.data.comment.author, 'commenter');
+
+    await sleep(5100);
+    const reply = await call(`/videos/${id}/comments`, {
+      method: 'POST',
+      token,
+      body: { text: 'a reply', parentId: posted.data.comment.id },
+    });
+    assert.equal(reply.status, 200);
+    assert.equal(reply.data.comment.parentId, posted.data.comment.id);
+
+    const list = await call(`/videos/${id}/comments`);
+    assert.equal(list.data.comments[0].replies[0].body, 'a reply');
+  });
+
+  test('replies must target a top-level comment on the same video', async () => {
+    const id = await seedVideo();
+    const other = await seedVideo();
+    const parent = await seedComment(id, { ext: `rt-${id}`, body: 'parent' });
+    const child = await seedComment(id, { ext: `rt-${id}-c`, parent, body: 'child' });
+    const elsewhere = await seedComment(other, { ext: `rt-${other}`, body: 'other video' });
+    for (const [i, parentId] of [child, elsewhere, 'abc', 999999].entries()) {
+      const token = await signIn(call, `replier_${i}`);
+      const r = await call(`/videos/${id}/comments`, {
+        method: 'POST',
+        token,
+        body: { text: 'x', parentId },
+      });
+      assert.equal(r.status, 400, `parentId ${parentId}`);
+    }
+  });
+
+  test('rate limits comments to one per 5 seconds', async () => {
+    const id = await seedVideo();
+    const token = await signIn(call, 'fast_commenter');
+    const post = () => call(`/videos/${id}/comments`, { method: 'POST', token, body: { text: 'hello' } });
+    const burst = await Promise.all([post(), post()]);
+    assert.deepEqual(burst.map((r) => r.status).sort(), [200, 429]);
   });
 });

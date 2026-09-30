@@ -1,11 +1,14 @@
 #!/usr/bin/env node
-// Import a finished YouTube live stream: video -> Cloudflare Stream, chat replay -> Postgres.
+// Import a finished YouTube live stream: video -> Cloudflare Stream; chat replay and comments -> Postgres.
 //
 // Usage:
-//   npm run import:youtube -- <youtube-url> [--tier free|plus|premium] [--stream-uid <uid>] [--chat-only]
+//   npm run import:youtube -- <youtube-url> [--tier free|plus|premium] [--stream-uid <uid>] [--chat-only] [--no-comments]
 //
-//   --stream-uid  Video is already on Cloudflare Stream; skip download/upload.
-//   --chat-only   Re-import chat for a video already in the database.
+//   --stream-uid   Video is already on Cloudflare Stream; skip download/upload.
+//   --chat-only    Skip the video; re-import chat and comments for a video already in the database.
+//   --no-comments  Don't import YouTube comments.
+//
+// Re-running is safe: chat and comments are de-duplicated by YouTube id (comment like counts refresh).
 //
 // Requires yt-dlp and ffmpeg on your PATH.
 
@@ -16,6 +19,7 @@ import { execFileSync } from 'child_process';
 import * as tus from 'tus-js-client';
 import { pool, migrate } from '../src/db.js';
 import { parseReplayLine } from '../src/ingest/youtubeReplay.js';
+import { parseComments } from '../src/ingest/youtubeComments.js';
 
 const args = process.argv.slice(2);
 const url = args.find((a) => !a.startsWith('--') && !isFlagValue(a));
@@ -30,7 +34,7 @@ function isFlagValue(a) {
 
 if (!url) {
   console.error(
-    'Usage: npm run import:youtube -- <youtube-url> [--tier plus] [--stream-uid <uid>] [--chat-only]',
+    'Usage: npm run import:youtube -- <youtube-url> [--tier plus] [--stream-uid <uid>] [--chat-only] [--no-comments]',
   );
   process.exit(1);
 }
@@ -57,7 +61,27 @@ try {
 if (!fs.existsSync(chatFile))
   console.warn('  No chat replay found — the stream may have had chat replay disabled.');
 
-// ---------- 3. video -> Cloudflare Stream ----------
+// ---------- 3. comments ----------
+const withComments = flag('no-comments') !== true;
+const infoFile = path.join(TMP, `${ytId}.info.json`);
+if (withComments) {
+  console.log('Downloading comments…');
+  try {
+    ytdlp(
+      '--skip-download',
+      '--no-warnings',
+      '--write-comments',
+      '--write-info-json',
+      '-o',
+      path.join(TMP, '%(id)s'),
+      url,
+    );
+  } catch {
+    console.warn('  yt-dlp could not fetch comments.');
+  }
+}
+
+// ---------- 4. video -> Cloudflare Stream ----------
 let streamUid = typeof flag('stream-uid') === 'string' ? flag('stream-uid') : null;
 const chatOnly = flag('chat-only') === true;
 
@@ -89,7 +113,7 @@ if (!streamUid && !chatOnly) {
   console.log(`  Stream UID: ${streamUid}`);
 }
 
-// ---------- 4. database ----------
+// ---------- 5. database ----------
 await migrate();
 const tier = ['free', 'plus', 'premium'].includes(flag('tier')) ? flag('tier') : 'free';
 const publishedAt =
@@ -118,6 +142,13 @@ if (fs.existsSync(chatFile)) {
   const { seen, inserted } = await importChat(chatFile, videoId);
   const skipped = seen - inserted;
   console.log(`Imported ${inserted} new chat messages${skipped ? ` (${skipped} already imported)` : ''}.`);
+}
+
+if (withComments && fs.existsSync(infoFile)) {
+  const { topLevel, replies, inserted } = await importComments(infoFile, videoId);
+  console.log(
+    `Imported ${topLevel + replies} comments (${topLevel} threads, ${replies} replies; ${inserted} new).`,
+  );
 }
 
 await pool.end();
@@ -203,4 +234,44 @@ async function importChat(file, videoId) {
   await flush();
   process.stdout.write('\n');
   return { seen, inserted };
+}
+
+// Upserts YouTube comments: top-level first, then replies linked to their parent by YouTube id.
+async function importComments(file, videoId) {
+  const list = JSON.parse(fs.readFileSync(file, 'utf8')).comments || [];
+  const { topLevel, replies } = parseComments(list);
+  let inserted = 0;
+
+  const upsert = async (batch, withParent) => {
+    const values = [];
+    const params = [];
+    for (const c of batch) {
+      const p = (v) => {
+        params.push(v);
+        return `$${params.length}`;
+      };
+      const parent = withParent
+        ? `(SELECT id FROM comments WHERE source = 'youtube' AND external_id = ${p(c.parentExternalId)})`
+        : 'NULL';
+      values.push(
+        `(${p(videoId)}, 'youtube', ${p(c.externalId)}, ${parent}, ${p(c.author)}, ${p(c.channelId)}, ` +
+          `${p(c.photo)}, ${p(c.isCreator)}, ${p(c.body)}, ${p(c.likeCount)}, ${p(c.pinned)}, ` +
+          `COALESCE(${p(c.postedAt)}::timestamptz, now()))`,
+      );
+    }
+    const res = await pool.query(
+      `INSERT INTO comments (video_id, source, external_id, parent_id, author_name, author_channel_id,
+         author_photo, author_is_creator, body, like_count, pinned, posted_at)
+       VALUES ${values.join(',')}
+       ON CONFLICT (source, external_id) DO UPDATE SET
+         like_count = EXCLUDED.like_count, pinned = EXCLUDED.pinned, body = EXCLUDED.body
+       RETURNING (xmax = 0) AS inserted`,
+      params,
+    );
+    inserted += res.rows.filter((r) => r.inserted).length;
+  };
+
+  for (let i = 0; i < topLevel.length; i += 500) await upsert(topLevel.slice(i, i + 500), false);
+  for (let i = 0; i < replies.length; i += 500) await upsert(replies.slice(i, i + 500), true);
+  return { topLevel: topLevel.length, replies: replies.length, inserted };
 }

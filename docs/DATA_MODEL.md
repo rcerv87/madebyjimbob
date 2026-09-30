@@ -48,6 +48,25 @@ columns are added by the story noted.
 | hidden | boolean | moderation; never hard-delete |
 | created_at | timestamptz | |
 
+### comments
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| video_id | FK videos | cascade delete |
+| source | text | `youtube \| rumble \| native` |
+| external_id | text | platform comment id; `UNIQUE(source, external_id)` |
+| parent_id | FK comments | null for top-level; replies are one level deep (YouTube reply-to-reply is attached to the thread) |
+| user_id | FK users | native comments |
+| author_name, author_channel_id, author_photo | text | |
+| author_is_creator | boolean | YouTube `author_is_uploader` |
+| body | text | line breaks kept |
+| like_count | int | YouTube likes (refreshed on re-import) |
+| pinned | boolean | |
+| posted_at | timestamptz | |
+| hidden | boolean | moderation; never hard-delete |
+
+Comments are separate from `chat_messages`: they aren't tied to a playback position and they thread.
+
 ## Planned
 
 | Change | Story |

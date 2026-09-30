@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { api, count, timeAgo, TIER_LABEL } from '../api.js';
 import Player from '../components/Player.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
+import Comments from '../components/Comments.jsx';
 
 export default function Watch({ session }) {
   const { id } = useParams();
@@ -56,6 +57,7 @@ export default function Watch({ session }) {
           <p className="desc-text">{video.description || 'No description.'}</p>
           {!expanded && video.description?.length > 200 && <span className="more">Show more</span>}
         </div>
+        {!video.locked && <Comments videoId={video.id} session={session} />}
       </div>
       {!video.locked && (
         <ChatPanel

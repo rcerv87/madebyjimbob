@@ -62,6 +62,7 @@ interruption.
 - **C9** Tipped messages (super chats): YouTube Super Chats and Rumble Rants mirrored in; native tips via Stripe / in-app purchase.
 - **C10** Filtering: banned words, slow mode, members-only mode, AI-assisted spam/toxicity filtering.
 - **C11** Moderation: delete, timeout, ban — across native and YouTube from one dashboard.
+- **C12** Comments under each video: YouTube comments imported (with replies, likes, pinned, creator badge) alongside native comments and replies from members.
 
 ### Community and engagement
 - **E1** XP from watch/listen time, chatting, and upvotes received; levels and badges shown in chat.
