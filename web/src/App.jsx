@@ -18,6 +18,7 @@ const Shop = lazy(() => import('./pages/Shop.jsx'));
 const Art = lazy(() => import('./pages/Art.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
+import { useKeepPlaying } from './keepPlaying.js';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -38,6 +39,7 @@ export default function App() {
   };
   const session = { user, requireSignIn: () => setSigningIn(true) };
   const notes = useNotifications(user);
+  const { watchAt, background } = useKeepPlaying();
 
   return (
     <div className={`shell ${navOpen ? 'nav-open' : ''}`}>
@@ -50,6 +52,16 @@ export default function App() {
       />
       <Sidebar isAdmin={!!user?.isAdmin} onNavigate={() => setNavOpen(false)} />
       <main className="main">
+        {/* Its own spot and Routes, so it stays mounted (hidden) while its video plays in the Mini player. */}
+        {watchAt && (
+          <div hidden={background}>
+            <Suspense fallback={<p className="muted page-msg">Loading…</p>}>
+              <Routes location={watchAt}>
+                <Route path="/watch/:id" element={<Watch session={session} background={background} />} />
+              </Routes>
+            </Suspense>
+          </div>
+        )}
         <Suspense fallback={<p className="muted page-msg">Loading…</p>}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -58,7 +70,7 @@ export default function App() {
             <Route path="/posts" element={<Posts session={session} />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/art" element={<Art />} />
-            <Route path="/watch/:id" element={<Watch session={session} />} />
+            <Route path="/watch/:id" element={null} />
             <Route path="/studio" element={<Studio user={user} />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

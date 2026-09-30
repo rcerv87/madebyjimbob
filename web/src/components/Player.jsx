@@ -287,6 +287,7 @@ export default function Player({
   useEffect(() => {
     const onKey = (e) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+      if (videoRef.current?.closest('[hidden]')) return; // watch page is behind another page
       const k = e.key.toLowerCase();
       if (k === 'j') actions.current.seek(-10);
       else if (k === 'l') actions.current.seek(10);

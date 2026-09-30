@@ -12,7 +12,8 @@ import useTitle from '../useTitle.js';
 
 const SAVE_EVERY_MS = 10_000;
 
-export default function Watch({ session }) {
+// background: kept mounted (hidden) under another page while its video plays in the Mini player.
+export default function Watch({ session, background = false }) {
   const { id } = useParams();
   const [params] = useSearchParams();
   const [video, setVideo] = useState(null);
@@ -23,7 +24,7 @@ export default function Watch({ session }) {
   const [resumedFrom, setResumedFrom] = useState(null);
   const [focusThread, setFocusThread] = useState(null);
   const playerRef = useRef(null);
-  useTitle(video?.title || null);
+  useTitle(video?.title || null, !background);
   const lastSave = useRef(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,8 +59,9 @@ export default function Watch({ session }) {
     },
     [navigate, hrefFor],
   );
+  // Never pull the viewer off the page they're browsing to start the next video.
   const onEnded = (listening) => {
-    if (autoplay && next) setEnding({ next, listening });
+    if (autoplay && next && !background) setEnding({ next, listening });
   };
   const playNext = useCallback(() => ending && go(ending.next, ending.listening), [ending, go]);
 
