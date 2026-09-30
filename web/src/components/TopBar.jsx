@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { TIER_LABEL } from '../api.js';
+import { BRAND } from '../brand.js';
 import { Bell } from '../notifications.jsx';
 import { InstallButton } from '../install.jsx';
 
@@ -22,8 +23,8 @@ export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu }) {
         </svg>
       </button>
       <Link to="/" className="brand">
-        <span className="brand-mark">JB</span>
-        <span className="brand-name">MadeByJimBob</span>
+        <img className="brand-avatar" src={BRAND.avatar} alt="" width="36" height="36" />
+        <span className="brand-name">{BRAND.name}</span>
       </Link>
       <form className="search" onSubmit={submit} role="search">
         <input

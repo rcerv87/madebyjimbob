@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import VideoCard from '../components/VideoCard.jsx';
 import LibraryTabs from '../components/LibraryTabs.jsx';
+import BrandHero from '../components/BrandHero.jsx';
 
 // Filter chips: start from everything, narrow by type or members-only. Kept in the URL so a
 // filtered view can be shared or bookmarked.
@@ -51,6 +52,7 @@ export default function Home() {
 
   return (
     <div className="library">
+      {!q && <BrandHero />}
       <LibraryTabs />
       <div className="library-bar">
         <div className="chips" role="group" aria-label="Filter videos">

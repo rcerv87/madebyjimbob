@@ -45,7 +45,8 @@ MBJ-106,Account page,Accounts & memberships,Phase 1 — VOD platform,Should,M,To
 - Shows tier, renewal date, linked accounts",MBJ-104
 MBJ-107,Owned email list,Accounts & memberships,Phase 1 — VOD platform,Must,S,To do,"As JimBob, I want my audience's contact info so no platform can take my audience away.","- Marketing opt-in checkbox at signup, stored with timestamp
 - Admin can export opted-in users as CSV from Studio
-- Unsubscribe link handling documented","MBJ-101, MBJ-102"
+- Unsubscribe link handling documented
+- Start from the existing Shopify newsletter list (export from Shopify customers who accepted marketing)","MBJ-101, MBJ-102"
 MBJ-108,Sign-up and onboarding,Accounts & memberships,Phase 1 — VOD platform,Must,M,To do,"As a new viewer, I want a clear way to create an account and get started.","- Registration page: email, username, password (or Google/Apple once MBJ-101 lands); email verification
 - Welcome step: pick notifications, link YouTube (MBJ-215), see membership options
 - Profile page: username, avatar, linked accounts, membership, sign out everywhere
@@ -77,7 +78,8 @@ MBJ-206,Managed filters and spam detection,Chat & moderation,Phase 1 — VOD pla
 MBJ-207,Native tipped messages (web),Chat & moderation,Phase 1 — VOD platform,Should,L,To do,"As a member, I want to tip with a highlighted message like a Super Chat.","- Fixed tip amounts via Stripe
 - Message posts only after payment confirmation (webhook)
 - Paid message pinned for a duration scaled by amount; WS `pin` event
-- Tips appear in Studio revenue",MBJ-104
+- Tips appear in Studio revenue
+- Bring in Bob Chats (today sold as a product on the Shopify store): shown and pinned like Super Chats, counted in the same totals",MBJ-104
 MBJ-208,Chat search in Studio,Chat & moderation,Phase 1 — VOD platform,Could,M,To do,"As JimBob, I want to find what people said.","- Search by text, author, source, date range, video
 - Results link to the video at that timestamp",MBJ-102
 MBJ-209,Tier-based chat limits,Chat & moderation,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want free chatters slowed down and members rewarded.","- Free users: slow mode per PRD; Plus/Premium: normal rate
@@ -215,18 +217,20 @@ MBJ-804,Posts,Library & community,Phase 1 — VOD platform,Should,L,To do,"As Ji
 - Check whether YouTube Community posts can be imported",
 MBJ-805,Live indicator,Library & community,Phase 1 — VOD platform,Should,S,To do,"As a viewer, I want to see at a glance when JimBob is live.","- Red ring + LIVE badge on JimBob's avatar and the header when live
 - Live card at the top of Videos
-- Studio Go live switch pointing at the YouTube live URL until MBJ-301 detects it automatically",
+- Studio Go live switch pointing at the YouTube live URL until MBJ-301 detects it automatically
+- When not live, show the next stream from the schedule (weekdays around 12:00pm ET)",
 MBJ-806,Import the whole channel,Library & community,Phase 4 — Owned live + audio,Should,M,To do,"As the operator, I want to load JimBob's full library in one run.","- Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list
 - Proposes file-to-video matches for review; OBS recordings matched by date and length with an offset adjustment
 - Skips videos already imported; deletes local copies after upload; resumable overnight run",MBJ-506
-MBJ-807,Store,Library & community,Phase 1 — VOD platform,Should,L,To do,"As a fan, I want to buy JimBob's merch and products on his site.","- Products with photos, variants, and stock; cart and checkout (Stripe, or Shopify/Printful if fulfilment is outsourced)
-- Member and founding-member discounts
-- Order confirmation email; Studio order list
-- Decide in-house vs Shopify/Printful before building (ADR)",MBJ-109
-MBJ-808,Art section,Library & community,Phase 2 — Mobile,Could,M,To do,"As a fan, I want to browse JimBob's art (confirm scope: his artwork and builds, e.g. the guitar, vs. brand art).","- Gallery of images with titles, descriptions, and dates
-- Link items to related videos and posts
-- Optional: prints for sale through the Store",
-MBJ-809,Social media links and sharing,Library & community,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want my socials everywhere and every page easy to share.","- Links to JimBob's YouTube, Rumble, X, Instagram, TikTok, etc. in the header menu and footer (configured in Studio)
+MBJ-807,Store (Shopify integration),Library & community,Phase 1 — VOD platform,Should,M,In progress,"As a fan, I want to browse and buy JimBob's merch without leaving his platform's look and feel.","- Decision: keep the existing Shopify store (madebyjimbob.com, ~150 products) for catalog, checkout, and fulfilment
+- Shop section shows the store's collections and products live (public product JSON, 10-minute cache); Buy opens the product in the store
+- Next: cart and checkout inside the platform with Shopify's Storefront API (needs a Storefront access token from JimBob's Shopify admin)
+- Member and founding-member discount codes applied at checkout",
+MBJ-808,Art section,Library & community,Phase 2 — Mobile,Should,S,Done,"As a fan, I want to browse JimBob's illustrations and comics.","- Gallery built from the store's art collections (original art, art prints, classic art prints, digital art)
+- Tap a piece to see it large; View in store buys the print
+- Filter by kind of art
+- Later: link pieces to the videos and posts they appear in",MBJ-807
+MBJ-809,Social media links and sharing,Library & community,Phase 1 — VOD platform,Should,S,In progress,"As JimBob, I want my socials everywhere and every page easy to share.","- Links to JimBob's YouTube, X, Instagram, Facebook, Gab, Telegram, Spotify, Bandcamp (and Rumble) on the Videos banner (done), header menu, and footer
 - Share button on videos, moments (?t=), comments, and playlists; copies a link or opens the phone's share sheet
 - Open Graph and Twitter card previews with title, thumbnail, and description",
 MBJ-810,Navigation bar,Library & community,Phase 1 — VOD platform,Must,M,To do,"As a viewer, I want to find every part of the site quickly on desktop and phone.","- Top navigation: Videos, Playlists, Posts, Live, Store, Art, Members, with the live ring (MBJ-805)
@@ -236,3 +240,7 @@ MBJ-810,Navigation bar,Library & community,Phase 1 — VOD platform,Must,M,To do
 MBJ-811,Founding members,Library & community,Phase 1 — VOD platform,Should,M,To do,"As an early supporter, I want to be recognised as a founding member.","- Limited founding membership (count or date window) with a price locked for life
 - Founding badge in chat and comments; founding members page (wall) with opt-in names
 - Perks defined with JimBob (early access, store discount, call-in priority)",MBJ-104
+MBJ-812,JimBob's brand on the platform,Library & community,Phase 1 — VOD platform,Must,S,Done,"As JimBob, I want the platform to look like my brand, not a template.","- Store teal (#27717A) as the accent color; MADEbyJIMBOB wordmark in Jost (the store's font)
+- JimBob's illustrated avatar in the header and as the app icon; his banner art on the Videos page
+- Stream schedule and social links on the Videos banner
+- Brand assets copied from madebyjimbob.com into web/public/brand with JimBob's approval",
