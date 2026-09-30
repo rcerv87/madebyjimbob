@@ -55,6 +55,9 @@ Options:
 - `--chat-only` skip the video; re-import chat and comments for a video already in the database
 - `--no-comments` don't import YouTube comments
 
+Playlists: `npm run import:playlists -- <playlist URL>` for one, or `<channel URL>` for every playlist on the
+channel. Videos not imported yet are remembered and appear once they are. Re-run to pick up YouTube changes.
+
 Re-running is safe: chat and comments are de-duplicated by YouTube ID (comment like counts refresh).
 
 Captions: once Stream has processed a video, run `npm run captions:fetch -- --generate` to request English

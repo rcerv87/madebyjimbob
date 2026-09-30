@@ -66,7 +66,21 @@ export async function findAudioUrl(masterUrl) {
 // Keys: J/L = -10s/+10s, K or Space = play/pause.
 // Listen only: switches to an audio-only player at the same position. Phones keep audio players
 // running when the screen locks (video players are paused), so this is what makes locked listening work.
-export default function Player({ src, poster, title, startMs = 0, onTime, playerRef }) {
+// onEnded(wasListening) fires when the video or the audio-only player finishes; startInListen opens
+// straight into Listen only (autoplay-next keeps the mode); onNext/onPrevious drive the lock
+// screen's track buttons.
+export default function Player({
+  src,
+  poster,
+  title,
+  startMs = 0,
+  startInListen = false,
+  onTime,
+  onEnded,
+  onNext,
+  onPrevious,
+  playerRef,
+}) {
   const videoRef = useRef(null);
   const audioRef = useRef(null);
   const audioUrl = useRef(null);
@@ -75,6 +89,11 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
   // Where to begin (resume point or ?t=), read once when the stream attaches.
   const startRef = useRef(startMs);
   startRef.current = startMs;
+  const listenOnOpen = useRef(startInListen);
+  listenOnOpen.current = startInListen;
+  // Latest track callbacks for the lock screen (its handlers are set once per video).
+  const tracks = useRef({});
+  tracks.current = { onNext, onPrevious };
   const tapRef = useRef({ last: 0, timer: null, press: null, pressed: false });
   const [ripple, setRipple] = useState(null);
   const [fast, setFast] = useState(false);
@@ -120,7 +139,13 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
       onReady: () => {
         if (startRef.current > 0 && video.currentTime < 1) video.currentTime = startRef.current / 1000;
         video.playbackRate = speedRef.current;
-        autoplay(video);
+        if (listenOnOpen.current) {
+          // Came from Listen only (autoplay next): continue as audio.
+          listenOnOpen.current = false;
+          actions.current.startListening({ play: true });
+        } else {
+          autoplay(video);
+        }
       },
       onFatal: (details) =>
         setPlayError(
@@ -142,7 +167,8 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
     if (playerRef) playerRef.current = active();
   }, [playerRef, listenOnly]);
 
-  async function startListening() {
+  // play: start the audio even if the video wasn't playing (autoplay next in Listen only).
+  async function startListening({ play = false } = {}) {
     const video = videoRef.current;
     const audio = audioRef.current;
     if (!video || !audio) return;
@@ -151,7 +177,7 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
       const url = audioUrl.current || (audioUrl.current = await findAudioUrl(src));
       if (!url) throw new Error('no audio track');
       const at = video.currentTime;
-      const wasPlaying = !video.paused;
+      const wasPlaying = play || !video.paused;
       video.pause();
       setNeedsTap(false);
       audioCleanup.current?.();
@@ -203,6 +229,22 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
     navigator.mediaSession.setActionHandler('pause', () => active()?.pause());
   }, [title, poster]);
 
+  // Lock-screen ⏭ / ⏮ appear only when there's somewhere to go.
+  const hasNext = Boolean(onNext);
+  const hasPrevious = Boolean(onPrevious);
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    const set = (action, handler) => {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch {
+        /* older browsers don't know this action */
+      }
+    };
+    set('nexttrack', hasNext ? () => tracks.current.onNext?.(listenRef.current) : null);
+    set('previoustrack', hasPrevious ? () => tracks.current.onPrevious?.(listenRef.current) : null);
+  }, [hasNext, hasPrevious]);
+
   useEffect(() => {
     const onKey = (e) => {
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
@@ -231,7 +273,7 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
     v.paused ? v.play().catch(() => {}) : v.pause();
   }
 
-  actions.current = { seek, togglePlay };
+  actions.current = { seek, togglePlay, startListening };
 
   const setRate = (rate) => {
     const v = active();
@@ -301,6 +343,7 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
         onTimeUpdate={reportTime}
         onSeeked={reportTime}
         onPlay={() => setNeedsTap(false)}
+        onEnded={() => !listenRef.current && onEnded?.(false)}
       />
       {playError && (
         <div className="player-error" role="alert">
@@ -328,6 +371,7 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
         hidden={!listenOnly}
         onTimeUpdate={reportTime}
         onSeeked={reportTime}
+        onEnded={() => listenRef.current && onEnded?.(true)}
       />
       {ripple && (
         <div key={ripple.key} className={`seek-ripple ${ripple.side}`} onAnimationEnd={() => setRipple(null)}>

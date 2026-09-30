@@ -35,6 +35,7 @@ npm test                       # server (node:test, needs DATABASE_URL_TEST) + w
 npm run lint                   # ESLint (flat config, eslint.config.js)
 npm run migrate                # apply pending migrations (`-- down` rolls back one)
 npm run captions:fetch         # save finished Stream captions into transcripts (`-- --generate` requests missing ones)
+npm run import:playlists -- <playlist or channel URL>   # YouTube playlists (order kept)
 npm run migrate:create -- <name>   # new SQL migration in server/migrations/
 npm run format                 # Prettier; `format:check` to verify only
 npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only]

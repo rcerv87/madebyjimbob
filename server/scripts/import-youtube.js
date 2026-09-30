@@ -20,6 +20,7 @@ import * as tus from 'tus-js-client';
 import { pool, migrate } from '../src/db.js';
 import { parseReplayLine } from '../src/ingest/youtubeReplay.js';
 import { parseComments } from '../src/ingest/youtubeComments.js';
+import { videoKind } from '../src/ingest/videoKind.js';
 
 const args = process.argv.slice(2);
 const url = args.find((a) => !a.startsWith('--') && !isFlagValue(a));
@@ -127,14 +128,23 @@ const publishedAt =
       : null;
 
 const { rows } = await pool.query(
-  `INSERT INTO videos (youtube_id, stream_uid, title, description, duration_s, published_at, min_tier)
-   VALUES ($1, $2, $3, $4, $5, $6, $7)
+  `INSERT INTO videos (youtube_id, stream_uid, title, description, duration_s, published_at, min_tier, kind)
+   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
    ON CONFLICT (youtube_id) DO UPDATE SET
      stream_uid = COALESCE(EXCLUDED.stream_uid, videos.stream_uid),
      title = EXCLUDED.title, description = EXCLUDED.description,
-     duration_s = EXCLUDED.duration_s, published_at = EXCLUDED.published_at
+     duration_s = EXCLUDED.duration_s, published_at = EXCLUDED.published_at, kind = EXCLUDED.kind
    RETURNING id`,
-  [ytId, streamUid, meta.title, meta.description || '', Math.round(meta.duration || 0), publishedAt, tier],
+  [
+    ytId,
+    streamUid,
+    meta.title,
+    meta.description || '',
+    Math.round(meta.duration || 0),
+    publishedAt,
+    tier,
+    videoKind(meta),
+  ],
 );
 const videoId = rows[0].id;
 console.log(`Video saved as #${videoId}`);

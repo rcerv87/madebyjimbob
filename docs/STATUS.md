@@ -10,9 +10,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Live site | https://madebyjimbob.onrender.com (Render: web service + Postgres; deploys on every push to `main`) |
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
-| Content | 4 videos, 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts |
-| Quality | 100 automated tests (65 server, 35 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 70 stories; 12 done, 2 in progress |
+| Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
+| Quality | 119 automated tests (79 server, 40 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 77 stories; 15 done, 2 in progress |
 
 ## Waiting on Ruben
 
@@ -27,6 +27,17 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    moderators; brand assets and domain.
 
 ## What's built
+
+### Videos section
+- **Videos** dashboard (home): chips All / Videos / Shorts / Live / Members only with counts, search on the
+  server (titles and descriptions), sort by newest / oldest / most viewed; filters live in the URL.
+  Video types come from import: past live streams are "Streamed", vertical ≤ 3 min are Shorts.
+- Tabs **Videos · Playlists · Posts** (Posts is a "coming soon" page until MBJ-804).
+- **Playlists**: JimBob's YouTube playlists imported in order (`npm run import:playlists -- <channel URL>`);
+  videos not on the site yet appear once imported. Playlist page with Play all.
+- **Studio playlists**: create, add, reorder, remove, rename, delete (YouTube ones are read-only there).
+- **Up next**: playlist queue with position (e.g. 3 / 12) or the next video on the channel; Autoplay switch
+  (remembered); 5-second end screen with Cancel / Play now; keeps Listen only on; lock-screen ⏭ / ⏮.
 
 ### Watching
 - Stored videos from Cloudflare Stream; hls.js in Chrome/Edge/Firefox, Safari's own player on iPhone/iPad.
@@ -84,6 +95,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | 2026-09-29 | Videos never start muted |
 | 2026-09-29 | Release order: installable app + notifications first, then the Videos section (dashboard, playlists, up next), live indicator, posts |
 | 2026-09-29 | Hosting on Render; code on GitHub (`rcerv87/madebyjimbob`) |
+| 2026-09-29 | Library layout: Videos (filter chips), Playlists, Posts as the three main tabs; members-only is a filter, not a tab |
+| 2026-09-29 | Backlog adds sign-up/onboarding, payments API, store, art, social links, navigation bar, founding members |
 
 ## Known limits (fine for a demo, not for launch)
 
@@ -98,12 +111,14 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## What's next (in order)
 
-1. **Videos section** — dashboard with All / Videos / Shorts / Live / Members filters, search and sort (MBJ-801);
-   **Playlists** (MBJ-802); **Up next** and autoplay (MBJ-803).
-2. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805).
+1. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805).
+2. **Navigation bar** — top nav for every section, bottom tab bar on phones and in the app (MBJ-810);
+   **social links and sharing** with link previews (MBJ-809).
 3. **Posts** — text, images, polls with threaded comments (MBJ-804).
-4. **Link YouTube/Rumble names to profiles** by posting a code (MBJ-215); **one view per viewer** (MBJ-216).
-5. **Real accounts and payments** — auth provider, roles, Stripe/RevenueCat, signed URLs (MBJ-101–105).
+4. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
+   **payments API** (MBJ-104, 109), pricing page (MBJ-105), **founding members** (MBJ-811), **Store** (MBJ-807).
+5. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
 6. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
-7. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
-8. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
+7. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
+8. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
+9. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).

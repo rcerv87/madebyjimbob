@@ -1,7 +1,9 @@
 import { NavLink } from 'react-router-dom';
 
 const links = [
-  { to: '/', label: 'Home', d: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z' },
+  { to: '/', label: 'Videos', d: 'M4 11 12 4l8 7v9h-5v-6H9v6H4z' },
+  { to: '/playlists', label: 'Playlists', d: 'M4 6h12M4 11h12M4 16h7M16 14v6l5-3z' },
+  { to: '/posts', label: 'Posts', d: 'M5 4h14v12H9l-4 4z' },
   { to: '/studio', label: 'Studio', d: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
 ];
 

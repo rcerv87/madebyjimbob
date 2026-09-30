@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import Home from '../pages/Home.jsx';
 import Watch from '../pages/Watch.jsx';
@@ -28,9 +28,19 @@ function renderWatch(id = '1') {
   );
 }
 
-describe('Home', () => {
-  test('lists videos with their tier badge', async () => {
-    mockApi({ '/videos': { videos: [card(), card({ id: '2', title: 'Members stream', minTier: 'plus' })] } });
+const counts = (over = {}) => ({ all: 2, video: 1, short: 0, live: 1, members: 1, ...over });
+
+describe('Home (videos dashboard)', () => {
+  test('lists videos with their tier badge, type label, and chip counts', async () => {
+    mockApi({
+      '/videos': {
+        videos: [
+          card({ kind: 'video' }),
+          card({ id: '2', title: 'Members stream', minTier: 'plus', kind: 'live' }),
+        ],
+        counts: counts(),
+      },
+    });
     render(
       <MemoryRouter>
         <Home />
@@ -39,22 +49,43 @@ describe('Home', () => {
     expect(await screen.findByText('Guitar build day')).toBeTruthy();
     expect(screen.getByText('Members stream')).toBeTruthy();
     expect(screen.getByText('Plus')).toBeTruthy();
+    expect(screen.getByText('Streamed')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Live 1' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('button', { name: 'All 2' }).getAttribute('aria-pressed')).toBe('true');
   });
 
-  test('filters by the search query', async () => {
-    mockApi({ '/videos': { videos: [card(), card({ id: '2', title: 'Truck repair' })] } });
+  test('chips and sort ask the server for that slice', async () => {
+    mockApi({ '/videos': { videos: [card()], counts: counts() } });
+    render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /^Shorts/ }));
+    await waitFor(() => expect(fetch.mock.calls.some(([u]) => String(u).includes('kind=short'))).toBe(true));
+    fireEvent.click(screen.getByRole('button', { name: /^Members only/ }));
+    await waitFor(() => expect(fetch.mock.calls.some(([u]) => String(u).includes('members=1'))).toBe(true));
+    fireEvent.change(screen.getByLabelText('Sort videos'), { target: { value: 'views' } });
+    await waitFor(() => expect(fetch.mock.calls.some(([u]) => String(u).includes('sort=views'))).toBe(true));
+  });
+
+  test('searches on the server and says how many matched', async () => {
+    mockApi({
+      '/videos': { videos: [card({ id: '2', title: 'Truck repair' })], counts: counts({ all: 1 }) },
+    });
     render(
       <MemoryRouter initialEntries={['/?q=truck']}>
         <Home />
       </MemoryRouter>,
     );
     expect(await screen.findByText('Truck repair')).toBeTruthy();
-    expect(screen.queryByText('Guitar build day')).toBeNull();
+    expect(fetch.mock.calls[0][0]).toContain('q=truck');
     expect(screen.getByText(/1 result for/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Clear search' })).toBeTruthy();
   });
 
   test('explains how to import when there are no videos', async () => {
-    mockApi({ '/videos': { videos: [] } });
+    mockApi({ '/videos': { videos: [], counts: counts({ all: 0, video: 0, live: 0, members: 0 }) } });
     render(
       <MemoryRouter>
         <Home />

@@ -32,7 +32,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | Sprint 5 | Shared types + mobile start | MBJ-004, MBJ-401, MBJ-402 |
 | Sprint 6 | Mobile core | MBJ-403, MBJ-404, MBJ-406 |
 | Sprint 7 | Go live | MBJ-301, MBJ-205, MBJ-302, MBJ-303 |
-| Next | Library & presence (Ruben's order) | MBJ-801, MBJ-802, MBJ-803, MBJ-805, MBJ-804 |
+| Next | Presence and navigation | MBJ-805, MBJ-810, MBJ-809, MBJ-804 |
+| Then | Accounts and money | MBJ-101, MBJ-108, MBJ-104, MBJ-109, MBJ-105, MBJ-811, MBJ-807 |
 
 ## Summary
 
@@ -53,6 +54,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-105 | Pricing page and upsell | Accounts & memberships | 1 | Must | M | MBJ-104 |
 | MBJ-106 | Account page | Accounts & memberships | 1 | Should | M | MBJ-104 |
 | MBJ-107 | Owned email list | Accounts & memberships | 1 | Must | S | MBJ-101, MBJ-102 |
+| MBJ-108 | Sign-up and onboarding | Accounts & memberships | 1 | Must | M | MBJ-101 |
+| MBJ-109 | Payments API and receipts | Accounts & memberships | 1 | Must | M | MBJ-104 |
 | MBJ-201 | Chat replay polish | Chat & moderation | 1 | Should | M | — |
 | MBJ-202 | @mention autocomplete and notifications | Chat & moderation | 1 | Should | M | MBJ-101 |
 | MBJ-203 | Upvotes and top questions | Chat & moderation | 1 | Should | M | MBJ-101 |
@@ -76,6 +79,10 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-803 | Up next and autoplay | Library & community | 1 | Must | S | MBJ-802 |
 | MBJ-804 | Posts | Library & community | 1 | Should | L | — |
 | MBJ-805 | Live indicator | Library & community | 1 | Should | S | — |
+| MBJ-807 | Store | Library & community | 1 | Should | L | MBJ-109 |
+| MBJ-809 | Social media links and sharing | Library & community | 1 | Should | S | — |
+| MBJ-810 | Navigation bar | Library & community | 1 | Must | M | — |
+| MBJ-811 | Founding members | Library & community | 1 | Should | M | MBJ-104 |
 | MBJ-401 | Expo app scaffold | Mobile apps | 2 | Must | L | MBJ-004, MBJ-101 |
 | MBJ-402 | Mobile player and gestures | Mobile apps | 2 | Must | M | MBJ-401 |
 | MBJ-403 | Background audio, lock screen, PiP | Mobile apps | 2 | Must | M | MBJ-402 |
@@ -83,6 +90,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-405 | Push notifications | Mobile apps | 2 | Should | M | MBJ-401, MBJ-202 |
 | MBJ-406 | In-app subscriptions and tips | Mobile apps | 2 | Must | L | MBJ-104, MBJ-401 |
 | MBJ-407 | Store release | Mobile apps | 2 | Must | M | MBJ-403, MBJ-406 |
+| MBJ-808 | Art section | Library & community | 2 | Could | M | — |
 | MBJ-205 | Redis pub/sub and rate limits | Chat & moderation | 3 | Should | M | MBJ-001 |
 | MBJ-301 | Live video model and live page | Live via YouTube | 3 | Must | M | MBJ-003 |
 | MBJ-302 | YouTube live chat ingest worker | Live via YouTube | 3 | Must | L | MBJ-301, MBJ-205, MBJ-006 |
@@ -283,6 +291,30 @@ Acceptance criteria:
 - [ ] Marketing opt-in checkbox at signup, stored with timestamp
 - [ ] Admin can export opted-in users as CSV from Studio
 - [ ] Unsubscribe link handling documented
+
+### MBJ-108 — Sign-up and onboarding
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101
+
+As a new viewer, I want a clear way to create an account and get started.
+
+Acceptance criteria:
+- [ ] Registration page: email, username, password (or Google/Apple once MBJ-101 lands); email verification
+- [ ] Welcome step: pick notifications, link YouTube (MBJ-215), see membership options
+- [ ] Profile page: username, avatar, linked accounts, membership, sign out everywhere
+- [ ] Password reset by email
+
+### MBJ-109 — Payments API and receipts
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-104
+
+As a member, I want reliable billing; as JimBob, I want to see and manage payments.
+
+Acceptance criteria:
+- [ ] Stripe webhooks (checkout, renewals, failures, refunds) update entitlements idempotently
+- [ ] Members see payment history and receipts; Stripe customer portal to change card or cancel
+- [ ] Studio: revenue, refunds, failed payments; test mode for staging
+- [ ] Backup processor evaluated (PRD open question)
 
 ## Epic 2xx — Chat & moderation
 
@@ -852,36 +884,36 @@ Videos dashboard, playlists, up next, posts, and live presence.
 
 ### MBJ-801 — Videos dashboard with filters
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M
 
 As a viewer, I want to find videos by type and search, starting from everything.
 
 Acceptance criteria:
-- [ ] Video types from import: regular, short, past live (vertical + short = short; was_live = live)
-- [ ] Filter chips: All, Videos, Shorts, Live, Members only; search and sort (newest, most viewed)
-- [ ] Members-only items show which tier unlocks them; access still enforced on the server
+- [x] Video types from import: regular, short, past live (vertical + short = short; was_live = live)
+- [x] Filter chips: All, Videos, Shorts, Live, Members only; search and sort (newest, most viewed)
+- [x] Members-only items show which tier unlocks them; access still enforced on the server
 
 ### MBJ-802 — Playlists
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-801
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-801
 
 As a viewer, I want JimBob's playlists, and as JimBob I want to build my own.
 
 Acceptance criteria:
-- [ ] Import YouTube playlists with their order
-- [ ] Studio: create, rename, reorder, add/remove videos
-- [ ] Playlists tab lists them with count and total length
+- [x] Import YouTube playlists with their order
+- [x] Studio: create, rename, reorder, add/remove videos
+- [x] Playlists tab lists them with count and total length
 
 ### MBJ-803 — Up next and autoplay
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-802
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-802
 
 As a viewer, I want the next video to start when one ends.
 
 Acceptance criteria:
-- [ ] Queue beside the player from the playlist (or related videos)
-- [ ] Autoplay next with a short countdown and cancel
-- [ ] Works in Listen only too
+- [x] Queue beside the player from the playlist (or related videos)
+- [x] Autoplay next with a short countdown and cancel
+- [x] Works in Listen only too
 
 ### MBJ-804 — Posts
 
@@ -916,3 +948,60 @@ Acceptance criteria:
 - [ ] Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list
 - [ ] Proposes file-to-video matches for review; OBS recordings matched by date and length with an offset adjustment
 - [ ] Skips videos already imported; deletes local copies after upload; resumable overnight run
+
+### MBJ-807 — Store
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-109
+
+As a fan, I want to buy JimBob's merch and products on his site.
+
+Acceptance criteria:
+- [ ] Products with photos, variants, and stock; cart and checkout (Stripe, or Shopify/Printful if fulfilment is outsourced)
+- [ ] Member and founding-member discounts
+- [ ] Order confirmation email; Studio order list
+- [ ] Decide in-house vs Shopify/Printful before building (ADR)
+
+### MBJ-808 — Art section
+
+**Status:** To do · **Phase 2 — Mobile** · **Priority:** Could · **Size:** M
+
+As a fan, I want to browse JimBob's art (confirm scope: his artwork and builds, e.g. the guitar, vs. brand art).
+
+Acceptance criteria:
+- [ ] Gallery of images with titles, descriptions, and dates
+- [ ] Link items to related videos and posts
+- [ ] Optional: prints for sale through the Store
+
+### MBJ-809 — Social media links and sharing
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
+
+As JimBob, I want my socials everywhere and every page easy to share.
+
+Acceptance criteria:
+- [ ] Links to JimBob's YouTube, Rumble, X, Instagram, TikTok, etc. in the header menu and footer (configured in Studio)
+- [ ] Share button on videos, moments (?t=), comments, and playlists; copies a link or opens the phone's share sheet
+- [ ] Open Graph and Twitter card previews with title, thumbnail, and description
+
+### MBJ-810 — Navigation bar
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M
+
+As a viewer, I want to find every part of the site quickly on desktop and phone.
+
+Acceptance criteria:
+- [ ] Top navigation: Videos, Playlists, Posts, Live, Store, Art, Members, with the live ring (MBJ-805)
+- [ ] Phone and installed app: bottom tab bar with the main sections
+- [ ] Account menu: profile, notifications, membership, Studio for admins, sign out
+- [ ] Keyboard and screen-reader friendly
+
+### MBJ-811 — Founding members
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-104
+
+As an early supporter, I want to be recognised as a founding member.
+
+Acceptance criteria:
+- [ ] Limited founding membership (count or date window) with a price locked for life
+- [ ] Founding badge in chat and comments; founding members page (wall) with opt-in names
+- [ ] Perks defined with JimBob (early access, store discount, call-in priority)
