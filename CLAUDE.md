@@ -39,7 +39,7 @@ npm run format                 # Prettier; `format:check` to verify only
 npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only]
 ```
 
-Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any story.
+Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any story. CI (`.github/workflows/ci.yml`) runs the same checks plus the build on every PR to `main`.
 
 - Server tests live in `server/test/` and run against `DATABASE_URL_TEST`, which is wiped on every run. `test/helpers.js` refuses any database without "test" in its name.
 - `server/src/app.js` builds the app and WebSocket server; `server/src/index.js` only listens.

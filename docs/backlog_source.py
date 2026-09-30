@@ -265,7 +265,8 @@ SPRINTS = [
 ]
 
 # Story status lives here, not in BACKLOG.md (that file is regenerated). Example: {"001": "Done"}
-STATUS = {"001": "Done", "002": "Done", "003": "Done", "006": "Done"}
+STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done"}
+# 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():
     rows = [dict(id=f"MBJ-{i}", epic=EPICS[i[0]][0], phase=p, priority=pr, size=sz, title=t,
