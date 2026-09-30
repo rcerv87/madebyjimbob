@@ -75,7 +75,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - Autoplay with sound when the browser allows it; otherwise a Play button (never starts muted).
 - Resume where you left off (account when signed in, browser otherwise), "Resumed from mm:ss · Start over",
   `?t=` links, watched-progress bars on video cards.
-- Gestures (double-tap ±10s, hold for 2×), J/K/L keys, speed picker (0.75×–2×), Mini player (PiP).
+- Gestures (double-tap ±10s, hold for 2×), J/K/L keys, speed picker (0.75×–2×), Mini player (PiP); the Mini
+  player keeps playing while browsing other pages ("Back to tab" returns to the video).
 - **Listen only**: switches to Cloudflare's audio-only track at the same moment; keeps playing on a locked phone
   with lock-screen controls. Chat stays in sync. Locking a phone mid-video switches to it on its own (sound keeps
   going); unlocking switches back to the video.
