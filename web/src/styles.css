@@ -311,11 +311,29 @@ code {
 }
 
 /* ---------- watch page ---------- */
+/* Desktop: video + comments on the left, chat alongside. Narrow screens stack in DOM order:
+   video, chat, comments (so chat sits right under the player, as on YouTube mobile). */
 .watch {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 400px;
-  gap: 24px;
+  grid-template-rows: auto 1fr;
+  column-gap: 24px;
   max-width: 1760px;
+}
+.watch-main {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+.watch > .chat {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+}
+.watch-comments {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
 }
 .watch-title {
   font-size: 1.3rem;
@@ -600,9 +618,13 @@ code {
 .chat-ts:hover {
   color: var(--text);
 }
+/* Touch screens can't hover, so timestamps stay visible; keep room so they don't cover text. */
 @media (hover: none) {
   .chat-ts {
     opacity: 0.7;
+  }
+  .chat-msg {
+    padding-right: 56px;
   }
 }
 .chat-msg.mentions-me {
@@ -873,6 +895,9 @@ code {
   color: #9dbcff;
 }
 @media (max-width: 600px) {
+  .unmute-btn {
+    top: 50px;
+  }
   .comment-form {
     margin-left: 0;
   }
@@ -1054,6 +1079,14 @@ td select,
 @media (max-width: 1100px) {
   .watch {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    row-gap: 16px;
+  }
+  .watch-main,
+  .watch > .chat,
+  .watch-comments {
+    grid-column: auto;
+    grid-row: auto;
   }
   .chat {
     position: static;
@@ -1107,6 +1140,9 @@ td select,
   .chat {
     margin: 0 12px;
     height: 60vh;
+  }
+  .watch-comments {
+    padding: 0 12px;
   }
   .studio {
     padding: 16px;
