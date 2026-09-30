@@ -9,6 +9,7 @@ import { pool } from './db.js';
 import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback } from './stream.js';
 import { logger, httpLogger } from './logger.js';
+import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
 import {
   addUserSocket,
   removeUserSocket,
@@ -678,6 +679,38 @@ app.post(
       mentions: extractMentions(body),
       replyToUserId: target?.user_id,
     }).catch((err) => logger.error({ err }, 'comment notifications failed'));
+  }),
+);
+
+// ---------- shop and art (from JimBob's Shopify store) ----------
+app.get('/api/shop/collections', (_req, res) =>
+  res.json({ store: shopUrl(), collections: COLLECTIONS.map(({ handle, label }) => ({ handle, label })) }),
+);
+
+app.get(
+  '/api/shop',
+  wrap(async (req, res) => {
+    const handle = COLLECTIONS.some((c) => c.handle === req.query.collection) ? req.query.collection : 'all';
+    try {
+      res.json({ store: shopUrl(), collection: handle, products: await collectionProducts(handle) });
+    } catch (err) {
+      req.log.warn({ err }, 'store unavailable');
+      res.status(502).json({ error: 'The store isn’t responding right now. Try again in a minute.' });
+    }
+  }),
+);
+
+app.get(
+  '/api/art',
+  wrap(async (req, res) => {
+    try {
+      res.json({ store: shopUrl(), pieces: await artPieces() });
+    } catch (err) {
+      req.log.warn({ err }, 'store unavailable');
+      res
+        .status(502)
+        .json({ error: 'The art gallery can’t reach the store right now. Try again in a minute.' });
+    }
   }),
 );
 

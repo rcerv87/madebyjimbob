@@ -10,6 +10,8 @@ import Studio from './pages/Studio.jsx';
 import Playlists from './pages/Playlists.jsx';
 import Playlist from './pages/Playlist.jsx';
 import Posts from './pages/Posts.jsx';
+import Shop from './pages/Shop.jsx';
+import Art from './pages/Art.jsx';
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 
@@ -49,6 +51,8 @@ export default function App() {
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:id" element={<Playlist />} />
           <Route path="/posts" element={<Posts />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/art" element={<Art />} />
           <Route path="/watch/:id" element={<Watch session={session} />} />
           <Route path="/studio" element={<Studio user={user} />} />
         </Routes>

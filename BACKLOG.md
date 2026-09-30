@@ -79,10 +79,11 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-803 | Up next and autoplay | Library & community | 1 | Must | S | MBJ-802 |
 | MBJ-804 | Posts | Library & community | 1 | Should | L | — |
 | MBJ-805 | Live indicator | Library & community | 1 | Should | S | — |
-| MBJ-807 | Store | Library & community | 1 | Should | L | MBJ-109 |
+| MBJ-807 | Store (Shopify integration) | Library & community | 1 | Should | M | — |
 | MBJ-809 | Social media links and sharing | Library & community | 1 | Should | S | — |
 | MBJ-810 | Navigation bar | Library & community | 1 | Must | M | — |
 | MBJ-811 | Founding members | Library & community | 1 | Should | M | MBJ-104 |
+| MBJ-812 | JimBob's brand on the platform | Library & community | 1 | Must | S | — |
 | MBJ-401 | Expo app scaffold | Mobile apps | 2 | Must | L | MBJ-004, MBJ-101 |
 | MBJ-402 | Mobile player and gestures | Mobile apps | 2 | Must | M | MBJ-401 |
 | MBJ-403 | Background audio, lock screen, PiP | Mobile apps | 2 | Must | M | MBJ-402 |
@@ -90,7 +91,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-405 | Push notifications | Mobile apps | 2 | Should | M | MBJ-401, MBJ-202 |
 | MBJ-406 | In-app subscriptions and tips | Mobile apps | 2 | Must | L | MBJ-104, MBJ-401 |
 | MBJ-407 | Store release | Mobile apps | 2 | Must | M | MBJ-403, MBJ-406 |
-| MBJ-808 | Art section | Library & community | 2 | Could | M | — |
+| MBJ-808 | Art section | Library & community | 2 | Should | S | MBJ-807 |
 | MBJ-205 | Redis pub/sub and rate limits | Chat & moderation | 3 | Should | M | MBJ-001 |
 | MBJ-301 | Live video model and live page | Live via YouTube | 3 | Must | M | MBJ-003 |
 | MBJ-302 | YouTube live chat ingest worker | Live via YouTube | 3 | Must | L | MBJ-301, MBJ-205, MBJ-006 |
@@ -291,6 +292,7 @@ Acceptance criteria:
 - [ ] Marketing opt-in checkbox at signup, stored with timestamp
 - [ ] Admin can export opted-in users as CSV from Studio
 - [ ] Unsubscribe link handling documented
+- [ ] Start from the existing Shopify newsletter list (export from Shopify customers who accepted marketing)
 
 ### MBJ-108 — Sign-up and onboarding
 
@@ -399,6 +401,7 @@ Acceptance criteria:
 - [ ] Message posts only after payment confirmation (webhook)
 - [ ] Paid message pinned for a duration scaled by amount; WS `pin` event
 - [ ] Tips appear in Studio revenue
+- [ ] Bring in Bob Chats (today sold as a product on the Shopify store): shown and pinned like Super Chats, counted in the same totals
 
 ### MBJ-208 — Chat search in Studio
 
@@ -937,6 +940,7 @@ Acceptance criteria:
 - [ ] Red ring + LIVE badge on JimBob's avatar and the header when live
 - [ ] Live card at the top of Videos
 - [ ] Studio Go live switch pointing at the YouTube live URL until MBJ-301 detects it automatically
+- [ ] When not live, show the next stream from the schedule (weekdays around 12:00pm ET)
 
 ### MBJ-806 — Import the whole channel
 
@@ -949,37 +953,38 @@ Acceptance criteria:
 - [ ] Proposes file-to-video matches for review; OBS recordings matched by date and length with an offset adjustment
 - [ ] Skips videos already imported; deletes local copies after upload; resumable overnight run
 
-### MBJ-807 — Store
+### MBJ-807 — Store (Shopify integration)
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-109
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M
 
-As a fan, I want to buy JimBob's merch and products on his site.
+As a fan, I want to browse and buy JimBob's merch without leaving his platform's look and feel.
 
 Acceptance criteria:
-- [ ] Products with photos, variants, and stock; cart and checkout (Stripe, or Shopify/Printful if fulfilment is outsourced)
-- [ ] Member and founding-member discounts
-- [ ] Order confirmation email; Studio order list
-- [ ] Decide in-house vs Shopify/Printful before building (ADR)
+- [ ] Decision: keep the existing Shopify store (madebyjimbob.com, ~150 products) for catalog, checkout, and fulfilment
+- [ ] Shop section shows the store's collections and products live (public product JSON, 10-minute cache); Buy opens the product in the store
+- [ ] Next: cart and checkout inside the platform with Shopify's Storefront API (needs a Storefront access token from JimBob's Shopify admin)
+- [ ] Member and founding-member discount codes applied at checkout
 
 ### MBJ-808 — Art section
 
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Could · **Size:** M
+**Status:** Done · **Phase 2 — Mobile** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-807
 
-As a fan, I want to browse JimBob's art (confirm scope: his artwork and builds, e.g. the guitar, vs. brand art).
+As a fan, I want to browse JimBob's illustrations and comics.
 
 Acceptance criteria:
-- [ ] Gallery of images with titles, descriptions, and dates
-- [ ] Link items to related videos and posts
-- [ ] Optional: prints for sale through the Store
+- [x] Gallery built from the store's art collections (original art, art prints, classic art prints, digital art)
+- [x] Tap a piece to see it large; View in store buys the print
+- [x] Filter by kind of art
+- [x] Later: link pieces to the videos and posts they appear in
 
 ### MBJ-809 — Social media links and sharing
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
 
 As JimBob, I want my socials everywhere and every page easy to share.
 
 Acceptance criteria:
-- [ ] Links to JimBob's YouTube, Rumble, X, Instagram, TikTok, etc. in the header menu and footer (configured in Studio)
+- [ ] Links to JimBob's YouTube, X, Instagram, Facebook, Gab, Telegram, Spotify, Bandcamp (and Rumble) on the Videos banner (done), header menu, and footer
 - [ ] Share button on videos, moments (?t=), comments, and playlists; copies a link or opens the phone's share sheet
 - [ ] Open Graph and Twitter card previews with title, thumbnail, and description
 
@@ -1005,3 +1010,15 @@ Acceptance criteria:
 - [ ] Limited founding membership (count or date window) with a price locked for life
 - [ ] Founding badge in chat and comments; founding members page (wall) with opt-in names
 - [ ] Perks defined with JimBob (early access, store discount, call-in priority)
+
+### MBJ-812 — JimBob's brand on the platform
+
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S
+
+As JimBob, I want the platform to look like my brand, not a template.
+
+Acceptance criteria:
+- [x] Store teal (#27717A) as the accent color; MADEbyJIMBOB wordmark in Jost (the store's font)
+- [x] JimBob's illustrated avatar in the header and as the app icon; his banner art on the Videos page
+- [x] Stream schedule and social links on the Videos banner
+- [x] Brand assets copied from madebyjimbob.com into web/public/brand with JimBob's approval

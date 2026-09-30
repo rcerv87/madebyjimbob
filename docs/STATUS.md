@@ -22,11 +22,23 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    then update `CF_API_TOKEN` in `.env`.
 3. **Decide R2 vs Stream** for the full library (`docs/adr/010-vod-on-r2.md`) before importing more than a few streams.
 4. **GitHub branch rule:** Settings → Branches → rule for `main` → require the **CI / check** status (finishes MBJ-005).
-5. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
+5. **Domain:** choose where the platform lives: madebyjimbob.com with the store at shop.madebyjimbob.com
+   (recommended), or the platform on watch.madebyjimbob.com (`docs/adr/011-domain-and-store.md`).
+6. **JimBob's OK** on using his avatar, banner art, and store products in the platform before the link goes wide.
+7. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
    Google Takeout export of the channel (guide: the "JimBob's YouTube Backup" page); tier prices and perks;
    moderators; brand assets and domain.
 
 ## What's built
+
+### JimBob's brand, Shop, and Art
+- The platform now wears his brand from madebyjimbob.com: store teal accent, MADEbyJIMBOB wordmark in Jost,
+  his illustrated avatar in the header and as the app icon, and his banner art on the Videos page with the
+  stream schedule (weekdays around noon ET) and his social links. Assets are in `web/public/brand/`.
+- **Shop**: his Shopify store's collections and products, read live (10-minute cache); Buy opens the
+  product in his store for checkout. Nothing about the store changed.
+- **Art**: gallery of his original art, prints, and digital art from the store; tap for a large view and
+  View in store.
 
 ### Videos section
 - **Videos** dashboard (home): chips All / Videos / Shorts / Live / Members only with counts, search on the
@@ -97,6 +109,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | 2026-09-29 | Hosting on Render; code on GitHub (`rcerv87/madebyjimbob`) |
 | 2026-09-29 | Library layout: Videos (filter chips), Playlists, Posts as the three main tabs; members-only is a filter, not a tab |
 | 2026-09-29 | Backlog adds sign-up/onboarding, payments API, store, art, social links, navigation bar, founding members |
+| 2026-09-30 | Keep the Shopify store for products and checkout; the platform shows it (ADR-011). Art = his illustrations and comics from the store's art collections |
+| 2026-09-30 | Platform adopts his store's brand (teal, Jost wordmark, avatar, banner art) |
 
 ## Known limits (fine for a demo, not for launch)
 
