@@ -87,6 +87,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-812 | JimBob's brand on the platform | Library & community | 1 | Must | S | — |
 | MBJ-813 | Schedule calendar with export | Library & community | 1 | Should | M | — |
 | MBJ-814 | Unwatched filter and binge queue | Library & community | 1 | Should | S | MBJ-212, MBJ-803 |
+| MBJ-815 | Technical SEO | Library & community | 1 | Must | M | MBJ-809 |
+| MBJ-816 | Search-friendly content | Library & community | 1 | Should | M | MBJ-815, MBJ-605, MBJ-609 |
 | MBJ-401 | Expo app scaffold | Mobile apps | 2 | Must | L | MBJ-004, MBJ-101 |
 | MBJ-402 | Mobile player and gestures | Mobile apps | 2 | Must | M | MBJ-401 |
 | MBJ-403 | Background audio, lock screen, PiP | Mobile apps | 2 | Must | M | MBJ-402 |
@@ -1149,6 +1151,36 @@ Acceptance criteria:
 - [ ] Binge queue: an automatic playlist of everything you haven't finished, in-progress first then oldest to newest (or newest first), that plays with Up next and autoplay, in Listen only too
 - [ ] Mark as watched / unwatched from a video's menu; finishing a video (last 30s) marks it watched
 - [ ] Counts on the chips and a "Keep watching" row on the Videos page
+
+### MBJ-815 — Technical SEO
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-809
+
+As JimBob, I want Google and link previews to understand every page, so people find the platform instead of only YouTube.
+
+Acceptance criteria:
+- [ ] The server fills in each page's title, description, canonical URL, and Open Graph/Twitter tags before sending it (the app is client-rendered, so today crawlers and link previews see the same empty page for every video)
+- [ ] Crawlers get the real content in the HTML for public pages: video title, description, chapters, and a transcript excerpt (prerender or server-render the public pages)
+- [ ] Structured data (JSON-LD): VideoObject for each video (thumbnail, upload date, duration, views, embed URL), key moments from chapters, BroadcastEvent for live streams, Event for scheduled streams and debates (MBJ-813), Person/Organization for JimBob with his social profiles
+- [ ] sitemap.xml (videos, playlists, posts, topic and guest pages) and robots.txt; members-only content and Studio are noindex
+- [ ] Real 404 status for missing pages (today every address returns 200) and 301 redirects for moved ones
+- [ ] Keep the madebyjimbob.onrender.com preview out of search (noindex) until the real domain is chosen (ADR-011), then redirect it to the canonical domain
+- [ ] Speed: split the JavaScript bundle (currently one ~500 KB file), long cache headers for hashed assets, lazy images; check Core Web Vitals
+- [ ] Google Search Console and Bing Webmaster Tools verified; sitemap submitted
+
+### MBJ-816 — Search-friendly content
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-815, MBJ-605, MBJ-609
+
+As a fan searching Google for a debate, guest, or topic, I want to land on JimBob's platform.
+
+Acceptance criteria:
+- [ ] Readable URLs with slugs (e.g. /watch/4/evolution-debate, /playlist/5/debates); old numeric URLs redirect
+- [ ] Each video page has a unique written summary and chapters (from MBJ-605) and an indexable transcript section (public videos only)
+- [ ] Topic and guest pages (MBJ-609) as landing pages: "JimBob on evolution", "JimBob vs <guest>", with every related moment
+- [ ] Internal links between related videos, topics, guests, playlists, and posts
+- [ ] YouTube and social descriptions link back to the matching platform page (distribution, not just SEO)
+- [ ] Track which searches bring people in (Search Console) in the Studio dashboard
 
 ### MBJ-812 — JimBob's brand on the platform
 

@@ -126,6 +126,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - Auto-captions can invent text during silence or music.
 - Downloading from YouTube with yt-dlp is against YouTube's terms; use Takeout or original recordings for the library.
 - Push on iPhone requires Add to Home Screen (Apple's rule).
+- Search engines and link previews see the same empty page for every URL (client-rendered app, no per-page
+  meta tags), and unknown URLs return 200 instead of 404. Fix before launch (MBJ-815).
 
 ## What's next (in order)
 
@@ -149,13 +151,16 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    4 videos are already stored. Together with **ratings, moment reactions, and hotspots** (MBJ-613): thumbs
    up/down, tag a moment or a stretch as funny/interesting/boring, and a minute-by-minute heatmap over the
    progress bar.
-8. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
+8. **SEO before launch** — per-page titles, descriptions, and link previews filled in by the server, crawlable
+   video pages, VideoObject/Event structured data, sitemap and robots, real 404s, noindex the onrender preview,
+   faster bundle (MBJ-815); then slugs, indexable transcripts, topic and guest landing pages (MBJ-816).
+9. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
    **payments API** (MBJ-104, 109), pricing page (MBJ-105), **founding members** (MBJ-811), **Store** (MBJ-807).
-9. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
-10. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
-11. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
-12. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
-13. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
+10. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
+11. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
+12. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
+13. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
+14. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
 
 ## Reference
 

@@ -298,6 +298,20 @@ MBJ-814,Unwatched filter and binge queue,Library & community,Phase 1 — VOD pla
 - Binge queue: an automatic playlist of everything you haven't finished, in-progress first then oldest to newest (or newest first), that plays with Up next and autoplay, in Listen only too
 - Mark as watched / unwatched from a video's menu; finishing a video (last 30s) marks it watched
 - Counts on the chips and a ""Keep watching"" row on the Videos page","MBJ-212, MBJ-803"
+MBJ-815,Technical SEO,Library & community,Phase 1 — VOD platform,Must,M,To do,"As JimBob, I want Google and link previews to understand every page, so people find the platform instead of only YouTube.","- The server fills in each page's title, description, canonical URL, and Open Graph/Twitter tags before sending it (the app is client-rendered, so today crawlers and link previews see the same empty page for every video)
+- Crawlers get the real content in the HTML for public pages: video title, description, chapters, and a transcript excerpt (prerender or server-render the public pages)
+- Structured data (JSON-LD): VideoObject for each video (thumbnail, upload date, duration, views, embed URL), key moments from chapters, BroadcastEvent for live streams, Event for scheduled streams and debates (MBJ-813), Person/Organization for JimBob with his social profiles
+- sitemap.xml (videos, playlists, posts, topic and guest pages) and robots.txt; members-only content and Studio are noindex
+- Real 404 status for missing pages (today every address returns 200) and 301 redirects for moved ones
+- Keep the madebyjimbob.onrender.com preview out of search (noindex) until the real domain is chosen (ADR-011), then redirect it to the canonical domain
+- Speed: split the JavaScript bundle (currently one ~500 KB file), long cache headers for hashed assets, lazy images; check Core Web Vitals
+- Google Search Console and Bing Webmaster Tools verified; sitemap submitted",MBJ-809
+MBJ-816,Search-friendly content,Library & community,Phase 1 — VOD platform,Should,M,To do,"As a fan searching Google for a debate, guest, or topic, I want to land on JimBob's platform.","- Readable URLs with slugs (e.g. /watch/4/evolution-debate, /playlist/5/debates); old numeric URLs redirect
+- Each video page has a unique written summary and chapters (from MBJ-605) and an indexable transcript section (public videos only)
+- Topic and guest pages (MBJ-609) as landing pages: ""JimBob on evolution"", ""JimBob vs <guest>"", with every related moment
+- Internal links between related videos, topics, guests, playlists, and posts
+- YouTube and social descriptions link back to the matching platform page (distribution, not just SEO)
+- Track which searches bring people in (Search Console) in the Studio dashboard","MBJ-815, MBJ-605, MBJ-609"
 MBJ-812,JimBob's brand on the platform,Library & community,Phase 1 — VOD platform,Must,S,Done,"As JimBob, I want the platform to look like my brand, not a template.","- Store teal (#27717A) as the accent color; MADEbyJIMBOB wordmark in Jost (the store's font)
 - JimBob's illustrated avatar in the header and as the app icon; his banner art on the Videos page
 - Stream schedule and social links on the Videos banner
