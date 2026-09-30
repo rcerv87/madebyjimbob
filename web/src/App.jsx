@@ -1,0 +1,43 @@
+import { useEffect, useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { api, getToken, setToken } from './api.js';
+import TopBar from './components/TopBar.jsx';
+import Sidebar from './components/Sidebar.jsx';
+import SignInDialog from './components/SignInDialog.jsx';
+import Home from './pages/Home.jsx';
+import Watch from './pages/Watch.jsx';
+import Studio from './pages/Studio.jsx';
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [signingIn, setSigningIn] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+
+  useEffect(() => {
+    if (!getToken()) return;
+    api('/me').then((d) => setUser(d.user)).catch(() => setToken(null));
+  }, []);
+
+  const signOut = () => { setToken(null); setUser(null); };
+  const session = { user, requireSignIn: () => setSigningIn(true) };
+
+  return (
+    <div className={`shell ${navOpen ? 'nav-open' : ''}`}>
+      <TopBar user={user} onSignIn={() => setSigningIn(true)} onSignOut={signOut} onMenu={() => setNavOpen((o) => !o)} />
+      <Sidebar onNavigate={() => setNavOpen(false)} />
+      <main className="main">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/watch/:id" element={<Watch session={session} />} />
+          <Route path="/studio" element={<Studio />} />
+        </Routes>
+      </main>
+      {signingIn && (
+        <SignInDialog
+          onClose={() => setSigningIn(false)}
+          onSignedIn={(u) => { setUser(u); setSigningIn(false); }}
+        />
+      )}
+    </div>
+  );
+}

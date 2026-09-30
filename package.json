@@ -1,0 +1,13 @@
+{
+  "name": "madebyjimbob",
+  "private": true,
+  "workspaces": ["server", "web"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "npm run build -w web",
+    "start": "npm start -w server",
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "import:youtube": "npm run import -w server --"
+  }
+}
