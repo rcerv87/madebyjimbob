@@ -376,12 +376,15 @@ app.get(
     const v = rows[0];
     const user = await currentUser(req);
     const allowed = canWatch(user, v);
-    const progress = user
-      ? await pool.query('SELECT position_ms FROM watch_progress WHERE user_id = $1 AND video_id = $2', [
-          user.id,
-          v.id,
-        ])
-      : { rows: [] };
+    const [progress, votes] = await Promise.all([
+      user
+        ? pool.query('SELECT position_ms FROM watch_progress WHERE user_id = $1 AND video_id = $2', [
+            user.id,
+            v.id,
+          ])
+        : { rows: [] },
+      videoVotes(v.id, user?.id),
+    ]);
     res.json({
       video: {
         ...videoCard(v),
@@ -390,8 +393,49 @@ app.get(
         locked: !allowed,
         hls: allowed ? playback(v.stream_uid)?.hls : null,
         resumeMs: progress.rows[0]?.position_ms ?? null,
+        likes: votes.likes,
+        myVote: votes.myVote,
       },
     });
+  }),
+);
+
+// Likes are public; dislikes only show in Studio (like YouTube). myVote: 1, -1, or 0.
+async function videoVotes(videoId, userId) {
+  const { rows } = await pool.query(
+    `SELECT count(*) FILTER (WHERE value = 1) AS likes, count(*) FILTER (WHERE value = -1) AS dislikes,
+       coalesce(max(value) FILTER (WHERE user_id = $2), 0) AS my_vote
+     FROM video_votes WHERE video_id = $1`,
+    [videoId, userId ?? null],
+  );
+  return {
+    likes: Number(rows[0].likes),
+    dislikes: Number(rows[0].dislikes),
+    myVote: Number(rows[0].my_vote),
+  };
+}
+
+// Thumbs up / down: { value: 1 | -1 | 0 } (0 clears your vote).
+app.post(
+  '/api/videos/:id/vote',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to like videos.' });
+    const video = await watchableVideo(req, res, user);
+    if (!video) return;
+    const value = Number(req.body.value);
+    if (![1, -1, 0].includes(value)) return res.status(400).json({ error: 'value must be 1, -1, or 0.' });
+    if (value === 0) {
+      await pool.query('DELETE FROM video_votes WHERE user_id = $1 AND video_id = $2', [user.id, video.id]);
+    } else {
+      await pool.query(
+        `INSERT INTO video_votes (user_id, video_id, value) VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, video_id) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+        [user.id, video.id, value],
+      );
+    }
+    const votes = await videoVotes(video.id, user.id);
+    res.json({ likes: votes.likes, myVote: votes.myVote });
   }),
 );
 
@@ -810,7 +854,9 @@ app.get(
       SELECT v.id, v.title, v.published_at, v.views, v.min_tier, v.duration_s,
         count(c.*) FILTER (WHERE c.source = 'youtube') AS youtube_msgs,
         count(c.*) FILTER (WHERE c.source = 'native')  AS native_msgs,
-        count(c.*) FILTER (WHERE c.kind = 'paid')      AS paid_msgs
+        count(c.*) FILTER (WHERE c.kind = 'paid')      AS paid_msgs,
+        (SELECT count(*) FROM video_votes vv WHERE vv.video_id = v.id AND vv.value = 1)  AS likes,
+        (SELECT count(*) FROM video_votes vv WHERE vv.video_id = v.id AND vv.value = -1) AS dislikes
       FROM videos v LEFT JOIN chat_messages c ON c.video_id = v.id AND NOT c.hidden
       GROUP BY v.id ORDER BY v.published_at DESC NULLS LAST`),
       pool.query(`
@@ -838,6 +884,8 @@ app.get(
         youtubeMsgs: Number(r.youtube_msgs),
         nativeMsgs: Number(r.native_msgs),
         paidMsgs: Number(r.paid_msgs),
+        likes: Number(r.likes),
+        dislikes: Number(r.dislikes),
       })),
       topChatters: topChatters.rows.map((r) => ({
         author: r.author_name,
@@ -985,8 +1033,22 @@ app.use('/api', (_req, res) => res.status(404).json({ error: 'Unknown API endpoi
 
 // ---------- web app ----------
 const dist = path.join(__dirname, '../../web/dist');
-// Built files (JS, CSS, images). index: false so "/" goes through renderPage below.
-app.use(express.static(dist, { index: false }));
+// Built JS/CSS have content hashes in their names, so browsers can keep them for a year.
+app.use(
+  '/assets',
+  express.static(path.join(dist, 'assets'), { index: false, immutable: true, maxAge: '365d' }),
+);
+// Other static files (icons, brand art, manifest, service worker). index: false so "/" goes through
+// renderPage below. The service worker must always be re-checked so updates reach people.
+app.use(
+  express.static(dist, {
+    index: false,
+    setHeaders(res, filePath) {
+      if (/[\\/](sw\.js|manifest\.webmanifest)$/.test(filePath)) res.set('Cache-Control', 'no-cache');
+      else if (/[\\/](icons|brand)[\\/]/.test(filePath)) res.set('Cache-Control', 'public, max-age=86400');
+    },
+  }),
+);
 
 app.get('/robots.txt', (_req, res) =>
   res.type('text/plain').send('User-agent: *\nDisallow: /studio\nDisallow: /api/\n'),

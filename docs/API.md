@@ -19,6 +19,7 @@ Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see 
 | POST | `/videos/:id/view` | — | Increment views |
 | GET | `/videos/:id/chat?from=&to=` | optional | Chat window by `offset_ms` (max 3,000). 403 if the viewer's tier can't watch the video |
 | GET | `/videos/:id/comments/:commentId` | optional | The whole thread containing that comment: `{ comment }` with `replies` |
+| POST | `/videos/:id/vote` | required | `{ value: 1 \| -1 \| 0 }` (0 clears) → `{ likes, myVote }`; tier-gated. Video detail includes `likes` and `myVote`; dislikes only appear in `/studio/overview` |
 | PUT | `/videos/:id/progress` | required | `{ positionMs }`: save where the viewer is (resume on any device) |
 | GET | `/videos/:id/chat?afterId=` | optional | Messages with `id > afterId`, ordered by id (max 3,000). Used to catch up after a WebSocket reconnect |
 | POST | `/videos/:id/chat` | required | `{ text, offsetMs, replyToId? }` → `{ message }`; broadcast to room. Native posts are replay chat (`postedLive: false`) until live native chat exists. 403 below the video's tier; `offsetMs` clamped to the video's length |

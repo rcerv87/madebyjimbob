@@ -1,18 +1,21 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { api, getToken, setToken } from './api.js';
 import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SignInDialog from './components/SignInDialog.jsx';
 import Home from './pages/Home.jsx';
-import Watch from './pages/Watch.jsx';
-import Studio from './pages/Studio.jsx';
-import Playlists from './pages/Playlists.jsx';
-import Playlist from './pages/Playlist.jsx';
-import Posts from './pages/Posts.jsx';
-import Shop from './pages/Shop.jsx';
-import Art from './pages/Art.jsx';
 import NotFound from './pages/NotFound.jsx';
+
+// Each page's code loads when it's opened (the watch page brings the video player library),
+// so the first visit downloads only the shell and the Videos page.
+const Watch = lazy(() => import('./pages/Watch.jsx'));
+const Studio = lazy(() => import('./pages/Studio.jsx'));
+const Playlists = lazy(() => import('./pages/Playlists.jsx'));
+const Playlist = lazy(() => import('./pages/Playlist.jsx'));
+const Posts = lazy(() => import('./pages/Posts.jsx'));
+const Shop = lazy(() => import('./pages/Shop.jsx'));
+const Art = lazy(() => import('./pages/Art.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 
@@ -47,17 +50,19 @@ export default function App() {
       />
       <Sidebar isAdmin={!!user?.isAdmin} onNavigate={() => setNavOpen(false)} />
       <main className="main">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/playlists" element={<Playlists />} />
-          <Route path="/playlist/:id" element={<Playlist />} />
-          <Route path="/posts" element={<Posts session={session} />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/art" element={<Art />} />
-          <Route path="/watch/:id" element={<Watch session={session} />} />
-          <Route path="/studio" element={<Studio user={user} />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={<p className="muted page-msg">Loading…</p>}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/playlists" element={<Playlists />} />
+            <Route path="/playlist/:id" element={<Playlist />} />
+            <Route path="/posts" element={<Posts session={session} />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/art" element={<Art />} />
+            <Route path="/watch/:id" element={<Watch session={session} />} />
+            <Route path="/studio" element={<Studio user={user} />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </main>
       <NotificationToast notes={notes} />
       <IosInstallHint />

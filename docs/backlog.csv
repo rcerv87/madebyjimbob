@@ -214,7 +214,7 @@ MBJ-612,Supporter shout-outs,Engagement & AI,Phase 5 — Engagement,Should,M,To 
 - Paid messages are highlighted and pinned in chat (MBJ-207); the supporter gets a thank-you notification when JimBob reads it
 - Supporter badge and a Supporters wall with top supporters this month (opt-in names)
 - Shout-outs appear in the stream notes with the time JimBob answered (MBJ-605)",MBJ-207
-MBJ-613,"Ratings, moment reactions, and hotspots",Engagement & AI,Phase 5 — Engagement,Should,L,To do,"As a viewer, I want to rate a stream and mark the parts that are funny, interesting, or boring, and see what everyone else thought minute by minute.","- Thumbs up / down on each video (counts shown; one vote per person, changeable)
+MBJ-613,"Ratings, moment reactions, and hotspots",Engagement & AI,Phase 5 — Engagement,Should,L,In progress,"As a viewer, I want to rate a stream and mark the parts that are funny, interesting, or boring, and see what everyone else thought minute by minute.","- Thumbs up / down on each video (counts shown; one vote per person, changeable)
 - Moment reactions while watching: one tap (Funny, Interesting, Fire, Boring, Cringe) stamps the current moment; press-and-drag on the progress bar marks a stretch (e.g. a boring call-in from 2:04:00 to 2:19:30) with a reaction
 - Hotspot strip over the progress bar: a minute-by-minute heatmap of reactions, colored by the strongest reaction, combined with chat activity; tapping a spike jumps there
 - Optional ""skip marked-boring stretches"" and ""play the best parts"" (highest-rated minutes) modes

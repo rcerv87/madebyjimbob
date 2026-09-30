@@ -38,6 +38,12 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - The whole site is `noindex` (search engines skip it) until `ALLOW_INDEXING=true` is set on the real domain;
   link previews still work. `robots.txt` keeps Studio and the API out of search. Set `SITE_URL` once the domain
   is live so previews use it.
+- **Likes**: thumbs up (with count) and thumbs down on every video; tap again to clear. Dislikes show only in
+  Studio's content table (like YouTube).
+- **Faster first load**: each page's code loads when it's opened; the home page downloads ~190 KB of script
+  (~63 KB compressed) instead of 836 KB (~272 KB); the video player library (~600 KB) loads only on video pages.
+  Hashed script/style files are cached for a year; icons and brand art for a day; the service worker is always
+  re-checked.
 - **Share** button on videos: copy the link, copy it at the current moment (`?t=`), or the phone's share sheet.
 
 ### JimBob's brand, Shop, and Art
