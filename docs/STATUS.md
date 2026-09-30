@@ -132,13 +132,17 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    (MBJ-701); find members, ban/time out, highlight regulars and guests, roles, staff notes (MBJ-705, with the
    chat moderation tools in MBJ-204). Can start on today's admin list before real roles (MBJ-102).
 4. **Posts** — text, images, polls with threaded comments (MBJ-804).
-5. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
+5. **AI stream notes** — a facilitator-style notes page per stream: summary, sections, who said what, key
+   exchanges, super chats and Bob Chats with answers, questions and promises (MBJ-605); speaker labels (MBJ-608);
+   tags for topics and people with browse pages (MBJ-609); search inside streams (MBJ-610). Transcripts for all
+   4 videos are already stored.
+6. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
    **payments API** (MBJ-104, 109), pricing page (MBJ-105), **founding members** (MBJ-811), **Store** (MBJ-807).
-6. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
-7. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
-8. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
-9. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
-10. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
+7. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
+8. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
+9. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
+10. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
+11. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
 
 ## Reference
 

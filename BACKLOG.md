@@ -114,9 +114,12 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-602 | XP, levels, badges | Engagement & AI | 5 | Should | M | MBJ-601 |
 | MBJ-603 | Leaderboards | Engagement & AI | 5 | Could | S | MBJ-602 |
 | MBJ-604 | Captions | Engagement & AI | 5 | Should | M | — |
-| MBJ-605 | AI recaps and chapters | Engagement & AI | 5 | Should | M | MBJ-604 |
+| MBJ-605 | AI stream notes (the facilitator) | Engagement & AI | 5 | Should | L | MBJ-604, MBJ-608 |
 | MBJ-606 | Call-ins | Engagement & AI | 5 | Could | XL | MBJ-104, MBJ-301 |
 | MBJ-607 | Polls and predictions | Engagement & AI | 5 | Could | L | MBJ-602 |
+| MBJ-608 | Who's talking (speaker labels) | Engagement & AI | 5 | Should | M | MBJ-604 |
+| MBJ-609 | Tags: sections, topics, people | Engagement & AI | 5 | Should | M | MBJ-605 |
+| MBJ-610 | Search inside streams | Engagement & AI | 5 | Should | M | MBJ-604 |
 | MBJ-702 | Chat analytics | Studio & analytics | 5 | Should | M | MBJ-102 |
 
 ## Epic 0xx — Foundation
@@ -808,16 +811,55 @@ Acceptance criteria:
 - [ ] Selectable in web and mobile players
 - [ ] Transcript stored
 
-### MBJ-605 — AI recaps and chapters
+### MBJ-605 — AI stream notes (the facilitator)
+
+**Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-604, MBJ-608
+
+As a viewer or JimBob, I want notes for every stream like an AI meeting facilitator writes: what happened, who said what, and when.
+
+Acceptance criteria:
+- [ ] After a stream is archived, a job reads the transcript, speaker labels (MBJ-608), chat, super chats and Bob Chats, and writes the notes
+- [ ] Summary at the top; sections/chapters with titles and times that seek the player
+- [ ] Key exchanges between speakers: each side's main points in a debate, with timestamps
+- [ ] Money moments: every super chat, Bob Chat, and tip with who sent it, what they said, and whether/when JimBob answered it
+- [ ] Questions from chat and guests, answered or not; follow-ups and promises made on stream ("I'll look into that next week")
+- [ ] Chat pulse: busiest moments and what set them off
+- [ ] JimBob can edit, hide, or regenerate before publishing; notes are members-only or public per video
+- [ ] Cost per stream estimated and shown before running on the whole library (Claude API for the notes)
+
+### MBJ-608 — Who's talking (speaker labels)
 
 **Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-604
 
-As a viewer, I want a quick summary and jump points.
+As a viewer, I want the transcript to show who said each line.
 
 Acceptance criteria:
-- [ ] After archive, a job generates recap notes and chapters from transcript + chat
-- [ ] Shown on the watch page; chapters seek the player
-- [ ] JimBob can edit before publishing
+- [ ] Transcripts with speaker turns (diarization): Whisper + a diarization model, or a transcription service with speaker labels (decide by cost and accuracy)
+- [ ] JimBob names each speaker once per stream in Studio (JimBob, guest names, callers); recurring guests are remembered
+- [ ] Transcript panel on the watch page follows playback, shows speaker names, and each line seeks the video
+
+### MBJ-609 — Tags: sections, topics, people
+
+**Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-605
+
+As a viewer, I want to find every moment about a topic or with a person across all streams.
+
+Acceptance criteria:
+- [ ] Tags on moments and sections: topics (e.g. evolution, Orthodoxy), people who spoke, people mentioned, and chat users involved
+- [ ] AI suggests tags from the notes (MBJ-605); JimBob and mods accept, edit, or add their own in Studio
+- [ ] Topic and person pages: every tagged moment across streams, playable from that point
+- [ ] Tags feed search (MBJ-610) and playlists (auto playlist per topic or guest)
+
+### MBJ-610 — Search inside streams
+
+**Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-604
+
+As a viewer, I want to search what was said and jump straight to it.
+
+Acceptance criteria:
+- [ ] Search across transcripts, chat, comments, notes, and tags; results show the line with its speaker and time
+- [ ] Clicking a result opens the video at that moment (?t=)
+- [ ] Postgres full-text search to start; filters by stream, speaker, date, and source (said on stream vs chat)
 
 ### MBJ-606 — Call-ins
 

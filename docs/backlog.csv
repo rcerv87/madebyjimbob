@@ -188,9 +188,24 @@ MBJ-603,Leaderboards,Engagement & AI,Phase 5 — Engagement,Could,S,To do,"As a 
 MBJ-604,Captions,Engagement & AI,Phase 5 — Engagement,Should,M,In progress,"As a viewer, I want captions on stored videos.","- Captions generated for each VOD (Stream captions or Whisper)
 - Selectable in web and mobile players
 - Transcript stored",
-MBJ-605,AI recaps and chapters,Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a viewer, I want a quick summary and jump points.","- After archive, a job generates recap notes and chapters from transcript + chat
-- Shown on the watch page; chapters seek the player
-- JimBob can edit before publishing",MBJ-604
+MBJ-605,AI stream notes (the facilitator),Engagement & AI,Phase 5 — Engagement,Should,L,To do,"As a viewer or JimBob, I want notes for every stream like an AI meeting facilitator writes: what happened, who said what, and when.","- After a stream is archived, a job reads the transcript, speaker labels (MBJ-608), chat, super chats and Bob Chats, and writes the notes
+- Summary at the top; sections/chapters with titles and times that seek the player
+- Key exchanges between speakers: each side's main points in a debate, with timestamps
+- Money moments: every super chat, Bob Chat, and tip with who sent it, what they said, and whether/when JimBob answered it
+- Questions from chat and guests, answered or not; follow-ups and promises made on stream (""I'll look into that next week"")
+- Chat pulse: busiest moments and what set them off
+- JimBob can edit, hide, or regenerate before publishing; notes are members-only or public per video
+- Cost per stream estimated and shown before running on the whole library (Claude API for the notes)","MBJ-604, MBJ-608"
+MBJ-608,Who's talking (speaker labels),Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a viewer, I want the transcript to show who said each line.","- Transcripts with speaker turns (diarization): Whisper + a diarization model, or a transcription service with speaker labels (decide by cost and accuracy)
+- JimBob names each speaker once per stream in Studio (JimBob, guest names, callers); recurring guests are remembered
+- Transcript panel on the watch page follows playback, shows speaker names, and each line seeks the video",MBJ-604
+MBJ-609,"Tags: sections, topics, people",Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a viewer, I want to find every moment about a topic or with a person across all streams.","- Tags on moments and sections: topics (e.g. evolution, Orthodoxy), people who spoke, people mentioned, and chat users involved
+- AI suggests tags from the notes (MBJ-605); JimBob and mods accept, edit, or add their own in Studio
+- Topic and person pages: every tagged moment across streams, playable from that point
+- Tags feed search (MBJ-610) and playlists (auto playlist per topic or guest)",MBJ-605
+MBJ-610,Search inside streams,Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a viewer, I want to search what was said and jump straight to it.","- Search across transcripts, chat, comments, notes, and tags; results show the line with its speaker and time
+- Clicking a result opens the video at that moment (?t=)
+- Postgres full-text search to start; filters by stream, speaker, date, and source (said on stream vs chat)",MBJ-604
 MBJ-606,Call-ins,Engagement & AI,Phase 5 — Engagement,Could,XL,To do,"As a Premium member, I want to call in to the live show.","- Premium users request to call; LiveKit green room
 - Producer screens and approves
 - Approved caller appears in OBS via browser source","MBJ-104, MBJ-301"
