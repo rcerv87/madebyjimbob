@@ -64,6 +64,13 @@ describe('ChatPanel', () => {
     expect(ws.sent[0]).toEqual({ type: 'join', videoId: '7', token: 'tok123' });
   });
 
+  test('highlights whole YouTube handles but not emails', async () => {
+    mockApi({ '/videos/7/chat': { messages: [msg(1, 0, '@Bro-tl7qq TOS, mail me@site.com')] } });
+    renderPanel();
+    expect((await screen.findByText('@Bro-tl7qq')).className).toBe('mention');
+    expect(document.querySelectorAll('.mention')).toHaveLength(1);
+  });
+
   test('clicking a message timestamp seeks the player there', async () => {
     mockApi({ '/videos/7/chat': { messages: [msg(1, 65_000, 'at 1:05')] } });
     const onSeek = vi.fn();

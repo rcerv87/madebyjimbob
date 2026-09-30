@@ -3,6 +3,8 @@ import { api, formatTime, getToken } from '../api.js';
 
 const WINDOW_MS = 120_000;
 const VISIBLE = 150;
+// Same rule as MENTION_RE in server/src/moderation.js, with the whole @name captured for split().
+const MENTION_SPLIT = /((?<![A-Za-z0-9_])@[A-Za-z0-9_][A-Za-z0-9_.-]{1,30}[A-Za-z0-9_])/g;
 
 export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, session }) {
   const [byId, setById] = useState(() => new Map());
@@ -169,7 +171,7 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, session 
 
 function ChatMessage({ m, me, onSeek }) {
   const mentionsMe = me && m.mentions?.includes(me.toLowerCase());
-  const parts = m.body.split(/(@[A-Za-z0-9_]{3,32})/g);
+  const parts = m.body.split(MENTION_SPLIT);
 
   const body = parts.map((p, i) =>
     p.startsWith('@') ? (

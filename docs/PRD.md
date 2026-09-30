@@ -82,6 +82,9 @@ interruption.
 ## Non-functional requirements
 
 - **Scale:** 1,000 concurrent viewers and ~100 chat messages/minute at peak without degradation; design for 10×.
+  Measured from two chat replays (Aug–Sep 2026, 31 and 150 min): 26–28 messages/min on average, busiest minute 78,
+  bursts of ~5 messages/second, 150–390 chatters per stream, 11–57 super chats per stream in mixed currencies
+  (USD, GBP, CAD, EUR). Streams typically run 2–6 hours.
 - **Latency:** native chat delivered to viewers in under 1 second.
 - **Ownership:** user accounts, email list, chat history, and payment relationships stored in systems JimBob controls. Avoid services that can unilaterally lock him out of his own data.
 - **Resilience:** switching the live source (YouTube → Rumble → owned) is a configuration change, not a rebuild.
