@@ -57,7 +57,6 @@ export default function Watch({ session }) {
           <p className="desc-text">{video.description || 'No description.'}</p>
           {!expanded && video.description?.length > 200 && <span className="more">Show more</span>}
         </div>
-        {!video.locked && <Comments videoId={video.id} session={session} />}
       </div>
       {!video.locked && (
         <ChatPanel
@@ -69,6 +68,11 @@ export default function Watch({ session }) {
           }}
           session={session}
         />
+      )}
+      {!video.locked && (
+        <div className="watch-comments">
+          <Comments videoId={video.id} session={session} />
+        </div>
       )}
     </div>
   );
