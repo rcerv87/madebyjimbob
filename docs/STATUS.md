@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 119 automated tests (79 server, 40 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 77 stories; 15 done, 2 in progress |
+| Quality | 163 automated tests (103 server, 60 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 100 stories; 17 done, 7 in progress |
 
 ## Waiting on Ruben
 
@@ -25,7 +25,22 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 5. **Domain:** choose where the platform lives: madebyjimbob.com with the store at shop.madebyjimbob.com
    (recommended), or the platform on watch.madebyjimbob.com (`docs/adr/011-domain-and-store.md`).
 6. **JimBob's OK** on using his avatar, banner art, and store products in the platform before the link goes wide.
-7. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
+7. **Turn on account email** (MBJ-114, ADR-012; free until launch, then $20/month). About 15 minutes plus DNS time:
+   1. Sign up at https://resend.com with an address you'll keep (ideally one JimBob can also reach).
+   2. Resend → **Domains** → **Add domain** → `madebyjimbob.com`. It lists 3–4 DNS records.
+   3. Open the place madebyjimbob.com's DNS is managed (Shopify admin → Settings → Domains → madebyjimbob.com →
+      DNS settings if the domain was bought through Shopify; otherwise the registrar). Add each record exactly
+      as Resend shows it. If there is no `_dmarc` TXT record yet, also add `_dmarc` → `v=DMARC1; p=none;`.
+      Don't touch the existing records the store uses.
+   4. Resend → **Verify DNS records** (minutes to a few hours).
+   5. Resend → **API Keys** → **Create API key** → permission **Sending access**, domain `madebyjimbob.com` → copy it.
+   6. Resend → **Webhooks** → **Add webhook** → URL `https://madebyjimbob.onrender.com/api/webhooks/resend`,
+      events **email.bounced** and **email.complained** → save, then copy its **signing secret** (`whsec_…`).
+   7. Render → `madebyjimbob` → **Environment** → add `RESEND_API_KEY` (step 5), `EMAIL_FROM` =
+      `MADEbyJIMBOB <hello@madebyjimbob.com>`, `EMAIL_REPLY_TO` = the inbox replies should reach,
+      `RESEND_WEBHOOK_SECRET` (step 6). Save; Render redeploys.
+   8. Studio → **Account email** → pick a template → **Send test** to your own address. Check it arrives (not in spam).
+8. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
    Google Takeout export of the channel (guide: the "JimBob's YouTube Backup" page); tier prices and perks;
    moderators; brand assets and domain.
 
@@ -103,6 +118,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ### Accounts, access, Studio
 - Username + password sign-in (scrypt; lockout after 10 wrong tries). No email or reset yet.
+- Account email ready (MBJ-114): Resend sender, 6 branded templates (verify, reset, email changed, new sign-in,
+  deletion requested, deleted), a log of every send, bounce/spam webhook that stops mail to bad addresses, and
+  Studio → Account email to preview each one and send a test. Off until the Resend keys are on Render.
 - Tiers enforced on the server for video, chat, comments, and the live WebSocket. Test tier picker only
   when `ALLOW_TEST_TIERS=true` (off on Render).
 - Studio (admins in `ADMIN_USERNAMES`): totals, per-video stats, top chatters, set a video's tier.
@@ -132,6 +150,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | 2026-09-29 | Backlog adds sign-up/onboarding, payments API, store, art, social links, navigation bar, founding members |
 | 2026-09-30 | Keep the Shopify store for products and checkout; the platform shows it (ADR-011). Art = his illustrations and comics from the store's art collections |
 | 2026-09-30 | Platform adopts his store's brand (teal, Jost wordmark, avatar, banner art) |
+| 2026-09-30 | Account email through Resend from JimBob's domain; $0 now, $20/month from launch; templates and do-not-mail list stay in our database (ADR-012) |
+| 2026-09-30 | Registration and profiles split into MBJ-106, 108, 113–119; 13+ checkbox, profiles public but not in search, deleted members' messages stay as "Deleted user" |
 
 ## Known limits (fine for a demo, not for launch)
 
@@ -213,6 +233,7 @@ never written here: their values live only in `.env` (git-ignored) or Render's E
 | Render | Blueprint from `render.yaml`: web service `madebyjimbob` (Starter) + Postgres | Env: `ADMIN_USERNAMES=jimbob`, `VAPID_PUBLIC_KEY`/`VAPID_SUBJECT` from render.yaml; `VAPID_PRIVATE_KEY` must be added by hand |
 | Cloudflare Stream | Starter bundle ($5/mo) | Customer code `xw9exz2muwhw7zsm` (public); `CF_ACCOUNT_ID`, `CF_API_TOKEN` (Stream: Edit) in `.env`. English auto-captions generated for all 4 videos |
 | Shopify | JimBob's store, madebyjimbob.com | Read via public product JSON (`SHOP_URL`, default https://madebyjimbob.com); no Shopify credentials yet |
+| Resend | Account email (ADR-012) | Not set up yet (Waiting on Ruben #7). Keys go in Render env: `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `RESEND_WEBHOOK_SECRET` |
 | Web Push | VAPID key pair | Generated 2026-09-29; both keys in local `.env` |
 
 ### Content on the site

@@ -402,7 +402,7 @@ Acceptance criteria:
 
 ### MBJ-114 — Sending email (ADR)
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S
 
 As JimBob, I want account emails to arrive from my own domain and not land in spam.
 

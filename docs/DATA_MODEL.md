@@ -137,6 +137,28 @@ Comments are separate from `chat_messages`: they aren't tied to a playback posit
 
 Filled by `npm run captions:fetch`. Auto captions can invent text during silence or music; keep the original and regenerate or correct rather than editing `text` alone.
 
+### emails
+Every account email the site tries to send (MBJ-114). Addresses are personal data: account deletion (MBJ-118) erases a member's rows.
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| user_id | bigint → users, null | set null when the user is deleted |
+| to_email | text | lower case |
+| template | text | `verify_email`, `reset_password`, `email_changed`, `new_sign_in`, `account_deletion_requested`, `account_deleted` |
+| status | text | `sent \| failed \| off \| suppressed \| bounced \| complained` (`off` = no provider configured) |
+| provider_id | text unique | Resend's email id; webhooks find the row by it |
+| error | text | provider error or bounce message |
+| created_at | timestamptz | |
+
+### email_suppressions
+Addresses that never get mail again: permanent bounces and spam complaints from the webhook.
+| column | type | notes |
+|---|---|---|
+| email | text PK | lower case |
+| reason | text | `bounce \| complaint` |
+| detail | text | bounce message |
+| created_at | timestamptz | |
+
 ## Planned
 
 | Change | Story |

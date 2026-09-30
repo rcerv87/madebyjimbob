@@ -570,12 +570,13 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress"}
+          "214": "Done", "604": "In progress", "114": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.
 # 815: per-page titles/previews, real 404s, noindex, bundle splitting and caching shipped; crawlable content, JSON-LD, sitemap remain.
 # 604: Stream auto-captions + transcripts table + captions:fetch done; mobile player and Whisper (for R2) remain.
+# 114: sending, templates, send log, bounce webhook, and Studio preview/test done; DNS on JimBob's domain + Render keys remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():
