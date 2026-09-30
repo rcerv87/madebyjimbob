@@ -19,6 +19,15 @@ import {
   pushEnabled,
   vapidPublicKey,
 } from './notify.js';
+import {
+  emailEnabled,
+  emailFrom,
+  sendEmail,
+  normalizeEmail,
+  verifyWebhook,
+  recordEmailEvent,
+} from './email.js';
+import { TEMPLATES, maskEmail } from './emailTemplates.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TIER_RANK = { free: 0, plus: 1, premium: 2 };
@@ -38,7 +47,15 @@ const app = express();
 // Behind Render's proxy: trust X-Forwarded-Proto so page URLs (link previews, canonical) use https.
 app.set('trust proxy', 1);
 app.use(httpLogger);
-app.use(express.json({ limit: '50kb' }));
+app.use(
+  express.json({
+    limit: '50kb',
+    // Webhook signatures are over the exact bytes received.
+    verify: (req, _res, buf) => {
+      if (req.url.startsWith('/api/webhooks/')) req.rawBody = buf;
+    },
+  }),
+);
 
 // ---------- helpers ----------
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -835,6 +852,17 @@ app.delete(
   }),
 );
 
+// ---------- email provider webhooks ----------
+// Resend reports bounces and spam complaints here; those addresses never get mail again.
+app.post(
+  '/api/webhooks/resend',
+  wrap(async (req, res) => {
+    if (!verifyWebhook(req.rawBody, req.headers)) return res.status(401).json({ error: 'Bad signature.' });
+    await recordEmailEvent(req.body);
+    res.json({ ok: true });
+  }),
+);
+
 // ---------- studio dashboard (admins only) ----------
 app.use('/api/studio', requireAdmin);
 
@@ -905,6 +933,56 @@ app.patch(
     if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
     await pool.query('UPDATE videos SET min_tier = $1 WHERE id = $2', [minTier, req.params.id]);
     res.json({ ok: true });
+  }),
+);
+
+// Studio email: whether sending is on, the templates (preview and send a test), and recent sends.
+// Addresses are masked; mods don't need members' full emails.
+app.get(
+  '/api/studio/email',
+  wrap(async (_req, res) => {
+    const [recent, suppressed] = await Promise.all([
+      pool.query(
+        'SELECT id, to_email, template, status, error, created_at FROM emails ORDER BY created_at DESC LIMIT 20',
+      ),
+      pool.query('SELECT count(*) FROM email_suppressions'),
+    ]);
+    res.json({
+      enabled: emailEnabled,
+      from: emailFrom,
+      templates: Object.entries(TEMPLATES).map(([id, t]) => ({ id, label: t.label })),
+      suppressed: Number(suppressed.rows[0].count),
+      recent: recent.rows.map((r) => ({
+        id: r.id,
+        to: maskEmail(r.to_email),
+        template: r.template,
+        status: r.status,
+        error: r.error,
+        createdAt: r.created_at,
+      })),
+    });
+  }),
+);
+
+app.get(
+  '/api/studio/email/preview/:template',
+  wrap(async (req, res) => {
+    const tpl = Object.hasOwn(TEMPLATES, req.params.template) && TEMPLATES[req.params.template];
+    if (!tpl) return res.status(404).json({ error: 'No email template with that name.' });
+    res.json(tpl.render(tpl.sample()));
+  }),
+);
+
+app.post(
+  '/api/studio/email/test',
+  wrap(async (req, res) => {
+    const { template } = req.body;
+    const tpl = Object.hasOwn(TEMPLATES, String(template)) && TEMPLATES[template];
+    if (!tpl) return res.status(400).json({ error: 'Pick one of the email templates.' });
+    const to = normalizeEmail(req.body.to);
+    if (!to) return res.status(400).json({ error: 'Enter an email address like name@example.com.' });
+    const { status } = await sendEmail({ to, template, data: tpl.sample(), userId: req.user.id });
+    res.json({ status });
   }),
 );
 

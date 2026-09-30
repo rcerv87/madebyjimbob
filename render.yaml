@@ -36,6 +36,15 @@ services:
         value: https://madebyjimbob.onrender.com
       - key: VAPID_PRIVATE_KEY
         sync: false
+      # Account email (ADR-012). Set all four by hand in Render → madebyjimbob → Environment.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_REPLY_TO
+        sync: false
+      - key: RESEND_WEBHOOK_SECRET
+        sync: false
 
 databases:
   - name: madebyjimbob-db

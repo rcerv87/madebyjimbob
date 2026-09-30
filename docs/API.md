@@ -37,6 +37,10 @@ Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see 
 | PATCH | `/studio/playlists/:id` | admin | `{ title?, description? }`; 409 for YouTube playlists |
 | DELETE | `/studio/playlists/:id` | admin | Native playlists only |
 | PUT | `/studio/playlists/:id/items` | admin | `{ videoIds }` replaces the playlist's videos in that order |
+| GET | `/studio/email` | admin | `{ enabled, from, templates: [{ id, label }], suppressed, recent }`; `recent` is the last 20 sends `{ id, to (masked), template, status, error, createdAt }` |
+| GET | `/studio/email/preview/:template` | admin | `{ subject, html, text }` rendered with sample data |
+| POST | `/studio/email/test` | admin | `{ to, template }` → `{ status: sent \| off \| suppressed \| failed }`: sends that template with sample data |
+| POST | `/webhooks/resend` | Resend signature | Bounce and spam-complaint events (Svix-signed: `svix-id`, `svix-timestamp`, `svix-signature`, checked against `RESEND_WEBHOOK_SECRET`, 5-minute window). Permanent bounces and complaints add the address to `email_suppressions`. 401 on a bad signature |
 | GET | `/health` | — | Liveness |
 
 ### Comment shape

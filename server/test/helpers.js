@@ -26,6 +26,10 @@ process.env.LOG_LEVEL = process.env.LOG_LEVEL_TEST || 'silent';
 // Push off in tests (no real pushes), whatever the local .env has.
 process.env.VAPID_PUBLIC_KEY = '';
 process.env.VAPID_PRIVATE_KEY = '';
+// Email off in tests (never real mail); email.test.js records sends with setTransport().
+process.env.RESEND_API_KEY = '';
+process.env.EMAIL_FROM = '';
+process.env.RESEND_WEBHOOK_SECRET = `whsec_${Buffer.from('test-webhook-secret').toString('base64')}`;
 
 const { pool, migrate } = await import('../src/db.js');
 const { server } = await import('../src/app.js');

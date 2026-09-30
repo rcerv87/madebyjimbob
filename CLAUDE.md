@@ -34,7 +34,7 @@ Rumble, and native messages, tiered memberships (Free / Plus / Premium), and eng
   Serves the API, WebSockets, and the built web app.
 - `web/` React 18 + Vite + react-router + hls.js. Installable PWA (`web/public/manifest.webmanifest`, `sw.js`).
 - Store apps: not started. Decide Capacitor (wrap this web app) vs Expo (ADR-008) before MBJ-401.
-- Postgres on Render. Video on Cloudflare Stream (R2 proposed, ADR-010). Shop and Art read JimBob's Shopify
+- Account email via Resend (ADR-012). Postgres on Render. Video on Cloudflare Stream (R2 proposed, ADR-010). Shop and Art read JimBob's Shopify
   store (ADR-011). Deploy via `render.yaml`.
 
 ## Commands
@@ -81,6 +81,9 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - Chat `source` is one of `youtube | rumble | native`. New sources get a new enum value, not a new table.
 - Tier checks happen on the server. The client only hides UI.
 - Notifications: call `notifyFor()` from `server/src/notify.js` after saving anything that can mention or reply to someone; it stores, sends over WebSocket, and pushes.
+- Email: only through `sendEmail()` in `server/src/email.js` with a template from `emailTemplates.js` (never call
+  the provider directly). It skips suppressed addresses and logs every send. Tests blank `RESEND_API_KEY` and
+  record sends with `setTransport()`.
 - The service worker (`web/public/sw.js`) must never cache `/api`, `/ws`, or video. Bump `CACHE` when changing what it caches.
 - Status, decisions, and next steps live in `docs/STATUS.md`; update it when finishing a story.
 - Logging: use `logger` / `req.log` from `server/src/logger.js`, never `console`. Credentials are redacted by path (`REDACT_PATHS`); add new sensitive fields there.

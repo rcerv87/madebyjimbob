@@ -83,7 +83,7 @@ MBJ-113,Password reset and email change,Accounts & memberships,Phase 1 — VOD p
 - Change email: confirm with the password, verify the new address, and notify the old one with a link to undo within 7 days
 - Change password from Account settings (current password required)
 - Rate limits on reset and change requests; every change is logged for the member's security history","MBJ-101, MBJ-114"
-MBJ-114,Sending email (ADR),Accounts & memberships,Phase 1 — VOD platform,Must,S,To do,"As JimBob, I want account emails to arrive from my own domain and not land in spam.","- Pick a transactional email provider and record it as an ADR with the monthly cost at 1k, 10k, and 50k members (compare Resend, Postmark, Amazon SES)
+MBJ-114,Sending email (ADR),Accounts & memberships,Phase 1 — VOD platform,Must,S,In progress,"As JimBob, I want account emails to arrive from my own domain and not land in spam.","- Pick a transactional email provider and record it as an ADR with the monthly cost at 1k, 10k, and 50k members (compare Resend, Postmark, Amazon SES)
 - Sender on JimBob's domain (e.g. hello@) with SPF, DKIM, and DMARC set up
 - Plain branded templates: verify email, reset password, email changed, new sign-in, account deleted
 - Bounces and complaints recorded; bounced addresses stop getting mail
