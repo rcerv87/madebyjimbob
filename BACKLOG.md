@@ -296,16 +296,16 @@ Acceptance criteria:
 
 ### MBJ-106 — Account settings
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101
 
 As a member, I want one place to manage my profile, sign-in, notifications, membership, and privacy.
 
 Acceptance criteria:
-- [ ] `/account` (signed in only) with sections: Profile, Sign-in and security, Notifications, Membership, Privacy and data
-- [ ] Profile links to the editor (MBJ-117); Sign-in and security holds password, email, devices, and sign-in methods (MBJ-113, MBJ-110)
-- [ ] Notifications: per-type on/off for in-site, push, and email (replaces the scattered toggles)
-- [ ] Membership shows tier, renewal date, and manage/cancel once MBJ-104 lands; before that it shows Free and what paid tiers include
-- [ ] Account menu in the top bar links here; works at phone width
+- [x] `/account` (signed in only) with sections: Profile, Sign-in and security, Notifications, Membership, Privacy and data
+- [x] Profile links to the editor (MBJ-117); Sign-in and security holds password, email, devices, and sign-in methods (MBJ-113, MBJ-110)
+- [x] Notifications: per-type on/off for in-site, push, and email (replaces the scattered toggles)
+- [x] Membership shows tier, renewal date, and manage/cancel once MBJ-104 lands; before that it shows Free and what paid tiers include
+- [x] Account menu in the top bar links here; works at phone width
 
 ### MBJ-107 — Owned email list
 
@@ -349,7 +349,7 @@ Acceptance criteria:
 
 ### MBJ-110 — Easy sign-in and staying signed in
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101
 
 As a viewer, I want to sign in with one tap and stay signed in on my devices.
 
@@ -389,16 +389,16 @@ Acceptance criteria:
 
 ### MBJ-113 — Password reset and email change
 
-**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
 
 As a member, I want to get back into my account if I forget my password, and keep my email up to date.
 
 Acceptance criteria:
-- [ ] "Forgot password?" sends a reset link (one use, expires in 1 h); the response never reveals whether the email has an account
-- [ ] Resetting or changing the password signs out every other device
-- [ ] Change email: confirm with the password, verify the new address, and notify the old one with a link to undo within 7 days
-- [ ] Change password from Account settings (current password required)
-- [ ] Rate limits on reset and change requests; every change is logged for the member's security history
+- [x] "Forgot password?" sends a reset link (one use, expires in 1 h); the response never reveals whether the email has an account
+- [x] Resetting or changing the password signs out every other device
+- [x] Change email: confirm with the password, verify the new address, and notify the old one with a link to undo within 7 days
+- [x] Change password from Account settings (current password required)
+- [x] Rate limits on reset and change requests; every change is logged for the member's security history
 
 ### MBJ-114 — Sending email (ADR)
 

@@ -10,6 +10,7 @@ export default function AccountNotice({ user, onUserChanged }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [verified, setVerified] = useState(false);
+  const [undo, setUndo] = useState(null); // 'restored' | 'undo-expired', from the "This wasn't me" link
   const [dismissed, setDismissed] = useState(() => {
     try {
       return sessionStorage.getItem(DISMISSED) === '1';
@@ -22,12 +23,19 @@ export default function AccountNotice({ user, onUserChanged }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // The verification link signs you in and lands on /?verified=1.
+  // The verification link signs you in and lands on /?verified=1; the undo link lands on /?email=….
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('verified') !== '1') return;
-    setVerified(true);
-    onUserChanged();
+    const email = location.pathname === '/account' ? null : params.get('email');
+    if (params.get('verified') !== '1' && email !== 'restored' && email !== 'undo-expired') return;
+    if (email) {
+      setUndo(email);
+      onUserChanged(null); // undo signs out every device, this one too
+      params.delete('email');
+    } else {
+      setVerified(true);
+      onUserChanged();
+    }
     params.delete('verified');
     const rest = params.toString();
     navigate({ pathname: location.pathname, search: rest ? `?${rest}` : '' }, { replace: true });
@@ -82,6 +90,20 @@ export default function AccountNotice({ user, onUserChanged }) {
     }
   };
 
+  if (undo) {
+    return (
+      <div className={`account-notice ${undo === 'restored' ? 'ok' : ''}`} role="status">
+        <span>
+          {undo === 'restored'
+            ? 'Your email was changed back. We signed you out everywhere and emailed you a link to choose a new password.'
+            : 'That link has expired or was already used.'}
+        </span>
+        <button className="text-btn" onClick={() => setUndo(null)}>
+          Close
+        </button>
+      </div>
+    );
+  }
   if (verified) {
     return (
       <div className="account-notice ok" role="status">

@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 191 automated tests (117 server, 74 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 100 stories; 18 done, 9 in progress |
+| Quality | 206 automated tests (124 server, 82 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 100 stories; 20 done, 9 in progress |
 
 ## Waiting on Ruben
 
@@ -128,6 +128,11 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   username or email; stay signed in 90 days (httpOnly cookie); confirm-your-email link and banner with resend;
   forgot password → emailed one-hour link → /reset-password (signs out other devices). Tiers can't be chosen.
   Sign-in endpoints are rate-limited. Google/Apple, magic links, and passkeys are next (MBJ-110).
+- **Account settings** (/account, from the avatar menu; MBJ-106, 113): change password (signs out other
+  devices), change email (password, confirm the new address, the old one gets a 7-day "this wasn't me" link that
+  restores it, signs out everywhere, and sends a reset link), signed-in devices with sign out one or all, recent
+  activity (sign-ins, password and email changes), notification switches per type for the bell and push, and
+  the membership perks table.
 - Phones: the top bar now fits a 360px screen (Sign in used to sit off the edge and stretch every page), and
   tapping your avatar opens a menu with Sign out (phones had no way to sign out).
 - Account email ready (MBJ-114): Resend sender, 6 branded templates (verify, reset, email changed, new sign-in,

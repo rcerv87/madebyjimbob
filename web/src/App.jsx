@@ -18,6 +18,7 @@ const Posts = lazy(() => import('./pages/Posts.jsx'));
 const Shop = lazy(() => import('./pages/Shop.jsx'));
 const Art = lazy(() => import('./pages/Art.jsx'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
+const Account = lazy(() => import('./pages/Account.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 import { useKeepPlaying } from './keepPlaying.js';
@@ -81,6 +82,7 @@ export default function App() {
             <Route path="/watch/:id" element={null} />
             <Route path="/studio" element={<Studio user={user} />} />
             <Route path="/reset-password" element={<ResetPassword session={session} />} />
+            <Route path="/account" element={<Account session={session} onUserChanged={refreshUser} />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

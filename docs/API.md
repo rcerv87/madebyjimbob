@@ -18,7 +18,16 @@ they get `isAdmin: true` and see every tier.
 | POST | `/auth/send-verification-email` | — | `{ email, callbackURL? }` resends the link |
 | POST | `/auth/request-password-reset` | — | `{ email, redirectTo: '/reset-password' }`; always 200 (never reveals whether the email has an account). The emailed link redirects to `/reset-password?token=` (or `?error=INVALID_TOKEN`) |
 | POST | `/auth/reset-password` | — | `{ newPassword, token }`; one use, 1 hour; signs out every other session |
-| POST | `/auth/change-email` | session | `{ newEmail, callbackURL? }`. Unverified accounts (and POC accounts without one) change right away and get a verification link |
+| POST | `/auth/change-email` | session | `{ newEmail, callbackURL? }`, only for accounts without a confirmed email (they change right away and get a verification link); confirmed accounts get 403 `USE_ACCOUNT_SETTINGS` and use `/account/email` |
+| POST | `/auth/change-password` | session | `{ currentPassword, newPassword, revokeOtherSessions: true }`; logged in the security history. 400 `INVALID_PASSWORD` |
+| GET | `/auth/list-sessions` | session | This member's signed-in devices `[{ id, token, userAgent, ipAddress, createdAt, … }]` |
+| POST | `/auth/revoke-session`, `/auth/revoke-other-sessions` | session | `{ token }` signs out one device; the other signs out every device but this one |
+| GET | `/account/notifications` | session | `{ prefs: { mention: { site, push }, reply: { site, push } } }` (all on until turned off) |
+| PUT | `/account/notifications` | session | `{ prefs }` with any subset of those booleans → the full `{ prefs }`. With `site` off the notification skips the bell (push still works); with both off none is made |
+| GET | `/account/security` | session | `{ events }`: last 20 `{ id, type, ip, userAgent, detail, createdAt }`; types `account_created`, `signed_in`, `password_changed`, `password_reset`, `email_change_requested`, `email_changed`, `email_change_undone` |
+| POST | `/account/email` | session | `{ newEmail, password }` → `{ ok, sentTo }`. Emails a 24-hour confirmation link to the new address (none if it already has an account; same answer). 400 wrong password, 429 over 5 an hour |
+| GET | `/account/email/confirm?token=` | — | The link in that email: switches the email (confirmed), emails the old address a 7-day undo link, redirects to `/account?email=changed` (or `expired` / `taken`) |
+| GET | `/account/email/undo?token=` | — | "This wasn't me": restores the old email, signs out every device, emails a password-reset link, redirects to `/?email=restored` (or `undo-expired`) |
 | GET | `/me` | optional | `{ user | null }`; user is `{ id, username, displayName, tier, xp, isAdmin, email (null if none yet), emailVerified, confirmEmail }` (`confirmEmail`: unverified and the server can send email) |
 | — | other `/auth/*` | | Better Auth's standard endpoints (`get-session`, `list-sessions`, `revoke-session`, `change-password`, `is-username-available`, …); rate-limited per IP (sign-in 10/min, sign-up 5 per 10 min, reset and verification emails 3 per 10 min) |
 | GET | `/videos?kind=&members=&q=&sort=` | optional | Dashboard: `kind` = `video\|short\|live`, `members=1` for paid-tier only, `q` searches titles and descriptions, `sort` = `new\|old\|views`. Returns `{ videos, counts: { all, video, short, live, members } }` (counts follow `q`). Cards include `kind` and, when signed in, `progressMs` |

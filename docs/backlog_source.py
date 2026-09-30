@@ -570,7 +570,7 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "In progress"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.
@@ -579,7 +579,9 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "00
 # 114: sending, templates, send log, bounce webhook, and Studio preview/test done; DNS on JimBob's domain + Render keys remain.
 # 101: Better Auth on our tables; email + password, username at sign-up, cookie sessions, POC /session gone, tiers not selectable.
 # 108: sign-up dialog, username rules, reserved/banned names, 13+ box, verification email, leaked-password check, POC accounts asked for an email done; /join page, live username suggestions, Turnstile remain.
-# 113: forgot/reset password (1 h, one use, signs out other devices) done; change password/email in settings and the old-address notice remain.
+# 113: forgot/reset, change password, change email (password + confirm new + 7-day undo to old), rate limits, security history.
+# 106: /account with profile, sign-in and security (email, password, devices, activity), notification settings, membership matrix; profile editor, billing, and data/deletion arrive with MBJ-117, 104, 118.
+# 110: device list and sign out any device (in /account) done; Google/Apple/X/Facebook, magic link, passkeys, merging accounts remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():

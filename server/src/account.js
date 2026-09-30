@@ -1,0 +1,242 @@
+// Account settings API (MBJ-106, MBJ-113): notification preferences, the security history, and changing the
+// email of a confirmed account (password first; the new address confirms; the old one gets a 7-day undo link).
+// Password changes, devices, and sign-out use Better Auth's endpoints under /api/auth directly.
+import crypto from 'crypto';
+import express from 'express';
+import { fromNodeHeaders } from 'better-auth/node';
+import { pool } from './db.js';
+import { auth, baseURL, sessionUser } from './auth.js';
+import { sendEmail, normalizeEmail } from './email.js';
+import { maskEmail } from './emailTemplates.js';
+import { logSecurityEvent, requestOrigin } from './security.js';
+
+export const NOTIFICATION_TYPES = ['mention', 'reply'];
+export const NOTIFICATION_CHANNELS = ['site', 'push'];
+const EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
+const EMAIL_UNDO_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+const router = express.Router();
+const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+async function requireUser(req, res, next) {
+  try {
+    const user = await sessionUser(req.headers);
+    if (!user) return res.status(401).json({ error: 'Sign in to see your account.' });
+    req.user = user;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Every type/channel pair, true unless turned off.
+export function fullPrefs(stored = {}) {
+  return Object.fromEntries(
+    NOTIFICATION_TYPES.map((t) => [
+      t,
+      Object.fromEntries(NOTIFICATION_CHANNELS.map((c) => [c, stored?.[t]?.[c] !== false])),
+    ]),
+  );
+}
+
+const hashToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex');
+
+async function createToken(userId, purpose, data, ttlMs) {
+  const token = crypto.randomBytes(32).toString('base64url');
+  await pool.query(
+    `INSERT INTO account_tokens (token_hash, user_id, purpose, data, expires_at) VALUES ($1, $2, $3, $4, $5)`,
+    [hashToken(token), userId, purpose, data, new Date(Date.now() + ttlMs)],
+  );
+  return token;
+}
+
+// Uses the token (once): returns its row, or null when it's unknown, used, or expired.
+async function useToken(token, purpose) {
+  const { rows } = await pool.query(
+    `UPDATE account_tokens SET used_at = now()
+     WHERE token_hash = $1 AND purpose = $2 AND used_at IS NULL AND expires_at > now()
+     RETURNING user_id, data`,
+    [hashToken(token), purpose],
+  );
+  return rows[0] || null;
+}
+
+// A few email-change requests per member per hour (each one sends an email).
+const emailChangeTries = new Map();
+function tooManyEmailChanges(userId) {
+  const now = Date.now();
+  const recent = (emailChangeTries.get(userId) || []).filter((t) => now - t < 60 * 60 * 1000);
+  recent.push(now);
+  emailChangeTries.set(userId, recent);
+  return recent.length > 5;
+}
+
+router.get(
+  '/notifications',
+  requireUser,
+  wrap(async (req, res) => {
+    const { rows } = await pool.query('SELECT notification_prefs FROM users WHERE id = $1', [req.user.id]);
+    res.json({ prefs: fullPrefs(rows[0]?.notification_prefs) });
+  }),
+);
+
+router.put(
+  '/notifications',
+  requireUser,
+  wrap(async (req, res) => {
+    const input = req.body?.prefs;
+    const valid =
+      input &&
+      typeof input === 'object' &&
+      Object.entries(input).every(
+        ([t, ch]) =>
+          NOTIFICATION_TYPES.includes(t) &&
+          ch &&
+          typeof ch === 'object' &&
+          Object.entries(ch).every(([c, v]) => NOTIFICATION_CHANNELS.includes(c) && typeof v === 'boolean'),
+      );
+    if (!valid)
+      return res.status(400).json({ error: 'Send { prefs: { mention|reply: { site|push: true|false } } }.' });
+    const { rows } = await pool.query('SELECT notification_prefs FROM users WHERE id = $1', [req.user.id]);
+    const merged = fullPrefs(rows[0]?.notification_prefs);
+    for (const [t, ch] of Object.entries(input)) Object.assign(merged[t], ch);
+    await pool.query('UPDATE users SET notification_prefs = $1 WHERE id = $2', [merged, req.user.id]);
+    res.json({ prefs: merged });
+  }),
+);
+
+router.get(
+  '/security',
+  requireUser,
+  wrap(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT id, type, ip_address, user_agent, detail, created_at FROM security_events
+       WHERE user_id = $1 ORDER BY created_at DESC, id DESC LIMIT 20`,
+      [req.user.id],
+    );
+    res.json({
+      events: rows.map((r) => ({
+        id: r.id,
+        type: r.type,
+        ip: r.ip_address,
+        userAgent: r.user_agent,
+        detail: r.detail,
+        createdAt: r.created_at,
+      })),
+    });
+  }),
+);
+
+// Step 1: { newEmail, password }. Emails a confirmation link to the new address.
+router.post(
+  '/email',
+  requireUser,
+  wrap(async (req, res) => {
+    const newEmail = normalizeEmail(req.body?.newEmail);
+    if (!newEmail) return res.status(400).json({ error: 'Enter an email address like name@example.com.' });
+    if (newEmail === req.user.email?.toLowerCase())
+      return res.status(400).json({ error: 'That’s already your email.' });
+    if (tooManyEmailChanges(req.user.id))
+      return res.status(429).json({ error: 'Too many tries. Wait an hour, then try again.' });
+    try {
+      await auth.api.verifyPassword({
+        body: { password: String(req.body?.password || '') },
+        headers: fromNodeHeaders(req.headers),
+      });
+    } catch {
+      return res.status(400).json({ error: 'That password isn’t right. Check it and try again.' });
+    }
+    // Same answer whether or not the address is taken, so this can't be used to find accounts.
+    const { rowCount: taken } = await pool.query('SELECT 1 FROM users WHERE email = $1', [newEmail]);
+    if (!taken) {
+      const token = await createToken(
+        req.user.id,
+        'email_change',
+        { newEmail, oldEmail: req.user.email },
+        EMAIL_CHANGE_TTL_MS,
+      );
+      await sendEmail({
+        to: newEmail,
+        template: 'verify_email',
+        data: { username: req.user.username, url: `${baseURL}/api/account/email/confirm?token=${token}` },
+        userId: req.user.id,
+      });
+    }
+    await logSecurityEvent(req.user.id, 'email_change_requested', {
+      ...requestOrigin(req.headers),
+      detail: maskEmail(newEmail),
+    });
+    res.json({ ok: true, sentTo: newEmail });
+  }),
+);
+
+// Step 2: the link in that email. Switches the account to the new address and tells the old one.
+router.get(
+  '/email/confirm',
+  wrap(async (req, res) => {
+    const row = await useToken(req.query.token, 'email_change');
+    if (!row) return res.redirect('/account?email=expired');
+    const { newEmail, oldEmail } = row.data;
+    let updated;
+    try {
+      updated = await pool.query(
+        `UPDATE users SET email = $1, email_verified = true, updated_at = now() WHERE id = $2 AND email = $3
+         RETURNING username`,
+        [newEmail, row.user_id, oldEmail],
+      );
+    } catch (err) {
+      if (err.code === '23505') return res.redirect('/account?email=taken'); // someone took it meanwhile
+      throw err;
+    }
+    if (!updated.rowCount) return res.redirect('/account?email=expired');
+    await logSecurityEvent(row.user_id, 'email_changed', {
+      ...requestOrigin(req.headers),
+      detail: `${maskEmail(oldEmail)} → ${maskEmail(newEmail)}`,
+    });
+    const undo = await createToken(row.user_id, 'email_undo', { newEmail, oldEmail }, EMAIL_UNDO_TTL_MS);
+    await sendEmail({
+      to: oldEmail,
+      template: 'email_changed',
+      data: {
+        username: updated.rows[0].username,
+        newEmail,
+        undoUrl: `${baseURL}/api/account/email/undo?token=${undo}`,
+      },
+      userId: row.user_id,
+    });
+    res.redirect('/account?email=changed');
+  }),
+);
+
+// The "This wasn't me" link sent to the old address: puts it back, signs out everywhere, and sends a
+// link to choose a new password (whoever changed the email probably knows the old one).
+router.get(
+  '/email/undo',
+  wrap(async (req, res) => {
+    const row = await useToken(req.query.token, 'email_undo');
+    if (!row) return res.redirect('/?email=undo-expired');
+    const { newEmail, oldEmail } = row.data;
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE users SET email = $1, email_verified = true, updated_at = now() WHERE id = $2 AND email = $3`,
+        [oldEmail, row.user_id, newEmail],
+      );
+      if (!rowCount) return res.redirect('/?email=undo-expired');
+    } catch (err) {
+      if (err.code === '23505') return res.redirect('/?email=undo-expired');
+      throw err;
+    }
+    await pool.query('DELETE FROM sessions WHERE user_id = $1', [row.user_id]);
+    await pool.query(`UPDATE account_tokens SET used_at = now() WHERE user_id = $1 AND used_at IS NULL`, [
+      row.user_id,
+    ]);
+    await logSecurityEvent(row.user_id, 'email_change_undone', {
+      ...requestOrigin(req.headers),
+      detail: `${maskEmail(newEmail)} → ${maskEmail(oldEmail)}`,
+    });
+    await auth.api.requestPasswordReset({ body: { email: oldEmail, redirectTo: '/reset-password' } });
+    res.redirect('/?email=restored');
+  }),
+);
+
+export default router;
