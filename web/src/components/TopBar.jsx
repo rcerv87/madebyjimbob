@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { TIER_LABEL } from '../api.js';
+import { Bell } from '../notifications.jsx';
+import { InstallButton } from '../install.jsx';
 
-export default function TopBar({ user, onSignIn, onSignOut, onMenu }) {
+export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu }) {
   const [params] = useSearchParams();
   const [q, setQ] = useState(params.get('q') || '');
   const navigate = useNavigate();
@@ -38,8 +40,10 @@ export default function TopBar({ user, onSignIn, onSignOut, onMenu }) {
         </button>
       </form>
       <div className="account">
+        <InstallButton />
         {user ? (
           <>
+            {notes && <Bell notes={notes} />}
             <span className={`tier-pill tier-${user.tier}`}>{TIER_LABEL[user.tier]}</span>
             <span className="avatar" title={user.username}>
               {user.username[0].toUpperCase()}

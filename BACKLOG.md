@@ -4,6 +4,8 @@ Generated from `docs/backlog_source.py` — edit there and re-run `python3 docs/
 
 **Priority:** Must / Should / Could.  **Size:** S (≤1 day), M (2–3 days), L (~1 week), XL (>1 week).
 
+Current state, decisions, and what's next: `docs/STATUS.md`.
+
 ## Done (POC)
 
 - Stored video playback from Cloudflare Stream with gestures, mini player, listen-only, lock-screen metadata
@@ -30,6 +32,7 @@ Generated from `docs/backlog_source.py` — edit there and re-run `python3 docs/
 | Sprint 5 | Shared types + mobile start | MBJ-004, MBJ-401, MBJ-402 |
 | Sprint 6 | Mobile core | MBJ-403, MBJ-404, MBJ-406 |
 | Sprint 7 | Go live | MBJ-301, MBJ-205, MBJ-302, MBJ-303 |
+| Next | Library & presence (Ruben's order) | MBJ-801, MBJ-802, MBJ-803, MBJ-805, MBJ-804 |
 
 ## Summary
 
@@ -61,9 +64,18 @@ Generated from `docs/backlog_source.py` — edit there and re-run `python3 docs/
 | MBJ-210 | Video comments | Chat & moderation | 1 | Must | M | MBJ-001 |
 | MBJ-211 | One conversation across live chat, replay chat, and comments | Chat & moderation | 1 | Must | L | MBJ-210 |
 | MBJ-212 | Resume where you left off | Chat & moderation | 1 | Must | S | — |
+| MBJ-213 | Installable web app (PWA) | Chat & moderation | 1 | Must | M | — |
+| MBJ-214 | Push notifications (web) | Chat & moderation | 1 | Must | M | MBJ-202, MBJ-213 |
+| MBJ-215 | Link YouTube and Rumble names to a profile | Chat & moderation | 1 | Should | M | MBJ-202 |
+| MBJ-216 | Count one view per viewer | Chat & moderation | 1 | Should | S | — |
 | MBJ-701 | Content management | Studio & analytics | 1 | Should | M | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
+| MBJ-801 | Videos dashboard with filters | Library & community | 1 | Must | M | — |
+| MBJ-802 | Playlists | Library & community | 1 | Must | M | MBJ-801 |
+| MBJ-803 | Up next and autoplay | Library & community | 1 | Must | S | MBJ-802 |
+| MBJ-804 | Posts | Library & community | 1 | Should | L | — |
+| MBJ-805 | Live indicator | Library & community | 1 | Should | S | — |
 | MBJ-401 | Expo app scaffold | Mobile apps | 2 | Must | L | MBJ-004, MBJ-101 |
 | MBJ-402 | Mobile player and gestures | Mobile apps | 2 | Must | M | MBJ-401 |
 | MBJ-403 | Background audio, lock screen, PiP | Mobile apps | 2 | Must | M | MBJ-402 |
@@ -86,6 +98,8 @@ Generated from `docs/backlog_source.py` — edit there and re-run `python3 docs/
 | MBJ-503 | Podcast feeds | Owned live & audio | 4 | Should | M | MBJ-502, MBJ-104 |
 | MBJ-504 | Restream to YouTube and Rumble | Owned live & audio | 4 | Should | M | MBJ-501 |
 | MBJ-505 | Owned live recordings | Owned live & audio | 4 | Should | M | MBJ-501 |
+| MBJ-506 | Move stored video to R2 (ADR-010) | Owned live & audio | 4 | Should | M | — |
+| MBJ-806 | Import the whole channel | Library & community | 4 | Should | M | MBJ-506 |
 | MBJ-601 | Watch and listen tracking | Engagement & AI | 5 | Must | S | MBJ-101 |
 | MBJ-602 | XP, levels, badges | Engagement & AI | 5 | Should | M | MBJ-601 |
 | MBJ-603 | Leaderboards | Engagement & AI | 5 | Could | S | MBJ-602 |
@@ -287,14 +301,14 @@ Acceptance criteria:
 
 ### MBJ-202 — @mention autocomplete and notifications
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-101
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-101
 
 As a member, I want to know when someone mentions me.
 
 Acceptance criteria:
-- [ ] Typing `@` suggests recent chatters in this video
-- [ ] Mentioned native users get an in-app notification (bell with count)
-- [ ] Clicking a notification opens the video at that message's timestamp
+- [x] Typing `@` suggests recent chatters in this video
+- [x] Mentioned native users get an in-app notification (bell with count)
+- [x] Clicking a notification opens the video at that message's timestamp
 
 ### MBJ-203 — Upvotes and top questions
 
@@ -410,6 +424,51 @@ Acceptance criteria:
 - [x] Reopening resumes (past 10s, not in the last 30s) with Resumed from mm:ss and a Start over button
 - [x] ?t=<seconds> links start at that time
 - [x] Video cards show a watched progress bar
+
+### MBJ-213 — Installable web app (PWA)
+
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M
+
+As a viewer, I want to add the site to my phone's Home Screen and use it like an app.
+
+Acceptance criteria:
+- [x] Web app manifest and icons; installable in Chrome/Edge (no installability errors)
+- [x] Service worker caches the app shell; API, WebSockets, and video are never cached
+- [x] Install app button where the browser supports it; one-time Share -> Add to Home Screen hint on iPhone
+
+### MBJ-214 — Push notifications (web)
+
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-202, MBJ-213
+
+As a member, I want a notification on my phone when someone mentions or replies to me, even with the app closed.
+
+Acceptance criteria:
+- [x] Web Push with VAPID keys; subscribe/unsubscribe endpoints; dead subscriptions removed
+- [x] Turn on from the bell; iPhone asks to add to Home Screen first
+- [x] Tapping a notification opens the video at that moment (and the thread for comments)
+- [x] Needs VAPID_PRIVATE_KEY set on Render
+
+### MBJ-215 — Link YouTube and Rumble names to a profile
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-202
+
+As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.
+
+Acceptance criteria:
+- [ ] Profile lets a member claim a YouTube handle and gets a one-time code
+- [ ] Posting the code in JimBob's live chat or as a comment verifies the claim on the next import
+- [ ] Rumble names verified by hand in Studio until Rumble chat ingest exists
+- [ ] Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member
+
+### MBJ-216 — Count one view per viewer
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
+
+As JimBob, I want view counts I can trust.
+
+Acceptance criteria:
+- [ ] A view counts once per viewer per video per day (account, or browser for signed-out)
+- [ ] Refreshes and resumed sessions don't add views
 
 ## Epic 3xx — Live via YouTube
 
@@ -655,6 +714,18 @@ Acceptance criteria:
 - [ ] Live segments assembled into a VOD after the stream
 - [ ] Chat replays in sync
 
+### MBJ-506 — Move stored video to R2 (ADR-010)
+
+**Status:** To do · **Phase 4 — Owned live + audio** · **Priority:** Should · **Size:** M
+
+As JimBob, I want my library in plain files I control, at a fraction of Stream's storage cost.
+
+Acceptance criteria:
+- [ ] Decision recorded on ADR-010
+- [ ] Import transcodes to an HLS ladder + audio-only with ffmpeg and uploads to R2
+- [ ] Gated videos protected by a short-lived token checked at the edge
+- [ ] Existing Stream videos migrated; captions kept (transcripts table)
+
 ## Epic 6xx — Engagement & AI
 
 XP, badges, captions, recaps, call-ins.
@@ -774,3 +845,74 @@ As JimBob, I want a copy of everything that's mine.
 
 Acceptance criteria:
 - [ ] CSV export of chat (per video or all), members, and tips
+
+## Epic 8xx — Library & community
+
+Videos dashboard, playlists, up next, posts, and live presence.
+
+### MBJ-801 — Videos dashboard with filters
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M
+
+As a viewer, I want to find videos by type and search, starting from everything.
+
+Acceptance criteria:
+- [ ] Video types from import: regular, short, past live (vertical + short = short; was_live = live)
+- [ ] Filter chips: All, Videos, Shorts, Live, Members only; search and sort (newest, most viewed)
+- [ ] Members-only items show which tier unlocks them; access still enforced on the server
+
+### MBJ-802 — Playlists
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-801
+
+As a viewer, I want JimBob's playlists, and as JimBob I want to build my own.
+
+Acceptance criteria:
+- [ ] Import YouTube playlists with their order
+- [ ] Studio: create, rename, reorder, add/remove videos
+- [ ] Playlists tab lists them with count and total length
+
+### MBJ-803 — Up next and autoplay
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-802
+
+As a viewer, I want the next video to start when one ends.
+
+Acceptance criteria:
+- [ ] Queue beside the player from the playlist (or related videos)
+- [ ] Autoplay next with a short countdown and cancel
+- [ ] Works in Listen only too
+
+### MBJ-804 — Posts
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** L
+
+As JimBob, I want to post updates, images, and polls; as a member, I want to discuss them.
+
+Acceptance criteria:
+- [ ] Studio composer: text, image, poll
+- [ ] Posts tab and post page; members-only posts respect tiers
+- [ ] Threaded, quote-aware comments reuse the comments system
+- [ ] Check whether YouTube Community posts can be imported
+
+### MBJ-805 — Live indicator
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
+
+As a viewer, I want to see at a glance when JimBob is live.
+
+Acceptance criteria:
+- [ ] Red ring + LIVE badge on JimBob's avatar and the header when live
+- [ ] Live card at the top of Videos
+- [ ] Studio Go live switch pointing at the YouTube live URL until MBJ-301 detects it automatically
+
+### MBJ-806 — Import the whole channel
+
+**Status:** To do · **Phase 4 — Owned live + audio** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-506
+
+As the operator, I want to load JimBob's full library in one run.
+
+Acceptance criteria:
+- [ ] Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list
+- [ ] Proposes file-to-video matches for review; OBS recordings matched by date and length with an offset adjustment
+- [ ] Skips videos already imported; deletes local copies after upload; resumable overnight run

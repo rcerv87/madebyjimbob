@@ -61,6 +61,17 @@ export default function Watch({ session }) {
     };
   }, [id]);
 
+  // Opening a notification while already on this video: jump to the moment / open the thread.
+  const tParam = params.get('t');
+  const commentParam = params.get('comment');
+  useEffect(() => {
+    const t = Number(tParam);
+    if (video && Number.isFinite(t) && t > 0 && playerRef.current) playerRef.current.currentTime = t;
+  }, [tParam, video]);
+  useEffect(() => {
+    if (video && commentParam) setFocusThread(commentParam);
+  }, [commentParam, video]);
+
   const onTime = (s) => {
     setTimeMs(Math.floor(s * 1000));
     if (Date.now() - lastSave.current > SAVE_EVERY_MS && s > 0) {

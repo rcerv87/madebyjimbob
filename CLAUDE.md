@@ -66,6 +66,9 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - Chat messages always carry `offset_ms` (position in the video). That field is what makes replay sync work — never drop it.
 - Chat `source` is one of `youtube | rumble | native`. New sources get a new enum value, not a new table.
 - Tier checks happen on the server. The client only hides UI.
+- Notifications: call `notifyFor()` from `server/src/notify.js` after saving anything that can mention or reply to someone; it stores, sends over WebSocket, and pushes.
+- The service worker (`web/public/sw.js`) must never cache `/api`, `/ws`, or video. Bump `CACHE` when changing what it caches.
+- Status, decisions, and next steps live in `docs/STATUS.md`; update it when finishing a story.
 - Logging: use `logger` / `req.log` from `server/src/logger.js`, never `console`. Credentials are redacted by path (`REDACT_PATHS`); add new sensitive fields there.
 - Secrets live in env vars. Add every new var to `.env.example` and `render.yaml` (`sync: false`).
 - UI copy: sentence case, plain verbs, errors say what happened and how to fix it.

@@ -78,6 +78,26 @@ columns are added by the story noted.
 
 Signed-out viewers keep their position in the browser (`localStorage`).
 
+### notifications
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| user_id | FK users | recipient |
+| type | text | `mention \| reply` (a reply that also mentions you is one `reply`) |
+| video_id | FK videos | |
+| chat_message_id / comment_id | FK | exactly the message or comment that triggered it |
+| actor_id, actor_name | | who did it |
+| excerpt | text | first 140 chars |
+| offset_ms | int | moment in the video, for "jump to it" |
+| read_at | timestamptz | null = unread |
+
+### push_subscriptions
+| column | type | notes |
+|---|---|---|
+| user_id | FK users | |
+| endpoint | text unique | from the browser's push service; deleted when it returns 404/410 |
+| p256dh, auth | text | encryption keys from the subscription |
+
 Comments are separate from `chat_messages`: they aren't tied to a playback position and they thread.
 
 ### transcripts
@@ -107,7 +127,6 @@ Filled by `npm run captions:fetch`. Auto captions can invent text during silence
 | `mod_actions (id, actor_id, target_user_id, target_author_channel_id, message_id, action, duration_s, reason, created_at)` | MBJ-204 |
 | `room_settings (video_id, mode, slow_mode_s)` | MBJ-204 |
 | `banned_terms (term)` | MBJ-206 |
-| `notifications (id, user_id, type, message_id, read_at)` | MBJ-202 |
 | `ingest_cursors (video_id, source, page_token, updated_at)` | MBJ-302 |
 | `api_quota_usage (day, api, units)` | MBJ-305 |
 | `watch_sessions (user_id, video_id, seconds, mode)` for XP and analytics | MBJ-601 |

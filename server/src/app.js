@@ -9,6 +9,14 @@ import { pool } from './db.js';
 import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback } from './stream.js';
 import { logger, httpLogger } from './logger.js';
+import {
+  addUserSocket,
+  removeUserSocket,
+  notifyFor,
+  notificationRow,
+  pushEnabled,
+  vapidPublicKey,
+} from './notify.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TIER_RANK = { free: 0, plus: 1, premium: 2 };
@@ -70,7 +78,7 @@ const canWatch = (user, video) => TIER_RANK[user?.tier || 'free'] >= TIER_RANK[v
 // Returns the video row, or null for unknown or malformed ids.
 async function findVideo(id) {
   if (!/^\d{1,18}$/.test(String(id))) return null;
-  const { rows } = await pool.query('SELECT id, min_tier, duration_s FROM videos WHERE id = $1', [id]);
+  const { rows } = await pool.query('SELECT id, title, min_tier, duration_s FROM videos WHERE id = $1', [id]);
   return rows[0] || null;
 }
 
@@ -366,7 +374,7 @@ app.post(
     if (req.body.replyToId !== undefined && req.body.replyToId !== null) {
       const { rows } = /^\d{1,18}$/.test(String(req.body.replyToId))
         ? await pool.query(
-            `SELECT id, author_name, left(body, 140) AS body, offset_ms FROM chat_messages
+            `SELECT id, user_id, author_name, left(body, 140) AS body, offset_ms FROM chat_messages
              WHERE id = $1 AND video_id = $2 AND NOT hidden`,
             [req.body.replyToId, video.id],
           )
@@ -407,6 +415,16 @@ app.post(
     });
     broadcast(video.id, { type: 'chat', message: msg });
     res.json({ message: msg });
+    notifyFor({
+      videoId: video.id,
+      videoTitle: video.title,
+      actor: user,
+      body,
+      offsetMs,
+      chatMessageId: rows[0].id,
+      mentions: rows[0].mentions,
+      replyToUserId: target?.user_id,
+    }).catch((err) => logger.error({ err }, 'chat notifications failed'));
   }),
 );
 
@@ -500,7 +518,7 @@ app.post(
     if (replyToId !== undefined && replyToId !== null) {
       const { rows } = /^\d{1,18}$/.test(String(replyToId))
         ? await pool.query(
-            `SELECT id, parent_id, author_name, left(body, 140) AS body, offset_ms FROM comments
+            `SELECT id, parent_id, user_id, author_name, left(body, 140) AS body, offset_ms FROM comments
              WHERE id = $1 AND video_id = $2 AND NOT hidden`,
             [replyToId, video.id],
           )
@@ -550,6 +568,90 @@ app.post(
     // Timestamped comments also appear right away in the chat feed of everyone watching.
     if (offsetMs !== null) broadcast(video.id, { type: 'comment', comment });
     res.json({ comment });
+    notifyFor({
+      videoId: video.id,
+      videoTitle: video.title,
+      actor: user,
+      body,
+      offsetMs,
+      commentId: rows[0].id,
+      mentions: extractMentions(body),
+      replyToUserId: target?.user_id,
+    }).catch((err) => logger.error({ err }, 'comment notifications failed'));
+  }),
+);
+
+// ---------- notifications ----------
+app.get(
+  '/api/notifications',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to see notifications.' });
+    const [items, unread] = await Promise.all([
+      pool.query(
+        `SELECT n.*, v.title AS video_title FROM notifications n JOIN videos v ON v.id = n.video_id
+         WHERE n.user_id = $1 ORDER BY n.created_at DESC, n.id DESC LIMIT 30`,
+        [user.id],
+      ),
+      pool.query('SELECT count(*) FROM notifications WHERE user_id = $1 AND read_at IS NULL', [user.id]),
+    ]);
+    res.json({ unread: Number(unread.rows[0].count), notifications: items.rows.map(notificationRow) });
+  }),
+);
+
+// Mark read: { ids: [...] } for specific ones, or no ids for all.
+app.post(
+  '/api/notifications/read',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to see notifications.' });
+    const ids = Array.isArray(req.body.ids)
+      ? req.body.ids.filter((id) => /^\d{1,18}$/.test(String(id)))
+      : null;
+    await pool.query(
+      `UPDATE notifications SET read_at = now()
+       WHERE user_id = $1 AND read_at IS NULL AND ($2::bigint[] IS NULL OR id = ANY($2::bigint[]))`,
+      [user.id, ids],
+    );
+    res.json({ ok: true });
+  }),
+);
+
+// ---------- push notifications (Web Push) ----------
+app.get('/api/push/key', (_req, res) => res.json({ publicKey: vapidPublicKey }));
+
+app.post(
+  '/api/push/subscribe',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to turn on notifications.' });
+    if (!pushEnabled)
+      return res.status(503).json({ error: 'Push notifications aren’t set up on this server yet.' });
+    const sub = req.body.subscription || {};
+    const endpoint = String(sub.endpoint || '');
+    const { p256dh, auth } = sub.keys || {};
+    if (!/^https:\/\//.test(endpoint) || endpoint.length > 1000 || !p256dh || !auth) {
+      return res.status(400).json({ error: 'That push subscription isn’t valid.' });
+    }
+    await pool.query(
+      `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (endpoint) DO UPDATE SET user_id = EXCLUDED.user_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth`,
+      [user.id, endpoint, String(p256dh), String(auth)],
+    );
+    res.json({ ok: true });
+  }),
+);
+
+app.delete(
+  '/api/push/subscribe',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in first.' });
+    await pool.query('DELETE FROM push_subscriptions WHERE user_id = $1 AND endpoint = $2', [
+      user.id,
+      String(req.body.endpoint || ''),
+    ]);
+    res.json({ ok: true });
   }),
 );
 
@@ -665,11 +767,24 @@ function leave(ws, roomId) {
 
 wss.on('connection', (ws) => {
   let joined = null;
+  let userId = null;
   ws.on('message', async (raw) => {
     let msg;
     try {
       msg = JSON.parse(raw);
     } catch {
+      return;
+    }
+    // { type: 'auth', token }: receive this user's notifications on this socket.
+    if (msg.type === 'auth') {
+      try {
+        const user = await userByToken(msg.token);
+        if (userId) removeUserSocket(userId, ws);
+        userId = user?.id ?? null;
+        if (userId) addUserSocket(userId, ws);
+      } catch (err) {
+        logger.error({ err }, 'WebSocket auth failed');
+      }
       return;
     }
     if (msg.type !== 'join') return;
@@ -688,7 +803,10 @@ wss.on('connection', (ws) => {
       logger.error({ err, videoId: msg.videoId }, 'WebSocket join failed');
     }
   });
-  ws.on('close', () => joined && leave(ws, joined));
+  ws.on('close', () => {
+    if (joined) leave(ws, joined);
+    if (userId) removeUserSocket(userId, ws);
+  });
 });
 
 export { app, server, ADMINS };

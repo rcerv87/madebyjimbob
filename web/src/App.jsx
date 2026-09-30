@@ -7,6 +7,8 @@ import SignInDialog from './components/SignInDialog.jsx';
 import Home from './pages/Home.jsx';
 import Watch from './pages/Watch.jsx';
 import Studio from './pages/Studio.jsx';
+import { useNotifications, NotificationToast } from './notifications.jsx';
+import { IosInstallHint } from './install.jsx';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -26,11 +28,13 @@ export default function App() {
     setUser(null);
   };
   const session = { user, requireSignIn: () => setSigningIn(true) };
+  const notes = useNotifications(user);
 
   return (
     <div className={`shell ${navOpen ? 'nav-open' : ''}`}>
       <TopBar
         user={user}
+        notes={notes}
         onSignIn={() => setSigningIn(true)}
         onSignOut={signOut}
         onMenu={() => setNavOpen((o) => !o)}
@@ -43,6 +47,8 @@ export default function App() {
           <Route path="/studio" element={<Studio user={user} />} />
         </Routes>
       </main>
+      <NotificationToast notes={notes} />
+      <IosInstallHint />
       {signingIn && (
         <SignInDialog
           onClose={() => setSigningIn(false)}

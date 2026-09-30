@@ -23,6 +23,9 @@ process.env.ADMIN_USERNAMES = 'test_admin';
 process.env.ALLOW_TEST_TIERS = 'true';
 process.env.BANNED_WORDS = 'badword';
 process.env.LOG_LEVEL = process.env.LOG_LEVEL_TEST || 'silent';
+// Push off in tests (no real pushes), whatever the local .env has.
+process.env.VAPID_PUBLIC_KEY = '';
+process.env.VAPID_PRIVATE_KEY = '';
 
 const { pool, migrate } = await import('../src/db.js');
 const { server } = await import('../src/app.js');

@@ -43,14 +43,16 @@ const signedIn = { user: { username: 'ruben' }, requireSignIn: () => {} };
 
 function panel(props = {}) {
   return render(
-    <ChatPanel
-      videoId="7"
-      timeMs={60_000}
-      getTimeMs={() => 60_000}
-      onSeek={() => {}}
-      session={signedIn}
-      {...props}
-    />,
+    <MemoryRouter>
+      <ChatPanel
+        videoId="7"
+        timeMs={60_000}
+        getTimeMs={() => 60_000}
+        onSeek={() => {}}
+        session={signedIn}
+        {...props}
+      />
+    </MemoryRouter>,
   );
 }
 
