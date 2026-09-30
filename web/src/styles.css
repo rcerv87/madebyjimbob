@@ -370,6 +370,24 @@ code {
 .player.listen-only video {
   opacity: 0;
 }
+.unmute-btn {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 18px;
+  border: 0;
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
 .player-error {
   position: absolute;
   inset: 0;

@@ -11,6 +11,24 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
   const [fast, setFast] = useState(false);
   const [listenOnly, setListenOnly] = useState(false);
   const [playError, setPlayError] = useState('');
+  const [autoMuted, setAutoMuted] = useState(false);
+
+  // Start playing as soon as the video is ready. Browsers allow sound only after the viewer has
+  // interacted with the site (e.g. clicked a video card); otherwise start muted, like YouTube.
+  function autoplay(video) {
+    video.play().catch((err) => {
+      if (err.name !== 'NotAllowedError') return;
+      video.muted = true;
+      setAutoMuted(true);
+      video.play().catch(() => {});
+    });
+  }
+
+  function unmute() {
+    const v = videoRef.current;
+    if (v) v.muted = false;
+    setAutoMuted(false);
+  }
 
   // Prefer hls.js wherever Media Source Extensions exist (Chrome, Edge, Firefox, desktop Safari).
   // Browser-native HLS varies a lot (Chrome's is new); only iPhone Safari, which lacks MSE, needs it.
@@ -18,6 +36,7 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
     const video = videoRef.current;
     if (!src || !video) return;
     setPlayError('');
+    setAutoMuted(false);
     if (Hls.isSupported()) {
       const hls = new Hls({ capLevelToPlayerSize: true });
       let mediaRecoveries = 0;
@@ -33,6 +52,7 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
           hls.destroy();
         }
       });
+      hls.on(Hls.Events.MANIFEST_PARSED, () => autoplay(video));
       hls.loadSource(src);
       hls.attachMedia(video);
       hlsRef.current = hls;
@@ -44,8 +64,13 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src;
       const onError = () => setPlayError('This video couldn’t play. Refresh the page to try again.');
+      const onReady = () => autoplay(video);
       video.addEventListener('error', onError);
-      return () => video.removeEventListener('error', onError);
+      video.addEventListener('loadedmetadata', onReady, { once: true });
+      return () => {
+        video.removeEventListener('error', onError);
+        video.removeEventListener('loadedmetadata', onReady);
+      };
     }
     setPlayError('This browser can’t play this video. Try a current Chrome, Edge, Firefox, or Safari.');
   }, [src]);
@@ -132,7 +157,8 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
       return;
     }
     t.last = now;
-    t.timer = setTimeout(togglePlay, 280);
+    // While auto-muted, a single tap unmutes instead of pausing (as on YouTube).
+    t.timer = setTimeout(() => (videoRef.current?.muted && autoMuted ? unmute() : togglePlay()), 280);
   };
 
   const onPointerLeave = () => {
@@ -154,6 +180,7 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
         playsInline
         onTimeUpdate={(e) => onTime?.(e.currentTarget.currentTime)}
         onSeeked={(e) => onTime?.(e.currentTarget.currentTime)}
+        onVolumeChange={(e) => !e.currentTarget.muted && setAutoMuted(false)}
       />
       {playError && (
         <div className="player-error" role="alert">
@@ -178,6 +205,15 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
         </div>
       )}
       {fast && <div className="fast-badge">2× speed</div>}
+      {autoMuted && (
+        <button type="button" className="unmute-btn" onClick={unmute}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />
+            <path d="m16 9 5 6m0-6-5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          Tap to unmute
+        </button>
+      )}
       <div className="player-tools">
         {typeof document !== 'undefined' && document.pictureInPictureEnabled && (
           <button onClick={() => videoRef.current?.requestPictureInPicture().catch(() => {})}>
