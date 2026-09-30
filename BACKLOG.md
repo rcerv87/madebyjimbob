@@ -33,7 +33,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | Sprint 6 | Mobile core | MBJ-403, MBJ-404, MBJ-406 |
 | Sprint 7 | Go live | MBJ-301, MBJ-205, MBJ-302, MBJ-303 |
 | Next | Presence and navigation | MBJ-805, MBJ-810, MBJ-809, MBJ-804 |
-| Then | Accounts and money | MBJ-101, MBJ-108, MBJ-104, MBJ-109, MBJ-105, MBJ-811, MBJ-807 |
+| Then | Accounts and money | MBJ-101, MBJ-114, MBJ-108, MBJ-113, MBJ-106, MBJ-116, MBJ-117, MBJ-115, MBJ-118, MBJ-119, MBJ-104, MBJ-109, MBJ-105, MBJ-811, MBJ-807 |
 
 ## Summary
 
@@ -52,13 +52,20 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-103 | Signed playback URLs | Accounts & memberships | 1 | Must | M | MBJ-101 |
 | MBJ-104 | Web subscriptions and entitlements | Accounts & memberships | 1 | Must | L | MBJ-101 |
 | MBJ-105 | Pricing page and upsell | Accounts & memberships | 1 | Must | M | MBJ-104 |
-| MBJ-106 | Account page | Accounts & memberships | 1 | Should | M | MBJ-104 |
+| MBJ-106 | Account settings | Accounts & memberships | 1 | Must | M | MBJ-101 |
 | MBJ-107 | Owned email list | Accounts & memberships | 1 | Must | S | MBJ-101, MBJ-102 |
-| MBJ-108 | Sign-up and onboarding | Accounts & memberships | 1 | Must | M | MBJ-101 |
+| MBJ-108 | Registration | Accounts & memberships | 1 | Must | M | MBJ-101, MBJ-114 |
 | MBJ-109 | Payments API and receipts | Accounts & memberships | 1 | Must | M | MBJ-104 |
 | MBJ-110 | Easy sign-in and staying signed in | Accounts & memberships | 1 | Must | M | MBJ-101 |
 | MBJ-111 | Saved payment methods and a wallet | Accounts & memberships | 1 | Must | L | MBJ-104, MBJ-112 |
 | MBJ-112 | Payments and fees decision (ADR) | Accounts & memberships | 1 | Must | S | — |
+| MBJ-113 | Password reset and email change | Accounts & memberships | 1 | Must | M | MBJ-101, MBJ-114 |
+| MBJ-114 | Sending email (ADR) | Accounts & memberships | 1 | Must | S | — |
+| MBJ-115 | Welcome steps | Accounts & memberships | 1 | Should | S | MBJ-108 |
+| MBJ-116 | Public profile | Accounts & memberships | 1 | Should | M | MBJ-101 |
+| MBJ-117 | Edit profile | Accounts & memberships | 1 | Should | M | MBJ-116 |
+| MBJ-118 | Download my data and delete my account | Accounts & memberships | 1 | Must | M | MBJ-101, MBJ-114 |
+| MBJ-119 | Block and mute | Accounts & memberships | 1 | Should | S | MBJ-101 |
 | MBJ-201 | Chat replay polish | Chat & moderation | 1 | Should | M | — |
 | MBJ-202 | @mention autocomplete and notifications | Chat & moderation | 1 | Should | M | MBJ-101 |
 | MBJ-203 | Upvotes and top questions | Chat & moderation | 1 | Should | M | MBJ-101 |
@@ -287,15 +294,18 @@ Acceptance criteria:
 - [ ] Locked video screen links to upgrade with that tier preselected
 - [ ] After purchase, the user returns to the video and it plays
 
-### MBJ-106 — Account page
+### MBJ-106 — Account settings
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-104
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101
 
-As a member, I want to manage my subscription and profile.
+As a member, I want one place to manage my profile, sign-in, notifications, membership, and privacy.
 
 Acceptance criteria:
-- [ ] Change username (once per 30 days), manage subscription via Stripe customer portal
-- [ ] Shows tier, renewal date, linked accounts
+- [ ] `/account` (signed in only) with sections: Profile, Sign-in and security, Notifications, Membership, Privacy and data
+- [ ] Profile links to the editor (MBJ-117); Sign-in and security holds password, email, devices, and sign-in methods (MBJ-113, MBJ-110)
+- [ ] Notifications: per-type on/off for in-site, push, and email (replaces the scattered toggles)
+- [ ] Membership shows tier, renewal date, and manage/cancel once MBJ-104 lands; before that it shows Free and what paid tiers include
+- [ ] Account menu in the top bar links here; works at phone width
 
 ### MBJ-107 — Owned email list
 
@@ -309,17 +319,21 @@ Acceptance criteria:
 - [ ] Unsubscribe link handling documented
 - [ ] Start from the existing Shopify newsletter list (export from Shopify customers who accepted marketing)
 
-### MBJ-108 — Sign-up and onboarding
+### MBJ-108 — Registration
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
 
-As a new viewer, I want a clear way to create an account and get started.
+As a new viewer, I want to create an account in under a minute so I can chat, comment, and join.
 
 Acceptance criteria:
-- [ ] Registration page: email, username, password (or Google/Apple once MBJ-101 lands); email verification
-- [ ] Welcome step: pick notifications, link YouTube (MBJ-215), see membership options
-- [ ] Profile page: username, avatar, linked accounts, membership, sign out everywhere
-- [ ] Password reset by email
+- [ ] `/join` page and a sign-up dialog anywhere an action needs an account (chat, comment, like); afterwards you land back where you were, with the action ready
+- [ ] Fields: email, username, password (at least 10 characters, checked against known-leaked passwords); Google and Apple once MBJ-110 lands
+- [ ] Username: unique ignoring case, 3–32 `[A-Za-z0-9_]`, live availability check with suggestions; reserved names blocked (jimbob, admin, mod, support, and staff names); banned words blocked
+- [ ] "I'm 13 or older" checkbox; Terms and Privacy links; optional email-list opt-in (MBJ-107)
+- [ ] Verification email with a link (expires in 24 h, can be re-sent); unverified accounts can watch and chat but can't tip, buy, or claim rewards
+- [ ] Bot protection: Cloudflare Turnstile on the form, plus rate limits per IP and per email
+- [ ] Errors say what went wrong and how to fix it ("That username is taken — try jimbobfan_2")
+- [ ] Existing POC accounts are asked to add and verify an email the next time they sign in
 
 ### MBJ-109 — Payments API and receipts
 
@@ -372,6 +386,96 @@ Acceptance criteria:
 - [ ] Model real money with JimBob's numbers: memberships, Bob Chats/tips by size, merch orders, and the current Shopify plan and apps
 - [ ] Decide merch: keep Shopify, or move to our own checkout (Stripe) with a print-on-demand partner for fulfilment; show the yearly saving and the work involved
 - [ ] Record the decision as an ADR and update MBJ-104, MBJ-109, MBJ-111, and MBJ-807
+
+### MBJ-113 — Password reset and email change
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
+
+As a member, I want to get back into my account if I forget my password, and keep my email up to date.
+
+Acceptance criteria:
+- [ ] "Forgot password?" sends a reset link (one use, expires in 1 h); the response never reveals whether the email has an account
+- [ ] Resetting or changing the password signs out every other device
+- [ ] Change email: confirm with the password, verify the new address, and notify the old one with a link to undo within 7 days
+- [ ] Change password from Account settings (current password required)
+- [ ] Rate limits on reset and change requests; every change is logged for the member's security history
+
+### MBJ-114 — Sending email (ADR)
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S
+
+As JimBob, I want account emails to arrive from my own domain and not land in spam.
+
+Acceptance criteria:
+- [ ] Pick a transactional email provider and record it as an ADR with the monthly cost at 1k, 10k, and 50k members (compare Resend, Postmark, Amazon SES)
+- [ ] Sender on JimBob's domain (e.g. hello@) with SPF, DKIM, and DMARC set up
+- [ ] Plain branded templates: verify email, reset password, email changed, new sign-in, account deleted
+- [ ] Bounces and complaints recorded; bounced addresses stop getting mail
+- [ ] Server tests never send real email (a stub records what would have been sent)
+
+### MBJ-115 — Welcome steps
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-108
+
+As a new member, I want a quick start that makes the site mine without forcing anything.
+
+Acceptance criteria:
+- [ ] After sign-up: add an avatar, pick notifications (live alerts on by default), link YouTube (MBJ-215), see membership options
+- [ ] Every step can be skipped; a checklist on the profile shows what's left
+- [ ] Ends on the page they signed up from, or the latest video
+
+### MBJ-116 — Public profile
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-101
+
+As a viewer, I want to see who someone in chat is; as a member, I want a page that shows I'm part of the community.
+
+Acceptance criteria:
+- [ ] `/@username` page: avatar, display name, bio, links, joined date, tier badge, and badges/level once MBJ-602 lands
+- [ ] Recent public activity: comments with the video and moment they're on (each opens the video there); chat messages only if the member allows it
+- [ ] Tapping a name or avatar in chat or comments opens a small profile card with "View profile" and "Mention"
+- [ ] Linked YouTube/Rumble names shown once verified (MBJ-215)
+- [ ] Anyone can view profiles, signed in or not; they aren't in search results (noindex) unless the member turns that on
+- [ ] Banned members' profiles show only the username
+
+### MBJ-117 — Edit profile
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-116
+
+As a member, I want to choose how I look to everyone else on the site.
+
+Acceptance criteria:
+- [ ] Avatar: upload (JPEG/PNG/WebP up to 5 MB), crop to a circle, resized to small and large sizes; a default avatar with initials and a color until then
+- [ ] Display name (up to 40 characters, shown next to the username), bio (up to 300 characters), up to 3 links
+- [ ] Username change once every 30 days; the old name stays reserved for 30 days and old profile links redirect
+- [ ] Avatars, names, and bios go through the same banned-word filter as chat; mods can reset them from Studio
+- [ ] Changes show everywhere (chat, comments, profile) without a reload
+
+### MBJ-118 — Download my data and delete my account
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
+
+As a member, I want to take my data with me or leave for good; as JimBob, I want the apps to pass store review.
+
+Acceptance criteria:
+- [ ] Download my data: profile, comments, chat messages, likes, watch history, and payments as a JSON file
+- [ ] Delete account from Account settings with the password (or a fresh sign-in); required in the phone apps by Apple and Google
+- [ ] 30 days to change your mind (signing in cancels it), then the account is erased; paid memberships are cancelled first
+- [ ] Chat messages and comments stay in replays as "Deleted user" so conversations still make sense; an option also removes them
+- [ ] Confirmation email at request and at erasure
+
+### MBJ-119 — Block and mute
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-101
+
+As a member, I want to stop seeing someone who bothers me.
+
+Acceptance criteria:
+- [ ] Block from the profile card or profile page; unblock from Account settings
+- [ ] A blocked member's chat messages, comments, and mentions are hidden for you; they can't mention you or reply to you
+- [ ] Mute (hide their messages) without them being able to tell
+- [ ] Blocking never hides mods or JimBob
+- [ ] Report a member (from the profile card, a message, or a comment) with a reason; reports land in a queue mods work from Studio (MBJ-204)
 
 ## Epic 2xx — Chat & moderation
 
