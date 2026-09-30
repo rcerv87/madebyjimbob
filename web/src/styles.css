@@ -370,6 +370,17 @@ code {
 .player.listen-only video {
   opacity: 0;
 }
+.player-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  background: rgba(12, 14, 18, 0.85);
+  color: var(--danger);
+  z-index: 2;
+}
 .listen-cover {
   position: absolute;
   inset: 0;
