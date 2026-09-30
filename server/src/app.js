@@ -112,6 +112,7 @@ function videoCard(v) {
   return {
     id: v.id,
     title: v.title,
+    kind: v.kind,
     durationS: v.duration_s,
     publishedAt: v.published_at,
     minTier: v.min_tier,
@@ -244,18 +245,117 @@ app.get(
 );
 
 // ---------- videos ----------
+// Dashboard: ?kind=video|short|live &members=1 &q=search &sort=new|old|views
+// Also returns counts per filter chip for the current search.
+const VIDEO_SORTS = {
+  new: 'v.published_at DESC NULLS LAST, v.id DESC',
+  old: 'v.published_at ASC NULLS LAST, v.id ASC',
+  views: 'v.views DESC, v.published_at DESC NULLS LAST, v.id DESC',
+};
+const likePattern = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
 app.get(
   '/api/videos',
   wrap(async (req, res) => {
     const user = await currentUser(req);
-    const { rows } = await pool.query(
-      `SELECT v.*, wp.position_ms AS progress_ms,
-         (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
-       FROM videos v LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = $1
-       ORDER BY v.published_at DESC NULLS LAST, v.id DESC`,
-      [user?.id ?? null],
-    );
-    res.json({ videos: rows.map((v) => ({ ...videoCard(v), progressMs: v.progress_ms ?? null })) });
+    const kind = ['video', 'short', 'live'].includes(req.query.kind) ? req.query.kind : null;
+    const members = req.query.members === '1';
+    const q = String(req.query.q || '')
+      .trim()
+      .slice(0, 100);
+    const pattern = q ? likePattern(q) : null;
+    const order = VIDEO_SORTS[req.query.sort] || VIDEO_SORTS.new;
+    const search = `($1::text IS NULL OR v.title ILIKE $1 OR v.description ILIKE $1)`;
+    const [list, counts] = await Promise.all([
+      pool.query(
+        `SELECT v.*, wp.position_ms AS progress_ms,
+           (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
+         FROM videos v LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = $2
+         WHERE ${search} AND ($3::text IS NULL OR v.kind = $3) AND (NOT $4 OR v.min_tier <> 'free')
+         ORDER BY ${order}`,
+        [pattern, user?.id ?? null, kind, members],
+      ),
+      pool.query(
+        `SELECT count(*) AS all,
+           count(*) FILTER (WHERE kind = 'video') AS video,
+           count(*) FILTER (WHERE kind = 'short') AS short,
+           count(*) FILTER (WHERE kind = 'live') AS live,
+           count(*) FILTER (WHERE min_tier <> 'free') AS members
+         FROM videos v WHERE ${search}`,
+        [pattern],
+      ),
+    ]);
+    const c = counts.rows[0];
+    res.json({
+      videos: list.rows.map((v) => ({ ...videoCard(v), progressMs: v.progress_ms ?? null })),
+      counts: {
+        all: Number(c.all),
+        video: Number(c.video),
+        short: Number(c.short),
+        live: Number(c.live),
+        members: Number(c.members),
+      },
+    });
+  }),
+);
+
+// ---------- playlists ----------
+// A playlist item matches a video by id (made in Studio) or by YouTube id (imported; the video may
+// arrive later). Viewers only see items whose video is on the site.
+const PLAYLIST_VIDEOS = `playlist_items pi
+  JOIN videos v ON v.id = pi.video_id OR (pi.video_id IS NULL AND v.youtube_id = pi.youtube_id)`;
+
+function playlistCard(r) {
+  return {
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    source: r.source,
+    videoCount: Number(r.video_count || 0),
+    durationS: Number(r.duration_s || 0),
+    thumbnail: playback(r.first_stream_uid)?.thumbnail || null,
+    firstVideoId: r.first_video_id ?? null,
+    updatedAt: r.updated_at,
+  };
+}
+
+const PLAYLIST_SUMMARY = `SELECT p.*,
+    (SELECT count(*) FROM ${PLAYLIST_VIDEOS} WHERE pi.playlist_id = p.id) AS video_count,
+    (SELECT coalesce(sum(v.duration_s), 0) FROM ${PLAYLIST_VIDEOS} WHERE pi.playlist_id = p.id) AS duration_s,
+    (SELECT v.stream_uid FROM ${PLAYLIST_VIDEOS} WHERE pi.playlist_id = p.id ORDER BY pi.position LIMIT 1)
+      AS first_stream_uid,
+    (SELECT v.id FROM ${PLAYLIST_VIDEOS} WHERE pi.playlist_id = p.id ORDER BY pi.position LIMIT 1)
+      AS first_video_id
+  FROM playlists p`;
+
+app.get(
+  '/api/playlists',
+  wrap(async (_req, res) => {
+    const { rows } = await pool.query(`${PLAYLIST_SUMMARY} ORDER BY p.updated_at DESC, p.id DESC`);
+    res.json({ playlists: rows.map(playlistCard).filter((p) => p.videoCount > 0) });
+  }),
+);
+
+async function playlistVideos(playlistId, userId) {
+  const { rows } = await pool.query(
+    `SELECT v.*, pi.position, wp.position_ms AS progress_ms,
+       (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
+     FROM ${PLAYLIST_VIDEOS}
+     LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = $2
+     WHERE pi.playlist_id = $1 ORDER BY pi.position`,
+    [playlistId, userId ?? null],
+  );
+  return rows.map((v) => ({ ...videoCard(v), progressMs: v.progress_ms ?? null }));
+}
+
+app.get(
+  '/api/playlists/:id',
+  wrap(async (req, res) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) return res.status(404).json({ error: 'Playlist not found.' });
+    const { rows } = await pool.query(`${PLAYLIST_SUMMARY} WHERE p.id = $1`, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Playlist not found.' });
+    const user = await currentUser(req);
+    res.json({ playlist: playlistCard(rows[0]), videos: await playlistVideos(rows[0].id, user?.id) });
   }),
 );
 
@@ -721,6 +821,125 @@ app.patch(
     if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
     await pool.query('UPDATE videos SET min_tier = $1 WHERE id = $2', [minTier, req.params.id]);
     res.json({ ok: true });
+  }),
+);
+
+// Studio playlists: JimBob's own playlists are editable; imported YouTube ones stay in sync with
+// YouTube (re-run the import) and are read-only here.
+app.get(
+  '/api/studio/playlists',
+  wrap(async (_req, res) => {
+    const { rows } = await pool.query(
+      `${PLAYLIST_SUMMARY} ORDER BY p.source = 'native' DESC, p.updated_at DESC`,
+    );
+    const playlists = await Promise.all(
+      rows.map(async (r) => ({ ...playlistCard(r), videos: await playlistVideos(r.id) })),
+    );
+    res.json({ playlists });
+  }),
+);
+
+function playlistFields(body) {
+  const title = body.title === undefined ? undefined : String(body.title).trim().slice(0, 150);
+  const description =
+    body.description === undefined ? undefined : String(body.description).trim().slice(0, 5000);
+  return { title, description };
+}
+
+async function nativePlaylist(req, res) {
+  if (!/^\d{1,18}$/.test(req.params.id)) {
+    res.status(404).json({ error: 'Playlist not found.' });
+    return null;
+  }
+  const { rows } = await pool.query('SELECT id, source FROM playlists WHERE id = $1', [req.params.id]);
+  if (!rows[0]) {
+    res.status(404).json({ error: 'Playlist not found.' });
+    return null;
+  }
+  if (rows[0].source !== 'native') {
+    res
+      .status(409)
+      .json({ error: 'This playlist comes from YouTube. Change it there and re-run the import.' });
+    return null;
+  }
+  return rows[0];
+}
+
+app.post(
+  '/api/studio/playlists',
+  wrap(async (req, res) => {
+    const { title, description } = playlistFields(req.body);
+    if (!title) return res.status(400).json({ error: 'Give the playlist a title.' });
+    const { rows } = await pool.query(
+      `INSERT INTO playlists (source, title, description) VALUES ('native', $1, $2) RETURNING *`,
+      [title, description || ''],
+    );
+    res.json({ playlist: playlistCard(rows[0]) });
+  }),
+);
+
+app.patch(
+  '/api/studio/playlists/:id',
+  wrap(async (req, res) => {
+    const p = await nativePlaylist(req, res);
+    if (!p) return;
+    const { title, description } = playlistFields(req.body);
+    if (title !== undefined && !title) return res.status(400).json({ error: 'Give the playlist a title.' });
+    await pool.query(
+      `UPDATE playlists SET title = COALESCE($2, title), description = COALESCE($3, description),
+         updated_at = now() WHERE id = $1`,
+      [p.id, title ?? null, description ?? null],
+    );
+    res.json({ ok: true });
+  }),
+);
+
+app.delete(
+  '/api/studio/playlists/:id',
+  wrap(async (req, res) => {
+    const p = await nativePlaylist(req, res);
+    if (!p) return;
+    await pool.query('DELETE FROM playlists WHERE id = $1', [p.id]);
+    res.json({ ok: true });
+  }),
+);
+
+// Replace the playlist's videos with this list, in this order: { videoIds: [...] }
+app.put(
+  '/api/studio/playlists/:id/items',
+  wrap(async (req, res) => {
+    const p = await nativePlaylist(req, res);
+    if (!p) return;
+    const ids = Array.isArray(req.body.videoIds) ? req.body.videoIds.map(String) : null;
+    if (
+      !ids ||
+      ids.some((id) => !/^\d{1,18}$/.test(id)) ||
+      new Set(ids).size !== ids.length ||
+      ids.length > 500
+    ) {
+      return res.status(400).json({ error: 'videoIds must be a list of different video ids (up to 500).' });
+    }
+    const { rows } = await pool.query('SELECT count(*) FROM videos WHERE id = ANY($1::bigint[])', [ids]);
+    if (Number(rows[0].count) !== ids.length)
+      return res.status(400).json({ error: 'Some of those videos don’t exist.' });
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM playlist_items WHERE playlist_id = $1', [p.id]);
+      await client.query(
+        `INSERT INTO playlist_items (playlist_id, position, video_id)
+         SELECT $1, ord - 1, vid FROM unnest($2::bigint[]) WITH ORDINALITY AS x(vid, ord)`,
+        [p.id, ids],
+      );
+      await client.query('UPDATE playlists SET updated_at = now() WHERE id = $1', [p.id]);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+    res.json({ ok: true, count: ids.length });
   }),
 );
 

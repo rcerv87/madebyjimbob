@@ -27,6 +27,7 @@ columns are added by the story noted.
 | duration_s | int | |
 | published_at | timestamptz | |
 | min_tier | text | access level |
+| kind | text | `video \| short \| live`; set on import (was live → live; vertical and ≤ 3 min → short) |
 | views | int | |
 | created_at | timestamptz | |
 
@@ -77,6 +78,21 @@ columns are added by the story noted.
 | updated_at | timestamptz | |
 
 Signed-out viewers keep their position in the browser (`localStorage`).
+
+### playlists
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| source | text | `youtube` (imported, read-only in Studio) or `native` (made in Studio) |
+| youtube_id | text unique | YouTube playlist id |
+| title, description | text | |
+
+### playlist_items
+| column | type | notes |
+|---|---|---|
+| playlist_id, position | PK | order within the playlist |
+| youtube_id | text | imported items; matched to `videos.youtube_id`, so videos imported later appear automatically |
+| video_id | FK videos | items added in Studio |
 
 ### notifications
 | column | type | notes |

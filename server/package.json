@@ -9,7 +9,8 @@
     "test": "node --test --test-concurrency=1 \"test/**/*.test.js\"",
     "migrate": "node scripts/migrate.js",
     "migrate:create": "node-pg-migrate create --migrations-dir migrations --migration-file-language sql",
-    "captions:fetch": "node scripts/fetch-captions.js"
+    "captions:fetch": "node scripts/fetch-captions.js",
+    "import:playlists": "node scripts/import-playlists.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

@@ -87,6 +87,18 @@ S = [
  ["Marketing opt-in checkbox at signup, stored with timestamp",
   "Admin can export opted-in users as CSV from Studio", "Unsubscribe link handling documented"], ["101", "102"]),
 
+("108", 1, "Must", "M", "Sign-up and onboarding",
+ "As a new viewer, I want a clear way to create an account and get started.",
+ ["Registration page: email, username, password (or Google/Apple once MBJ-101 lands); email verification",
+  "Welcome step: pick notifications, link YouTube (MBJ-215), see membership options",
+  "Profile page: username, avatar, linked accounts, membership, sign out everywhere",
+  "Password reset by email"], ["101"]),
+("109", 1, "Must", "M", "Payments API and receipts",
+ "As a member, I want reliable billing; as JimBob, I want to see and manage payments.",
+ ["Stripe webhooks (checkout, renewals, failures, refunds) update entitlements idempotently",
+  "Members see payment history and receipts; Stripe customer portal to change card or cancel",
+  "Studio: revenue, refunds, failed payments; test mode for staging",
+  "Backup processor evaluated (PRD open question)"], ["104"]),
 # ---------------- 2 Chat & moderation ----------------
 ("201", 1, "Should", "M", "Chat replay polish",
  "As a viewer, I want chat that feels as good as YouTube's.",
@@ -320,6 +332,30 @@ S = [
  ["Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list",
   "Proposes file-to-video matches for review; OBS recordings matched by date and length with an offset adjustment",
   "Skips videos already imported; deletes local copies after upload; resumable overnight run"], ["506"]),
+("807", 1, "Should", "L", "Store",
+ "As a fan, I want to buy JimBob's merch and products on his site.",
+ ["Products with photos, variants, and stock; cart and checkout (Stripe, or Shopify/Printful if fulfilment is outsourced)",
+  "Member and founding-member discounts", "Order confirmation email; Studio order list",
+  "Decide in-house vs Shopify/Printful before building (ADR)"], ["109"]),
+("808", 2, "Could", "M", "Art section",
+ "As a fan, I want to browse JimBob's art (confirm scope: his artwork and builds, e.g. the guitar, vs. brand art).",
+ ["Gallery of images with titles, descriptions, and dates", "Link items to related videos and posts",
+  "Optional: prints for sale through the Store"], []),
+("809", 1, "Should", "S", "Social media links and sharing",
+ "As JimBob, I want my socials everywhere and every page easy to share.",
+ ["Links to JimBob's YouTube, Rumble, X, Instagram, TikTok, etc. in the header menu and footer (configured in Studio)",
+  "Share button on videos, moments (?t=), comments, and playlists; copies a link or opens the phone's share sheet",
+  "Open Graph and Twitter card previews with title, thumbnail, and description"], []),
+("810", 1, "Must", "M", "Navigation bar",
+ "As a viewer, I want to find every part of the site quickly on desktop and phone.",
+ ["Top navigation: Videos, Playlists, Posts, Live, Store, Art, Members, with the live ring (MBJ-805)",
+  "Phone and installed app: bottom tab bar with the main sections", "Account menu: profile, notifications, membership, Studio for admins, sign out",
+  "Keyboard and screen-reader friendly"], []),
+("811", 1, "Should", "M", "Founding members",
+ "As an early supporter, I want to be recognised as a founding member.",
+ ["Limited founding membership (count or date window) with a price locked for life",
+  "Founding badge in chat and comments; founding members page (wall) with opt-in names",
+  "Perks defined with JimBob (early access, store discount, call-in priority)"], ["104"]),
 ]
 
 PHASES = {0: "Phase 0 — Foundation", 1: "Phase 1 — VOD platform", 2: "Phase 2 — Mobile",
@@ -333,12 +369,13 @@ SPRINTS = [
     ("Sprint 5", "Shared types + mobile start", ["004", "401", "402"]),
     ("Sprint 6", "Mobile core", ["403", "404", "406"]),
     ("Sprint 7", "Go live", ["301", "205", "302", "303"]),
-    ("Next", "Library & presence (Ruben's order)", ["801", "802", "803", "805", "804"]),
+    ("Next", "Presence and navigation", ["805", "810", "809", "804"]),
+    ("Then", "Accounts and money", ["101", "108", "104", "109", "105", "811", "807"]),
 ]
 
 # Story status lives here, not in BACKLOG.md (that file is regenerated). Example: {"001": "Done"}
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
-          "201": "Done", "202": "Done", "210": "Done", "211": "Done", "212": "Done", "213": "Done",
+          "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "211": "Done", "212": "Done", "213": "Done",
           "214": "Done", "604": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.

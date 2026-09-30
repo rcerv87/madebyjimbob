@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, count, formatTime, timeAgo, TIER_LABEL } from '../api.js';
 import { readLocal, resumePoint, saveProgress } from '../progress.js';
 import Player from '../components/Player.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
 import Comments from '../components/Comments.jsx';
+import UpNext, { EndScreen, readAutoplay } from '../components/UpNext.jsx';
 
 const SAVE_EVERY_MS = 10_000;
 
@@ -20,6 +21,43 @@ export default function Watch({ session }) {
   const [focusThread, setFocusThread] = useState(null);
   const playerRef = useRef(null);
   const lastSave = useRef(0);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const listId = params.get('list');
+  // Up next: the playlist being played (?list=), otherwise the channel, newest first.
+  const [queue, setQueue] = useState({ items: [], playlist: null });
+  const [autoplay, setAutoplay] = useState(readAutoplay);
+  const [ending, setEnding] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = listId
+      ? api(`/playlists/${listId}`).then((d) => ({ items: d.videos, playlist: d.playlist }))
+      : api('/videos').then((d) => ({ items: d.videos, playlist: null }));
+    load
+      .then((q) => !cancelled && setQueue(q))
+      .catch(() => !cancelled && setQueue({ items: [], playlist: null }));
+    return () => {
+      cancelled = true;
+    };
+  }, [listId]);
+
+  const index = queue.items.findIndex((v) => String(v.id) === String(id));
+  const next = index >= 0 ? queue.items[index + 1] : null;
+  const previous = index > 0 ? queue.items[index - 1] : null;
+  const hrefFor = useCallback((v) => `/watch/${v.id}${listId ? `?list=${listId}` : ''}`, [listId]);
+  // Keep Listen only on when moving to the next item.
+  const go = useCallback(
+    (v, listening = false) => {
+      setEnding(null);
+      navigate(hrefFor(v), { state: { listen: listening } });
+    },
+    [navigate, hrefFor],
+  );
+  const onEnded = (listening) => {
+    if (autoplay && next) setEnding({ next, listening });
+  };
+  const playNext = useCallback(() => ending && go(ending.next, ending.listening), [ending, go]);
 
   useEffect(() => {
     setVideo(null);
@@ -27,6 +65,7 @@ export default function Watch({ session }) {
     setTimeMs(0);
     setFocusThread(null);
     setResumedFrom(null);
+    setEnding(null);
     api(`/videos/${id}`)
       .then((d) => {
         // ?t=<seconds> (shared links, notifications) wins; otherwise resume where they left off.
@@ -101,14 +140,22 @@ export default function Watch({ session }) {
             )}
           </div>
         ) : (
-          <Player
-            src={video.hls}
-            poster={video.thumbnail}
-            title={video.title}
-            startMs={startMs}
-            playerRef={playerRef}
-            onTime={onTime}
-          />
+          <div className="player-wrap">
+            <Player
+              key={video.id}
+              src={video.hls}
+              poster={video.thumbnail}
+              title={video.title}
+              startMs={startMs}
+              startInListen={Boolean(location.state?.listen)}
+              playerRef={playerRef}
+              onTime={onTime}
+              onEnded={onEnded}
+              onNext={next ? (listening) => go(next, listening) : undefined}
+              onPrevious={previous ? (listening) => go(previous, listening) : undefined}
+            />
+            {ending && <EndScreen next={ending.next} onPlay={playNext} onCancel={() => setEnding(null)} />}
+          </div>
         )}
         {resumedFrom !== null && !video.locked && (
           <p className="resume-note">
@@ -134,6 +181,16 @@ export default function Watch({ session }) {
           <p className="desc-text">{video.description || 'No description.'}</p>
           {!expanded && video.description?.length > 200 && <span className="more">Show more</span>}
         </div>
+        {index >= 0 && (
+          <UpNext
+            queue={queue.items}
+            index={index}
+            playlist={queue.playlist}
+            autoplay={autoplay}
+            onAutoplay={setAutoplay}
+            hrefFor={hrefFor}
+          />
+        )}
       </div>
       {!video.locked && (
         <ChatPanel

@@ -12,7 +12,9 @@ Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see 
 | POST | `/session` | — | Sign in or sign up `{ username, password, tier? }` → `{ token, user }`. Existing names need their password (case-insensitive name match). `tier` only honored when `ALLOW_TEST_TIERS=true`. 10 wrong passwords lock the name for 15 min |
 | DELETE | `/session` | optional | Sign out; invalidates the token |
 | GET | `/me` | optional | `{ user | null }`; user is `{ id, username, tier, xp, isAdmin }` |
-| GET | `/videos` | — | List video cards |
+| GET | `/videos?kind=&members=&q=&sort=` | optional | Dashboard: `kind` = `video\|short\|live`, `members=1` for paid-tier only, `q` searches titles and descriptions, `sort` = `new\|old\|views`. Returns `{ videos, counts: { all, video, short, live, members } }` (counts follow `q`). Cards include `kind` and, when signed in, `progressMs` |
+| GET | `/playlists` | — | Playlists with at least one video on the site: `{ id, title, description, source, videoCount, durationS, thumbnail, firstVideoId }` |
+| GET | `/playlists/:id` | optional | `{ playlist, videos }` in playlist order (only videos on the site) |
 | GET | `/videos/:id` | optional | Video detail; `hls` only if tier allows, else `locked: true` |
 | POST | `/videos/:id/view` | — | Increment views |
 | GET | `/videos/:id/chat?from=&to=` | optional | Chat window by `offset_ms` (max 3,000). 403 if the viewer's tier can't watch the video |
@@ -29,6 +31,11 @@ Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see 
 | DELETE | `/push/subscribe` | required | `{ endpoint }` |
 | GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded) |
 | PATCH | `/studio/videos/:id` | admin | `{ minTier }` |
+| GET | `/studio/playlists` | admin | All playlists with their videos (including empty ones) |
+| POST | `/studio/playlists` | admin | `{ title, description? }` → `{ playlist }` (source `native`) |
+| PATCH | `/studio/playlists/:id` | admin | `{ title?, description? }`; 409 for YouTube playlists |
+| DELETE | `/studio/playlists/:id` | admin | Native playlists only |
+| PUT | `/studio/playlists/:id/items` | admin | `{ videoIds }` replaces the playlist's videos in that order |
 | GET | `/health` | — | Liveness |
 
 ### Comment shape

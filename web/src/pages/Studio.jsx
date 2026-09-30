@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, compact, formatTime, TIER_LABEL } from '../api.js';
+import StudioPlaylists from '../components/StudioPlaylists.jsx';
 
 export default function Studio({ user }) {
   const [data, setData] = useState(null);
@@ -108,6 +109,8 @@ export default function Studio({ user }) {
           </ol>
         </section>
       </div>
+
+      <StudioPlaylists allVideos={data.videos} />
     </div>
   );
 }

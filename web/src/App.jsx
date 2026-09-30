@@ -7,6 +7,9 @@ import SignInDialog from './components/SignInDialog.jsx';
 import Home from './pages/Home.jsx';
 import Watch from './pages/Watch.jsx';
 import Studio from './pages/Studio.jsx';
+import Playlists from './pages/Playlists.jsx';
+import Playlist from './pages/Playlist.jsx';
+import Posts from './pages/Posts.jsx';
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 
@@ -43,6 +46,9 @@ export default function App() {
       <main className="main">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/playlists" element={<Playlists />} />
+          <Route path="/playlist/:id" element={<Playlist />} />
+          <Route path="/posts" element={<Posts />} />
           <Route path="/watch/:id" element={<Watch session={session} />} />
           <Route path="/studio" element={<Studio user={user} />} />
         </Routes>
