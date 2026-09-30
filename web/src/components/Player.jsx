@@ -157,8 +157,15 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
       return;
     }
     t.last = now;
-    // While auto-muted, a single tap unmutes instead of pausing (as on YouTube).
-    t.timer = setTimeout(() => (videoRef.current?.muted && autoMuted ? unmute() : togglePlay()), 280);
+    // While auto-muted and playing, a single tap unmutes instead of pausing (as on YouTube).
+    // If it's paused, the tap plays it (and unmutes, since the viewer has now interacted).
+    t.timer = setTimeout(() => {
+      const v = videoRef.current;
+      if (!v) return;
+      const playingMuted = autoMuted && v.muted && !v.paused;
+      if (autoMuted) unmute();
+      if (!playingMuted) togglePlay();
+    }, 280);
   };
 
   const onPointerLeave = () => {
