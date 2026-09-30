@@ -62,6 +62,9 @@ export default function Watch({ session }) {
           videoId={video.id}
           timeMs={timeMs}
           getTimeMs={() => Math.floor((playerRef.current?.currentTime || 0) * 1000)}
+          onSeek={(ms) => {
+            if (playerRef.current) playerRef.current.currentTime = ms / 1000;
+          }}
           session={session}
         />
       )}

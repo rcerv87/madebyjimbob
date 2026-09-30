@@ -124,6 +124,26 @@ describe('chat window', () => {
     );
   });
 
+  test('afterId returns everything newer than a message, for reconnect catch-up', async () => {
+    const id = await seedVideo();
+    await seedChat(id, [
+      { body: 'old', offsetMs: 500_000 },
+      { body: 'newer', offsetMs: 1_000 },
+      { body: 'hidden', offsetMs: 2_000, hidden: true },
+      { body: 'newest', offsetMs: 300_000 },
+    ]);
+    const all = await call(`/videos/${id}/chat?from=0&to=600000`);
+    const oldId = all.data.messages.find((m) => m.body === 'old').id;
+    const r = await call(`/videos/${id}/chat?afterId=${oldId}`);
+    assert.deepEqual(
+      r.data.messages.map((m) => m.body),
+      ['newer', 'newest'],
+    );
+    assert.equal((await call(`/videos/${id}/chat?afterId=abc`)).status, 400);
+    const locked = await seedVideo({ minTier: 'premium' });
+    assert.equal((await call(`/videos/${locked}/chat?afterId=0`)).status, 403);
+  });
+
   test('is blocked for viewers below the video tier', async () => {
     const id = await seedVideo({ minTier: 'plus' });
     await seedChat(id, [{ body: 'members only', offsetMs: 1_000 }]);

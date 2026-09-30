@@ -26,6 +26,7 @@ If the archived VOD is trimmed relative to the live broadcast, store the trim as
 - REST: `GET /api/videos/:id/chat?from&to` returns a window (max 3,000 rows), ordered by `offset_ms, id`.
 - WebSocket: clients `join` a video room; server pushes `chat`, and later `vote`, `delete`, `pin` events.
 - Stored video: client loads the current and next 2-minute windows, renders messages with `offset_ms ≤ playhead`, keeps the last 150 in the DOM.
+- Reconnect: after the socket reopens, the client fetches `?afterId=<highest id seen>` so posts made while it was down aren't lost.
 - Live: client renders everything it receives; on reconnect it fetches messages since the last seen `id`.
 
 ## Ingest worker (Phase 3)

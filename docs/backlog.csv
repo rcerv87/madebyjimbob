@@ -46,7 +46,7 @@ MBJ-106,Account page,Accounts & memberships,Phase 1 — VOD platform,Should,M,To
 MBJ-107,Owned email list,Accounts & memberships,Phase 1 — VOD platform,Must,S,To do,"As JimBob, I want my audience's contact info so no platform can take my audience away.","- Marketing opt-in checkbox at signup, stored with timestamp
 - Admin can export opted-in users as CSV from Studio
 - Unsubscribe link handling documented","MBJ-101, MBJ-102"
-MBJ-201,Chat replay polish,Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a viewer, I want chat that feels as good as YouTube's.","- ""Jump to latest"" button appears when scrolled up; resumes auto-scroll
+MBJ-201,Chat replay polish,Chat & moderation,Phase 1 — VOD platform,Should,M,Done,"As a viewer, I want chat that feels as good as YouTube's.","- ""Jump to latest"" button appears when scrolled up; resumes auto-scroll
 - Hovering a message shows its video timestamp; clicking seeks the player there
 - On WebSocket reconnect, missed messages are fetched since the last id",
 MBJ-202,@mention autocomplete and notifications,Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a member, I want to know when someone mentions me.","- Typing `@` suggests recent chatters in this video

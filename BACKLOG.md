@@ -273,14 +273,14 @@ The core chat experience and the tools to keep it usable.
 
 ### MBJ-201 — Chat replay polish
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M
 
 As a viewer, I want chat that feels as good as YouTube's.
 
 Acceptance criteria:
-- [ ] "Jump to latest" button appears when scrolled up; resumes auto-scroll
-- [ ] Hovering a message shows its video timestamp; clicking seeks the player there
-- [ ] On WebSocket reconnect, missed messages are fetched since the last id
+- [x] "Jump to latest" button appears when scrolled up; resumes auto-scroll
+- [x] Hovering a message shows its video timestamp; clicking seeks the player there
+- [x] On WebSocket reconnect, missed messages are fetched since the last id
 
 ### MBJ-202 — @mention autocomplete and notifications
 

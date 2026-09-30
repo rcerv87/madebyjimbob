@@ -4,26 +4,31 @@ import { api, formatTime, getToken } from '../api.js';
 const WINDOW_MS = 120_000;
 const VISIBLE = 150;
 
-export default function ChatPanel({ videoId, timeMs, getTimeMs, session }) {
+export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, session }) {
   const [byId, setById] = useState(() => new Map());
   const loaded = useRef(new Set());
   const listRef = useRef(null);
   const pinned = useRef(true);
+  const lastId = useRef(0);
+  const [showJump, setShowJump] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
 
-  const addMessages = (msgs) =>
+  const addMessages = (msgs) => {
+    for (const m of msgs) lastId.current = Math.max(lastId.current, Number(m.id));
     setById((prev) => {
       const next = new Map(prev);
       for (const m of msgs) next.set(m.id, m);
       return next;
     });
+  };
 
   // Reset when switching videos
   useEffect(() => {
     setById(new Map());
     loaded.current = new Set();
+    lastId.current = 0;
   }, [videoId]);
 
   // Load the current and next 2-minute windows as playback moves
@@ -43,9 +48,19 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, session }) {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     let ws;
     let retry;
+    let reconnecting = false;
     const connect = () => {
       ws = new WebSocket(`${proto}://${location.host}/ws`);
-      ws.onopen = () => ws.send(JSON.stringify({ type: 'join', videoId, token: getToken() }));
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'join', videoId, token: getToken() }));
+        // Catch up on anything posted while the socket was down.
+        if (reconnecting && lastId.current) {
+          api(`/videos/${videoId}/chat?afterId=${lastId.current}`)
+            .then((d) => addMessages(d.messages))
+            .catch(() => {});
+        }
+        reconnecting = true;
+      };
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'chat') addMessages([msg.message]);
@@ -79,6 +94,14 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, session }) {
   const onScroll = () => {
     const el = listRef.current;
     pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    setShowJump(!pinned.current);
+  };
+
+  const jumpToLatest = () => {
+    const el = listRef.current;
+    pinned.current = true;
+    setShowJump(false);
+    if (el) el.scrollTop = el.scrollHeight;
   };
 
   const send = async (e) => {
@@ -93,7 +116,7 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, session }) {
       });
       addMessages([message]);
       setText('');
-      pinned.current = true;
+      jumpToLatest();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -108,12 +131,21 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, session }) {
         <span className="muted small">Synced to {formatTime(timeMs / 1000)}</span>
       </header>
 
-      <ol className="chat-list" ref={listRef} onScroll={onScroll} aria-live="polite">
-        {visible.length === 0 && <li className="chat-empty muted">Chat appears here as the video plays.</li>}
-        {visible.map((m) => (
-          <ChatMessage key={m.id} m={m} me={session.user?.username} />
-        ))}
-      </ol>
+      <div className="chat-body">
+        <ol className="chat-list" ref={listRef} onScroll={onScroll} aria-live="polite">
+          {visible.length === 0 && (
+            <li className="chat-empty muted">Chat appears here as the video plays.</li>
+          )}
+          {visible.map((m) => (
+            <ChatMessage key={m.id} m={m} me={session.user?.username} onSeek={onSeek} />
+          ))}
+        </ol>
+        {showJump && (
+          <button type="button" className="jump-latest" onClick={jumpToLatest}>
+            Jump to latest
+          </button>
+        )}
+      </div>
 
       <form className="chat-compose" onSubmit={send}>
         <input
@@ -135,7 +167,7 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, session }) {
   );
 }
 
-function ChatMessage({ m, me }) {
+function ChatMessage({ m, me, onSeek }) {
   const mentionsMe = me && m.mentions?.includes(me.toLowerCase());
   const parts = m.body.split(/(@[A-Za-z0-9_]{3,32})/g);
 
@@ -149,6 +181,18 @@ function ChatMessage({ m, me }) {
     ),
   );
 
+  const stamp = (
+    <button
+      type="button"
+      className="chat-ts"
+      onClick={() => onSeek?.(m.offsetMs)}
+      title="Play from this moment"
+      aria-label={`Play from ${formatTime(m.offsetMs / 1000)}`}
+    >
+      {formatTime(m.offsetMs / 1000)}
+    </button>
+  );
+
   if (m.kind === 'paid') {
     return (
       <li className="chat-msg paid">
@@ -157,6 +201,7 @@ function ChatMessage({ m, me }) {
           <span className="author">{m.author}</span>
           <strong className="amount">{m.amount}</strong>
         </div>
+        {stamp}
         {m.body && <p>{body}</p>}
       </li>
     );
@@ -172,6 +217,7 @@ function ChatMessage({ m, me }) {
         <span className="author">{m.author}</span>
         {body}
       </p>
+      {stamp}
     </li>
   );
 }

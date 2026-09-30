@@ -64,6 +64,50 @@ describe('ChatPanel', () => {
     expect(ws.sent[0]).toEqual({ type: 'join', videoId: '7', token: 'tok123' });
   });
 
+  test('clicking a message timestamp seeks the player there', async () => {
+    mockApi({ '/videos/7/chat': { messages: [msg(1, 65_000, 'at 1:05')] } });
+    const onSeek = vi.fn();
+    render(
+      <ChatPanel
+        videoId="7"
+        timeMs={90_000}
+        getTimeMs={() => 90_000}
+        onSeek={onSeek}
+        session={{ user: null, requireSignIn: () => {} }}
+      />,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Play from 1:05' }));
+    expect(onSeek).toHaveBeenCalledWith(65_000);
+  });
+
+  test('shows "Jump to latest" when scrolled up and hides it after jumping', async () => {
+    mockApi({ '/videos/7/chat': { messages: [msg(1, 0, 'hello')] } });
+    renderPanel();
+    await screen.findByText('hello');
+    const list = document.querySelector('.chat-list');
+    Object.defineProperty(list, 'scrollHeight', { configurable: true, value: 1000 });
+    Object.defineProperty(list, 'clientHeight', { configurable: true, value: 300 });
+
+    list.scrollTop = 100;
+    fireEvent.scroll(list);
+    const jump = await screen.findByRole('button', { name: 'Jump to latest' });
+
+    fireEvent.click(jump);
+    expect(list.scrollTop).toBe(1000);
+    expect(screen.queryByRole('button', { name: 'Jump to latest' })).toBeNull();
+  });
+
+  test('after a reconnect, fetches messages newer than the last one seen', async () => {
+    mockApi({ '/videos/7/chat': { messages: [msg(41, 0, 'seen'), msg(42, 0, 'also seen')] } });
+    renderPanel();
+    await screen.findByText('also seen');
+    const ws = FakeWebSocket.instances[0];
+    ws.onopen(); // first connect: no catch-up
+    expect(fetch.mock.calls.some(([url]) => String(url).includes('afterId'))).toBe(false);
+    ws.onopen(); // reconnect
+    expect(fetch.mock.calls.some(([url]) => String(url).includes('afterId=42'))).toBe(true);
+  });
+
   test('asks signed-out viewers to sign in instead of posting', async () => {
     mockApi({ '/videos/7/chat': { messages: [] } });
     const requireSignIn = vi.fn();

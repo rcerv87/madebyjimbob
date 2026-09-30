@@ -244,11 +244,24 @@ app.post(
 );
 
 // Chat for a time window of the video: ?from=ms&to=ms
+// Or everything newer than a message id, for catching up after a reconnect: ?afterId=123
 app.get(
   '/api/videos/:id/chat',
   wrap(async (req, res) => {
     const video = await watchableVideo(req, res, await currentUser(req));
     if (!video) return;
+    if (req.query.afterId !== undefined) {
+      if (!/^\d{1,18}$/.test(String(req.query.afterId))) {
+        return res.status(400).json({ error: 'afterId must be a message id.' });
+      }
+      const { rows } = await pool.query(
+        `SELECT * FROM chat_messages
+         WHERE video_id = $1 AND NOT hidden AND id > $2
+         ORDER BY id LIMIT $3`,
+        [video.id, req.query.afterId, CHAT_WINDOW_MAX],
+      );
+      return res.json({ messages: rows.map(chatRow) });
+    }
     const from = Math.min(MAX_OFFSET_MS, Math.max(0, Number(req.query.from) || 0));
     const to = Math.min(MAX_OFFSET_MS, Number(req.query.to) || from + 120_000);
     const { rows } = await pool.query(
