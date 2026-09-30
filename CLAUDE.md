@@ -2,6 +2,17 @@
 
 Guidance for Claude Code working in this repo. Read this first, then the doc relevant to your task.
 
+## Start here
+
+- **`docs/STATUS.md` is the source of truth for where things stand**: what's built, what's live, decisions,
+  what's waiting on Ruben, the ordered next steps, and a Reference section (environments, services, video ids
+  local vs live, JimBob's channel/store/socials, verification routine). Read it before starting work.
+- Live site: https://madebyjimbob.onrender.com (Render; deploys on every push to `main`).
+  Code: https://github.com/rcerv87/madebyjimbob. Ruben (product owner) tests in real Chrome and on his phone.
+- The person you're working with is Ruben; JimBob is the creator the platform is for. Ruben wants visible
+  progress, numbered click-by-click steps for anything he must do, costs in dollars per month, and a single
+  recommendation when there's a choice.
+
 ## What this is
 
 MadeByJimBob: a creator platform that makes JimBob independent of any single platform.
@@ -19,10 +30,12 @@ Rumble, and native messages, tiered memberships (Free / Plus / Premium), and eng
 
 ## Stack
 
-- `server/` Node 20+, Express, `ws`, `pg` (ESM). Serves the API, WebSockets, and the built web app.
-- `web/` React 18 + Vite + react-router + hls.js.
-- `mobile/` (planned, MBJ-401) Expo + expo-video.
-- Postgres on Render. Video on Cloudflare Stream. Deploy via `render.yaml`.
+- `server/` Node 20+ (22 on Render), Express, `ws`, `pg`, `node-pg-migrate`, `pino`, `web-push` (ESM).
+  Serves the API, WebSockets, and the built web app.
+- `web/` React 18 + Vite + react-router + hls.js. Installable PWA (`web/public/manifest.webmanifest`, `sw.js`).
+- Store apps: not started. Decide Capacitor (wrap this web app) vs Expo (ADR-008) before MBJ-401.
+- Postgres on Render. Video on Cloudflare Stream (R2 proposed, ADR-010). Shop and Art read JimBob's Shopify
+  store (ADR-011). Deploy via `render.yaml`.
 
 ## Commands
 
@@ -38,7 +51,7 @@ npm run captions:fetch         # save finished Stream captions into transcripts 
 npm run import:playlists -- <playlist or channel URL>   # YouTube playlists (order kept)
 npm run migrate:create -- <name>   # new SQL migration in server/migrations/
 npm run format                 # Prettier; `format:check` to verify only
-npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only]
+npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only] [--no-comments]
 ```
 
 Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any story. CI (`.github/workflows/ci.yml`) runs the same checks plus the build on every PR to `main`.
@@ -74,6 +87,22 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - Secrets live in env vars. Add every new var to `.env.example` and `render.yaml` (`sync: false`).
 - UI copy: sentence case, plain verbs, errors say what happened and how to fix it.
 - Keep dependencies lean; mention any new dependency and why in the PR description.
+
+## Working notes (learned the hard way)
+
+- Ship each release: branch → tests/lint/format/build → real-browser check → merge to `main` (`--no-ff`) →
+  push → wait for the new `index-<hash>.js` on the live `/` → re-run data imports against the live database if
+  the release needs them (see STATUS.md Reference) → update STATUS.md and the backlog `STATUS` dict.
+- Real-browser checks use headless Chrome/Edge over the DevTools protocol (screenshots, DOM reads, device
+  emulation for phones). A plain headless window can't go below ~500px, so phone "overflow" in plain
+  screenshots is fake; use `Emulation.setDeviceMetricsOverride`.
+- After changing server code, restart the local server before browser-testing; a stale server returns old
+  API shapes (this broke the dashboard once).
+- Web tests that render `ChatPanel` need a router (`MemoryRouter`) because it reads `?chat=`.
+- Server tests blank `VAPID_*` (no real pushes) and point `SHOP_URL` at a stub store; they never touch the
+  real store or push services.
+- Autoplay rules: browsers allow sound only after a user gesture on the site; the player then waits with a
+  Play button (never muted). Phones pause `<video>` when locked; Listen only switches to `<audio>`.
 
 ## Known POC shortcuts (tracked in backlog)
 

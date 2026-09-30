@@ -136,3 +136,83 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 7. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
 8. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
 9. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
+
+## Reference
+
+Facts gathered while building, so a new session doesn't have to rediscover them. Secrets are named here,
+never written here: their values live only in `.env` (git-ignored) or Render's Environment settings.
+
+### Environments
+
+| | Local (Ruben's PC) | Live |
+|---|---|---|
+| App | http://localhost:3000 (`node server/src/index.js` from the repo root; build web first) | https://madebyjimbob.onrender.com |
+| Database | Postgres cluster in `.localdb` on 127.0.0.1:5544 (`madebyjimbob`, tests use `madebyjimbob_test`) | Render Postgres `madebyjimbob-db`; external URL in `.env` as `RENDER_DATABASE_URL` |
+| Deploy | — | Push to `main` on GitHub → Render builds, runs migrations (pre-deploy), and restarts (~2 min) |
+
+- **Check a deploy is live:** the built page references `web/dist/assets/index-<hash>.js`; poll the live `/` until
+  it contains the new hash.
+- **Run imports against the live database** (from the PC, video already on Stream so nothing re-uploads):
+  `DATABASE_URL="$RENDER_DATABASE_URL" PGSSL=true npm run import:youtube -- <url> --stream-uid <uid>`
+  (`--chat-only` refreshes chat + comments; `--no-comments` skips comments). Same pattern for
+  `import:playlists` and `captions:fetch`.
+- **Test in real Chrome/Edge, not VS Code's built-in browser** (it lacks the H.264/AAC codecs, so video won't play).
+
+### Services and settings
+
+| Service | What | Notes |
+|---|---|---|
+| GitHub | `rcerv87/madebyjimbob` (private) | CI workflow in `.github/workflows/ci.yml`; branch rule still to add |
+| Render | Blueprint from `render.yaml`: web service `madebyjimbob` (Starter) + Postgres | Env: `ADMIN_USERNAMES=jimbob`, `VAPID_PUBLIC_KEY`/`VAPID_SUBJECT` from render.yaml; `VAPID_PRIVATE_KEY` must be added by hand |
+| Cloudflare Stream | Starter bundle ($5/mo) | Customer code `xw9exz2muwhw7zsm` (public); `CF_ACCOUNT_ID`, `CF_API_TOKEN` (Stream: Edit) in `.env`. English auto-captions generated for all 4 videos |
+| Shopify | JimBob's store, madebyjimbob.com | Read via public product JSON (`SHOP_URL`, default https://madebyjimbob.com); no Shopify credentials yet |
+| Web Push | VAPID key pair | Generated 2026-09-29; both keys in local `.env` |
+
+### Content on the site
+
+Same four videos locally and live (different database ids):
+
+| YouTube id | Title | Type | Local id | Live id | Stream uid |
+|---|---|---|---|---|---|
+| `mzP0tKpIv5w` | Jimbob guitar is coming to life… | video (360p, vertical, 10 min) | 3 | 1 | `c5453d94b90ed211c863e8de3700f8e8` |
+| `gdgBIwSAKgg` | Two Evolution Simps Get Torn Up | video (26 min) | 4 | 2 | `9000b4293757124395f7e9a691794805` |
+| `Hz_elPwFwvU` | Alex Malpass Is Challenged | live (31 min, 810 chat) | 8 | 3 | `3ba82df285a3cb656d94022b5a7fc6c0` |
+| `uijhf9xg4u8` | Evolution Debate | live (3 h 25 min, 6,498 chat) | 10 | 4 | `a2c7004be7c1acbd2b30a36e9652761f` |
+
+Playlists: JimBob's 9 YouTube playlists are imported locally and live; only "Livestream Clips" has a video on
+the site so far. Stream usage ≈ 270 of 1,000 stored minutes.
+
+### JimBob
+
+- **YouTube:** channel `UCe37IG3iLRcQlteFFBkX6Pw` (@madebyjimbob). Live **weekdays around 12:00pm ET**.
+  40+ past streams, typically **2–6 hours** (~4 h average). Many have chat replay; some don't.
+- **Measured chat** (two replays): 26–28 msg/min average, busiest minute 78, bursts ~5/s, 150–390 chatters,
+  11–57 super chats per stream in USD/GBP/CAD/EUR.
+- **Store (Shopify, madebyjimbob.com):** ~148 products ($5–$500): classic art prints, t-shirts, stickers, mugs,
+  *Savage Memes* books (autographed, vol. 1–5, published with Arkhaven), original and digital art, OrthoThugs
+  line, "Be in JimBob's next print" commissions, **Bob Chats** (paid chat messages sold as products), AmeriChat.
+  Has a newsletter signup (seed for MBJ-107). Font Jost; teal #27717A.
+- **Elsewhere:** X @byjimbob, Instagram @madebyjimbob (original account was cancelled at 115k followers),
+  Facebook, Gab, Telegram, Spotify and Bandcamp (music), Washington Examiner (comics).
+- **Brand assets in the platform** (`web/public/brand/`): avatar cropped from his website header art (the
+  sunglasses-and-cap character, also on Bob Chats), the header art, and the Bob Chats image. The other
+  portraits on his store may be customers' commissions; don't use them as JimBob.
+- **Google Takeout guide for JimBob:** https://claude.ai/artifact/7HaUjjThdugEcyBfUfCt1q (private until
+  shared from its Share menu). He was asked to export the whole channel as the backup and import source.
+
+### Product decisions that shape the UI
+
+- Videos never start muted; if the browser blocks sound, show a Play button.
+- Chat opens in **Live only**; later viewers' chat and timestamped comments are behind "Live + replay".
+- Replies always quote exactly what they answer (chat and comments).
+- Listen only switches to Cloudflare's audio-only track so phones keep playing when locked.
+- iPhone/iPad use Safari's native HLS; everything else uses hls.js.
+- Store checkout stays on Shopify; the platform shows products and links out.
+
+### How releases are verified
+
+Each release: `npm test`, `npm run lint`, `npm run format:check`, `npm run build`, then a real-browser check
+with headless Chrome driven over the DevTools protocol (screenshots and DOM checks), including phone layout
+via device emulation (a plain headless window can't go below ~500px wide, which fakes overflow). Then push,
+wait for the new bundle hash on the live site, re-run any data imports against the live database, and spot
+check live endpoints. Update this file and the backlog `STATUS` dict with every release.
