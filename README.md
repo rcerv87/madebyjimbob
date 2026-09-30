@@ -24,10 +24,16 @@ web/                               React app: home grid, watch page + chat, Stud
 
 ## 2. Deploy to Render
 
-1. Push this repo to GitHub.
-2. Render → **New → Blueprint** → pick the repo. It creates the web service and Postgres.
-3. Set `CF_STREAM_CUSTOMER_CODE` and `ADMIN_USERNAMES` (e.g. `jimbob`) on the web service. Optionally `BANNED_WORDS`.
-4. Open the site and sign up with an admin username first, so nobody else can claim it.
+1. Push this repo to GitHub (private is fine).
+2. Render → **New → Blueprint** → pick the repo. It creates the web service (Starter) and Postgres.
+   When asked, set `ADMIN_USERNAMES` (e.g. `jimbob`). `CF_STREAM_CUSTOMER_CODE` is already in `render.yaml`.
+3. Render builds, runs migrations (pre-deploy), and starts the app. Open the `.onrender.com` URL and
+   **sign up as an admin username right away**, so nobody else can claim it.
+4. Load videos into the Render database from your machine: copy the database's **External Database URL**
+   (Render → the database → Connect) and run the import against it. Videos already on Stream aren't re-uploaded:
+   ```bash
+   DATABASE_URL="<external url>" PGSSL=true npm run import:youtube -- "<youtube-url>" --stream-uid <uid>
+   ```
 5. On GitHub: Settings → Branches → add a rule for `main` → require the **CI / check** status to pass before merging.
 
 ## 3. Import past streams (run on your machine)

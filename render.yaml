@@ -1,25 +1,33 @@
+# Render Blueprint: one web service (API + WebSockets + built web app) and Postgres.
+# Render asks for the `sync: false` values when you create the Blueprint.
 services:
   - type: web
     name: madebyjimbob
     runtime: node
     plan: starter
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm start
     preDeployCommand: npm run migrate
     healthCheckPath: /api/health
     envVars:
+      - key: NODE_VERSION
+        value: '22'
       - key: DATABASE_URL
         fromDatabase:
           name: madebyjimbob-db
           property: connectionString
+      # Not secret: it appears in every public Stream URL.
       - key: CF_STREAM_CUSTOMER_CODE
+        value: xw9exz2muwhw7zsm
+      # Comma-separated usernames that can open Studio. Sign up as one of them right after deploy.
+      - key: ADMIN_USERNAMES
         sync: false
       - key: BANNED_WORDS
         sync: false
-      - key: ADMIN_USERNAMES
-        sync: false
       - key: ALLOW_TEST_TIERS
         value: 'false'
+      - key: LOG_LEVEL
+        value: info
 
 databases:
   - name: madebyjimbob-db
