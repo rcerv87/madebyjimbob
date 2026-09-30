@@ -44,7 +44,11 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - **Videos** dashboard (home): chips All / Videos / Shorts / Live / Members only with counts, search on the
   server (titles and descriptions), sort by newest / oldest / most viewed; filters live in the URL.
   Video types come from import: past live streams are "Streamed", vertical ≤ 3 min are Shorts.
-- Tabs **Videos · Playlists · Posts** (Posts is a "coming soon" page until MBJ-804).
+- Tabs **Videos · Playlists · Posts**. Posts is a **preview** (MBJ-804 not built): six example posts in JimBob's
+  style (icon-painting progress with his own photos from YouTube, a poll, a stream link, a locked members-only
+  post, a store drop with the real sticker pack, a Q&A call), each labeled Example. Captions are written for the
+  preview; memes/screenshots from his YouTube posts were left out. Delete `web/src/postExamples.js` when real
+  posts ship.
 - **Playlists**: JimBob's YouTube playlists imported in order (`npm run import:playlists -- <channel URL>`);
   videos not on the site yet appear once imported. Playlist page with Play all.
 - **Studio playlists**: create, add, reorder, remove, rename, delete (YouTube ones are read-only there).
