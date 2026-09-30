@@ -18,7 +18,7 @@ services:
       - key: ADMIN_USERNAMES
         sync: false
       - key: ALLOW_TEST_TIERS
-        value: "false"
+        value: 'false'
 
 databases:
   - name: madebyjimbob-db

@@ -3,7 +3,7 @@ MBJ-001,Test harness,Foundation,Phase 0 — Foundation,Must,M,Done,"As the devel
 - Server tests run against a disposable Postgres (`DATABASE_URL_TEST`) and reset it per run
 - Covered: sign-in, tier gating on `/videos/:id`, chat window query, chat post + rate limit, WS broadcast
 - Web: at least one render test each for Home, Watch (locked + unlocked), ChatPanel",
-MBJ-002,Lint and format,Foundation,Phase 0 — Foundation,Must,S,To do,"As the developer, I want consistent code style enforced automatically.","- ESLint + Prettier configured for server and web
+MBJ-002,Lint and format,Foundation,Phase 0 — Foundation,Must,S,Done,"As the developer, I want consistent code style enforced automatically.","- ESLint + Prettier configured for server and web
 - `npm run lint` and `npm run format` at root
 - Existing code passes lint",
 MBJ-003,Database migrations,Foundation,Phase 0 — Foundation,Must,M,To do,"As the developer, I want versioned schema changes so production data is never at risk.","- node-pg-migrate installed; baseline migration equals current `schema.sql`

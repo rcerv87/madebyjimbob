@@ -56,7 +56,7 @@ export async function seedVideo({ minTier = 'free', durationS = 600 } = {}) {
   seq += 1;
   const { rows } = await pool.query(
     `INSERT INTO videos (youtube_id, title, duration_s, min_tier) VALUES ($1, $2, $3, $4) RETURNING id`,
-    [`test-${seq}`, `Video ${seq}`, durationS, minTier]
+    [`test-${seq}`, `Video ${seq}`, durationS, minTier],
   );
   return rows[0].id;
 }
@@ -67,7 +67,7 @@ export async function seedChat(videoId, messages) {
     await pool.query(
       `INSERT INTO chat_messages (video_id, source, external_id, author_name, body, offset_ms, hidden)
        VALUES ($1, 'youtube', $2, 'Viewer', $3, $4, $5)`,
-      [videoId, `ext-${seq}`, m.body, m.offsetMs, m.hidden || false]
+      [videoId, `ext-${seq}`, m.body, m.offsetMs, m.hidden || false],
     );
   }
 }

@@ -16,7 +16,9 @@ export default function Watch({ session }) {
     setVideo(null);
     setError('');
     setTimeMs(0);
-    api(`/videos/${id}`).then((d) => setVideo(d.video)).catch((e) => setError(e.message));
+    api(`/videos/${id}`)
+      .then((d) => setVideo(d.video))
+      .catch((e) => setError(e.message));
     api(`/videos/${id}/view`, { method: 'POST' }).catch(() => {});
   }, [id, session.user?.tier]);
 
@@ -30,7 +32,11 @@ export default function Watch({ session }) {
           <div className="locked">
             <h2>{TIER_LABEL[video.minTier]} members only</h2>
             <p>This stream is part of the {TIER_LABEL[video.minTier]} tier.</p>
-            {!session.user && <button className="primary-btn" onClick={session.requireSignIn}>Sign in</button>}
+            {!session.user && (
+              <button className="primary-btn" onClick={session.requireSignIn}>
+                Sign in
+              </button>
+            )}
           </div>
         ) : (
           <Player
@@ -43,7 +49,10 @@ export default function Watch({ session }) {
         )}
         <h1 className="watch-title">{video.title}</h1>
         <div className={`description ${expanded ? 'open' : ''}`} onClick={() => setExpanded(true)}>
-          <p className="desc-meta">{compact(video.views)} views · {timeAgo(video.publishedAt)} · {compact(video.chatCount)} chat messages</p>
+          <p className="desc-meta">
+            {compact(video.views)} views · {timeAgo(video.publishedAt)} · {compact(video.chatCount)} chat
+            messages
+          </p>
           <p className="desc-text">{video.description || 'No description.'}</p>
           {!expanded && video.description?.length > 200 && <span className="more">Show more</span>}
         </div>

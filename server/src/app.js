@@ -15,7 +15,10 @@ const CHAT_WINDOW_MAX = 3000;
 const MAX_OFFSET_MS = 2_147_483_647; // chat_messages.offset_ms is INT
 const ALLOW_TEST_TIERS = process.env.ALLOW_TEST_TIERS === 'true';
 const ADMINS = new Set(
-  (process.env.ADMIN_USERNAMES || '').split(',').map((u) => u.trim().toLowerCase()).filter(Boolean)
+  (process.env.ADMIN_USERNAMES || '')
+    .split(',')
+    .map((u) => u.trim().toLowerCase())
+    .filter(Boolean),
 );
 
 const app = express();
@@ -47,10 +50,9 @@ function publicUser(u) {
 
 async function userByToken(token) {
   if (!token) return null;
-  const { rows } = await pool.query(
-    'SELECT id, username, tier, xp FROM users WHERE session_token = $1',
-    [String(token)]
-  );
+  const { rows } = await pool.query('SELECT id, username, tier, xp FROM users WHERE session_token = $1', [
+    String(token),
+  ]);
   return publicUser(rows[0]);
 }
 
@@ -64,9 +66,7 @@ const canWatch = (user, video) => TIER_RANK[user?.tier || 'free'] >= TIER_RANK[v
 // Returns the video row, or null for unknown or malformed ids.
 async function findVideo(id) {
   if (!/^\d{1,18}$/.test(String(id))) return null;
-  const { rows } = await pool.query(
-    'SELECT id, min_tier, duration_s FROM videos WHERE id = $1', [id]
-  );
+  const { rows } = await pool.query('SELECT id, min_tier, duration_s FROM videos WHERE id = $1', [id]);
   return rows[0] || null;
 }
 
@@ -128,153 +128,187 @@ const failedSignIns = new Map(); // lowercased username -> { count, until }
 
 app.get('/api/config', (_req, res) => res.json({ allowTestTiers: ALLOW_TEST_TIERS }));
 
-app.post('/api/session', wrap(async (req, res) => {
-  const username = String(req.body.username || '').trim();
-  const password = String(req.body.password || '');
-  if (!/^[A-Za-z0-9_]{3,32}$/.test(username)) {
-    return res.status(400).json({ error: 'Use 3–32 letters, numbers, or underscores.' });
-  }
-  if (password.length < 8 || password.length > 200) {
-    return res.status(400).json({ error: 'Use a password of at least 8 characters.' });
-  }
-
-  const key = username.toLowerCase();
-  const lock = failedSignIns.get(key);
-  if (lock && lock.count >= 10 && lock.until > Date.now()) {
-    return res.status(429).json({ error: 'Too many wrong passwords. Try again in 15 minutes.' });
-  }
-
-  const token = crypto.randomBytes(24).toString('hex');
-  const testTier = ALLOW_TEST_TIERS && TIER_RANK[req.body.tier] !== undefined ? req.body.tier : null;
-  const { rows: existing } = await pool.query(
-    'SELECT id, username, password_hash FROM users WHERE lower(username) = $1', [key]
-  );
-
-  let user;
-  if (existing[0]) {
-    const found = existing[0];
-    // POC accounts have no password yet; the first sign-in sets it.
-    if (found.password_hash && !(await checkPassword(password, found.password_hash))) {
-      const n = lock && lock.until > Date.now() ? lock.count + 1 : 1;
-      failedSignIns.set(key, { count: n, until: Date.now() + 15 * 60_000 });
-      return res.status(401).json({ error: 'That username is taken, or the password is wrong.' });
+app.post(
+  '/api/session',
+  wrap(async (req, res) => {
+    const username = String(req.body.username || '').trim();
+    const password = String(req.body.password || '');
+    if (!/^[A-Za-z0-9_]{3,32}$/.test(username)) {
+      return res.status(400).json({ error: 'Use 3–32 letters, numbers, or underscores.' });
     }
-    failedSignIns.delete(key);
-    const hash = found.password_hash || (await hashPassword(password));
-    const { rows } = await pool.query(
-      `UPDATE users SET session_token = $1, password_hash = $2, tier = COALESCE($3, tier)
+    if (password.length < 8 || password.length > 200) {
+      return res.status(400).json({ error: 'Use a password of at least 8 characters.' });
+    }
+
+    const key = username.toLowerCase();
+    const lock = failedSignIns.get(key);
+    if (lock && lock.count >= 10 && lock.until > Date.now()) {
+      return res.status(429).json({ error: 'Too many wrong passwords. Try again in 15 minutes.' });
+    }
+
+    const token = crypto.randomBytes(24).toString('hex');
+    const testTier = ALLOW_TEST_TIERS && TIER_RANK[req.body.tier] !== undefined ? req.body.tier : null;
+    const { rows: existing } = await pool.query(
+      'SELECT id, username, password_hash FROM users WHERE lower(username) = $1',
+      [key],
+    );
+
+    let user;
+    if (existing[0]) {
+      const found = existing[0];
+      // POC accounts have no password yet; the first sign-in sets it.
+      if (found.password_hash && !(await checkPassword(password, found.password_hash))) {
+        const n = lock && lock.until > Date.now() ? lock.count + 1 : 1;
+        failedSignIns.set(key, { count: n, until: Date.now() + 15 * 60_000 });
+        return res.status(401).json({ error: 'That username is taken, or the password is wrong.' });
+      }
+      failedSignIns.delete(key);
+      const hash = found.password_hash || (await hashPassword(password));
+      const { rows } = await pool.query(
+        `UPDATE users SET session_token = $1, password_hash = $2, tier = COALESCE($3, tier)
        WHERE id = $4 RETURNING id, username, tier, xp`,
-      [token, hash, testTier, found.id]
-    );
-    user = rows[0];
-  } else {
-    const { rows } = await pool.query(
-      `INSERT INTO users (username, tier, session_token, password_hash) VALUES ($1, $2, $3, $4)
+        [token, hash, testTier, found.id],
+      );
+      user = rows[0];
+    } else {
+      const { rows } = await pool.query(
+        `INSERT INTO users (username, tier, session_token, password_hash) VALUES ($1, $2, $3, $4)
        RETURNING id, username, tier, xp`,
-      [username, testTier || 'free', token, await hashPassword(password)]
-    );
-    user = rows[0];
-  }
-  res.json({ token, user: publicUser(user) });
-}));
+        [username, testTier || 'free', token, await hashPassword(password)],
+      );
+      user = rows[0];
+    }
+    res.json({ token, user: publicUser(user) });
+  }),
+);
 
-app.delete('/api/session', wrap(async (req, res) => {
-  const user = await currentUser(req);
-  if (user) await pool.query('UPDATE users SET session_token = NULL WHERE id = $1', [user.id]);
-  res.json({ ok: true });
-}));
+app.delete(
+  '/api/session',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (user) await pool.query('UPDATE users SET session_token = NULL WHERE id = $1', [user.id]);
+    res.json({ ok: true });
+  }),
+);
 
-app.get('/api/me', wrap(async (req, res) => {
-  res.json({ user: await currentUser(req) });
-}));
+app.get(
+  '/api/me',
+  wrap(async (req, res) => {
+    res.json({ user: await currentUser(req) });
+  }),
+);
 
 // ---------- videos ----------
-app.get('/api/videos', wrap(async (_req, res) => {
-  const { rows } = await pool.query(`
+app.get(
+  '/api/videos',
+  wrap(async (_req, res) => {
+    const { rows } = await pool.query(`
     SELECT v.*, (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
     FROM videos v ORDER BY v.published_at DESC NULLS LAST, v.id DESC`);
-  res.json({ videos: rows.map(videoCard) });
-}));
+    res.json({ videos: rows.map(videoCard) });
+  }),
+);
 
-app.get('/api/videos/:id', wrap(async (req, res) => {
-  if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
-  const { rows } = await pool.query(`
+app.get(
+  '/api/videos/:id',
+  wrap(async (req, res) => {
+    if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
+    const { rows } = await pool.query(
+      `
     SELECT v.*, (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
-    FROM videos v WHERE v.id = $1`, [req.params.id]);
-  const v = rows[0];
-  const user = await currentUser(req);
-  const allowed = canWatch(user, v);
-  res.json({
-    video: {
-      ...videoCard(v),
-      description: v.description,
-      youtubeId: v.youtube_id,
-      locked: !allowed,
-      hls: allowed ? playback(v.stream_uid)?.hls : null,
-    },
-  });
-}));
+    FROM videos v WHERE v.id = $1`,
+      [req.params.id],
+    );
+    const v = rows[0];
+    const user = await currentUser(req);
+    const allowed = canWatch(user, v);
+    res.json({
+      video: {
+        ...videoCard(v),
+        description: v.description,
+        youtubeId: v.youtube_id,
+        locked: !allowed,
+        hls: allowed ? playback(v.stream_uid)?.hls : null,
+      },
+    });
+  }),
+);
 
-app.post('/api/videos/:id/view', wrap(async (req, res) => {
-  if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
-  await pool.query('UPDATE videos SET views = views + 1 WHERE id = $1', [req.params.id]);
-  res.json({ ok: true });
-}));
+app.post(
+  '/api/videos/:id/view',
+  wrap(async (req, res) => {
+    if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
+    await pool.query('UPDATE videos SET views = views + 1 WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  }),
+);
 
 // Chat for a time window of the video: ?from=ms&to=ms
-app.get('/api/videos/:id/chat', wrap(async (req, res) => {
-  const video = await watchableVideo(req, res, await currentUser(req));
-  if (!video) return;
-  const from = Math.min(MAX_OFFSET_MS, Math.max(0, Number(req.query.from) || 0));
-  const to = Math.min(MAX_OFFSET_MS, Number(req.query.to) || from + 120_000);
-  const { rows } = await pool.query(
-    `SELECT * FROM chat_messages
+app.get(
+  '/api/videos/:id/chat',
+  wrap(async (req, res) => {
+    const video = await watchableVideo(req, res, await currentUser(req));
+    if (!video) return;
+    const from = Math.min(MAX_OFFSET_MS, Math.max(0, Number(req.query.from) || 0));
+    const to = Math.min(MAX_OFFSET_MS, Number(req.query.to) || from + 120_000);
+    const { rows } = await pool.query(
+      `SELECT * FROM chat_messages
      WHERE video_id = $1 AND NOT hidden AND offset_ms >= $2 AND offset_ms < $3
      ORDER BY offset_ms, id LIMIT $4`,
-    [video.id, from, to, CHAT_WINDOW_MAX]
-  );
-  res.json({ messages: rows.map(chatRow) });
-}));
+      [video.id, from, to, CHAT_WINDOW_MAX],
+    );
+    res.json({ messages: rows.map(chatRow) });
+  }),
+);
 
 // Post a chat at the viewer's current position in the video
 const lastPost = new Map();
-app.post('/api/videos/:id/chat', wrap(async (req, res) => {
-  const user = await currentUser(req);
-  if (!user) return res.status(401).json({ error: 'Sign in to chat.' });
-  const video = await watchableVideo(req, res, user);
-  if (!video) return;
+app.post(
+  '/api/videos/:id/chat',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to chat.' });
+    const video = await watchableVideo(req, res, user);
+    if (!video) return;
 
-  const body = filterText(req.body.text || '').slice(0, 200);
-  if (!body) return res.status(400).json({ error: 'Type a message first.' });
+    const body = filterText(req.body.text || '').slice(0, 200);
+    if (!body) return res.status(400).json({ error: 'Type a message first.' });
 
-  // Claim the slot before any await so parallel requests can't slip through.
-  const now = Date.now();
-  if (now - (lastPost.get(user.id) || 0) < 1500) {
-    return res.status(429).json({ error: 'Slow down — one message every 1.5 seconds.' });
-  }
-  lastPost.set(user.id, now);
+    // Claim the slot before any await so parallel requests can't slip through.
+    const now = Date.now();
+    if (now - (lastPost.get(user.id) || 0) < 1500) {
+      return res.status(429).json({ error: 'Slow down — one message every 1.5 seconds.' });
+    }
+    lastPost.set(user.id, now);
 
-  const maxOffset = video.duration_s ? video.duration_s * 1000 : MAX_OFFSET_MS;
-  const offsetMs = Math.min(maxOffset, MAX_OFFSET_MS, Math.max(0, Math.round(Number(req.body.offsetMs) || 0)));
+    const maxOffset = video.duration_s ? video.duration_s * 1000 : MAX_OFFSET_MS;
+    const offsetMs = Math.min(
+      maxOffset,
+      MAX_OFFSET_MS,
+      Math.max(0, Math.round(Number(req.body.offsetMs) || 0)),
+    );
 
-  const { rows } = await pool.query(
-    `INSERT INTO chat_messages (video_id, source, user_id, author_name, body, mentions, offset_ms, sent_at)
+    const { rows } = await pool.query(
+      `INSERT INTO chat_messages (video_id, source, user_id, author_name, body, mentions, offset_ms, sent_at)
      VALUES ($1, 'native', $2, $3, $4, $5, $6, now()) RETURNING *`,
-    [video.id, user.id, user.username, body, extractMentions(body), offsetMs]
-  );
-  await pool.query('UPDATE users SET xp = xp + 5 WHERE id = $1', [user.id]);
+      [video.id, user.id, user.username, body, extractMentions(body), offsetMs],
+    );
+    await pool.query('UPDATE users SET xp = xp + 5 WHERE id = $1', [user.id]);
 
-  const msg = chatRow(rows[0]);
-  broadcast(video.id, { type: 'chat', message: msg });
-  res.json({ message: msg });
-}));
+    const msg = chatRow(rows[0]);
+    broadcast(video.id, { type: 'chat', message: msg });
+    res.json({ message: msg });
+  }),
+);
 
 // ---------- studio dashboard (admins only) ----------
 app.use('/api/studio', requireAdmin);
 
-app.get('/api/studio/overview', wrap(async (_req, res) => {
-  const [totals, perVideo, topChatters] = await Promise.all([
-    pool.query(`
+app.get(
+  '/api/studio/overview',
+  wrap(async (_req, res) => {
+    const [totals, perVideo, topChatters] = await Promise.all([
+      pool.query(`
       SELECT
         (SELECT count(*) FROM videos)                                                    AS videos,
         (SELECT coalesce(sum(views),0) FROM videos)                                      AS views,
@@ -282,42 +316,59 @@ app.get('/api/studio/overview', wrap(async (_req, res) => {
         (SELECT count(*) FROM chat_messages WHERE source = 'native' AND NOT hidden)      AS native_msgs,
         (SELECT count(*) FROM chat_messages WHERE kind = 'paid' AND NOT hidden)          AS paid_msgs,
         (SELECT count(DISTINCT author_name) FROM chat_messages WHERE NOT hidden)         AS chatters`),
-    pool.query(`
+      pool.query(`
       SELECT v.id, v.title, v.published_at, v.views, v.min_tier, v.duration_s,
         count(c.*) FILTER (WHERE c.source = 'youtube') AS youtube_msgs,
         count(c.*) FILTER (WHERE c.source = 'native')  AS native_msgs,
         count(c.*) FILTER (WHERE c.kind = 'paid')      AS paid_msgs
       FROM videos v LEFT JOIN chat_messages c ON c.video_id = v.id AND NOT c.hidden
       GROUP BY v.id ORDER BY v.published_at DESC NULLS LAST`),
-    pool.query(`
+      pool.query(`
       SELECT author_name, source, count(*) AS msgs, count(*) FILTER (WHERE kind = 'paid') AS paid
       FROM chat_messages WHERE NOT hidden
       GROUP BY author_name, source ORDER BY msgs DESC LIMIT 15`),
-  ]);
-  const t = totals.rows[0];
-  res.json({
-    totals: {
-      videos: Number(t.videos), views: Number(t.views), youtubeMsgs: Number(t.youtube_msgs),
-      nativeMsgs: Number(t.native_msgs), paidMsgs: Number(t.paid_msgs), chatters: Number(t.chatters),
-    },
-    videos: perVideo.rows.map((r) => ({
-      id: r.id, title: r.title, publishedAt: r.published_at, views: r.views, minTier: r.min_tier,
-      durationS: r.duration_s, youtubeMsgs: Number(r.youtube_msgs), nativeMsgs: Number(r.native_msgs),
-      paidMsgs: Number(r.paid_msgs),
-    })),
-    topChatters: topChatters.rows.map((r) => ({
-      author: r.author_name, source: r.source, msgs: Number(r.msgs), paid: Number(r.paid),
-    })),
-  });
-}));
+    ]);
+    const t = totals.rows[0];
+    res.json({
+      totals: {
+        videos: Number(t.videos),
+        views: Number(t.views),
+        youtubeMsgs: Number(t.youtube_msgs),
+        nativeMsgs: Number(t.native_msgs),
+        paidMsgs: Number(t.paid_msgs),
+        chatters: Number(t.chatters),
+      },
+      videos: perVideo.rows.map((r) => ({
+        id: r.id,
+        title: r.title,
+        publishedAt: r.published_at,
+        views: r.views,
+        minTier: r.min_tier,
+        durationS: r.duration_s,
+        youtubeMsgs: Number(r.youtube_msgs),
+        nativeMsgs: Number(r.native_msgs),
+        paidMsgs: Number(r.paid_msgs),
+      })),
+      topChatters: topChatters.rows.map((r) => ({
+        author: r.author_name,
+        source: r.source,
+        msgs: Number(r.msgs),
+        paid: Number(r.paid),
+      })),
+    });
+  }),
+);
 
-app.patch('/api/studio/videos/:id', wrap(async (req, res) => {
-  const { minTier } = req.body;
-  if (TIER_RANK[minTier] === undefined) return res.status(400).json({ error: 'Unknown tier.' });
-  if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
-  await pool.query('UPDATE videos SET min_tier = $1 WHERE id = $2', [minTier, req.params.id]);
-  res.json({ ok: true });
-}));
+app.patch(
+  '/api/studio/videos/:id',
+  wrap(async (req, res) => {
+    const { minTier } = req.body;
+    if (TIER_RANK[minTier] === undefined) return res.status(400).json({ error: 'Unknown tier.' });
+    if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
+    await pool.query('UPDATE videos SET min_tier = $1 WHERE id = $2', [minTier, req.params.id]);
+    res.json({ ok: true });
+  }),
+);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
@@ -356,7 +407,11 @@ wss.on('connection', (ws) => {
   let joined = null;
   ws.on('message', async (raw) => {
     let msg;
-    try { msg = JSON.parse(raw); } catch { return; }
+    try {
+      msg = JSON.parse(raw);
+    } catch {
+      return;
+    }
     if (msg.type !== 'join') return;
     try {
       const video = await findVideo(msg.videoId);

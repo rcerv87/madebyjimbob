@@ -11,14 +11,26 @@ after(stopServer);
 
 describe('sign-in', () => {
   test('rejects a bad username or short password', async () => {
-    assert.equal((await call('/session', { method: 'POST', body: { username: 'a!', password: 'password123' } })).status, 400);
-    assert.equal((await call('/session', { method: 'POST', body: { username: 'short_pw', password: 'x' } })).status, 400);
+    assert.equal(
+      (await call('/session', { method: 'POST', body: { username: 'a!', password: 'password123' } })).status,
+      400,
+    );
+    assert.equal(
+      (await call('/session', { method: 'POST', body: { username: 'short_pw', password: 'x' } })).status,
+      400,
+    );
   });
 
   test('creates an account and signs back in with the same password', async () => {
-    const first = await call('/session', { method: 'POST', body: { username: 'returning', password: 'password123' } });
+    const first = await call('/session', {
+      method: 'POST',
+      body: { username: 'returning', password: 'password123' },
+    });
     assert.equal(first.status, 200);
-    const again = await call('/session', { method: 'POST', body: { username: 'returning', password: 'password123' } });
+    const again = await call('/session', {
+      method: 'POST',
+      body: { username: 'returning', password: 'password123' },
+    });
     assert.equal(again.status, 200);
     assert.equal(again.data.user.id, first.data.user.id);
     assert.equal((await call('/me', { token: first.data.token })).data.user, null, 'old token is replaced');
@@ -27,7 +39,10 @@ describe('sign-in', () => {
 
   test('a taken name needs its password, whatever the case', async () => {
     await signIn(call, 'owner_name');
-    const r = await call('/session', { method: 'POST', body: { username: 'OWNER_NAME', password: 'not-the-password' } });
+    const r = await call('/session', {
+      method: 'POST',
+      body: { username: 'OWNER_NAME', password: 'not-the-password' },
+    });
     assert.equal(r.status, 401);
   });
 
@@ -36,14 +51,23 @@ describe('sign-in', () => {
     for (let i = 0; i < 10; i++) {
       await call('/session', { method: 'POST', body: { username: 'lock_me', password: 'wrong-password' } });
     }
-    const r = await call('/session', { method: 'POST', body: { username: 'lock_me', password: 'password123' } });
+    const r = await call('/session', {
+      method: 'POST',
+      body: { username: 'lock_me', password: 'password123' },
+    });
     assert.equal(r.status, 429);
   });
 
   test('test tiers apply and admins are flagged', async () => {
-    const plus = await call('/session', { method: 'POST', body: { username: 'plus_fan', password: 'password123', tier: 'plus' } });
+    const plus = await call('/session', {
+      method: 'POST',
+      body: { username: 'plus_fan', password: 'password123', tier: 'plus' },
+    });
     assert.equal(plus.data.user.tier, 'plus');
-    const admin = await call('/session', { method: 'POST', body: { username: 'test_admin', password: 'password123' } });
+    const admin = await call('/session', {
+      method: 'POST',
+      body: { username: 'test_admin', password: 'password123' },
+    });
     assert.equal(admin.data.user.isAdmin, true);
     assert.equal(admin.data.user.tier, 'premium');
   });
@@ -89,16 +113,25 @@ describe('chat window', () => {
     ]);
     const r = await call(`/videos/${id}/chat?from=0&to=120000`);
     assert.equal(r.status, 200);
-    assert.deepEqual(r.data.messages.map((m) => m.body), ['early', 'late']);
+    assert.deepEqual(
+      r.data.messages.map((m) => m.body),
+      ['early', 'late'],
+    );
     const next = await call(`/videos/${id}/chat?from=120000&to=240000`);
-    assert.deepEqual(next.data.messages.map((m) => m.body), ['edge']);
+    assert.deepEqual(
+      next.data.messages.map((m) => m.body),
+      ['edge'],
+    );
   });
 
   test('is blocked for viewers below the video tier', async () => {
     const id = await seedVideo({ minTier: 'plus' });
     await seedChat(id, [{ body: 'members only', offsetMs: 1_000 }]);
     assert.equal((await call(`/videos/${id}/chat`)).status, 403);
-    assert.equal((await call(`/videos/${id}/chat`, { token: await signIn(call, 'free_reader') })).status, 403);
+    assert.equal(
+      (await call(`/videos/${id}/chat`, { token: await signIn(call, 'free_reader') })).status,
+      403,
+    );
     const plus = await call(`/videos/${id}/chat`, { token: await signIn(call, 'plus_reader', 'plus') });
     assert.equal(plus.data.messages[0].body, 'members only');
   });
@@ -109,15 +142,23 @@ describe('chat posting', () => {
     const id = await seedVideo({ minTier: 'premium' });
     assert.equal((await call(`/videos/${id}/chat`, { method: 'POST', body: { text: 'hi' } })).status, 401);
     const token = await signIn(call, 'free_poster');
-    assert.equal((await call(`/videos/${id}/chat`, { method: 'POST', token, body: { text: 'hi' } })).status, 403);
-    assert.equal((await call('/videos/999999/chat', { method: 'POST', token, body: { text: 'hi' } })).status, 404);
+    assert.equal(
+      (await call(`/videos/${id}/chat`, { method: 'POST', token, body: { text: 'hi' } })).status,
+      403,
+    );
+    assert.equal(
+      (await call('/videos/999999/chat', { method: 'POST', token, body: { text: 'hi' } })).status,
+      404,
+    );
   });
 
   test('stores the message with mentions, masking, and a clamped offset', async () => {
     const id = await seedVideo({ durationS: 600 });
     const token = await signIn(call, 'poster');
     const r = await call(`/videos/${id}/chat`, {
-      method: 'POST', token, body: { text: '  hey   @JimBob  badword ', offsetMs: 1e13 },
+      method: 'POST',
+      token,
+      body: { text: '  hey   @JimBob  badword ', offsetMs: 1e13 },
     });
     assert.equal(r.status, 200);
     assert.equal(r.data.message.body, 'hey @JimBob *******');
@@ -129,13 +170,17 @@ describe('chat posting', () => {
   test('rejects empty messages', async () => {
     const id = await seedVideo();
     const token = await signIn(call, 'empty_poster');
-    assert.equal((await call(`/videos/${id}/chat`, { method: 'POST', token, body: { text: '   ' } })).status, 400);
+    assert.equal(
+      (await call(`/videos/${id}/chat`, { method: 'POST', token, body: { text: '   ' } })).status,
+      400,
+    );
   });
 
   test('rate limits to one message per 1.5s, even for parallel requests', async () => {
     const id = await seedVideo();
     const token = await signIn(call, 'fast_poster');
-    const post = () => call(`/videos/${id}/chat`, { method: 'POST', token, body: { text: 'spam', offsetMs: 0 } });
+    const post = () =>
+      call(`/videos/${id}/chat`, { method: 'POST', token, body: { text: 'spam', offsetMs: 0 } });
     const burst = await Promise.all([post(), post(), post()]);
     assert.deepEqual(burst.map((r) => r.status).sort(), [200, 429, 429]);
     await sleep(1600);
@@ -148,7 +193,10 @@ describe('studio', () => {
     assert.equal((await call('/studio/overview')).status, 401);
     const viewer = await signIn(call, 'studio_viewer', 'premium');
     assert.equal((await call('/studio/overview', { token: viewer })).status, 403);
-    assert.equal((await call('/studio/videos/1', { method: 'PATCH', token: viewer, body: { minTier: 'free' } })).status, 403);
+    assert.equal(
+      (await call('/studio/videos/1', { method: 'PATCH', token: viewer, body: { minTier: 'free' } })).status,
+      403,
+    );
   });
 
   test('admin sees totals and can change a video tier', async () => {
@@ -157,9 +205,17 @@ describe('studio', () => {
     const overview = await call('/studio/overview', { token: admin });
     assert.equal(overview.status, 200);
     assert.ok(overview.data.totals.videos >= 1);
-    const bad = await call(`/studio/videos/${id}`, { method: 'PATCH', token: admin, body: { minTier: 'gold' } });
+    const bad = await call(`/studio/videos/${id}`, {
+      method: 'PATCH',
+      token: admin,
+      body: { minTier: 'gold' },
+    });
     assert.equal(bad.status, 400);
-    const ok = await call(`/studio/videos/${id}`, { method: 'PATCH', token: admin, body: { minTier: 'plus' } });
+    const ok = await call(`/studio/videos/${id}`, {
+      method: 'PATCH',
+      token: admin,
+      body: { minTier: 'plus' },
+    });
     assert.equal(ok.status, 200);
     assert.equal((await call(`/videos/${id}`)).data.video.minTier, 'plus');
   });

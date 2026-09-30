@@ -3,13 +3,21 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import ChatPanel from '../components/ChatPanel.jsx';
 
 const msg = (id, offsetMs, body, over = {}) => ({
-  id: String(id), source: 'youtube', kind: 'text', author: 'Viewer', authorPhoto: null,
-  body, amount: null, mentions: [], offsetMs, ...over,
+  id: String(id),
+  source: 'youtube',
+  kind: 'text',
+  author: 'Viewer',
+  authorPhoto: null,
+  body,
+  amount: null,
+  mentions: [],
+  offsetMs,
+  ...over,
 });
 
 function renderPanel({ timeMs = 0, user = null, requireSignIn = () => {} } = {}) {
   return render(
-    <ChatPanel videoId="7" timeMs={timeMs} getTimeMs={() => timeMs} session={{ user, requireSignIn }} />
+    <ChatPanel videoId="7" timeMs={timeMs} getTimeMs={() => timeMs} session={{ user, requireSignIn }} />,
   );
 }
 
@@ -20,7 +28,14 @@ describe('ChatPanel', () => {
     expect(await screen.findByText('first')).toBeTruthy();
     expect(screen.queryByText('later')).toBeNull();
 
-    rerender(<ChatPanel videoId="7" timeMs={60_000} getTimeMs={() => 60_000} session={{ user: null, requireSignIn: () => {} }} />);
+    rerender(
+      <ChatPanel
+        videoId="7"
+        timeMs={60_000}
+        getTimeMs={() => 60_000}
+        session={{ user: null, requireSignIn: () => {} }}
+      />,
+    );
     expect(await screen.findByText('later')).toBeTruthy();
   });
 

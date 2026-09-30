@@ -7,7 +7,10 @@ export default function Studio({ user }) {
   const [error, setError] = useState('');
   const [saveError, setSaveError] = useState('');
 
-  const load = () => api('/studio/overview').then(setData).catch((e) => setError(e.message));
+  const load = () =>
+    api('/studio/overview')
+      .then(setData)
+      .catch((e) => setError(e.message));
   useEffect(() => {
     setError('');
     if (user?.isAdmin) load();
@@ -49,20 +52,38 @@ export default function Studio({ user }) {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Video</th><th>Length</th><th>Views</th><th>YT chat</th><th>Our chat</th><th>Super chats</th><th>Access</th></tr>
+                <tr>
+                  <th>Video</th>
+                  <th>Length</th>
+                  <th>Views</th>
+                  <th>YT chat</th>
+                  <th>Our chat</th>
+                  <th>Super chats</th>
+                  <th>Access</th>
+                </tr>
               </thead>
               <tbody>
                 {data.videos.map((v) => (
                   <tr key={v.id}>
-                    <td className="title-cell"><Link to={`/watch/${v.id}`}>{v.title}</Link></td>
+                    <td className="title-cell">
+                      <Link to={`/watch/${v.id}`}>{v.title}</Link>
+                    </td>
                     <td>{v.durationS ? formatTime(v.durationS) : '—'}</td>
                     <td>{compact(v.views)}</td>
                     <td>{compact(v.youtubeMsgs)}</td>
                     <td>{compact(v.nativeMsgs)}</td>
                     <td>{v.paidMsgs}</td>
                     <td>
-                      <select value={v.minTier} onChange={(e) => setTier(v.id, e.target.value)} aria-label={`Access for ${v.title}`}>
-                        {Object.entries(TIER_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                      <select
+                        value={v.minTier}
+                        onChange={(e) => setTier(v.id, e.target.value)}
+                        aria-label={`Access for ${v.title}`}
+                      >
+                        {Object.entries(TIER_LABEL).map(([k, l]) => (
+                          <option key={k} value={k}>
+                            {l}
+                          </option>
+                        ))}
                       </select>
                     </td>
                   </tr>
