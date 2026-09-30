@@ -33,6 +33,8 @@ npm run dev:web                # web on :5173, proxies /api and /ws
 npm run build                  # builds web
 npm test                       # server (node:test, needs DATABASE_URL_TEST) + web (vitest)
 npm run lint                   # ESLint (flat config, eslint.config.js)
+npm run migrate                # apply pending migrations (`-- down` rolls back one)
+npm run migrate:create -- <name>   # new SQL migration in server/migrations/
 npm run format                 # Prettier; `format:check` to verify only
 npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only]
 ```
@@ -40,7 +42,7 @@ npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only]
 Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any story.
 
 - Server tests live in `server/test/` and run against `DATABASE_URL_TEST`, which is wiped on every run. `test/helpers.js` refuses any database without "test" in its name.
-- `server/src/app.js` builds the app and WebSocket server; `server/src/index.js` only migrates and listens.
+- `server/src/app.js` builds the app and WebSocket server; `server/src/index.js` only listens.
 - Web tests live in `web/src/test/`; `setup.js` provides `mockApi()` and a fake WebSocket.
 
 ## How to work a story
@@ -58,7 +60,8 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 ## Conventions
 
 - SQL: parameterized queries only. Never interpolate user input into SQL.
-- Schema: after MBJ-003, all changes go through migrations. Don't edit `schema.sql` in place.
+- Schema: every change is a new migration in `server/migrations/` (`npm run migrate:create -- <name>`, plain SQL with `-- Up Migration` / `-- Down Migration` sections). Never edit a migration that has been deployed.
+- Migrations run via `npm run migrate` (Render pre-deploy command, and before `dev:server`), never on app boot. `npm run migrate -- down` rolls back the latest one.
 - Chat messages always carry `offset_ms` (position in the video). That field is what makes replay sync work — never drop it.
 - Chat `source` is one of `youtube | rumble | native`. New sources get a new enum value, not a new table.
 - Tier checks happen on the server. The client only hides UI.

@@ -5,6 +5,7 @@ services:
     plan: starter
     buildCommand: npm install && npm run build
     startCommand: npm start
+    preDeployCommand: npm run migrate
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL

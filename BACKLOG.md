@@ -121,15 +121,15 @@ Acceptance criteria:
 
 ### MBJ-003 — Database migrations
 
-**Status:** To do · **Phase 0 — Foundation** · **Priority:** Must · **Size:** M
+**Status:** Done · **Phase 0 — Foundation** · **Priority:** Must · **Size:** M
 
 As the developer, I want versioned schema changes so production data is never at risk.
 
 Acceptance criteria:
-- [ ] node-pg-migrate installed; baseline migration equals current `schema.sql`
-- [ ] Migrations run as Render pre-deploy command, not on app boot
-- [ ] `npm run migrate:create <name>` documented in CLAUDE.md
-- [ ] `schema.sql` removed or marked historical
+- [x] node-pg-migrate installed; baseline migration equals current `schema.sql`
+- [x] Migrations run as Render pre-deploy command, not on app boot
+- [x] `npm run migrate:create <name>` documented in CLAUDE.md
+- [x] `schema.sql` removed or marked historical
 
 ### MBJ-004 — TypeScript and shared package
 
