@@ -20,6 +20,8 @@ const AUTH_MESSAGES = {
   PASSWORD_TOO_LONG: 'Use a password of at most 128 characters.',
   INVALID_EMAIL: 'Enter an email address like name@example.com.',
   INVALID_TOKEN: 'That link has expired or was already used. Ask for a new one.',
+  INVALID_PASSWORD: 'That password isn’t right. Check it and try again.',
+  USE_ACCOUNT_SETTINGS: 'Change your email from Account settings.',
 };
 
 export async function api(path, { method = 'GET', body } = {}) {

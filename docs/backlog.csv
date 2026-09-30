@@ -41,7 +41,7 @@ MBJ-104,Web subscriptions and entitlements,Accounts & memberships,Phase 1 — VO
 MBJ-105,Pricing page and upsell,Accounts & memberships,Phase 1 — VOD platform,Must,M,To do,"As a free viewer, I want to see what paid tiers include and upgrade in one step.","- Pricing page shows the tier matrix from the PRD
 - Locked video screen links to upgrade with that tier preselected
 - After purchase, the user returns to the video and it plays",MBJ-104
-MBJ-106,Account settings,Accounts & memberships,Phase 1 — VOD platform,Must,M,To do,"As a member, I want one place to manage my profile, sign-in, notifications, membership, and privacy.","- `/account` (signed in only) with sections: Profile, Sign-in and security, Notifications, Membership, Privacy and data
+MBJ-106,Account settings,Accounts & memberships,Phase 1 — VOD platform,Must,M,Done,"As a member, I want one place to manage my profile, sign-in, notifications, membership, and privacy.","- `/account` (signed in only) with sections: Profile, Sign-in and security, Notifications, Membership, Privacy and data
 - Profile links to the editor (MBJ-117); Sign-in and security holds password, email, devices, and sign-in methods (MBJ-113, MBJ-110)
 - Notifications: per-type on/off for in-site, push, and email (replaces the scattered toggles)
 - Membership shows tier, renewal date, and manage/cancel once MBJ-104 lands; before that it shows Free and what paid tiers include
@@ -62,7 +62,7 @@ MBJ-109,Payments API and receipts,Accounts & memberships,Phase 1 — VOD platfor
 - Members see payment history and receipts; Stripe customer portal to change card or cancel
 - Studio: revenue, refunds, failed payments; test mode for staging
 - Backup processor evaluated (PRD open question)",MBJ-104
-MBJ-110,Easy sign-in and staying signed in,Accounts & memberships,Phase 1 — VOD platform,Must,M,To do,"As a viewer, I want to sign in with one tap and stay signed in on my devices.","- Sign in with Google (also links YouTube for MBJ-215), Apple, X, and Facebook; email magic link as the no-password option
+MBJ-110,Easy sign-in and staying signed in,Accounts & memberships,Phase 1 — VOD platform,Must,M,In progress,"As a viewer, I want to sign in with one tap and stay signed in on my devices.","- Sign in with Google (also links YouTube for MBJ-215), Apple, X, and Facebook; email magic link as the no-password option
 - Passkeys (Face ID / fingerprint / Windows Hello) instead of passwords
 - Stay signed in: long-lived sessions that renew while used (e.g. 90 days), on web and the installed app
 - Profile: see signed-in devices and sign out any of them; add or remove sign-in methods; merge an existing account
@@ -78,7 +78,7 @@ MBJ-112,Payments and fees decision (ADR),Accounts & memberships,Phase 1 — VOD 
 - Model real money with JimBob's numbers: memberships, Bob Chats/tips by size, merch orders, and the current Shopify plan and apps
 - Decide merch: keep Shopify, or move to our own checkout (Stripe) with a print-on-demand partner for fulfilment; show the yearly saving and the work involved
 - Record the decision as an ADR and update MBJ-104, MBJ-109, MBJ-111, and MBJ-807",
-MBJ-113,Password reset and email change,Accounts & memberships,Phase 1 — VOD platform,Must,M,In progress,"As a member, I want to get back into my account if I forget my password, and keep my email up to date.","- ""Forgot password?"" sends a reset link (one use, expires in 1 h); the response never reveals whether the email has an account
+MBJ-113,Password reset and email change,Accounts & memberships,Phase 1 — VOD platform,Must,M,Done,"As a member, I want to get back into my account if I forget my password, and keep my email up to date.","- ""Forgot password?"" sends a reset link (one use, expires in 1 h); the response never reveals whether the email has an account
 - Resetting or changing the password signs out every other device
 - Change email: confirm with the password, verify the new address, and notify the old one with a link to undo within 7 days
 - Change password from Account settings (current password required)

@@ -101,6 +101,9 @@ function AccountMenu({ user, onSignOut }) {
             {user.email && <span className="muted small">{user.email}</span>}
             <span className="muted small">{TIER_LABEL[user.tier]} member</span>
           </p>
+          <Link to="/account" role="menuitem" className="account-menu-item" onClick={() => setOpen(false)}>
+            Account settings
+          </Link>
           <button
             type="button"
             role="menuitem"

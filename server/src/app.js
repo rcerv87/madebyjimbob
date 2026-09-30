@@ -11,6 +11,7 @@ import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
 import { pageMeta, renderPage } from './pages.js';
 import { toNodeHandler } from 'better-auth/node';
 import { auth, sessionUser, ADMIN_EMAILS } from './auth.js';
+import accountRouter from './account.js';
 import {
   addUserSocket,
   removeUserSocket,
@@ -44,6 +45,21 @@ app.use(httpLogger);
 app.use((req, _res, next) => {
   req.headers['x-mbj-client-ip'] = req.ip;
   next();
+});
+// Confirmed accounts change email through /api/account/email (password, then an undo link to the old
+// address); Better Auth's own change-email is only for accounts that haven't confirmed one yet.
+app.post('/api/auth/change-email', async (req, res, next) => {
+  try {
+    const user = await sessionUser(req.headers);
+    if (user?.emailVerified) {
+      return res
+        .status(403)
+        .json({ code: 'USE_ACCOUNT_SETTINGS', message: 'Change your email from Account settings.' });
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 // Sign-up, sign-in, sign-out, email verification, password reset (Better Auth reads its own body).
 app.all('/api/auth/*', toNodeHandler(auth));
@@ -708,10 +724,12 @@ app.get(
     const [items, unread] = await Promise.all([
       pool.query(
         `SELECT n.*, v.title AS video_title FROM notifications n JOIN videos v ON v.id = n.video_id
-         WHERE n.user_id = $1 ORDER BY n.created_at DESC, n.id DESC LIMIT 30`,
+         WHERE n.user_id = $1 AND n.in_bell ORDER BY n.created_at DESC, n.id DESC LIMIT 30`,
         [user.id],
       ),
-      pool.query('SELECT count(*) FROM notifications WHERE user_id = $1 AND read_at IS NULL', [user.id]),
+      pool.query('SELECT count(*) FROM notifications WHERE user_id = $1 AND in_bell AND read_at IS NULL', [
+        user.id,
+      ]),
     ]);
     res.json({ unread: Number(unread.rows[0].count), notifications: items.rows.map(notificationRow) });
   }),
@@ -1015,6 +1033,9 @@ app.put(
     res.json({ ok: true, count: ids.length });
   }),
 );
+
+// ---------- account settings ----------
+app.use('/api/account', accountRouter);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 

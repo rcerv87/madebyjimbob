@@ -171,7 +171,7 @@ export function Bell({ notes }) {
   );
 }
 
-function PushPrompt({ push }) {
+export function PushPrompt({ push }) {
   if (push.state === 'on') return <p className="push-note">Phone notifications are on for this device.</p>;
   if (push.state === 'unsupported' || push.state === 'unavailable') return null;
   if (push.state === 'needs-install') {

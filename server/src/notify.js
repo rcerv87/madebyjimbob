@@ -95,13 +95,13 @@ async function push(userId, n) {
   );
 }
 
-function deliver(userId, n) {
-  const set = userSockets.get(String(userId));
+function deliver(userId, n, { bell = true, push: toPush = true } = {}) {
+  const set = bell && userSockets.get(String(userId));
   if (set) {
     const data = JSON.stringify({ type: 'notify', notification: n });
     for (const ws of set) if (ws.readyState === 1) ws.send(data);
   }
-  push(userId, n).catch((err) => logger.warn({ err }, 'push failed'));
+  if (toPush) push(userId, n).catch((err) => logger.warn({ err }, 'push failed'));
 }
 
 // Called after a native chat message or comment is saved. Replies notify the author of what was
@@ -131,15 +131,25 @@ export async function notifyFor({
   }
   if (!recipients.size) return [];
 
-  const ids = [...recipients.keys()];
+  // Account settings: the bell and push can each be off per type (a missing setting means on).
+  const { rows: prefRows } = await pool.query(
+    'SELECT id, notification_prefs FROM users WHERE id = ANY($1::bigint[])',
+    [[...recipients.keys()]],
+  );
+  const prefsOf = new Map(prefRows.map((r) => [String(r.id), r.notification_prefs || {}]));
+  const wants = (id, channel) => prefsOf.get(id)?.[recipients.get(id)]?.[channel] !== false;
+  const ids = [...recipients.keys()].filter((id) => wants(id, 'site') || wants(id, 'push'));
+  if (!ids.length) return [];
   const types = ids.map((id) => recipients.get(id));
+  const inBell = ids.map((id) => wants(id, 'site'));
   const { rows } = await pool.query(
-    `INSERT INTO notifications (user_id, type, video_id, chat_message_id, comment_id, actor_id, actor_name, excerpt, offset_ms)
-     SELECT u, t, $3, $4, $5, $6, $7, $8, $9 FROM unnest($1::bigint[], $2::text[]) AS x(u, t)
+    `INSERT INTO notifications (user_id, type, in_bell, video_id, chat_message_id, comment_id, actor_id, actor_name, excerpt, offset_ms)
+     SELECT u, t, b, $4, $5, $6, $7, $8, $9, $10 FROM unnest($1::bigint[], $2::text[], $3::boolean[]) AS x(u, t, b)
      RETURNING *`,
     [
       ids,
       types,
+      inBell,
       videoId,
       chatMessageId ?? null,
       commentId ?? null,
@@ -150,6 +160,8 @@ export async function notifyFor({
     ],
   );
   const created = rows.map((r) => notificationRow({ ...r, video_title: videoTitle }));
-  rows.forEach((r, i) => deliver(r.user_id, created[i]));
+  rows.forEach((r, i) =>
+    deliver(r.user_id, created[i], { bell: r.in_bell, push: wants(String(r.user_id), 'push') }),
+  );
   return created;
 }

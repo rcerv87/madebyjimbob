@@ -2,7 +2,7 @@
 // chosen at sign-up; sessions in an httpOnly cookie (web) or a Bearer token (tests, later the phone apps).
 // Account emails go through sendEmail(). Google/Apple, magic links, and passkeys come in MBJ-110.
 import { betterAuth } from 'better-auth';
-import { APIError } from 'better-auth/api';
+import { APIError, createAuthMiddleware, isAPIError } from 'better-auth/api';
 import { fromNodeHeaders } from 'better-auth/node';
 import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { username } from 'better-auth/plugins/username';
@@ -14,6 +14,7 @@ import { pool } from './db.js';
 import { sendEmail, emailEnabled } from './email.js';
 import { logger } from './logger.js';
 import { containsBannedWord } from './moderation.js';
+import { logSecurityEvent, requestOrigin } from './security.js';
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -56,7 +57,7 @@ const authSecret =
     .createHash('sha256')
     .update(`mbj-auth:${process.env.DATABASE_URL || ''}`)
     .digest('hex');
-const baseURL = (
+export const baseURL = (
   process.env.SITE_URL ||
   process.env.RENDER_EXTERNAL_URL ||
   `http://localhost:${process.env.PORT || 3000}`
@@ -162,6 +163,9 @@ export const auth = betterAuth({
     // Unverified accounts can watch and chat; paying and rewards check emailVerified (MBJ-108).
     requireEmailVerification: false,
     revokeSessionsOnPasswordReset: true,
+    onPasswordReset: async ({ user }, request) => {
+      await logSecurityEvent(user.id, 'password_reset', requestOrigin(request?.headers));
+    },
     resetPasswordTokenExpiresIn: 60 * 60,
     password: {
       hash: hashPassword,
@@ -203,8 +207,32 @@ export const auth = betterAuth({
           // The display name starts as the username (members can change it later, MBJ-117).
           return { data: { ...user, name: user.displayUsername || user.username || user.name } };
         },
+        after: async (user, ctx) => {
+          await logSecurityEvent(user.id, 'account_created', requestOrigin(ctx?.headers));
+        },
       },
     },
+    session: {
+      create: {
+        // Every new session is a sign-in, except the ones sign-up and password changes make for you.
+        after: async (session, ctx) => {
+          const path = ctx?.path || '';
+          if (path.startsWith('/sign-up') || path === '/change-password' || path === '/reset-password')
+            return;
+          await logSecurityEvent(session.userId, 'signed_in', {
+            ip: session.ipAddress,
+            userAgent: session.userAgent,
+          });
+        },
+      },
+    },
+  },
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== '/change-password' || isAPIError(ctx.context.returned)) return;
+      const userId = ctx.context.session?.user.id;
+      if (userId) await logSecurityEvent(userId, 'password_changed', requestOrigin(ctx.headers));
+    }),
   },
   rateLimit: {
     // Always on except in tests (AUTH_RATE_LIMIT=off); in memory, fine for one server.
@@ -215,6 +243,8 @@ export const auth = betterAuth({
       '/sign-up/email': { window: 60 * 10, max: 5 },
       '/request-password-reset': { window: 60 * 10, max: 3 },
       '/send-verification-email': { window: 60 * 10, max: 3 },
+      '/change-password': { window: 60 * 10, max: 5 },
+      '/verify-password': { window: 60 * 10, max: 10 },
     },
   },
   plugins,

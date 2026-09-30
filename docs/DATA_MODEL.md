@@ -18,6 +18,7 @@ columns are added by the story noted.
 | tier | text | `free | plus | premium` — derived from entitlements after MBJ-104; never settable by the user |
 | youtube_channel_id | text | set when user links YouTube (MBJ-305) |
 | xp | int | never settable by the user |
+| notification_prefs | jsonb | `{ mention: { site, push }, reply: { … } }`; missing = on (MBJ-106) |
 | created_at, updated_at | timestamptz | |
 
 Better Auth (MBJ-101, ADR-006) maps its models onto these snake_case tables in `server/src/auth.js`; ids are serial.
@@ -151,6 +152,7 @@ Signed-out viewers keep their position in the browser (`localStorage`).
 | excerpt | text | first 140 chars |
 | offset_ms | int | moment in the video, for "jump to it" |
 | read_at | timestamptz | null = unread |
+| in_bell | boolean | false when the member turned the bell off for that type (the row stays for the push link) |
 
 ### push_subscriptions
 | column | type | notes |
@@ -196,6 +198,27 @@ Addresses that never get mail again: permanent bounces and spam complaints from 
 | reason | text | `bounce \| complaint` |
 | detail | text | bounce message |
 | created_at | timestamptz | |
+
+### security_events
+A member's security history (MBJ-113), shown on /account.
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| user_id | bigint → users | cascade |
+| type | text | `account_created`, `signed_in`, `password_changed`, `password_reset`, `email_change_requested`, `email_changed`, `email_change_undone` |
+| ip_address, user_agent | text | |
+| detail | text | masked emails for email changes |
+| created_at | timestamptz | |
+
+### account_tokens
+One-time links for our own flows (email change, its undo). Only a SHA-256 of the token is stored.
+| column | type | notes |
+|---|---|---|
+| token_hash | text PK | |
+| user_id | bigint → users | cascade |
+| purpose | text | `email_change` (24 h) or `email_undo` (7 days) |
+| data | jsonb | `{ newEmail, oldEmail }` |
+| expires_at, used_at, created_at | timestamptz | |
 
 ## Planned
 
