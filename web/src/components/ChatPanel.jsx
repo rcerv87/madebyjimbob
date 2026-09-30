@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, formatTime } from '../api.js';
+import { api, formatTime, getToken } from '../api.js';
 
 const WINDOW_MS = 120_000;
 const VISIBLE = 150;
@@ -45,7 +45,7 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, session }) {
     let retry;
     const connect = () => {
       ws = new WebSocket(`${proto}://${location.host}/ws`);
-      ws.onopen = () => ws.send(JSON.stringify({ type: 'join', videoId }));
+      ws.onopen = () => ws.send(JSON.stringify({ type: 'join', videoId, token: getToken() }));
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type === 'chat') addMessages([msg.message]);
@@ -54,7 +54,7 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, session }) {
     };
     connect();
     return () => { clearTimeout(retry); if (ws) { ws.onclose = null; ws.close(); } };
-  }, [videoId]);
+  }, [videoId, session.user?.id]);
 
   const visible = useMemo(() => {
     const shown = [];

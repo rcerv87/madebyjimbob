@@ -1,21 +1,24 @@
 # API
 
 Base path `/api`. JSON in and out. Errors: `{ "error": "Human-readable message." }` with a 4xx/5xx status.
-Auth: `Authorization: Bearer <token>` (POC session token; replaced in MBJ-101).
+Auth: `Authorization: Bearer <token>` (MVP session token from `/session`; replaced in MBJ-101).
+Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see every tier.
 
 ## Current
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/session` | — | POC sign-in `{ username, tier }` → `{ token, user }` |
-| GET | `/me` | optional | `{ user | null }` |
+| GET | `/config` | — | `{ allowTestTiers }` |
+| POST | `/session` | — | Sign in or sign up `{ username, password, tier? }` → `{ token, user }`. Existing names need their password (case-insensitive name match). `tier` only honored when `ALLOW_TEST_TIERS=true`. 10 wrong passwords lock the name for 15 min |
+| DELETE | `/session` | optional | Sign out; invalidates the token |
+| GET | `/me` | optional | `{ user | null }`; user is `{ id, username, tier, xp, isAdmin }` |
 | GET | `/videos` | — | List video cards |
 | GET | `/videos/:id` | optional | Video detail; `hls` only if tier allows, else `locked: true` |
 | POST | `/videos/:id/view` | — | Increment views |
-| GET | `/videos/:id/chat?from=&to=` | — | Chat window by `offset_ms` (max 3,000) |
-| POST | `/videos/:id/chat` | required | `{ text, offsetMs }` → `{ message }`; broadcast to room |
-| GET | `/studio/overview` | none yet (MBJ-102) | Totals, per-video stats, top chatters |
-| PATCH | `/studio/videos/:id` | none yet (MBJ-102) | `{ minTier }` |
+| GET | `/videos/:id/chat?from=&to=` | optional | Chat window by `offset_ms` (max 3,000). 403 if the viewer's tier can't watch the video |
+| POST | `/videos/:id/chat` | required | `{ text, offsetMs }` → `{ message }`; broadcast to room. 403 below the video's tier; `offsetMs` clamped to the video's length |
+| GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded) |
+| PATCH | `/studio/videos/:id` | admin | `{ minTier }` |
 | GET | `/health` | — | Liveness |
 
 ### Chat message shape
@@ -35,12 +38,13 @@ Endpoint `/ws`.
 Client → server:
 | type | payload |
 |---|---|
-| `join` | `{ videoId }` — leave previous room, join this one |
+| `join` | `{ videoId, token? }` — leave previous room, join this one. Refused with `error` if the token's tier can't watch the video |
 
 Server → client:
 | type | payload |
 |---|---|
 | `chat` | `{ message }` |
+| `error` | `{ error }` — join refused |
 | `vote` (MBJ-203) | `{ messageId, votes }` |
 | `hide` (MBJ-204) | `{ messageId }` |
 | `pin` (MBJ-207) | `{ message, until }` |

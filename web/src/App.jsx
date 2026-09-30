@@ -18,18 +18,22 @@ export default function App() {
     api('/me').then((d) => setUser(d.user)).catch(() => setToken(null));
   }, []);
 
-  const signOut = () => { setToken(null); setUser(null); };
+  const signOut = () => {
+    api('/session', { method: 'DELETE' }).catch(() => {});
+    setToken(null);
+    setUser(null);
+  };
   const session = { user, requireSignIn: () => setSigningIn(true) };
 
   return (
     <div className={`shell ${navOpen ? 'nav-open' : ''}`}>
       <TopBar user={user} onSignIn={() => setSigningIn(true)} onSignOut={signOut} onMenu={() => setNavOpen((o) => !o)} />
-      <Sidebar onNavigate={() => setNavOpen(false)} />
+      <Sidebar isAdmin={!!user?.isAdmin} onNavigate={() => setNavOpen(false)} />
       <main className="main">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/watch/:id" element={<Watch session={session} />} />
-          <Route path="/studio" element={<Studio />} />
+          <Route path="/studio" element={<Studio user={user} />} />
         </Routes>
       </main>
       {signingIn && (

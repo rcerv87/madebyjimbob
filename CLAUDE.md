@@ -46,7 +46,7 @@ Tests and lint do not exist yet — MBJ-001 and MBJ-002 add them. Once they exis
    - new/changed endpoint or WS message → `docs/API.md`
    - schema change → migration + `docs/DATA_MODEL.md`
    - architectural choice → new ADR in `docs/adr/`
-6. Mark the story `Done` in `BACKLOG.md` and note anything deferred.
+6. Mark the story `Done` in the `STATUS` dict in `docs/backlog_source.py`, re-run it (regenerates `BACKLOG.md` and `docs/backlog.csv`), and note anything deferred.
 
 ## Conventions
 
@@ -61,7 +61,7 @@ Tests and lint do not exist yet — MBJ-001 and MBJ-002 add them. Once they exis
 
 ## Known POC shortcuts (tracked in backlog)
 
-- Username-only sign-in with self-picked tier → MBJ-101
-- Studio has no access control → MBJ-102
+- Username + password sign-in built in-house; tier picker when `ALLOW_TEST_TIERS=true` → MBJ-101
+- Studio access is the `ADMIN_USERNAMES` env list, not roles → MBJ-102
 - Stream URLs unsigned → MBJ-103
 - In-memory rate limit → MBJ-205 (Redis)

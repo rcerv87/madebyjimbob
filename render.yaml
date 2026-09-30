@@ -15,6 +15,10 @@ services:
         sync: false
       - key: BANNED_WORDS
         sync: false
+      - key: ADMIN_USERNAMES
+        sync: false
+      - key: ALLOW_TEST_TIERS
+        value: "false"
 
 databases:
   - name: madebyjimbob-db

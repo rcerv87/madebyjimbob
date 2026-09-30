@@ -2,18 +2,29 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, compact, formatTime, TIER_LABEL } from '../api.js';
 
-export default function Studio() {
+export default function Studio({ user }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   const load = () => api('/studio/overview').then(setData).catch((e) => setError(e.message));
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    setError('');
+    if (user?.isAdmin) load();
+  }, [user?.isAdmin]);
 
   const setTier = async (id, minTier) => {
-    await api(`/studio/videos/${id}`, { method: 'PATCH', body: { minTier } });
-    load();
+    setSaveError('');
+    try {
+      await api(`/studio/videos/${id}`, { method: 'PATCH', body: { minTier } });
+      load();
+    } catch (e) {
+      setSaveError(`Couldn't change access: ${e.message}`);
+    }
   };
 
+  if (!user) return <p className="muted page-msg">Sign in with a Studio account to see the dashboard.</p>;
+  if (!user.isAdmin) return <p className="error page-msg">Studio is only for JimBob and mods.</p>;
   if (error) return <p className="error page-msg">{error}</p>;
   if (!data) return <p className="muted page-msg">Loading dashboard…</p>;
   const t = data.totals;
@@ -34,6 +45,7 @@ export default function Studio() {
       <div className="studio-cols">
         <section className="panel">
           <h2>Content</h2>
+          {saveError && <p className="error small">{saveError}</p>}
           <div className="table-wrap">
             <table>
               <thead>

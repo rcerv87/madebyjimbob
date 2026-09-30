@@ -12,6 +12,13 @@ Generated from `docs/backlog_source.py` — edit there and re-run `python3 docs/
 - Rate limiting, banned-word masking, @mention highlighting
 - Tier-gated video detail endpoint; Studio dashboard with per-video access control
 
+## Done (MVP hardening)
+
+- Username + password sign-in (scrypt); taken names need their password. Replaced by MBJ-101
+- Tier picker only when `ALLOW_TEST_TIERS=true`; Studio restricted to `ADMIN_USERNAMES`
+- Chat read, post, and WebSocket join enforce the video's tier
+- Malformed or unknown video ids return 400/404 instead of 500
+
 ## Suggested sprint plan
 
 | Sprint | Goal | Stories |
