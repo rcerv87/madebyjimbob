@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
+import useTitle from '../useTitle.js';
 import VideoCard from '../components/VideoCard.jsx';
 import LibraryTabs from '../components/LibraryTabs.jsx';
 import BrandHero from '../components/BrandHero.jsx';
@@ -17,6 +18,7 @@ const CHIPS = [
 
 export default function Home() {
   const [params, setParams] = useSearchParams();
+  useTitle(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const q = params.get('q') || '';

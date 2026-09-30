@@ -10,6 +10,7 @@ import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback } from './stream.js';
 import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
+import { pageMeta, renderPage } from './pages.js';
 import {
   addUserSocket,
   removeUserSocket,
@@ -34,6 +35,8 @@ const ADMINS = new Set(
 );
 
 const app = express();
+// Behind Render's proxy: trust X-Forwarded-Proto so page URLs (link previews, canonical) use https.
+app.set('trust proxy', 1);
 app.use(httpLogger);
 app.use(express.json({ limit: '50kb' }));
 
@@ -982,8 +985,27 @@ app.use('/api', (_req, res) => res.status(404).json({ error: 'Unknown API endpoi
 
 // ---------- web app ----------
 const dist = path.join(__dirname, '../../web/dist');
-app.use(express.static(dist));
-app.get(/^(?!\/api).*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+// Built files (JS, CSS, images). index: false so "/" goes through renderPage below.
+app.use(express.static(dist, { index: false }));
+
+app.get('/robots.txt', (_req, res) =>
+  res.type('text/plain').send('User-agent: *\nDisallow: /studio\nDisallow: /api/\n'),
+);
+
+// Every app page: that page's title, description, and link-preview tags; 404 for unknown pages.
+app.get(
+  /^(?!\/api).*/,
+  wrap(async (req, res) => {
+    const siteUrl = (process.env.SITE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
+    const indexing = process.env.ALLOW_INDEXING === 'true';
+    const meta = await pageMeta(req.path);
+    if (!indexing || meta.noindex) res.set('X-Robots-Tag', 'noindex');
+    res
+      .status(meta.status)
+      .type('html')
+      .send(renderPage(meta, { siteUrl, url: `${siteUrl}${req.originalUrl}`, indexing }));
+  }),
+);
 
 app.use((err, req, res, _next) => {
   if (err.type === 'entity.parse.failed') {

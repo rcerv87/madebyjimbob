@@ -31,6 +31,15 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## What's built
 
+### Sharing and search basics
+- Every page is sent with its own title, description, and link-preview tags (Open Graph / X cards): a shared
+  video link shows its thumbnail and title. Browser tab titles follow the page.
+- Unknown pages and missing videos/playlists return a real 404 with a "Page not found" screen.
+- The whole site is `noindex` (search engines skip it) until `ALLOW_INDEXING=true` is set on the real domain;
+  link previews still work. `robots.txt` keeps Studio and the API out of search. Set `SITE_URL` once the domain
+  is live so previews use it.
+- **Share** button on videos: copy the link, copy it at the current moment (`?t=`), or the phone's share sheet.
+
 ### JimBob's brand, Shop, and Art
 - The platform now wears his brand from madebyjimbob.com: store teal accent, MADEbyJIMBOB wordmark in Jost,
   his illustrated avatar in the header and as the app icon, and his banner art on the Videos page with the
@@ -126,8 +135,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - Auto-captions can invent text during silence or music.
 - Downloading from YouTube with yt-dlp is against YouTube's terms; use Takeout or original recordings for the library.
 - Push on iPhone requires Add to Home Screen (Apple's rule).
-- Search engines and link previews see the same empty page for every URL (client-rendered app, no per-page
-  meta tags), and unknown URLs return 200 instead of 404. Fix before launch (MBJ-815).
+- Search engines still see little content beyond titles and descriptions (the app draws pages in the browser);
+  crawlable content, structured data, sitemap, and speed remain in MBJ-815.
 
 ## What's next (in order)
 

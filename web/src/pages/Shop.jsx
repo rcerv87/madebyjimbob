@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
+import useTitle from '../useTitle.js';
 import { BRAND, money, sized } from '../brand.js';
 
 // JimBob's store, browsable here; checkout happens on madebyjimbob.com.
 export default function Shop() {
   const [params, setParams] = useSearchParams();
+  useTitle('Shop');
   const collection = params.get('c') || 'all';
   const [collections, setCollections] = useState([]);
   const [data, setData] = useState(null);

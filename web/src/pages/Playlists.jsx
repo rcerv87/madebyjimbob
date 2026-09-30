@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, count, formatTime } from '../api.js';
+import useTitle from '../useTitle.js';
 import LibraryTabs from '../components/LibraryTabs.jsx';
 
 export default function Playlists() {
   const [playlists, setPlaylists] = useState(null);
+  useTitle('Playlists');
   const [error, setError] = useState('');
 
   useEffect(() => {

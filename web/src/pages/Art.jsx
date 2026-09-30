@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
+import useTitle from '../useTitle.js';
 import { money, sized } from '../brand.js';
 
 // JimBob's art: originals, prints, and digital pieces from his store, as a gallery. Tap a piece to
 // see it large; "View in store" opens it on madebyjimbob.com.
 export default function Art() {
   const [pieces, setPieces] = useState(null);
+  useTitle('Art');
   const [error, setError] = useState('');
   const [open, setOpen] = useState(null);
   const [filter, setFilter] = useState('All');

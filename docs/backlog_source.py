@@ -481,6 +481,13 @@ S = [
   "Internal links between related videos, topics, guests, playlists, and posts",
   "YouTube and social descriptions link back to the matching platform page (distribution, not just SEO)",
   "Track which searches bring people in (Search Console) in the Studio dashboard"], ["815", "605", "609"]),
+("817", 1, "Should", "S", "Friends of the channel",
+ "As JimBob, I want to point my audience to the creators, guests, and partners I recommend.",
+ ["Studio: add, edit, reorder, and remove friends: name, photo, one-line description, and links (YouTube, X, Rumble, website, store)",
+  "Friends page, plus a short row on the Videos banner and a link in the navigation (MBJ-810)",
+  "Each friend links to the streams they appear in once guests are tagged (MBJ-608, MBJ-609)",
+  "Sponsors and affiliate links clearly labeled as such; external links open in a new tab",
+  "Friends can be shown in the stream notes and on topic/guest pages"], []),
 ("812", 1, "Must", "S", "JimBob's brand on the platform",
  "As JimBob, I want the platform to look like my brand, not a template.",
  ["Store teal (#27717A) as the accent color; MADEbyJIMBOB wordmark in Jost (the store's font)",
@@ -507,7 +514,7 @@ SPRINTS = [
 # Story status lives here, not in BACKLOG.md (that file is regenerated). Example: {"001": "Done"}
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
-          "809": "In progress", "812": "Done", "211": "Done", "212": "Done", "213": "Done",
+          "809": "In progress", "812": "Done", "815": "In progress", "211": "Done", "212": "Done", "213": "Done",
           "214": "Done", "604": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
