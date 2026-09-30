@@ -50,7 +50,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/playlists" element={<Playlists />} />
           <Route path="/playlist/:id" element={<Playlist />} />
-          <Route path="/posts" element={<Posts />} />
+          <Route path="/posts" element={<Posts session={session} />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/art" element={<Art />} />
           <Route path="/watch/:id" element={<Watch session={session} />} />

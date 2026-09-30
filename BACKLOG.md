@@ -990,7 +990,9 @@ Acceptance criteria:
 - [ ] Studio composer: text, image, poll
 - [ ] Posts tab and post page; members-only posts respect tiers
 - [ ] Threaded, quote-aware comments reuse the comments system
-- [ ] Check whether YouTube Community posts can be imported
+- [ ] Built for how JimBob posts on YouTube (checked 2026-09-30, last 10 posts: all image posts, short or no caption, 400-1,100 likes): multi-photo work-in-progress series (icon painting), memes/comebacks, debate call-outs tagging other creators, personal photos
+- [ ] Platform extras shown in the preview on /posts: polls, stream links with the video card, members-only posts (blurred and locked below the tier), store drops with the product card, Q&A calls
+- [ ] Import: YouTube's Posts page includes the latest ~10 posts in its page data; older posts need paging through its continuation requests (yt-dlp doesn't import posts)
 
 ### MBJ-805 — Live indicator
 
