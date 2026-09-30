@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { api, getToken, setToken } from './api.js';
+import { api, setSignedIn } from './api.js';
 import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SignInDialog from './components/SignInDialog.jsx';
+import AccountNotice from './components/AccountNotice.jsx';
 import Home from './pages/Home.jsx';
 import NotFound from './pages/NotFound.jsx';
 
@@ -16,6 +17,7 @@ const Playlist = lazy(() => import('./pages/Playlist.jsx'));
 const Posts = lazy(() => import('./pages/Posts.jsx'));
 const Shop = lazy(() => import('./pages/Shop.jsx'));
 const Art = lazy(() => import('./pages/Art.jsx'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 import { useKeepPlaying } from './keepPlaying.js';
@@ -25,19 +27,24 @@ export default function App() {
   const [signingIn, setSigningIn] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
 
-  useEffect(() => {
-    if (!getToken()) return;
+  // The session cookie (if any) says who this is; progress saving and sockets follow along.
+  const refreshUser = useCallback((u) => {
+    if (u !== undefined) return setUser(u);
     api('/me')
       .then((d) => setUser(d.user))
-      .catch(() => setToken(null));
+      .catch(() => {});
   }, []);
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
+  useEffect(() => setSignedIn(Boolean(user)), [user]);
 
   const signOut = () => {
-    api('/session', { method: 'DELETE' }).catch(() => {});
-    setToken(null);
+    api('/auth/sign-out', { method: 'POST' }).catch(() => {});
     setUser(null);
   };
-  const session = { user, requireSignIn: () => setSigningIn(true) };
+  // requireSignIn() or requireSignIn('signup' | 'forgot'); also safe as a click handler.
+  const session = { user, requireSignIn: (mode) => setSigningIn(typeof mode === 'string' ? mode : 'signin') };
   const notes = useNotifications(user);
   const { watchAt, background } = useKeepPlaying();
 
@@ -46,12 +53,13 @@ export default function App() {
       <TopBar
         user={user}
         notes={notes}
-        onSignIn={() => setSigningIn(true)}
+        onSignIn={() => setSigningIn('signin')}
         onSignOut={signOut}
         onMenu={() => setNavOpen((o) => !o)}
       />
       <Sidebar isAdmin={!!user?.isAdmin} onNavigate={() => setNavOpen(false)} />
       <main className="main">
+        <AccountNotice user={user} onUserChanged={refreshUser} />
         {/* Its own spot and Routes, so it stays mounted (hidden) while its video plays in the Mini player. */}
         {watchAt && (
           <div hidden={background}>
@@ -72,6 +80,7 @@ export default function App() {
             <Route path="/art" element={<Art />} />
             <Route path="/watch/:id" element={null} />
             <Route path="/studio" element={<Studio user={user} />} />
+            <Route path="/reset-password" element={<ResetPassword session={session} />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
@@ -80,6 +89,7 @@ export default function App() {
       <IosInstallHint />
       {signingIn && (
         <SignInDialog
+          initialMode={signingIn}
           onClose={() => setSigningIn(false)}
           onSignedIn={(u) => {
             setUser(u);

@@ -36,8 +36,18 @@ export function InstallButton() {
   const install = useInstallPrompt();
   if (!install) return null;
   return (
-    <button type="button" className="text-btn install-btn" onClick={install}>
-      Install app
+    <button type="button" className="text-btn install-btn" onClick={install} aria-label="Install app">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path
+          d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span className="install-label">Install app</span>
     </button>
   );
 }

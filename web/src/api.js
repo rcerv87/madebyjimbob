@@ -1,15 +1,40 @@
-const TOKEN_KEY = 'mbjb_token';
+// Signed-in state lives in an httpOnly session cookie (MBJ-101) that the browser sends with every request.
+let signedIn = false;
+export const setSignedIn = (value) => {
+  signedIn = Boolean(value);
+};
+export const isSignedIn = () => signedIn;
 
-export const getToken = () => localStorage.getItem(TOKEN_KEY);
-export const setToken = (t) => (t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY));
+// Sign-in and sign-up errors (Better Auth codes) in plain words: what happened and how to fix it.
+const AUTH_MESSAGES = {
+  INVALID_USERNAME_OR_PASSWORD: 'That username and password don’t match. Check them, or reset your password.',
+  INVALID_EMAIL_OR_PASSWORD: 'That email and password don’t match. Check them, or reset your password.',
+  USERNAME_IS_ALREADY_TAKEN: 'That username is taken. Try another, for example with a number on the end.',
+  USER_ALREADY_EXISTS: 'There’s already an account with that email. Sign in instead, or reset your password.',
+  USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL:
+    'There’s already an account with that email. Sign in instead, or reset your password.',
+  INVALID_USERNAME: 'Usernames can use letters, numbers, and underscores (and no rude words).',
+  USERNAME_TOO_SHORT: 'Usernames need at least 3 characters.',
+  USERNAME_TOO_LONG: 'Usernames can be up to 32 characters.',
+  PASSWORD_TOO_SHORT: 'Use a password of at least 10 characters.',
+  PASSWORD_TOO_LONG: 'Use a password of at most 128 characters.',
+  INVALID_EMAIL: 'Enter an email address like name@example.com.',
+  INVALID_TOKEN: 'That link has expired or was already used. Ask for a new one.',
+};
 
 export async function api(path, { method = 'GET', body } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`/api${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const res = await fetch(`/api${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    if (res.status === 429) throw new Error('Too many tries. Wait a minute, then try again.');
+    throw new Error(
+      data.error || AUTH_MESSAGES[data.code] || data.message || `Request failed (${res.status})`,
+    );
+  }
   return data;
 }
 

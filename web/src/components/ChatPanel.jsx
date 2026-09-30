@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, formatTime, getToken } from '../api.js';
+import { api, formatTime } from '../api.js';
 
 const WINDOW_MS = 120_000;
 const VISIBLE = 150;
@@ -102,7 +102,7 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
     const connect = () => {
       ws = new WebSocket(`${proto}://${location.host}/ws`);
       ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'join', videoId, token: getToken() }));
+        ws.send(JSON.stringify({ type: 'join', videoId }));
         // Catch up on anything posted while the socket was down.
         if (reconnecting && lastId.current) {
           api(`/videos/${videoId}/chat?afterId=${lastId.current}`)

@@ -26,11 +26,11 @@ web/                               React app: home grid, watch page + chat, Stud
 
 1. Push this repo to GitHub (private is fine).
 2. Render → **New → Blueprint** → pick the repo. It creates the web service (Starter) and Postgres.
-   When asked, set `ADMIN_USERNAMES` (e.g. `jimbob`). `CF_STREAM_CUSTOMER_CODE` is already in `render.yaml`.
+   When asked, set `ADMIN_EMAILS` (JimBob's and yours). `BETTER_AUTH_SECRET` is generated; `CF_STREAM_CUSTOMER_CODE` is already in `render.yaml`.
    For push notifications also set `VAPID_PRIVATE_KEY` (the public key is in `render.yaml`; generate a pair with
    `node -e "console.log(require('web-push').generateVAPIDKeys())"` and update both if you ever rotate).
-3. Render builds, runs migrations (pre-deploy), and starts the app. Open the `.onrender.com` URL and
-   **sign up as an admin username right away**, so nobody else can claim it.
+3. Render builds, runs migrations (pre-deploy), and starts the app. Open the `.onrender.com` URL and create
+   accounts with the admin emails; confirming the email (needs account email, ADR-012) unlocks Studio.
 4. Load videos into the Render database from your machine: copy the database's **External Database URL**
    (Render → the database → Connect) and run the import against it. Videos already on Stream aren't re-uploaded:
    ```bash
@@ -83,7 +83,7 @@ npm run dev:server     # migrates, then API on :3000 (uses .env)
 npm run dev:web        # app on :5173, proxies /api and /ws
 ```
 
-Set `ALLOW_TEST_TIERS=true` locally to get a tier picker at sign-in.
+Tiers can't be picked at sign-up. To try a paid tier locally, set it on your account: `UPDATE users SET tier = 'premium' WHERE username = '...'`.
 
 Tests: create a second, disposable database (e.g. `createdb ... madebyjimbob_test`), set `DATABASE_URL_TEST`, then `npm test`.
 
@@ -96,9 +96,9 @@ are broadcast over WebSocket to everyone watching that video.
 
 ## POC shortcuts to replace before launch
 
-- **Sign-in** is username + password built in-house, with no email or password reset. Swap for real auth + Stripe/RevenueCat (MBJ-101, MBJ-104).
-  Until payments exist, everyone is Free unless `ALLOW_TEST_TIERS=true`, so set paid videos' access only when you're ready.
-- **Studio** is gated by the `ADMIN_USERNAMES` list. Replace with roles (MBJ-102).
+- **Payments**: accounts are real (Better Auth, MBJ-101) but everyone is Free until Stripe/RevenueCat (MBJ-104),
+  so set paid videos' access only when you're ready.
+- **Studio** is gated by the `ADMIN_EMAILS` list (verified emails). Replace with roles (MBJ-102).
 - **Paid video protection**: the API hides the playback URL from lower tiers, but Stream URLs
   are public until you turn on `requireSignedURLs` and mint signed tokens in `server/src/stream.js`.
 - **Rate limit** is in-memory (fine for one instance; move to Redis when scaling out).

@@ -63,6 +63,7 @@ export async function pageMeta(pathname) {
   if (p === '/art')
     return page('Art', "JimBob's illustrations and comics: originals, prints, and digital art.");
   if (p === '/studio') return { ...page('Studio'), noindex: true };
+  if (p === '/reset-password') return { ...page('Reset password'), noindex: true };
 
   const watch = p.match(/^\/watch\/(\d{1,18})$/);
   if (watch) {

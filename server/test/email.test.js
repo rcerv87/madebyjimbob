@@ -162,7 +162,7 @@ describe('Studio email', () => {
       call('/studio/email/test', { method: 'POST', token: admin, body: { to, template: 'verify_email' } });
     assert.equal((await test('nope')).status, 400);
     assert.deepEqual((await test('ruben@example.com')).data, { status: 'sent' });
-    assert.equal(sent[0].to, 'ruben@example.com');
+    assert.ok(sent.some((m) => m.to === 'ruben@example.com' && m.template === 'verify_email'));
 
     const later = await call('/studio/email', { token: admin });
     assert.equal(later.data.recent[0].to, 'ru***@example.com');

@@ -55,7 +55,7 @@ S = [
 # ---------------- 1 Accounts & memberships ----------------
 ("101", 1, "Must", "L", "Real authentication",
  "As a viewer, I want a real account so my identity, tier, and history are mine.",
- ["Self-hosted auth (ADR-006) with email + password, magic link, Google, and Apple sign-in",
+ ["Self-hosted auth (ADR-006) with email + password (magic link, Google, and Apple sign-in are MBJ-110)",
   "Users choose a unique username at signup (3–32 `[A-Za-z0-9_]`)",
   "POC `/session` endpoint and `session_token` column removed",
   "Tier can no longer be self-selected"], ["003"]),
@@ -570,13 +570,16 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.
 # 815: per-page titles/previews, real 404s, noindex, bundle splitting and caching shipped; crawlable content, JSON-LD, sitemap remain.
 # 604: Stream auto-captions + transcripts table + captions:fetch done; mobile player and Whisper (for R2) remain.
 # 114: sending, templates, send log, bounce webhook, and Studio preview/test done; DNS on JimBob's domain + Render keys remain.
+# 101: Better Auth on our tables; email + password, username at sign-up, cookie sessions, POC /session gone, tiers not selectable.
+# 108: sign-up dialog, username rules, reserved/banned names, 13+ box, verification email, leaked-password check, POC accounts asked for an email done; /join page, live username suggestions, Turnstile remain.
+# 113: forgot/reset password (1 h, one use, signs out other devices) done; change password/email in settings and the old-address notice remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():
@@ -595,8 +598,8 @@ def main():
            "- Rate limiting, banned-word masking, @mention highlighting",
            "- Tier-gated video detail endpoint; Studio dashboard with per-video access control",
            "", "## Done (MVP hardening)", "",
-           "- Username + password sign-in (scrypt); taken names need their password. Replaced by MBJ-101",
-           "- Tier picker only when `ALLOW_TEST_TIERS=true`; Studio restricted to `ADMIN_USERNAMES`",
+           "- Username + password sign-in (scrypt); replaced by real accounts in MBJ-101",
+           "- Studio restricted to verified `ADMIN_EMAILS` (roles in MBJ-102)",
            "- Chat read, post, and WebSocket join enforce the video's tier",
            "- Malformed or unknown video ids return 400/404 instead of 500",
            "", "## Suggested sprint plan", "", "| Sprint | Goal | Stories |", "|---|---|---|"]

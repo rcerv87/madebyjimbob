@@ -1,17 +1,26 @@
 # API
 
 Base path `/api`. JSON in and out. Errors: `{ "error": "Human-readable message." }` with a 4xx/5xx status. Every response has an `X-Request-Id` header (a safe incoming one is reused); 500 errors quote it so reports can be matched to logs. Malformed JSON bodies are 400, bodies over 50 KB are 413.
-Auth: `Authorization: Bearer <token>` (MVP session token from `/session`; replaced in MBJ-101).
-Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see every tier.
+Auth (MBJ-101): Better Auth under `/auth/*`. The web app uses the `mbj.session_token` httpOnly cookie; apps and tests can send
+`Authorization: Bearer <token>` with the token from the `set-auth-token` response header of sign-up/sign-in. State-changing
+auth requests need an `Origin` header (browsers send it). Admins are users whose **verified** email is in `ADMIN_EMAILS`;
+they get `isAdmin: true` and see every tier.
 
 ## Current
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/config` | — | `{ allowTestTiers }` |
-| POST | `/session` | — | Sign in or sign up `{ username, password, tier? }` → `{ token, user }`. Existing names need their password (case-insensitive name match). `tier` only honored when `ALLOW_TEST_TIERS=true`. 10 wrong passwords lock the name for 15 min |
-| DELETE | `/session` | optional | Sign out; invalidates the token |
-| GET | `/me` | optional | `{ user | null }`; user is `{ id, username, tier, xp, isAdmin }` |
+| POST | `/auth/sign-up/email` | — | `{ email, username, name, password, callbackURL? }`. Username 3–32 `[A-Za-z0-9_]`, unique ignoring case, not reserved or rude; password 10–128 chars and not in a known breach. Signs in and emails a verification link (to `callbackURL`, e.g. `/?verified=1`). Errors are `{ code, message }`: `USERNAME_IS_ALREADY_TAKEN`, `USER_ALREADY_EXISTS`, `USERNAME_RESERVED`, `INVALID_USERNAME`, `PASSWORD_TOO_SHORT`, `PASSWORD_COMPROMISED`, … |
+| POST | `/auth/sign-in/username` | — | `{ username, password }` (any case). 401 `INVALID_USERNAME_OR_PASSWORD` |
+| POST | `/auth/sign-in/email` | — | `{ email, password }`. 401 `INVALID_EMAIL_OR_PASSWORD` |
+| POST | `/auth/sign-out` | session | Ends this session |
+| GET | `/auth/verify-email?token=&callbackURL=` | — | The emailed link: marks the email verified, signs in, redirects to `callbackURL` |
+| POST | `/auth/send-verification-email` | — | `{ email, callbackURL? }` resends the link |
+| POST | `/auth/request-password-reset` | — | `{ email, redirectTo: '/reset-password' }`; always 200 (never reveals whether the email has an account). The emailed link redirects to `/reset-password?token=` (or `?error=INVALID_TOKEN`) |
+| POST | `/auth/reset-password` | — | `{ newPassword, token }`; one use, 1 hour; signs out every other session |
+| POST | `/auth/change-email` | session | `{ newEmail, callbackURL? }`. Unverified accounts (and POC accounts without one) change right away and get a verification link |
+| GET | `/me` | optional | `{ user | null }`; user is `{ id, username, displayName, tier, xp, isAdmin, email (null if none yet), emailVerified, confirmEmail }` (`confirmEmail`: unverified and the server can send email) |
+| — | other `/auth/*` | | Better Auth's standard endpoints (`get-session`, `list-sessions`, `revoke-session`, `change-password`, `is-username-available`, …); rate-limited per IP (sign-in 10/min, sign-up 5 per 10 min, reset and verification emails 3 per 10 min) |
 | GET | `/videos?kind=&members=&q=&sort=` | optional | Dashboard: `kind` = `video\|short\|live`, `members=1` for paid-tier only, `q` searches titles and descriptions, `sort` = `new\|old\|views`. Returns `{ videos, counts: { all, video, short, live, members } }` (counts follow `q`). Cards include `kind` and, when signed in, `progressMs` |
 | GET | `/playlists` | — | Playlists with at least one video on the site: `{ id, title, description, source, videoCount, durationS, thumbnail, firstVideoId }` |
 | GET | `/playlists/:id` | optional | `{ playlist, videos }` in playlist order (only videos on the site) |
@@ -98,4 +107,5 @@ Server → client:
 | POST | `/videos/:id/tips` | MBJ-207 |
 | GET | `/live/current` | MBJ-301 |
 | POST | `/account/youtube/link` | MBJ-305 |
+| POST | `/auth/sign-in/social`, `/auth/sign-in/magic-link`, passkeys | MBJ-110 |
 | GET | `/podcast/:feedToken.xml` | MBJ-503 |

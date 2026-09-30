@@ -9,13 +9,51 @@ columns are added by the story noted.
 | column | type | notes |
 |---|---|---|
 | id | bigserial PK | |
-| username | text unique | 3–32 chars `[A-Za-z0-9_]` |
-| tier | text | `free | plus | premium` — derived from entitlements after MBJ-104 |
+| username | text unique | 3–32 chars `[A-Za-z0-9_]`, as typed (what everyone sees); Better Auth's `displayUsername` |
+| username_key | text unique | `lower(username)`, for lookups; Better Auth's `username` |
+| email | text unique | POC accounts without one have `user<id>@no-email.invalid` (never mailed; the site asks for a real one) |
+| email_verified | boolean | admins, payments, and rewards need it |
+| display_name | text | Better Auth's `name`; starts as the username (editable in MBJ-117) |
+| image | text | avatar URL (MBJ-117) |
+| tier | text | `free | plus | premium` — derived from entitlements after MBJ-104; never settable by the user |
 | youtube_channel_id | text | set when user links YouTube (MBJ-305) |
-| xp | int | |
-| session_token | text unique | MVP only; replaced by auth provider (MBJ-101) |
-| password_hash | text | MVP only, `scrypt$salt$hash`; replaced by auth provider (MBJ-101) |
-| created_at | timestamptz | |
+| xp | int | never settable by the user |
+| created_at, updated_at | timestamptz | |
+
+Better Auth (MBJ-101, ADR-006) maps its models onto these snake_case tables in `server/src/auth.js`; ids are serial.
+
+### sessions
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| user_id | bigint → users | cascade |
+| token | text unique | the session cookie / Bearer token |
+| expires_at | timestamptz | 90 days, pushed back at most once a day while used |
+| ip_address, user_agent | text | for the device list (MBJ-110) |
+| created_at, updated_at | timestamptz | |
+
+### accounts
+Sign-in methods per user: `provider_id = 'credential'` holds the password hash (Better Auth scrypt, or a POC `scrypt$salt$hash`
+that still verifies); Google/Apple rows come with MBJ-110.
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| user_id | bigint → users | cascade |
+| account_id, provider_id | text | unique together; for passwords `account_id` = user id |
+| access_token, refresh_token, id_token, scope | text | OAuth providers |
+| access_token_expires_at, refresh_token_expires_at | timestamptz | |
+| password | text | hash, credential rows only |
+| created_at, updated_at | timestamptz | |
+
+### verifications
+One-time tokens (email verification, password reset, email change).
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| identifier | text | indexed |
+| value | text | |
+| expires_at | timestamptz | verify 24 h, reset 1 h |
+| created_at, updated_at | timestamptz | |
 
 ### videos
 | column | type | notes |
@@ -165,7 +203,6 @@ Addresses that never get mail again: permanent bounces and spam complaints from 
 |---|---|
 | `videos.status` (`processing | live | archived | ready`), `videos.source` (`stream | youtube | owned`), `videos.live_started_at`, `videos.offset_adjust_ms` | MBJ-301 |
 | `entitlements (user_id, tier, provider, provider_ref, expires_at)` | MBJ-104 |
-| `auth_*` tables from auth provider; drop `users.session_token` | MBJ-101 |
 | `users.role` (`viewer | mod | admin`) | MBJ-102 |
 | `chat_votes (message_id, user_id, created_at)` | MBJ-203 |
 | `chat_messages.amount_cents, currency, pinned_until` | MBJ-207 |
