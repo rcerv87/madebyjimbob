@@ -154,14 +154,14 @@ Acceptance criteria:
 
 ### MBJ-006 — Extract YouTube replay parser
 
-**Status:** To do · **Phase 0 — Foundation** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-001
+**Status:** Done · **Phase 0 — Foundation** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-001
 
 As the developer, I want the chat replay parser as a tested module so live ingest can reuse it.
 
 Acceptance criteria:
-- [ ] Parser lives in `server/src/ingest/youtubeReplay.js` with pure functions
-- [ ] Fixture-based tests cover text, emoji, super chat, membership, negative offsets
-- [ ] Import script uses the module; behavior unchanged
+- [x] Parser lives in `server/src/ingest/youtubeReplay.js` with pure functions
+- [x] Fixture-based tests cover text, emoji, super chat, membership, negative offsets
+- [x] Import script uses the module; behavior unchanged
 
 ### MBJ-007 — Structured logging
 

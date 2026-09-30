@@ -15,7 +15,7 @@ import readline from 'readline';
 import { execFileSync } from 'child_process';
 import * as tus from 'tus-js-client';
 import { pool, migrate } from '../src/db.js';
-import { extractMentions } from '../src/moderation.js';
+import { parseReplayLine } from '../src/ingest/youtubeReplay.js';
 
 const args = process.argv.slice(2);
 const url = args.find((a) => !a.startsWith('--') && !isFlagValue(a));
@@ -115,8 +115,9 @@ const videoId = rows[0].id;
 console.log(`Video saved as #${videoId}`);
 
 if (fs.existsSync(chatFile)) {
-  const count = await importChat(chatFile, videoId);
-  console.log(`Imported ${count} chat messages.`);
+  const { seen, inserted } = await importChat(chatFile, videoId);
+  const skipped = seen - inserted;
+  console.log(`Imported ${inserted} new chat messages${skipped ? ` (${skipped} already imported)` : ''}.`);
 }
 
 await pool.end();
@@ -151,59 +152,15 @@ function uploadToStream(filePath, name, accountId, token) {
   });
 }
 
-function runsToText(runs = []) {
-  return runs
-    .map((r) => {
-      if (r.text !== undefined) return r.text;
-      if (r.emoji) {
-        return r.emoji.isCustomEmoji
-          ? `:${(r.emoji.shortcuts?.[0] || 'emoji').replace(/:/g, '')}:`
-          : r.emoji.emojiId || '';
-      }
-      return '';
-    })
-    .join('');
-}
-
-function parseItem(item) {
-  const r =
-    item.liveChatTextMessageRenderer ||
-    item.liveChatPaidMessageRenderer ||
-    item.liveChatMembershipItemRenderer;
-  if (!r) return null;
-
-  let kind = 'text';
-  let body = runsToText(r.message?.runs);
-  let amount = null;
-  if (item.liveChatPaidMessageRenderer) {
-    kind = 'paid';
-    amount = r.purchaseAmountText?.simpleText || null;
-  } else if (item.liveChatMembershipItemRenderer) {
-    kind = 'membership';
-    body = [runsToText(r.headerSubtext?.runs), body].filter(Boolean).join(' — ');
-  }
-
-  const photos = r.authorPhoto?.thumbnails || [];
-  return {
-    externalId: r.id,
-    author: r.authorName?.simpleText || 'Unknown',
-    channelId: r.authorExternalChannelId || null,
-    photo: photos[photos.length - 1]?.url || null,
-    kind,
-    body,
-    amount,
-    sentAt: r.timestampUsec ? new Date(Number(r.timestampUsec) / 1000) : null,
-  };
-}
-
 async function importChat(file, videoId) {
   const rl = readline.createInterface({ input: fs.createReadStream(file), crlfDelay: Infinity });
   let batch = [];
-  let total = 0;
+  let seen = 0;
+  let inserted = 0;
 
   const flush = async () => {
     if (!batch.length) return;
-    const cols = 11;
+    const cols = 12;
     const values = [];
     const params = [];
     batch.forEach((m, i) => {
@@ -219,53 +176,31 @@ async function importChat(file, videoId) {
         m.kind,
         m.body,
         m.amount,
+        m.mentions,
         m.offsetMs,
         m.sentAt,
       );
     });
-    await pool.query(
+    const res = await pool.query(
       `INSERT INTO chat_messages
-         (video_id, source, external_id, author_name, author_channel_id, author_photo, kind, body, amount_text, offset_ms, sent_at)
+         (video_id, source, external_id, author_name, author_channel_id, author_photo, kind, body, amount_text, mentions, offset_ms, sent_at)
        VALUES ${values.join(',')}
        ON CONFLICT (source, external_id) DO NOTHING`,
       params,
     );
-    // mentions in a second pass keeps the bulk insert simple
-    for (const m of batch) {
-      const mentions = extractMentions(m.body);
-      if (mentions.length) {
-        await pool.query(
-          `UPDATE chat_messages SET mentions = $1 WHERE source = 'youtube' AND external_id = $2`,
-          [mentions, m.externalId],
-        );
-      }
-    }
-    total += batch.length;
-    process.stdout.write(`\r  ${total} messages`);
+    seen += batch.length;
+    inserted += res.rowCount;
+    process.stdout.write(`\r  ${seen} messages`);
     batch = [];
   };
 
   for await (const line of rl) {
-    if (!line.trim()) continue;
-    let obj;
-    try {
-      obj = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    const replay = obj.replayChatItemAction;
-    if (!replay) continue;
-    const offsetMs = Math.max(0, Number(replay.videoOffsetTimeMsec) || 0);
-    for (const action of replay.actions || []) {
-      const item = action.addChatItemAction?.item;
-      if (!item) continue;
-      const m = parseItem(item);
-      if (!m || !m.externalId) continue;
-      batch.push({ ...m, offsetMs });
+    for (const m of parseReplayLine(line)) {
+      batch.push(m);
       if (batch.length >= 500) await flush();
     }
   }
   await flush();
   process.stdout.write('\n');
-  return total;
+  return { seen, inserted };
 }
