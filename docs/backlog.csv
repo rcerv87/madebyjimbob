@@ -182,9 +182,22 @@ MBJ-601,Watch and listen tracking,Engagement & AI,Phase 5 — Engagement,Must,S,
 - Stored in `watch_sessions` with mode",MBJ-101
 MBJ-602,"XP, levels, badges",Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a regular, I want my loyalty visible in chat.","- XP from watch/listen time, messages, and upvotes received; tier multipliers per PRD
 - Level and badge shown next to name in chat
-- Anti-farming: idle tabs and duplicate messages earn nothing",MBJ-601
+- Anti-farming: idle tabs and duplicate messages earn nothing
+- Activity badges for heavy chatters and commenters (e.g. bronze/silver/gold by messages and comments that others reply to or like), streaks for attending live, and a Regular badge; shown in chat, comments, and on profiles
+- JimBob can create and award custom badges (e.g. Debate MVP, Founding member) from Studio",MBJ-601
 MBJ-603,Leaderboards,Engagement & AI,Phase 5 — Engagement,Could,S,To do,"As a regular, I want to see where I rank.","- Per-stream and all-time leaderboards
 - Shown on watch page and in Studio",MBJ-602
+MBJ-611,Watch-time rewards (e.g. a free t-shirt),Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a loyal viewer, I want a real reward for the hours I spend watching and listening.","- JimBob sets milestones and rewards in Studio (e.g. 100 hours watched → free t-shirt), with a monthly budget or a limit on claims
+- Only real watching counts: playing video or Listen only, at most real time (2x speed doesn't double it), idle and background-muted tabs excluded, daily cap
+- Progress bar on the viewer's profile and a notification when a reward unlocks
+- Claiming a physical reward needs a verified account (MBJ-108); one per person per reward
+- Delivered through the Shopify store: a one-time 100%-off code for the chosen shirt, so ordering, sizing, and shipping use the existing checkout
+- Studio list of claims, with the ability to review and cancel suspicious ones","MBJ-601, MBJ-108, MBJ-807"
+MBJ-612,Supporter shout-outs,Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a supporter who super chats or Bob Chats, I want JimBob to see it and thank me.","- Every super chat, Bob Chat, and tip goes into a shout-out queue in Studio during the stream, oldest first, with name, amount, and message; JimBob marks each one read
+- Optional on-stream overlay (a browser source for OBS) that shows the current shout-out
+- Paid messages are highlighted and pinned in chat (MBJ-207); the supporter gets a thank-you notification when JimBob reads it
+- Supporter badge and a Supporters wall with top supporters this month (opt-in names)
+- Shout-outs appear in the stream notes with the time JimBob answered (MBJ-605)",MBJ-207
 MBJ-604,Captions,Engagement & AI,Phase 5 — Engagement,Should,M,In progress,"As a viewer, I want captions on stored videos.","- Captions generated for each VOD (Stream captions or Whisper)
 - Selectable in web and mobile players
 - Transcript stored",

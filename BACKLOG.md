@@ -121,6 +121,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-608 | Who's talking (speaker labels) | Engagement & AI | 5 | Should | M | MBJ-604 |
 | MBJ-609 | Tags: sections, topics, people | Engagement & AI | 5 | Should | M | MBJ-605 |
 | MBJ-610 | Search inside streams | Engagement & AI | 5 | Should | M | MBJ-604 |
+| MBJ-611 | Watch-time rewards (e.g. a free t-shirt) | Engagement & AI | 5 | Should | M | MBJ-601, MBJ-108, MBJ-807 |
+| MBJ-612 | Supporter shout-outs | Engagement & AI | 5 | Should | M | MBJ-207 |
 | MBJ-702 | Chat analytics | Studio & analytics | 5 | Should | M | MBJ-102 |
 
 ## Epic 0xx — Foundation
@@ -790,6 +792,8 @@ Acceptance criteria:
 - [ ] XP from watch/listen time, messages, and upvotes received; tier multipliers per PRD
 - [ ] Level and badge shown next to name in chat
 - [ ] Anti-farming: idle tabs and duplicate messages earn nothing
+- [ ] Activity badges for heavy chatters and commenters (e.g. bronze/silver/gold by messages and comments that others reply to or like), streaks for attending live, and a Regular badge; shown in chat, comments, and on profiles
+- [ ] JimBob can create and award custom badges (e.g. Debate MVP, Founding member) from Studio
 
 ### MBJ-603 — Leaderboards
 
@@ -800,6 +804,33 @@ As a regular, I want to see where I rank.
 Acceptance criteria:
 - [ ] Per-stream and all-time leaderboards
 - [ ] Shown on watch page and in Studio
+
+### MBJ-611 — Watch-time rewards (e.g. a free t-shirt)
+
+**Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-601, MBJ-108, MBJ-807
+
+As a loyal viewer, I want a real reward for the hours I spend watching and listening.
+
+Acceptance criteria:
+- [ ] JimBob sets milestones and rewards in Studio (e.g. 100 hours watched → free t-shirt), with a monthly budget or a limit on claims
+- [ ] Only real watching counts: playing video or Listen only, at most real time (2x speed doesn't double it), idle and background-muted tabs excluded, daily cap
+- [ ] Progress bar on the viewer's profile and a notification when a reward unlocks
+- [ ] Claiming a physical reward needs a verified account (MBJ-108); one per person per reward
+- [ ] Delivered through the Shopify store: a one-time 100%-off code for the chosen shirt, so ordering, sizing, and shipping use the existing checkout
+- [ ] Studio list of claims, with the ability to review and cancel suspicious ones
+
+### MBJ-612 — Supporter shout-outs
+
+**Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-207
+
+As a supporter who super chats or Bob Chats, I want JimBob to see it and thank me.
+
+Acceptance criteria:
+- [ ] Every super chat, Bob Chat, and tip goes into a shout-out queue in Studio during the stream, oldest first, with name, amount, and message; JimBob marks each one read
+- [ ] Optional on-stream overlay (a browser source for OBS) that shows the current shout-out
+- [ ] Paid messages are highlighted and pinned in chat (MBJ-207); the supporter gets a thank-you notification when JimBob reads it
+- [ ] Supporter badge and a Supporters wall with top supporters this month (opt-in names)
+- [ ] Shout-outs appear in the stream notes with the time JimBob answered (MBJ-605)
 
 ### MBJ-604 — Captions
 
