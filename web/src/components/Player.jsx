@@ -81,7 +81,7 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
   const [listenOnly, setListenOnly] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [playError, setPlayError] = useState('');
-  const [autoMuted, setAutoMuted] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false);
   const [speed, setSpeed] = useState(1);
   const speedRef = useRef(1);
 
@@ -89,28 +89,28 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
   // Long-lived listeners (keyboard, lock screen) call the latest seek/togglePlay through this ref.
   const actions = useRef({});
 
-  // Start playing as soon as the video is ready. Browsers allow sound only after the viewer has
-  // interacted with the site (e.g. clicked a video card); otherwise start muted, like YouTube.
+  // Start playing as soon as the video is ready, always with sound. Browsers only allow that after
+  // the viewer has interacted with the site (e.g. clicked a video card); when they refuse, wait
+  // paused with a big Play button instead of playing muted.
   function autoplay(video) {
+    video.muted = false;
     video.play().catch((err) => {
-      if (err.name !== 'NotAllowedError') return;
-      video.muted = true;
-      setAutoMuted(true);
-      video.play().catch(() => {});
+      if (err.name === 'NotAllowedError') setNeedsTap(true);
     });
   }
 
-  function unmute() {
-    const v = videoRef.current;
-    if (v) v.muted = false;
-    setAutoMuted(false);
+  function tapToPlay() {
+    setNeedsTap(false);
+    active()
+      ?.play()
+      .catch(() => {});
   }
 
   useEffect(() => {
     const video = videoRef.current;
     if (!src || !video) return;
     setPlayError('');
-    setAutoMuted(false);
+    setNeedsTap(false);
     audioUrl.current = null;
     // Look up the audio-only track now, so switching to Listen only is instant.
     findAudioUrl(src)
@@ -153,7 +153,7 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
       const at = video.currentTime;
       const wasPlaying = !video.paused;
       video.pause();
-      if (autoMuted) unmute();
+      setNeedsTap(false);
       audioCleanup.current?.();
       audioCleanup.current = attachHls(audio, url, {
         onReady: () => {
@@ -273,15 +273,7 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
       return;
     }
     t.last = now;
-    // While auto-muted and playing, a single tap unmutes instead of pausing (as on YouTube).
-    // If it's paused, the tap plays it (and unmutes, since the viewer has now interacted).
-    t.timer = setTimeout(() => {
-      const v = active();
-      if (!v) return;
-      const playingMuted = autoMuted && v.muted && !v.paused;
-      if (autoMuted) unmute();
-      if (!playingMuted) togglePlay();
-    }, 280);
+    t.timer = setTimeout(togglePlay, 280);
   };
 
   const onPointerLeave = () => {
@@ -308,7 +300,7 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
         playsInline
         onTimeUpdate={reportTime}
         onSeeked={reportTime}
-        onVolumeChange={(e) => !e.currentTarget.muted && setAutoMuted(false)}
+        onPlay={() => setNeedsTap(false)}
       />
       {playError && (
         <div className="player-error" role="alert">
@@ -343,13 +335,11 @@ export default function Player({ src, poster, title, startMs = 0, onTime, player
         </div>
       )}
       {fast && <div className="fast-badge">2× speed</div>}
-      {autoMuted && !listenOnly && (
-        <button type="button" className="unmute-btn" onClick={unmute}>
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />
-            <path d="m16 9 5 6m0-6-5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      {needsTap && !listenOnly && (
+        <button type="button" className="tap-to-play" onClick={tapToPlay} aria-label="Play">
+          <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
+            <path d="M8 5v14l11-7z" fill="currentColor" />
           </svg>
-          Tap to unmute
         </button>
       )}
       <div className="player-tools">
