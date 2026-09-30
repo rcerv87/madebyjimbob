@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, formatTime } from '../api.js';
+import useTitle from '../useTitle.js';
 import { BRAND, money, sized } from '../brand.js';
 import { POST_EXAMPLES } from '../postExamples.js';
 import LibraryTabs from '../components/LibraryTabs.jsx';
@@ -11,6 +12,7 @@ const TIER_RANK = { free: 0, plus: 1, premium: 2 };
 // JimBob's style, using the real video and store product they point to.
 export default function Posts({ session }) {
   const [videos, setVideos] = useState([]);
+  useTitle('Posts');
   const [stickers, setStickers] = useState([]);
 
   useEffect(() => {

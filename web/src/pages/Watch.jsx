@@ -6,6 +6,8 @@ import Player from '../components/Player.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
 import Comments from '../components/Comments.jsx';
 import UpNext, { EndScreen, readAutoplay } from '../components/UpNext.jsx';
+import ShareButton from '../components/ShareButton.jsx';
+import useTitle from '../useTitle.js';
 
 const SAVE_EVERY_MS = 10_000;
 
@@ -20,6 +22,7 @@ export default function Watch({ session }) {
   const [resumedFrom, setResumedFrom] = useState(null);
   const [focusThread, setFocusThread] = useState(null);
   const playerRef = useRef(null);
+  useTitle(video?.title || null);
   const lastSave = useRef(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -172,7 +175,14 @@ export default function Watch({ session }) {
             </button>
           </p>
         )}
-        <h1 className="watch-title">{video.title}</h1>
+        <div className="watch-head">
+          <h1 className="watch-title">{video.title}</h1>
+          <ShareButton
+            title={video.title}
+            path={`/watch/${video.id}`}
+            getTimeMs={() => Math.floor((playerRef.current?.currentTime || 0) * 1000)}
+          />
+        </div>
         <div className={`description ${expanded ? 'open' : ''}`} onClick={() => setExpanded(true)}>
           <p className="desc-meta">
             {count(video.views, 'view')} · {timeAgo(video.publishedAt)} ·{' '}

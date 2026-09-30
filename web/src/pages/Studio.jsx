@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, compact, formatTime, TIER_LABEL } from '../api.js';
 import StudioPlaylists from '../components/StudioPlaylists.jsx';
+import useTitle from '../useTitle.js';
 
 export default function Studio({ user }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [saveError, setSaveError] = useState('');
+  useTitle('Studio');
 
   const load = () =>
     api('/studio/overview')

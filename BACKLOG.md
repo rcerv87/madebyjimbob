@@ -92,6 +92,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-814 | Unwatched filter and binge queue | Library & community | 1 | Should | S | MBJ-212, MBJ-803 |
 | MBJ-815 | Technical SEO | Library & community | 1 | Must | M | MBJ-809 |
 | MBJ-816 | Search-friendly content | Library & community | 1 | Should | M | MBJ-815, MBJ-605, MBJ-609 |
+| MBJ-817 | Friends of the channel | Library & community | 1 | Should | S | — |
 | MBJ-401 | Expo app scaffold | Mobile apps | 2 | Must | L | MBJ-004, MBJ-101 |
 | MBJ-402 | Mobile player and gestures | Mobile apps | 2 | Must | M | MBJ-401 |
 | MBJ-403 | Background audio, lock screen, PiP | Mobile apps | 2 | Must | M | MBJ-402 |
@@ -1198,7 +1199,7 @@ Acceptance criteria:
 
 ### MBJ-815 — Technical SEO
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-809
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-809
 
 As JimBob, I want Google and link previews to understand every page, so people find the platform instead of only YouTube.
 
@@ -1225,6 +1226,19 @@ Acceptance criteria:
 - [ ] Internal links between related videos, topics, guests, playlists, and posts
 - [ ] YouTube and social descriptions link back to the matching platform page (distribution, not just SEO)
 - [ ] Track which searches bring people in (Search Console) in the Studio dashboard
+
+### MBJ-817 — Friends of the channel
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
+
+As JimBob, I want to point my audience to the creators, guests, and partners I recommend.
+
+Acceptance criteria:
+- [ ] Studio: add, edit, reorder, and remove friends: name, photo, one-line description, and links (YouTube, X, Rumble, website, store)
+- [ ] Friends page, plus a short row on the Videos banner and a link in the navigation (MBJ-810)
+- [ ] Each friend links to the streams they appear in once guests are tagged (MBJ-608, MBJ-609)
+- [ ] Sponsors and affiliate links clearly labeled as such; external links open in a new tab
+- [ ] Friends can be shown in the stream notes and on topic/guest pages
 
 ### MBJ-812 — JimBob's brand on the platform
 

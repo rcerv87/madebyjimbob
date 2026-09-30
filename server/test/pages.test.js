@@ -1,0 +1,88 @@
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { startServer, stopServer, pool } from './helpers.js';
+
+let site;
+let videoId;
+let playlistId;
+before(async () => {
+  const { base } = await startServer();
+  site = base.replace(/\/api$/, '');
+  const { rows } = await pool.query(
+    `INSERT INTO videos (youtube_id, stream_uid, title, description, duration_s, kind)
+     VALUES ('pg-1', 'abc123', 'Evolution <Debate> & "More"', $1, 12302, 'live') RETURNING id`,
+    ['A long   debate about evolution with callers.\nPart two soon. ' + 'x'.repeat(400)],
+  );
+  videoId = rows[0].id;
+  const pl = await pool.query(
+    `INSERT INTO playlists (source, title) VALUES ('native', 'Debates') RETURNING id`,
+  );
+  playlistId = pl.rows[0].id;
+  await pool.query(`INSERT INTO playlist_items (playlist_id, position, video_id) VALUES ($1, 0, $2)`, [
+    playlistId,
+    videoId,
+  ]);
+});
+after(stopServer);
+
+const get = async (path, headers = {}) => {
+  const res = await fetch(site + path, { headers, redirect: 'manual' });
+  return { status: res.status, html: await res.text(), headers: res.headers };
+};
+const meta = (html, attr, name) => html.match(new RegExp(`<meta ${attr}="${name}" content="([^"]*)"`))?.[1];
+
+test('a video page carries its own title, description, image, and URL for link previews', async () => {
+  const r = await get(`/watch/${videoId}?t=90`);
+  assert.equal(r.status, 200);
+  assert.match(r.html, /<title>Evolution &lt;Debate&gt; &amp; &quot;More&quot; · MADEbyJIMBOB<\/title>/);
+  assert.equal(meta(r.html, 'property', 'og:type'), 'video.other');
+  assert.match(
+    meta(r.html, 'name', 'description'),
+    /^A long debate about evolution with callers\. Part two soon\./,
+  );
+  assert.ok(meta(r.html, 'name', 'description').length <= 200);
+  assert.match(meta(r.html, 'property', 'og:image'), /abc123\/thumbnails\/thumbnail\.jpg.*height=720/);
+  assert.equal(meta(r.html, 'property', 'og:url'), `${site}/watch/${videoId}?t=90`);
+  assert.equal(meta(r.html, 'property', 'video:duration'), '12302');
+  assert.equal(meta(r.html, 'name', 'twitter:card'), 'summary_large_image');
+});
+
+test('section and playlist pages get their own titles; images are absolute', async () => {
+  const shop = await get('/shop');
+  assert.match(shop.html, /<title>Shop · MADEbyJIMBOB<\/title>/);
+  assert.equal(meta(shop.html, 'property', 'og:image'), `${site}/brand/header-art.jpg`);
+  const pl = await get(`/playlist/${playlistId}`);
+  assert.match(pl.html, /<title>Debates · MADEbyJIMBOB<\/title>/);
+  assert.match(meta(pl.html, 'property', 'og:image'), /abc123/);
+  const home = await get('/');
+  assert.match(home.html, /<title>MADEbyJIMBOB<\/title>/);
+});
+
+test('unknown pages and missing videos are real 404s', async () => {
+  assert.equal((await get('/nope')).status, 404);
+  assert.equal((await get('/watch/999999')).status, 404);
+  assert.equal((await get('/playlist/999999')).status, 404);
+  assert.match((await get('/nope')).html, /Page not found · MADEbyJIMBOB/);
+});
+
+test('noindex everywhere until ALLOW_INDEXING=true; Studio always', async () => {
+  const r = await get('/');
+  assert.equal(r.headers.get('x-robots-tag'), 'noindex');
+  assert.equal(meta(r.html, 'name', 'robots'), 'noindex');
+  process.env.ALLOW_INDEXING = 'true';
+  try {
+    const open = await get('/');
+    assert.equal(open.headers.get('x-robots-tag'), null);
+    assert.equal(meta(open.html, 'name', 'robots'), undefined);
+    assert.equal((await get('/studio')).headers.get('x-robots-tag'), 'noindex');
+  } finally {
+    delete process.env.ALLOW_INDEXING;
+  }
+});
+
+test('https URLs behind the proxy, and robots.txt', async () => {
+  const r = await get('/shop', { 'X-Forwarded-Proto': 'https' });
+  assert.match(meta(r.html, 'property', 'og:url'), /^https:\/\//);
+  const robots = await get('/robots.txt');
+  assert.match(robots.html, /Disallow: \/studio/);
+});

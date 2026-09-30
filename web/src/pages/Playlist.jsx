@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, count, formatTime } from '../api.js';
 import VideoCard from '../components/VideoCard.jsx';
+import useTitle from '../useTitle.js';
 
 export default function Playlist() {
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  useTitle(data?.playlist.title || 'Playlist');
 
   useEffect(() => {
     setData(null);
