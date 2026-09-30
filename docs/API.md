@@ -16,6 +16,7 @@ Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see 
 | GET | `/videos/:id` | optional | Video detail; `hls` only if tier allows, else `locked: true` |
 | POST | `/videos/:id/view` | — | Increment views |
 | GET | `/videos/:id/chat?from=&to=` | optional | Chat window by `offset_ms` (max 3,000). 403 if the viewer's tier can't watch the video |
+| GET | `/videos/:id/chat?afterId=` | optional | Messages with `id > afterId`, ordered by id (max 3,000). Used to catch up after a WebSocket reconnect |
 | POST | `/videos/:id/chat` | required | `{ text, offsetMs }` → `{ message }`; broadcast to room. 403 below the video's tier; `offsetMs` clamped to the video's length |
 | GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded) |
 | PATCH | `/studio/videos/:id` | admin | `{ minTier }` |
