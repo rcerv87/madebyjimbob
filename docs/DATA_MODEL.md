@@ -67,6 +67,20 @@ columns are added by the story noted.
 
 Comments are separate from `chat_messages`: they aren't tied to a playback position and they thread.
 
+### transcripts
+| column | type | notes |
+|---|---|---|
+| video_id | FK videos | cascade delete; PK with language + source |
+| language | text | e.g. `en` |
+| source | text | `cloudflare \| whisper \| manual` |
+| label | text | e.g. "English (auto-generated)" |
+| vtt | text | the original caption file (WebVTT), so captions survive a move off Stream |
+| text | text | plain transcript: duplicates dropped, paragraphs at 4s+ pauses |
+| cue_count | int | |
+| fetched_at | timestamptz | |
+
+Filled by `npm run captions:fetch`. Auto captions can invent text during silence or music; keep the original and regenerate or correct rather than editing `text` alone.
+
 ## Planned
 
 | Change | Story |
@@ -85,4 +99,4 @@ Comments are separate from `chat_messages`: they aren't tied to a playback posit
 | `api_quota_usage (day, api, units)` | MBJ-305 |
 | `watch_sessions (user_id, video_id, seconds, mode)` for XP and analytics | MBJ-601 |
 | `xp_events (user_id, kind, amount, ref_id, created_at)`, `badges`, `user_badges` | MBJ-602 |
-| `transcripts (video_id, vtt, text)`, `recaps (video_id, summary_md, chapters_json)` | MBJ-604 |
+| `recaps (video_id, summary_md, chapters_json)` | MBJ-605 |

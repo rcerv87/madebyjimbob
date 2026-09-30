@@ -111,6 +111,7 @@ if (!streamUid && !chatOnly) {
   console.log('Uploading to Cloudflare Stream…');
   streamUid = await uploadToStream(videoFile, meta.title, CF_ACCOUNT_ID, CF_API_TOKEN);
   console.log(`  Stream UID: ${streamUid}`);
+  console.log('  Captions: once Stream finishes processing, run `npm run captions:fetch -- --generate`.');
 }
 
 // ---------- 5. database ----------

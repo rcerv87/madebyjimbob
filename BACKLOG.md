@@ -665,7 +665,7 @@ Acceptance criteria:
 
 ### MBJ-604 — Captions
 
-**Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** M
+**Status:** In progress · **Phase 5 — Engagement** · **Priority:** Should · **Size:** M
 
 As a viewer, I want captions on stored videos.
 

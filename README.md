@@ -54,6 +54,10 @@ Options:
 - `--no-comments` don't import YouTube comments
 
 Re-running is safe: chat and comments are de-duplicated by YouTube ID (comment like counts refresh).
+
+Captions: once Stream has processed a video, run `npm run captions:fetch -- --generate` to request English
+auto-captions, and run `npm run captions:fetch` again later to save them into the database. The player shows
+a CC button automatically once a video has captions.
 Stream takes a few minutes to process an upload before it plays.
 
 ## 4. Run locally
