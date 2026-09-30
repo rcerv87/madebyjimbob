@@ -85,6 +85,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-810 | Navigation bar | Library & community | 1 | Must | M | — |
 | MBJ-811 | Founding members | Library & community | 1 | Should | M | MBJ-104 |
 | MBJ-812 | JimBob's brand on the platform | Library & community | 1 | Must | S | — |
+| MBJ-813 | Schedule calendar with export | Library & community | 1 | Should | M | — |
 | MBJ-401 | Expo app scaffold | Mobile apps | 2 | Must | L | MBJ-004, MBJ-101 |
 | MBJ-402 | Mobile player and gestures | Mobile apps | 2 | Must | M | MBJ-401 |
 | MBJ-403 | Background audio, lock screen, PiP | Mobile apps | 2 | Must | M | MBJ-402 |
@@ -1074,6 +1075,20 @@ Acceptance criteria:
 - [ ] Limited founding membership (count or date window) with a price locked for life
 - [ ] Founding badge in chat and comments; founding members page (wall) with opt-in names
 - [ ] Perks defined with JimBob (early access, store discount, call-in priority)
+
+### MBJ-813 — Schedule calendar with export
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M
+
+As JimBob, I want to publish my stream and debate schedule; as a viewer, I want it in my own calendar.
+
+Acceptance criteria:
+- [ ] Studio: add, edit, and cancel events: stream, debate, guest appearance, premiere, members-only event; title, description, guests, start time with time zone, expected length, and the YouTube (or site) link
+- [ ] Recurring events (e.g. weekday streams around 12:00pm ET) with one-off changes and cancellations
+- [ ] Schedule page: upcoming list and month view shown in the viewer's own time zone, with countdowns; members-only events respect tiers
+- [ ] Export: Add to calendar per event (Google, Apple, Outlook via an .ics file) and a subscribe link (webcal/ICS feed) that keeps a viewer's calendar updated automatically
+- [ ] Remind me: push and in-site notification before an event starts (MBJ-214), and at go-live
+- [ ] Feeds the live indicator's "Next stream" (MBJ-805) and can post an announcement to Posts (MBJ-804)
 
 ### MBJ-812 — JimBob's brand on the platform
 

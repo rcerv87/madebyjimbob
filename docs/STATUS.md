@@ -129,7 +129,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## What's next (in order)
 
-1. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805).
+1. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805); with the **schedule
+   calendar** (MBJ-813): JimBob enters streams and debates in Studio, viewers see them in their time zone, add
+   them to Google/Apple/Outlook or subscribe to a feed, and get reminders.
 2. **Navigation bar** — top nav for every section, bottom tab bar on phones and in the app (MBJ-810);
    **social links and sharing** with link previews (MBJ-809).
 3. **Studio: manage videos and users** — upload from the browser, edit, replace, unpublish, delete
