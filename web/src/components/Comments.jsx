@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
-import { api, compact, count, timeAgo } from '../api.js';
+import { useEffect, useRef, useState } from 'react';
+import { api, compact, count, formatTime, splitTimestamps, timeAgo } from '../api.js';
 
-// YouTube-style comments under the video: imported YouTube comments and native ones, one level of replies.
-export default function Comments({ videoId, session }) {
+// YouTube-style comments under the video: imported YouTube comments and native ones, one level of
+// threads. Every reply records the exact comment it answers and quotes it, so long threads keep
+// their context. Comments can carry a moment in the video, which also puts them in the chat feed.
+export default function Comments({ videoId, session, getTimeMs, onSeek, focusThreadId, onCloseFocus }) {
   const [sort, setSort] = useState('top');
   const [data, setData] = useState(null);
+  const [focus, setFocus] = useState(null);
   const [error, setError] = useState('');
   const [loadingMore, setLoadingMore] = useState(false);
+  const focusRef = useRef(null);
 
   useEffect(() => {
     setData(null);
@@ -15,6 +19,17 @@ export default function Comments({ videoId, session }) {
       .then(setData)
       .catch((e) => setError(e.message));
   }, [videoId, sort]);
+
+  // Opened from a comment bubble in the chat: load that whole thread and show it at the top.
+  useEffect(() => {
+    if (!focusThreadId) return setFocus(null);
+    api(`/videos/${videoId}/comments/${focusThreadId}`)
+      .then((d) => {
+        setFocus(d.comment);
+        requestAnimationFrame(() => focusRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+      })
+      .catch((e) => setError(e.message));
+  }, [videoId, focusThreadId]);
 
   const loadMore = async () => {
     setLoadingMore(true);
@@ -31,15 +46,16 @@ export default function Comments({ videoId, session }) {
   const addComment = (comment) =>
     setData((d) => ({ ...d, total: d.total + 1, comments: [comment, ...d.comments] }));
 
-  const addReply = (parentId, reply) =>
-    setData((d) => ({
-      ...d,
-      total: d.total + 1,
-      comments: d.comments.map((c) => (c.id === parentId ? { ...c, replies: [...c.replies, reply] } : c)),
-    }));
+  const addReply = (threadId, reply) => {
+    const withReply = (c) => (c.id === threadId ? { ...c, replies: [...c.replies, reply] } : c);
+    setData((d) => ({ ...d, total: d.total + 1, comments: d.comments.map(withReply) }));
+    setFocus((f) => (f ? withReply(f) : f));
+  };
 
   if (error && !data) return <p className="error comments">Couldn’t load comments: {error}</p>;
   if (!data) return <p className="muted comments">Loading comments…</p>;
+
+  const shared = { videoId, session, getTimeMs, onSeek, onReply: addReply };
 
   return (
     <section className="comments" aria-label="Comments">
@@ -51,13 +67,29 @@ export default function Comments({ videoId, session }) {
         </select>
       </header>
 
-      <CommentForm videoId={videoId} session={session} onPosted={addComment} placeholder="Add a comment…" />
+      <CommentForm {...shared} onPosted={addComment} placeholder="Add a comment…" />
+
+      {focus && (
+        <div className="comment-focus" ref={focusRef}>
+          <div className="comment-focus-head">
+            <span>Thread from the chat</span>
+            <button type="button" className="text-btn" onClick={onCloseFocus}>
+              Close
+            </button>
+          </div>
+          <ol className="comment-list">
+            <CommentThread key={`focus-${focus.id}`} c={focus} startOpen {...shared} />
+          </ol>
+        </div>
+      )}
 
       {data.comments.length === 0 && <p className="muted">No comments yet. Start the conversation.</p>}
       <ol className="comment-list">
-        {data.comments.map((c) => (
-          <CommentThread key={c.id} c={c} videoId={videoId} session={session} onReply={addReply} />
-        ))}
+        {data.comments
+          .filter((c) => c.id !== focus?.id)
+          .map((c) => (
+            <CommentThread key={c.id} c={c} {...shared} />
+          ))}
       </ol>
 
       {error && <p className="error small">{error}</p>}
@@ -70,26 +102,47 @@ export default function Comments({ videoId, session }) {
   );
 }
 
-function CommentThread({ c, videoId, session, onReply }) {
-  const [open, setOpen] = useState(false);
-  const [replying, setReplying] = useState(false);
+function CommentThread({ c, videoId, session, getTimeMs, onSeek, onReply, startOpen = false }) {
+  const [open, setOpen] = useState(startOpen);
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [flashId, setFlashId] = useState(null);
+  const listRef = useRef(null);
   const n = c.replies.length;
+
+  const reply = (target) => (session.user ? setReplyTarget(target) : session.requireSignIn());
+
+  // A quote inside the thread points at another comment in it: open the replies and flash it.
+  const showOriginal = (quote) => {
+    setOpen(true);
+    requestAnimationFrame(() => {
+      const el =
+        quote.id === c.id
+          ? listRef.current?.closest('.comment-thread')
+          : listRef.current?.querySelector(`[data-comment="${quote.id}"]`);
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setFlashId(quote.id);
+      setTimeout(() => setFlashId(null), 1600);
+    });
+  };
+
+  const common = { onSeek, onQuote: showOriginal };
 
   return (
     <li className="comment-thread">
-      <Comment c={c} onReplyClick={() => (session.user ? setReplying(true) : session.requireSignIn())} />
-      <div className="comment-children">
-        {replying && (
+      <Comment c={c} flash={flashId === c.id} onReplyClick={() => reply(c)} {...common} />
+      <div className="comment-children" ref={listRef}>
+        {replyTarget && (
           <CommentForm
             videoId={videoId}
             session={session}
-            parentId={c.id}
-            placeholder={`Reply to ${c.author}…`}
+            getTimeMs={getTimeMs}
+            replyTarget={replyTarget}
+            placeholder={`Reply to ${replyTarget.author}…`}
             autoFocus
-            onCancel={() => setReplying(false)}
-            onPosted={(reply) => {
-              onReply(c.id, reply);
-              setReplying(false);
+            onCancel={() => setReplyTarget(null)}
+            onPosted={(posted) => {
+              onReply(c.id, posted);
+              setReplyTarget(null);
               setOpen(true);
             }}
           />
@@ -107,8 +160,15 @@ function CommentThread({ c, videoId, session, onReply }) {
         {open && (
           <ol className="comment-list replies">
             {c.replies.map((r) => (
-              <li key={r.id}>
-                <Comment c={r} />
+              <li key={r.id} data-comment={r.id}>
+                <Comment
+                  c={r}
+                  // A direct reply to the thread's first comment needs no quote; replies to replies do.
+                  quote={r.replyTo && r.replyTo.id !== c.id ? r.replyTo : null}
+                  flash={flashId === r.id}
+                  onReplyClick={() => reply(r)}
+                  {...common}
+                />
               </li>
             ))}
           </ol>
@@ -118,9 +178,26 @@ function CommentThread({ c, videoId, session, onReply }) {
   );
 }
 
-function Comment({ c, onReplyClick }) {
+// Comment text with typed timestamps turned into buttons that seek the video.
+function Body({ text, onSeek }) {
   return (
-    <article className="comment">
+    <p className="comment-body">
+      {splitTimestamps(text).map((part, i) =>
+        part.ms === undefined ? (
+          part.text
+        ) : (
+          <button key={i} type="button" className="inline-ts" onClick={() => onSeek?.(part.ms)}>
+            {part.text}
+          </button>
+        ),
+      )}
+    </p>
+  );
+}
+
+function Comment({ c, quote, flash, onReplyClick, onSeek, onQuote }) {
+  return (
+    <article className={`comment ${flash ? 'flash' : ''}`}>
       {c.authorPhoto ? (
         <img
           className="comment-avatar"
@@ -139,8 +216,23 @@ function Comment({ c, onReplyClick }) {
           {c.isCreator && <span className="creator-badge">Creator</span>}
           <span className={`source-tag ${c.source}`}>{c.source === 'youtube' ? 'YT' : 'JB'}</span>
           <span className="muted small">{timeAgo(c.postedAt)}</span>
+          {c.offsetMs !== null && c.offsetMs !== undefined && (
+            <button
+              type="button"
+              className="time-chip"
+              onClick={() => onSeek?.(c.offsetMs)}
+              title="Play from this moment"
+            >
+              at {formatTime(c.offsetMs / 1000)}
+            </button>
+          )}
         </p>
-        <p className="comment-body">{c.body}</p>
+        {quote && (
+          <button type="button" className="quote" onClick={() => onQuote?.(quote)} title="Show that comment">
+            <span aria-hidden="true">↪</span> <b>{quote.author}</b> {quote.body}
+          </button>
+        )}
+        <Body text={c.body} onSeek={onSeek} />
         <div className="comment-actions">
           {c.likes > 0 && (
             <span className="comment-likes" title="Likes on YouTube">
@@ -164,15 +256,27 @@ function Comment({ c, onReplyClick }) {
   );
 }
 
-function CommentForm({ videoId, session, parentId, placeholder, autoFocus, onPosted, onCancel }) {
-  const [text, setText] = useState('');
+function CommentForm({
+  videoId,
+  session,
+  getTimeMs,
+  replyTarget,
+  placeholder,
+  autoFocus,
+  onPosted,
+  onCancel,
+}) {
+  const mention = replyTarget ? `@${replyTarget.author.replace(/^@/, '')} ` : '';
+  const [text, setText] = useState(mention);
   const [active, setActive] = useState(!!autoFocus);
+  const [stampMs, setStampMs] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const cancel = () => {
     setText('');
     setActive(false);
+    setStampMs(null);
     setError('');
     onCancel?.();
   };
@@ -180,16 +284,21 @@ function CommentForm({ videoId, session, parentId, placeholder, autoFocus, onPos
   const submit = async (e) => {
     e.preventDefault();
     if (!session.user) return session.requireSignIn();
-    if (!text.trim()) return setError('Write a comment first.');
+    if (!text.trim() || text.trim() === mention.trim()) return setError('Write a comment first.');
     setBusy(true);
     try {
       const { comment } = await api(`/videos/${videoId}/comments`, {
         method: 'POST',
-        body: { text, ...(parentId && { parentId }) },
+        body: {
+          text,
+          ...(replyTarget && { replyToId: replyTarget.id }),
+          ...(stampMs !== null && { offsetMs: stampMs }),
+        },
       });
       onPosted(comment);
       setText('');
       setActive(false);
+      setStampMs(null);
       setError('');
     } catch (err) {
       setError(err.message);
@@ -198,8 +307,15 @@ function CommentForm({ videoId, session, parentId, placeholder, autoFocus, onPos
     }
   };
 
+  const canStamp = typeof getTimeMs === 'function';
+
   return (
-    <form className={`comment-form ${parentId ? 'reply' : ''}`} onSubmit={submit}>
+    <form className={`comment-form ${replyTarget ? 'reply' : ''}`} onSubmit={submit}>
+      {replyTarget && (
+        <p className="quote static">
+          <span aria-hidden="true">↪</span> <b>{replyTarget.author}</b> {replyTarget.body.slice(0, 140)}
+        </p>
+      )}
       <textarea
         value={text}
         rows={active ? 3 : 1}
@@ -207,7 +323,12 @@ function CommentForm({ videoId, session, parentId, placeholder, autoFocus, onPos
         placeholder={session.user ? placeholder : 'Sign in to comment'}
         aria-label={placeholder}
         autoFocus={autoFocus}
-        onFocus={() => (session.user ? setActive(true) : session.requireSignIn())}
+        onFocus={(e) => {
+          if (!session.user) return session.requireSignIn();
+          setActive(true);
+          const end = e.target.value.length;
+          e.target.setSelectionRange(end, end);
+        }}
         onChange={(e) => {
           setText(e.target.value);
           setError('');
@@ -216,11 +337,32 @@ function CommentForm({ videoId, session, parentId, placeholder, autoFocus, onPos
       {error && <p className="error small">{error}</p>}
       {active && (
         <div className="comment-form-actions">
+          {canStamp &&
+            (stampMs === null ? (
+              <button
+                type="button"
+                className="time-chip add"
+                onClick={() => setStampMs(Math.floor(getTimeMs()))}
+                title="Attach this moment; the comment also shows in the chat at that time"
+              >
+                + Add {formatTime(getTimeMs() / 1000)}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="time-chip on"
+                onClick={() => setStampMs(null)}
+                aria-label={`Remove timestamp ${formatTime(stampMs / 1000)}`}
+              >
+                at {formatTime(stampMs / 1000)} ×
+              </button>
+            ))}
+          <span className="spacer" />
           <button type="button" className="text-btn" onClick={cancel}>
             Cancel
           </button>
           <button className="primary-btn" disabled={busy || !text.trim()}>
-            {busy ? 'Posting…' : parentId ? 'Reply' : 'Comment'}
+            {busy ? 'Posting…' : replyTarget ? 'Reply' : 'Comment'}
           </button>
         </div>
       )}

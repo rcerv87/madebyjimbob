@@ -42,3 +42,19 @@ export const compact = (n) => Intl.NumberFormat('en', { notation: 'compact' }).f
 export const count = (n, noun, plural = `${noun}s`) => `${compact(n)} ${Number(n) === 1 ? noun : plural}`;
 
 export const TIER_LABEL = { free: 'Free', plus: 'Plus', premium: 'Premium' };
+
+// Splits text into plain parts and typed timestamps ("1:04:32", "12:05") so they can be made clickable.
+// Same rule as server/src/ingest/timestamps.js.
+const STAMP = /(?<![\d:])(?:(\d{1,2}):)?([0-5]?\d):([0-5]\d)(?![\d:])/g;
+export function splitTimestamps(text) {
+  const parts = [];
+  let last = 0;
+  for (const m of String(text).matchAll(STAMP)) {
+    if (m.index > last) parts.push({ text: text.slice(last, m.index) });
+    const ms = ((Number(m[1] || 0) * 60 + Number(m[2])) * 60 + Number(m[3])) * 1000;
+    parts.push({ text: m[0], ms });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({ text: text.slice(last) });
+  return parts;
+}

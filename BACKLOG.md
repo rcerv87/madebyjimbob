@@ -59,6 +59,8 @@ Generated from `docs/backlog_source.py` — edit there and re-run `python3 docs/
 | MBJ-208 | Chat search in Studio | Chat & moderation | 1 | Could | M | MBJ-102 |
 | MBJ-209 | Tier-based chat limits | Chat & moderation | 1 | Should | S | MBJ-104 |
 | MBJ-210 | Video comments | Chat & moderation | 1 | Must | M | MBJ-001 |
+| MBJ-211 | One conversation across live chat, replay chat, and comments | Chat & moderation | 1 | Must | L | MBJ-210 |
+| MBJ-212 | Resume where you left off | Chat & moderation | 1 | Must | S | — |
 | MBJ-701 | Content management | Studio & analytics | 1 | Should | M | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
@@ -383,6 +385,31 @@ Acceptance criteria:
 - [x] Comments section under the video: Top/Newest sort, 20 threads per page, replies collapsed per thread
 - [x] Signed-in members post comments and replies (one level); tier-gated like chat; rate limited
 - [x] YT/JB source tags and a Creator badge distinguish where each comment came from
+
+### MBJ-211 — One conversation across live chat, replay chat, and comments
+
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-210
+
+As a viewer, I want to join the stream's conversation after it ended without losing what was said live or what each reply answers.
+
+Acceptance criteria:
+- [x] Chat marks live vs replay messages; Live only (default) / Live + replay toggle with a count of hidden later posts
+- [x] Chat and comment replies quote the exact message they answer; tapping the quote shows the original
+- [x] Tap a name to reply with @name; typing @ suggests names from the video
+- [x] Comments can carry a moment in the video and appear as bubbles in the chat feed; YouTube comments take the first typed time
+- [x] Typed times in comments are clickable; a chat bubble opens its whole thread
+
+### MBJ-212 — Resume where you left off
+
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S
+
+As a viewer, I want videos to pick up where I stopped, on any device.
+
+Acceptance criteria:
+- [x] Position saved every 10s and on leaving the page; on the account when signed in, in the browser otherwise
+- [x] Reopening resumes (past 10s, not in the last 30s) with Resumed from mm:ss and a Start over button
+- [x] ?t=<seconds> links start at that time
+- [x] Video cards show a watched progress bar
 
 ## Epic 3xx — Live via YouTube
 

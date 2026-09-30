@@ -146,7 +146,8 @@ if (fs.existsSync(chatFile)) {
 }
 
 if (withComments && fs.existsSync(infoFile)) {
-  const { topLevel, replies, inserted } = await importComments(infoFile, videoId);
+  const durationMs = Math.round((meta.duration || 0) * 1000) || Infinity;
+  const { topLevel, replies, inserted } = await importComments(infoFile, videoId, durationMs);
   console.log(
     `Imported ${topLevel + replies} comments (${topLevel} threads, ${replies} replies; ${inserted} new).`,
   );
@@ -237,10 +238,11 @@ async function importChat(file, videoId) {
   return { seen, inserted };
 }
 
-// Upserts YouTube comments: top-level first, then replies linked to their parent by YouTube id.
-async function importComments(file, videoId) {
+// Upserts YouTube comments: top-level first, then replies linked to their thread by YouTube id, then
+// each reply linked to the exact comment it answers. Timestamps typed in comments become offset_ms.
+async function importComments(file, videoId, durationMs) {
   const list = JSON.parse(fs.readFileSync(file, 'utf8')).comments || [];
-  const { topLevel, replies } = parseComments(list);
+  const { topLevel, replies } = parseComments(list, { durationMs });
   let inserted = 0;
 
   const upsert = async (batch, withParent) => {
@@ -257,15 +259,16 @@ async function importComments(file, videoId) {
       values.push(
         `(${p(videoId)}, 'youtube', ${p(c.externalId)}, ${parent}, ${p(c.author)}, ${p(c.channelId)}, ` +
           `${p(c.photo)}, ${p(c.isCreator)}, ${p(c.body)}, ${p(c.likeCount)}, ${p(c.pinned)}, ` +
-          `COALESCE(${p(c.postedAt)}::timestamptz, now()))`,
+          `COALESCE(${p(c.postedAt)}::timestamptz, now()), ${p(c.offsetMs)}::int)`,
       );
     }
     const res = await pool.query(
       `INSERT INTO comments (video_id, source, external_id, parent_id, author_name, author_channel_id,
-         author_photo, author_is_creator, body, like_count, pinned, posted_at)
+         author_photo, author_is_creator, body, like_count, pinned, posted_at, offset_ms)
        VALUES ${values.join(',')}
        ON CONFLICT (source, external_id) DO UPDATE SET
-         like_count = EXCLUDED.like_count, pinned = EXCLUDED.pinned, body = EXCLUDED.body
+         like_count = EXCLUDED.like_count, pinned = EXCLUDED.pinned, body = EXCLUDED.body,
+         offset_ms = EXCLUDED.offset_ms
        RETURNING (xmax = 0) AS inserted`,
       params,
     );
@@ -274,5 +277,17 @@ async function importComments(file, videoId) {
 
   for (let i = 0; i < topLevel.length; i += 500) await upsert(topLevel.slice(i, i + 500), false);
   for (let i = 0; i < replies.length; i += 500) await upsert(replies.slice(i, i + 500), true);
+
+  // Link replies to what they answer (done after inserting, since that can be another new reply).
+  const links = replies.filter((c) => c.replyToExternalId);
+  if (links.length) {
+    await pool.query(
+      `UPDATE comments c SET reply_to_id = t.id
+       FROM unnest($1::text[], $2::text[]) AS m(child, target)
+       JOIN comments t ON t.source = 'youtube' AND t.external_id = m.target
+       WHERE c.source = 'youtube' AND c.external_id = m.child`,
+      [links.map((c) => c.externalId), links.map((c) => c.replyToExternalId)],
+    );
+  }
   return { topLevel: topLevel.length, replies: replies.length, inserted };
 }

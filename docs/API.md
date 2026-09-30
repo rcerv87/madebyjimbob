@@ -16,10 +16,12 @@ Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see 
 | GET | `/videos/:id` | optional | Video detail; `hls` only if tier allows, else `locked: true` |
 | POST | `/videos/:id/view` | — | Increment views |
 | GET | `/videos/:id/chat?from=&to=` | optional | Chat window by `offset_ms` (max 3,000). 403 if the viewer's tier can't watch the video |
+| GET | `/videos/:id/comments/:commentId` | optional | The whole thread containing that comment: `{ comment }` with `replies` |
+| PUT | `/videos/:id/progress` | required | `{ positionMs }`: save where the viewer is (resume on any device) |
 | GET | `/videos/:id/chat?afterId=` | optional | Messages with `id > afterId`, ordered by id (max 3,000). Used to catch up after a WebSocket reconnect |
-| POST | `/videos/:id/chat` | required | `{ text, offsetMs }` → `{ message }`; broadcast to room. 403 below the video's tier; `offsetMs` clamped to the video's length |
+| POST | `/videos/:id/chat` | required | `{ text, offsetMs, replyToId? }` → `{ message }`; broadcast to room. Native posts are replay chat (`postedLive: false`) until live native chat exists. 403 below the video's tier; `offsetMs` clamped to the video's length |
 | GET | `/videos/:id/comments?sort=top\|new&offset=` | optional | `{ total, comments, nextOffset }`: 20 top-level comments per page (top = pinned, then likes), each with all its `replies`. 403 below the video's tier |
-| POST | `/videos/:id/comments` | required | `{ text, parentId? }` → `{ comment }`. Native comment, or a reply to a top-level comment on the same video. Up to 2,000 chars, line breaks kept, banned words masked, one per 5s |
+| POST | `/videos/:id/comments` | required | `{ text, offsetMs?, replyToId? }` → `{ comment }`. `replyToId` can be any comment on the video; the reply joins its thread and quotes it. `offsetMs` puts the comment in the chat feed at that moment (broadcast as `comment`). Up to 2,000 chars, line breaks kept, banned words masked, one per 5s |
 | GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded) |
 | PATCH | `/studio/videos/:id` | admin | `{ minTier }` |
 | GET | `/health` | — | Liveness |
@@ -58,6 +60,7 @@ Server → client:
 |---|---|
 | `chat` | `{ message }` |
 | `error` | `{ error }` — join refused |
+| `comment` | `{ comment }` — a new timestamped comment, shown in the chat feed |
 | `vote` (MBJ-203) | `{ messageId, votes }` |
 | `hide` (MBJ-204) | `{ messageId }` |
 | `pin` (MBJ-207) | `{ message, until }` |

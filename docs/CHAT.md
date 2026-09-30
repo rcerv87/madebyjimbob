@@ -55,6 +55,19 @@ Mod actions: hide message, timeout user (N minutes), ban user. For YouTube-sourc
 
 Hidden messages are never deleted from the database — `hidden = true` keeps the archive complete for analytics.
 
+## One conversation: live, replay, comments
+
+- **Live vs replay.** `posted_live` separates the stream's original chat from messages posted while watching
+  later. Viewers pick **Live only** (default, the original exactly as it happened) or **Live + replay**, which
+  adds replay chat and timestamped comments at their moments. Live only shows "+N from later viewers".
+- **Replies keep context.** Chat and comment replies store `reply_to_id` and show a quote of what they answer;
+  tapping it scrolls to the original or seeks the video to it. Comment threads stay one level deep, but a reply
+  to a reply quotes the reply.
+- **Timestamped comments** (`comments.offset_ms`) appear in the chat feed as comment bubbles and open their
+  thread in the comments section.
+- **Mentions:** tap a name to reply with `@name`; typing `@` suggests names from the video's chat and comments.
+  Notifications (bell, unread count, in-player bubble) are the next step (MBJ-202).
+
 ## Tipped messages
 
 - YouTube Super Chats (`superChatEvent` / `liveChatPaidMessageRenderer`) and Rumble Rants arrive as `kind = 'paid'` with `amount_text`.

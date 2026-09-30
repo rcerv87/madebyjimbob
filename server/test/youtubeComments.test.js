@@ -60,3 +60,17 @@ test('parseComments splits threads and replies and drops orphans and empties', (
     ['UgxTOP.REPLY1', 'UgxTOP.REPLY2'],
   );
 });
+
+test('replies remember the exact comment they answer', () => {
+  assert.equal(parseComment(creatorReply).replyToExternalId, 'UgxTOP');
+  assert.equal(parseComment(replyToReply).replyToExternalId, 'UgxTOP.REPLY1');
+  assert.equal(parseComment(top).replyToExternalId, null);
+});
+
+test('picks up the first timestamp typed in a comment, within the video length', () => {
+  const at = (text, durationMs) => parseComment({ id: 'x', parent: 'root', text }, { durationMs }).offsetMs;
+  assert.equal(at('lmao 1:04:32 and again at 1:10:00'), (3600 + 4 * 60 + 32) * 1000);
+  assert.equal(at('at 12:05 he says it'), (12 * 60 + 5) * 1000);
+  assert.equal(at('see 2:30:00', 60 * 60 * 1000), null, 'past the end of a 1-hour video');
+  assert.equal(at('no time here, ratio 3:1 or 10:30:45:12'), null);
+});
