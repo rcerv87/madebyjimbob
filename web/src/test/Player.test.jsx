@@ -24,19 +24,20 @@ describe('Player autoplay', () => {
     const video = await renderReady(play);
     expect(play).toHaveBeenCalledTimes(1);
     expect(video.muted).toBe(false);
-    expect(screen.queryByRole('button', { name: /unmute/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Play' })).toBeNull();
   });
 
-  test('falls back to muted with an unmute button when sound is blocked', async () => {
+  test('never starts muted: when autoplay is blocked it waits with a Play button', async () => {
     const blocked = Object.assign(new Error('blocked'), { name: 'NotAllowedError' });
     const play = vi.fn().mockRejectedValueOnce(blocked).mockResolvedValue();
     const video = await renderReady(play);
-    expect(play).toHaveBeenCalledTimes(2);
-    expect(video.muted).toBe(true);
-
-    fireEvent.click(screen.getByRole('button', { name: /tap to unmute/i }));
+    expect(play).toHaveBeenCalledTimes(1);
     expect(video.muted).toBe(false);
-    expect(screen.queryByRole('button', { name: /unmute/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    expect(play).toHaveBeenCalledTimes(2);
+    expect(video.muted).toBe(false);
+    expect(screen.queryByRole('button', { name: 'Play' })).toBeNull();
   });
 
   test('shows a message when the browser cannot play HLS at all', () => {
