@@ -149,7 +149,7 @@ MBJ-602,"XP, levels, badges",Engagement & AI,Phase 5 — Engagement,Should,M,To 
 - Anti-farming: idle tabs and duplicate messages earn nothing",MBJ-601
 MBJ-603,Leaderboards,Engagement & AI,Phase 5 — Engagement,Could,S,To do,"As a regular, I want to see where I rank.","- Per-stream and all-time leaderboards
 - Shown on watch page and in Studio",MBJ-602
-MBJ-604,Captions,Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a viewer, I want captions on stored videos.","- Captions generated for each VOD (Stream captions or Whisper)
+MBJ-604,Captions,Engagement & AI,Phase 5 — Engagement,Should,M,In progress,"As a viewer, I want captions on stored videos.","- Captions generated for each VOD (Stream captions or Whisper)
 - Selectable in web and mobile players
 - Transcript stored",
 MBJ-605,AI recaps and chapters,Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a viewer, I want a quick summary and jump points.","- After archive, a job generates recap notes and chapters from transcript + chat
