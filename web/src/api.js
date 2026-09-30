@@ -34,4 +34,7 @@ export function timeAgo(date) {
 
 export const compact = (n) => Intl.NumberFormat('en', { notation: 'compact' }).format(n || 0);
 
+// "1 view", "12 views", "1.2K views"
+export const count = (n, noun) => `${compact(n)} ${noun}${Number(n) === 1 ? '' : 's'}`;
+
 export const TIER_LABEL = { free: 'Free', plus: 'Plus', premium: 'Premium' };

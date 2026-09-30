@@ -438,10 +438,11 @@ code {
   font-weight: 600;
   pointer-events: none;
 }
+/* Top-left: browsers put their own video buttons (download, PiP) at top-right. */
 .player-tools {
   position: absolute;
   top: 12px;
-  right: 12px;
+  left: 12px;
   display: flex;
   gap: 8px;
 }

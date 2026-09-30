@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { formatTime, timeAgo, compact, TIER_LABEL } from '../api.js';
+import { formatTime, timeAgo, count, TIER_LABEL } from '../api.js';
 
 export default function VideoCard({ v }) {
   return (
@@ -18,9 +18,9 @@ export default function VideoCard({ v }) {
       <div className="card-body">
         <h3>{v.title}</h3>
         <p className="muted">
-          {compact(v.views)} views · {timeAgo(v.publishedAt)}
+          {count(v.views, 'view')} · {timeAgo(v.publishedAt)}
         </p>
-        <p className="muted small">{compact(v.chatCount)} chat messages</p>
+        <p className="muted small">{count(v.chatCount, 'chat message')}</p>
       </div>
     </Link>
   );
