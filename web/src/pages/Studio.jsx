@@ -62,6 +62,8 @@ export default function Studio({ user }) {
                   <th>YT chat</th>
                   <th>Our chat</th>
                   <th>Super chats</th>
+                  <th>Likes</th>
+                  <th>Dislikes</th>
                   <th>Access</th>
                 </tr>
               </thead>
@@ -76,6 +78,8 @@ export default function Studio({ user }) {
                     <td>{compact(v.youtubeMsgs)}</td>
                     <td>{compact(v.nativeMsgs)}</td>
                     <td>{v.paidMsgs}</td>
+                    <td>{compact(v.likes ?? 0)}</td>
+                    <td>{compact(v.dislikes ?? 0)}</td>
                     <td>
                       <select
                         value={v.minTier}

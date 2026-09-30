@@ -86,3 +86,15 @@ test('https URLs behind the proxy, and robots.txt', async () => {
   const robots = await get('/robots.txt');
   assert.match(robots.html, /Disallow: \/studio/);
 });
+
+test('hashed assets are cached for a year; the service worker is always re-checked', async () => {
+  const fs = await import('fs');
+  const path = await import('path');
+  const dir = path.resolve('..', 'web', 'dist', 'assets');
+  if (!fs.existsSync(dir)) return; // web not built in this environment
+  const file = fs.readdirSync(dir).find((f) => f.endsWith('.js'));
+  const asset = await fetch(`${site}/assets/${file}`);
+  assert.match(asset.headers.get('cache-control'), /max-age=31536000.*immutable/);
+  const sw = await fetch(`${site}/sw.js`);
+  if (sw.status === 200) assert.equal(sw.headers.get('cache-control'), 'no-cache');
+});

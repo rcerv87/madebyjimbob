@@ -365,9 +365,59 @@ code {
   flex: 1;
   min-width: 0;
 }
+.watch-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex: none;
+}
+.watch-actions .share {
+  margin-top: 0;
+}
+.likes {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: var(--raised);
+  border-radius: 18px;
+}
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.like-btn.up {
+  border-radius: 18px 0 0 18px;
+  padding-left: 14px;
+}
+.like-btn.down {
+  border-radius: 0 18px 18px 0;
+  border-left: 1px solid var(--line);
+}
+.like-btn:hover {
+  background: var(--line);
+}
+.like-btn[aria-pressed='true'] {
+  color: var(--accent-text);
+}
+.like-error {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--danger);
+}
 .share {
   position: relative;
-  margin-top: 12px;
   flex: none;
 }
 .share-btn {

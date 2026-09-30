@@ -79,6 +79,13 @@ columns are added by the story noted.
 
 Signed-out viewers keep their position in the browser (`localStorage`).
 
+### video_votes
+| column | type | notes |
+|---|---|---|
+| user_id, video_id | PK | one vote per person per video |
+| value | smallint | 1 (like) or -1 (dislike) |
+| updated_at | timestamptz | |
+
 ### playlists
 | column | type | notes |
 |---|---|---|

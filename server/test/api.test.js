@@ -574,3 +574,45 @@ describe('watch progress', () => {
     );
   });
 });
+
+describe('video likes', () => {
+  test('signed-in viewers like, switch to dislike, and clear; viewers see likes only', async () => {
+    const id = await seedVideo();
+    const a = await signIn(call, 'liker_a');
+    const b = await signIn(call, 'liker_b');
+    assert.equal((await call(`/videos/${id}`, { token: a })).data.video.likes, 0);
+
+    let r = await call(`/videos/${id}/vote`, { method: 'POST', token: a, body: { value: 1 } });
+    assert.deepEqual(r.data, { likes: 1, myVote: 1 });
+    await call(`/videos/${id}/vote`, { method: 'POST', token: b, body: { value: 1 } });
+    r = await call(`/videos/${id}/vote`, { method: 'POST', token: a, body: { value: -1 } });
+    assert.deepEqual(r.data, { likes: 1, myVote: -1 });
+
+    const seen = (await call(`/videos/${id}`, { token: b })).data.video;
+    assert.equal(seen.likes, 1);
+    assert.equal(seen.myVote, 1);
+    assert.equal(seen.dislikes, undefined, 'dislikes are not public');
+
+    r = await call(`/videos/${id}/vote`, { method: 'POST', token: a, body: { value: 0 } });
+    assert.deepEqual(r.data, { likes: 1, myVote: 0 });
+
+    const admin = await signIn(call, 'test_admin');
+    const row = (await call('/studio/overview', { token: admin })).data.videos.find((v) => v.id === id);
+    assert.deepEqual({ likes: row.likes, dislikes: row.dislikes }, { likes: 1, dislikes: 0 });
+  });
+
+  test('needs sign-in, a valid value, and access to the video', async () => {
+    const id = await seedVideo();
+    assert.equal((await call(`/videos/${id}/vote`, { method: 'POST', body: { value: 1 } })).status, 401);
+    const token = await signIn(call, 'liker_c');
+    assert.equal(
+      (await call(`/videos/${id}/vote`, { method: 'POST', token, body: { value: 5 } })).status,
+      400,
+    );
+    const members = await seedVideo({ minTier: 'plus' });
+    assert.equal(
+      (await call(`/videos/${members}/vote`, { method: 'POST', token, body: { value: 1 } })).status,
+      403,
+    );
+  });
+});

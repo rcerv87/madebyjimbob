@@ -882,7 +882,7 @@ Acceptance criteria:
 
 ### MBJ-613 — Ratings, moment reactions, and hotspots
 
-**Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-601
+**Status:** In progress · **Phase 5 — Engagement** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-601
 
 As a viewer, I want to rate a stream and mark the parts that are funny, interesting, or boring, and see what everyone else thought minute by minute.
 

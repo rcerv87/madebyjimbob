@@ -7,6 +7,7 @@ import ChatPanel from '../components/ChatPanel.jsx';
 import Comments from '../components/Comments.jsx';
 import UpNext, { EndScreen, readAutoplay } from '../components/UpNext.jsx';
 import ShareButton from '../components/ShareButton.jsx';
+import LikeButtons from '../components/LikeButtons.jsx';
 import useTitle from '../useTitle.js';
 
 const SAVE_EVERY_MS = 10_000;
@@ -177,11 +178,16 @@ export default function Watch({ session }) {
         )}
         <div className="watch-head">
           <h1 className="watch-title">{video.title}</h1>
-          <ShareButton
-            title={video.title}
-            path={`/watch/${video.id}`}
-            getTimeMs={() => Math.floor((playerRef.current?.currentTime || 0) * 1000)}
-          />
+          <div className="watch-actions">
+            {!video.locked && (
+              <LikeButtons videoId={video.id} likes={video.likes} myVote={video.myVote} session={session} />
+            )}
+            <ShareButton
+              title={video.title}
+              path={`/watch/${video.id}`}
+              getTimeMs={() => Math.floor((playerRef.current?.currentTime || 0) * 1000)}
+            />
+          </div>
         </div>
         <div className={`description ${expanded ? 'open' : ''}`} onClick={() => setExpanded(true)}>
           <p className="desc-meta">
