@@ -1,6 +1,6 @@
 # API
 
-Base path `/api`. JSON in and out. Errors: `{ "error": "Human-readable message." }` with a 4xx/5xx status.
+Base path `/api`. JSON in and out. Errors: `{ "error": "Human-readable message." }` with a 4xx/5xx status. Every response has an `X-Request-Id` header (a safe incoming one is reused); 500 errors quote it so reports can be matched to logs. Malformed JSON bodies are 400, bodies over 50 KB are 413.
 Auth: `Authorization: Bearer <token>` (MVP session token from `/session`; replaced in MBJ-101).
 Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see every tier.
 
