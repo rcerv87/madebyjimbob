@@ -1,5 +1,5 @@
 Issue ID,Summary,Epic,Phase,Priority,Size,Status,Description,Acceptance Criteria,Depends On
-MBJ-001,Test harness,Foundation,Phase 0 — Foundation,Must,M,To do,"As the developer, I want automated tests so Claude Code can change things safely.","- `npm test` runs server and web tests from the repo root
+MBJ-001,Test harness,Foundation,Phase 0 — Foundation,Must,M,Done,"As the developer, I want automated tests so Claude Code can change things safely.","- `npm test` runs server and web tests from the repo root
 - Server tests run against a disposable Postgres (`DATABASE_URL_TEST`) and reset it per run
 - Covered: sign-in, tier gating on `/videos/:id`, chat window query, chat post + rate limit, WS broadcast
 - Web: at least one render test each for Home, Watch (locked + unlocked), ChatPanel",

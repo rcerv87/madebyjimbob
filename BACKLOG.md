@@ -98,15 +98,15 @@ Make the POC a safe base: tests, CI, migrations, shared types.
 
 ### MBJ-001 — Test harness
 
-**Status:** To do · **Phase 0 — Foundation** · **Priority:** Must · **Size:** M
+**Status:** Done · **Phase 0 — Foundation** · **Priority:** Must · **Size:** M
 
 As the developer, I want automated tests so Claude Code can change things safely.
 
 Acceptance criteria:
-- [ ] `npm test` runs server and web tests from the repo root
-- [ ] Server tests run against a disposable Postgres (`DATABASE_URL_TEST`) and reset it per run
-- [ ] Covered: sign-in, tier gating on `/videos/:id`, chat window query, chat post + rate limit, WS broadcast
-- [ ] Web: at least one render test each for Home, Watch (locked + unlocked), ChatPanel
+- [x] `npm test` runs server and web tests from the repo root
+- [x] Server tests run against a disposable Postgres (`DATABASE_URL_TEST`) and reset it per run
+- [x] Covered: sign-in, tier gating on `/videos/:id`, chat window query, chat post + rate limit, WS broadcast
+- [x] Web: at least one render test each for Home, Watch (locked + unlocked), ChatPanel
 
 ### MBJ-002 — Lint and format
 

@@ -31,10 +31,15 @@ npm install                    # all workspaces
 npm run dev:server             # API on :3000 (reads .env)
 npm run dev:web                # web on :5173, proxies /api and /ws
 npm run build                  # builds web
+npm test                       # server (node:test, needs DATABASE_URL_TEST) + web (vitest)
 npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only]
 ```
 
-Tests and lint do not exist yet — MBJ-001 and MBJ-002 add them. Once they exist, run both before finishing any story.
+Run `npm test` before finishing any story (lint arrives with MBJ-002).
+
+- Server tests live in `server/test/` and run against `DATABASE_URL_TEST`, which is wiped on every run. `test/helpers.js` refuses any database without "test" in its name.
+- `server/src/app.js` builds the app and WebSocket server; `server/src/index.js` only migrates and listens.
+- Web tests live in `web/src/test/`; `setup.js` provides `mockApi()` and a fake WebSocket.
 
 ## How to work a story
 
