@@ -421,8 +421,12 @@ code {
 .listen-cover {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-bottom: 56px;
   background: var(--panel) center / cover no-repeat;
   pointer-events: none;
 }
@@ -437,6 +441,22 @@ code {
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 700;
   font-size: 2rem;
+}
+.listen-cover small {
+  position: relative;
+  color: var(--muted);
+  text-align: center;
+  padding: 0 16px;
+}
+/* Audio-only player shown in Listen only mode, along the bottom where the video controls were. */
+.listen-audio {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: calc(100% - 24px);
+  height: 40px;
+  z-index: 1;
 }
 .gesture-layer {
   position: absolute;
@@ -504,6 +524,26 @@ code {
 }
 .player-tools button:hover {
   background: rgba(0, 0, 0, 0.85);
+}
+.player-tools button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.speed-pick select {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 5px 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .locked {
