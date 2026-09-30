@@ -86,6 +86,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-811 | Founding members | Library & community | 1 | Should | M | MBJ-104 |
 | MBJ-812 | JimBob's brand on the platform | Library & community | 1 | Must | S | — |
 | MBJ-813 | Schedule calendar with export | Library & community | 1 | Should | M | — |
+| MBJ-814 | Unwatched filter and binge queue | Library & community | 1 | Should | S | MBJ-212, MBJ-803 |
 | MBJ-401 | Expo app scaffold | Mobile apps | 2 | Must | L | MBJ-004, MBJ-101 |
 | MBJ-402 | Mobile player and gestures | Mobile apps | 2 | Must | M | MBJ-401 |
 | MBJ-403 | Background audio, lock screen, PiP | Mobile apps | 2 | Must | M | MBJ-402 |
@@ -123,6 +124,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-610 | Search inside streams | Engagement & AI | 5 | Should | M | MBJ-604 |
 | MBJ-611 | Watch-time rewards (e.g. a free t-shirt) | Engagement & AI | 5 | Should | M | MBJ-601, MBJ-108, MBJ-807 |
 | MBJ-612 | Supporter shout-outs | Engagement & AI | 5 | Should | M | MBJ-207 |
+| MBJ-613 | Ratings, moment reactions, and hotspots | Engagement & AI | 5 | Should | L | MBJ-601 |
 | MBJ-702 | Chat analytics | Studio & analytics | 5 | Should | M | MBJ-102 |
 
 ## Epic 0xx — Foundation
@@ -832,6 +834,21 @@ Acceptance criteria:
 - [ ] Supporter badge and a Supporters wall with top supporters this month (opt-in names)
 - [ ] Shout-outs appear in the stream notes with the time JimBob answered (MBJ-605)
 
+### MBJ-613 — Ratings, moment reactions, and hotspots
+
+**Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-601
+
+As a viewer, I want to rate a stream and mark the parts that are funny, interesting, or boring, and see what everyone else thought minute by minute.
+
+Acceptance criteria:
+- [ ] Thumbs up / down on each video (counts shown; one vote per person, changeable)
+- [ ] Moment reactions while watching: one tap (Funny, Interesting, Fire, Boring, Cringe) stamps the current moment; press-and-drag on the progress bar marks a stretch (e.g. a boring call-in from 2:04:00 to 2:19:30) with a reaction
+- [ ] Hotspot strip over the progress bar: a minute-by-minute heatmap of reactions, colored by the strongest reaction, combined with chat activity; tapping a spike jumps there
+- [ ] Optional "skip marked-boring stretches" and "play the best parts" (highest-rated minutes) modes
+- [ ] Studio: per-video minute-by-minute chart of reactions and chat (with MBJ-702) to see what landed and what dragged
+- [ ] Fair counting: signed-in viewers only, one reaction per kind per person per minute, stretches capped in length, and heavy one-person marking down-weighted
+- [ ] Feeds the AI stream notes and tags (MBJ-605, MBJ-609): hotspots become suggested highlights and clips
+
 ### MBJ-604 — Captions
 
 **Status:** In progress · **Phase 5 — Engagement** · **Priority:** Should · **Size:** M
@@ -1120,6 +1137,18 @@ Acceptance criteria:
 - [ ] Export: Add to calendar per event (Google, Apple, Outlook via an .ics file) and a subscribe link (webcal/ICS feed) that keeps a viewer's calendar updated automatically
 - [ ] Remind me: push and in-site notification before an event starts (MBJ-214), and at go-live
 - [ ] Feeds the live indicator's "Next stream" (MBJ-805) and can post an announcement to Posts (MBJ-804)
+
+### MBJ-814 — Unwatched filter and binge queue
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-212, MBJ-803
+
+As a viewer, I want to see what I haven't watched and play it all back to back.
+
+Acceptance criteria:
+- [ ] Filter chips on Videos: Unwatched, In progress, Watched (from watch progress; account when signed in, browser otherwise)
+- [ ] Binge queue: an automatic playlist of everything you haven't finished, in-progress first then oldest to newest (or newest first), that plays with Up next and autoplay, in Listen only too
+- [ ] Mark as watched / unwatched from a video's menu; finishing a video (last 30s) marks it watched
+- [ ] Counts on the chips and a "Keep watching" row on the Videos page
 
 ### MBJ-812 — JimBob's brand on the platform
 

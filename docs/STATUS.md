@@ -138,20 +138,24 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    (MBJ-701); find members, ban/time out, highlight regulars and guests, roles, staff notes (MBJ-705, with the
    chat moderation tools in MBJ-204). Can start on today's admin list before real roles (MBJ-102).
 4. **Posts** — text, images, polls with threaded comments (MBJ-804).
-5. **Gamification** — XP, levels, and activity badges for heavy chatters and commenters (MBJ-601, 602),
+5. **Unwatched filter and binge queue** (MBJ-814) — quick win on top of saved watch progress: Unwatched / In
+   progress / Watched chips and an automatic playlist of everything you haven't finished.
+6. **Gamification** — XP, levels, and activity badges for heavy chatters and commenters (MBJ-601, 602),
    watch-time rewards such as a free t-shirt after a set number of hours, delivered as a Shopify code (MBJ-611),
    and supporter shout-outs for super chats and Bob Chats, with a queue and optional on-stream overlay (MBJ-612).
-6. **AI stream notes** — a facilitator-style notes page per stream: summary, sections, who said what, key
+7. **AI stream notes** — a facilitator-style notes page per stream: summary, sections, who said what, key
    exchanges, super chats and Bob Chats with answers, questions and promises (MBJ-605); speaker labels (MBJ-608);
    tags for topics and people with browse pages (MBJ-609); search inside streams (MBJ-610). Transcripts for all
-   4 videos are already stored.
-7. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
+   4 videos are already stored. Together with **ratings, moment reactions, and hotspots** (MBJ-613): thumbs
+   up/down, tag a moment or a stretch as funny/interesting/boring, and a minute-by-minute heatmap over the
+   progress bar.
+8. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
    **payments API** (MBJ-104, 109), pricing page (MBJ-105), **founding members** (MBJ-811), **Store** (MBJ-807).
-8. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
-9. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
-10. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
-11. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
-12. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
+9. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
+10. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
+11. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
+12. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
+13. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
 
 ## Reference
 
