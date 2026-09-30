@@ -154,8 +154,11 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 8. **SEO before launch** — per-page titles, descriptions, and link previews filled in by the server, crawlable
    video pages, VideoObject/Event structured data, sitemap and robots, real 404s, noindex the onrender preview,
    faster bundle (MBJ-815); then slugs, indexable transcripts, topic and guest landing pages (MBJ-816).
-9. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
-   **payments API** (MBJ-104, 109), pricing page (MBJ-105), **founding members** (MBJ-811), **Store** (MBJ-807).
+9. **Accounts and money** — start with the **payments and fees decision** (MBJ-112: compare Stripe, PayPal, bank
+   payments, Shopify, app-store fees with JimBob's real numbers). Then real sign-in with **one-tap social
+   sign-in, passkeys, and staying signed in** (MBJ-101, 110), **sign-up/onboarding** (MBJ-108), memberships and
+   the **payments API** (MBJ-104, 109), **saved payment methods and a prepaid wallet** so small Bob Chats don't
+   lose ~9% to fees (MBJ-111), pricing page (MBJ-105), **founding members** (MBJ-811), **Store** (MBJ-807).
 10. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
 11. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
 12. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.

@@ -55,6 +55,22 @@ MBJ-109,Payments API and receipts,Accounts & memberships,Phase 1 — VOD platfor
 - Members see payment history and receipts; Stripe customer portal to change card or cancel
 - Studio: revenue, refunds, failed payments; test mode for staging
 - Backup processor evaluated (PRD open question)",MBJ-104
+MBJ-110,Easy sign-in and staying signed in,Accounts & memberships,Phase 1 — VOD platform,Must,M,To do,"As a viewer, I want to sign in with one tap and stay signed in on my devices.","- Sign in with Google (also links YouTube for MBJ-215), Apple, X, and Facebook; email magic link as the no-password option
+- Passkeys (Face ID / fingerprint / Windows Hello) instead of passwords
+- Stay signed in: long-lived sessions that renew while used (e.g. 90 days), on web and the installed app
+- Profile: see signed-in devices and sign out any of them; add or remove sign-in methods; merge an existing account
+- Signing in from a notification or email link lands you where you were going
+- Self-hosted auth library per ADR-006 (user records stay in our database)",MBJ-101
+MBJ-111,Saved payment methods and a wallet,Accounts & memberships,Phase 1 — VOD platform,Must,L,To do,"As a member, I want to pay in one tap with a method I've saved; as JimBob, I want to keep as much of each payment as possible.","- Saved methods on the profile: cards via Stripe, Apple Pay / Google Pay, PayPal (and Venmo), bank account (ACH); set a default, remove any
+- One-tap tips, Bob Chats, and memberships with the default method; receipts in the profile
+- Wallet (prepaid credits): add $10/$20/$50 once, then spend on Bob Chats and tips with no per-message fee
+- Yearly membership option (one fee instead of twelve) with a discount
+- Web checkout for everything where app-store rules allow; in-app purchase only where required
+- A second processor ready (PayPal or other) in case one drops the account (PRD independence goal)","MBJ-104, MBJ-112"
+MBJ-112,Payments and fees decision (ADR),Accounts & memberships,Phase 1 — VOD platform,Must,S,To do,"As JimBob, I want the lowest-fee setup that still makes paying easy and keeps me independent.","- Compare with current published rates: Stripe (cards, Link, ACH), PayPal/Venmo, Shopify Payments, bank transfers, and crypto processors; include app-store fees for the phone apps
+- Model real money with JimBob's numbers: memberships, Bob Chats/tips by size, merch orders, and the current Shopify plan and apps
+- Decide merch: keep Shopify, or move to our own checkout (Stripe) with a print-on-demand partner for fulfilment; show the yearly saving and the work involved
+- Record the decision as an ADR and update MBJ-104, MBJ-109, MBJ-111, and MBJ-807",
 MBJ-201,Chat replay polish,Chat & moderation,Phase 1 — VOD platform,Should,M,Done,"As a viewer, I want chat that feels as good as YouTube's.","- ""Jump to latest"" button appears when scrolled up; resumes auto-scroll
 - Hovering a message shows its video timestamp; clicking seeks the player there
 - On WebSocket reconnect, missed messages are fetched since the last id",
@@ -273,7 +289,8 @@ MBJ-806,Import the whole channel,Library & community,Phase 4 — Owned live + au
 MBJ-807,Store (Shopify integration),Library & community,Phase 1 — VOD platform,Should,M,In progress,"As a fan, I want to browse and buy JimBob's merch without leaving his platform's look and feel.","- Decision: keep the existing Shopify store (madebyjimbob.com, ~150 products) for catalog, checkout, and fulfilment
 - Shop section shows the store's collections and products live (public product JSON, 10-minute cache); Buy opens the product in the store
 - Next: cart and checkout inside the platform with Shopify's Storefront API (needs a Storefront access token from JimBob's Shopify admin)
-- Member and founding-member discount codes applied at checkout",
+- Member and founding-member discount codes applied at checkout
+- Revisit moving merch off Shopify (own Stripe checkout + print-on-demand) if MBJ-112 shows a real saving",
 MBJ-808,Art section,Library & community,Phase 2 — Mobile,Should,S,Done,"As a fan, I want to browse JimBob's illustrations and comics.","- Gallery built from the store's art collections (original art, art prints, classic art prints, digital art)
 - Tap a piece to see it large; View in store buys the print
 - Filter by kind of art

@@ -56,6 +56,9 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-107 | Owned email list | Accounts & memberships | 1 | Must | S | MBJ-101, MBJ-102 |
 | MBJ-108 | Sign-up and onboarding | Accounts & memberships | 1 | Must | M | MBJ-101 |
 | MBJ-109 | Payments API and receipts | Accounts & memberships | 1 | Must | M | MBJ-104 |
+| MBJ-110 | Easy sign-in and staying signed in | Accounts & memberships | 1 | Must | M | MBJ-101 |
+| MBJ-111 | Saved payment methods and a wallet | Accounts & memberships | 1 | Must | L | MBJ-104, MBJ-112 |
+| MBJ-112 | Payments and fees decision (ADR) | Accounts & memberships | 1 | Must | S | — |
 | MBJ-201 | Chat replay polish | Chat & moderation | 1 | Should | M | — |
 | MBJ-202 | @mention autocomplete and notifications | Chat & moderation | 1 | Should | M | MBJ-101 |
 | MBJ-203 | Upvotes and top questions | Chat & moderation | 1 | Should | M | MBJ-101 |
@@ -328,6 +331,46 @@ Acceptance criteria:
 - [ ] Members see payment history and receipts; Stripe customer portal to change card or cancel
 - [ ] Studio: revenue, refunds, failed payments; test mode for staging
 - [ ] Backup processor evaluated (PRD open question)
+
+### MBJ-110 — Easy sign-in and staying signed in
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101
+
+As a viewer, I want to sign in with one tap and stay signed in on my devices.
+
+Acceptance criteria:
+- [ ] Sign in with Google (also links YouTube for MBJ-215), Apple, X, and Facebook; email magic link as the no-password option
+- [ ] Passkeys (Face ID / fingerprint / Windows Hello) instead of passwords
+- [ ] Stay signed in: long-lived sessions that renew while used (e.g. 90 days), on web and the installed app
+- [ ] Profile: see signed-in devices and sign out any of them; add or remove sign-in methods; merge an existing account
+- [ ] Signing in from a notification or email link lands you where you were going
+- [ ] Self-hosted auth library per ADR-006 (user records stay in our database)
+
+### MBJ-111 — Saved payment methods and a wallet
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-104, MBJ-112
+
+As a member, I want to pay in one tap with a method I've saved; as JimBob, I want to keep as much of each payment as possible.
+
+Acceptance criteria:
+- [ ] Saved methods on the profile: cards via Stripe, Apple Pay / Google Pay, PayPal (and Venmo), bank account (ACH); set a default, remove any
+- [ ] One-tap tips, Bob Chats, and memberships with the default method; receipts in the profile
+- [ ] Wallet (prepaid credits): add $10/$20/$50 once, then spend on Bob Chats and tips with no per-message fee
+- [ ] Yearly membership option (one fee instead of twelve) with a discount
+- [ ] Web checkout for everything where app-store rules allow; in-app purchase only where required
+- [ ] A second processor ready (PayPal or other) in case one drops the account (PRD independence goal)
+
+### MBJ-112 — Payments and fees decision (ADR)
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S
+
+As JimBob, I want the lowest-fee setup that still makes paying easy and keeps me independent.
+
+Acceptance criteria:
+- [ ] Compare with current published rates: Stripe (cards, Link, ACH), PayPal/Venmo, Shopify Payments, bank transfers, and crypto processors; include app-store fees for the phone apps
+- [ ] Model real money with JimBob's numbers: memberships, Bob Chats/tips by size, merch orders, and the current Shopify plan and apps
+- [ ] Decide merch: keep Shopify, or move to our own checkout (Stripe) with a print-on-demand partner for fulfilment; show the yearly saving and the work involved
+- [ ] Record the decision as an ADR and update MBJ-104, MBJ-109, MBJ-111, and MBJ-807
 
 ## Epic 2xx — Chat & moderation
 
@@ -1079,6 +1122,7 @@ Acceptance criteria:
 - [ ] Shop section shows the store's collections and products live (public product JSON, 10-minute cache); Buy opens the product in the store
 - [ ] Next: cart and checkout inside the platform with Shopify's Storefront API (needs a Storefront access token from JimBob's Shopify admin)
 - [ ] Member and founding-member discount codes applied at checkout
+- [ ] Revisit moving merch off Shopify (own Stripe checkout + print-on-demand) if MBJ-112 shows a real saving
 
 ### MBJ-808 — Art section
 
