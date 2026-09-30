@@ -196,12 +196,23 @@ MBJ-606,Call-ins,Engagement & AI,Phase 5 — Engagement,Could,XL,To do,"As a Pre
 - Approved caller appears in OBS via browser source","MBJ-104, MBJ-301"
 MBJ-607,Polls and predictions,Engagement & AI,Phase 5 — Engagement,Could,L,To do,"As a viewer, I want to spend points and play along.","- Mods create polls/predictions during a stream
 - Viewers vote with points; results broadcast live",MBJ-602
-MBJ-701,Content management,Studio & analytics,Phase 1 — VOD platform,Should,M,To do,"As JimBob, I want to manage videos without a terminal.","- Edit title, description, tier, and thumbnail
-- Start a YouTube import from a URL in Studio (background job with status)",MBJ-102
+MBJ-701,Video management in Studio,Studio & analytics,Phase 1 — VOD platform,Must,L,To do,"As JimBob, I want to upload, edit, replace, and delete videos without a terminal.","- Upload a video file from the browser (resumable, straight to Cloudflare Stream or R2 per ADR-010) with progress; it appears once processing finishes
+- Start a YouTube import from a URL (background job with status: downloading, uploading, processing, chat, comments, captions)
+- Edit title, description, type (video/short/live), tier, publish date, and thumbnail (pick a frame or upload an image)
+- Unpublish/hide a video (keeps chat, comments, and stats) vs. delete it (confirm step; removes the file from Stream and its chat, comments, and playlist entries)
+- Replace the video file but keep its chat, comments, captions, and link, with an offset adjustment if the new file starts earlier or later
+- Schedule a video to go public at a date and time; draft videos visible only in Studio
+- Every change recorded in an audit log (who, what, when)",MBJ-102
 MBJ-702,Chat analytics,Studio & analytics,Phase 5 — Engagement,Should,M,To do,"As JimBob, I want to see what landed with my audience.","- Messages-per-minute chart per stream with busiest moments linked to timestamps
 - Top questions and per-stream sentiment summary",MBJ-102
 MBJ-703,Members and revenue dashboard,Studio & analytics,Phase 1 — VOD platform,Should,M,To do,"As JimBob, I want to see who pays and how much I earn.","- Active members by tier, churn, MRR, tip totals by source","MBJ-104, MBJ-102"
 MBJ-704,Data export,Studio & analytics,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want a copy of everything that's mine.","- CSV export of chat (per video or all), members, and tips",MBJ-102
+MBJ-705,User management in Studio,Studio & analytics,Phase 1 — VOD platform,Must,M,To do,"As JimBob or a mod, I want to find any member and act on them in one place.","- Users list with search and filters: tier, role, banned, highlighted, new this week; sort by activity
+- User page: profile, tier and membership, linked YouTube/Rumble names, chat and comment history, notifications sent, mod history
+- Ban (with reason; blocks sign-in, chat, and comments), time out for a set time, unban; hide all of a user's messages in one step
+- Highlight a user: VIP/featured badge and name color in chat and comments (e.g. regulars, guests, supporters); remove it any time
+- Change role (viewer, mod, admin) and, for support cases, tier; private staff notes on the user
+- Every action logged in mod_actions with who did it; bans and highlights apply live over WebSocket","MBJ-102, MBJ-204"
 MBJ-801,Videos dashboard with filters,Library & community,Phase 1 — VOD platform,Must,M,Done,"As a viewer, I want to find videos by type and search, starting from everything.","- Video types from import: regular, short, past live (vertical + short = short; was_live = live)
 - Filter chips: All, Videos, Shorts, Live, Members only; search and sort (newest, most viewed)
 - Members-only items show which tier unlocks them; access still enforced on the server",

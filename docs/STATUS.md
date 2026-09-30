@@ -128,14 +128,17 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 1. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805).
 2. **Navigation bar** — top nav for every section, bottom tab bar on phones and in the app (MBJ-810);
    **social links and sharing** with link previews (MBJ-809).
-3. **Posts** — text, images, polls with threaded comments (MBJ-804).
-4. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
+3. **Studio: manage videos and users** — upload from the browser, edit, replace, unpublish, delete
+   (MBJ-701); find members, ban/time out, highlight regulars and guests, roles, staff notes (MBJ-705, with the
+   chat moderation tools in MBJ-204). Can start on today's admin list before real roles (MBJ-102).
+4. **Posts** — text, images, polls with threaded comments (MBJ-804).
+5. **Accounts and money** — real sign-in and **sign-up/onboarding** (MBJ-101, 108), memberships and the
    **payments API** (MBJ-104, 109), pricing page (MBJ-105), **founding members** (MBJ-811), **Store** (MBJ-807).
-5. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
-6. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
-7. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
-8. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
-9. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
+6. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
+7. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
+8. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
+9. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
+10. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
 
 ## Reference
 

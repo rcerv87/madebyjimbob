@@ -71,9 +71,10 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-214 | Push notifications (web) | Chat & moderation | 1 | Must | M | MBJ-202, MBJ-213 |
 | MBJ-215 | Link YouTube and Rumble names to a profile | Chat & moderation | 1 | Should | M | MBJ-202 |
 | MBJ-216 | Count one view per viewer | Chat & moderation | 1 | Should | S | — |
-| MBJ-701 | Content management | Studio & analytics | 1 | Should | M | MBJ-102 |
+| MBJ-701 | Video management in Studio | Studio & analytics | 1 | Must | L | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
+| MBJ-705 | User management in Studio | Studio & analytics | 1 | Must | M | MBJ-102, MBJ-204 |
 | MBJ-801 | Videos dashboard with filters | Library & community | 1 | Must | M | — |
 | MBJ-802 | Playlists | Library & community | 1 | Must | M | MBJ-801 |
 | MBJ-803 | Up next and autoplay | Library & community | 1 | Must | S | MBJ-802 |
@@ -843,15 +844,20 @@ Acceptance criteria:
 
 Creator tools and audience insight.
 
-### MBJ-701 — Content management
+### MBJ-701 — Video management in Studio
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-102
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-102
 
-As JimBob, I want to manage videos without a terminal.
+As JimBob, I want to upload, edit, replace, and delete videos without a terminal.
 
 Acceptance criteria:
-- [ ] Edit title, description, tier, and thumbnail
-- [ ] Start a YouTube import from a URL in Studio (background job with status)
+- [ ] Upload a video file from the browser (resumable, straight to Cloudflare Stream or R2 per ADR-010) with progress; it appears once processing finishes
+- [ ] Start a YouTube import from a URL (background job with status: downloading, uploading, processing, chat, comments, captions)
+- [ ] Edit title, description, type (video/short/live), tier, publish date, and thumbnail (pick a frame or upload an image)
+- [ ] Unpublish/hide a video (keeps chat, comments, and stats) vs. delete it (confirm step; removes the file from Stream and its chat, comments, and playlist entries)
+- [ ] Replace the video file but keep its chat, comments, captions, and link, with an offset adjustment if the new file starts earlier or later
+- [ ] Schedule a video to go public at a date and time; draft videos visible only in Studio
+- [ ] Every change recorded in an audit log (who, what, when)
 
 ### MBJ-702 — Chat analytics
 
@@ -880,6 +886,20 @@ As JimBob, I want a copy of everything that's mine.
 
 Acceptance criteria:
 - [ ] CSV export of chat (per video or all), members, and tips
+
+### MBJ-705 — User management in Studio
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-102, MBJ-204
+
+As JimBob or a mod, I want to find any member and act on them in one place.
+
+Acceptance criteria:
+- [ ] Users list with search and filters: tier, role, banned, highlighted, new this week; sort by activity
+- [ ] User page: profile, tier and membership, linked YouTube/Rumble names, chat and comment history, notifications sent, mod history
+- [ ] Ban (with reason; blocks sign-in, chat, and comments), time out for a set time, unban; hide all of a user's messages in one step
+- [ ] Highlight a user: VIP/featured badge and name color in chat and comments (e.g. regulars, guests, supporters); remove it any time
+- [ ] Change role (viewer, mod, admin) and, for support cases, tier; private staff notes on the user
+- [ ] Every action logged in mod_actions with who did it; bans and highlights apply live over WebSocket
 
 ## Epic 8xx — Library & community
 
