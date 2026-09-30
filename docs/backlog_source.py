@@ -131,6 +131,18 @@ S = [
   "Comments section under the video: Top/Newest sort, 20 threads per page, replies collapsed per thread",
   "Signed-in members post comments and replies (one level); tier-gated like chat; rate limited",
   "YT/JB source tags and a Creator badge distinguish where each comment came from"], ["001"]),
+("211", 1, "Must", "L", "One conversation across live chat, replay chat, and comments",
+ "As a viewer, I want to join the stream's conversation after it ended without losing what was said live or what each reply answers.",
+ ["Chat marks live vs replay messages; Live only (default) / Live + replay toggle with a count of hidden later posts",
+  "Chat and comment replies quote the exact message they answer; tapping the quote shows the original",
+  "Tap a name to reply with @name; typing @ suggests names from the video",
+  "Comments can carry a moment in the video and appear as bubbles in the chat feed; YouTube comments take the first typed time",
+  "Typed times in comments are clickable; a chat bubble opens its whole thread"], ["210"]),
+("212", 1, "Must", "S", "Resume where you left off",
+ "As a viewer, I want videos to pick up where I stopped, on any device.",
+ ["Position saved every 10s and on leaving the page; on the account when signed in, in the browser otherwise",
+  "Reopening resumes (past 10s, not in the last 30s) with Resumed from mm:ss and a Start over button",
+  "?t=<seconds> links start at that time", "Video cards show a watched progress bar"], []),
 # ---------------- 3 Live via YouTube ----------------
 ("301", 3, "Must", "M", "Live video model and live page",
  "As a viewer, I want to watch JimBob live without leaving the platform.",
@@ -271,7 +283,7 @@ SPRINTS = [
 ]
 
 # Story status lives here, not in BACKLOG.md (that file is regenerated). Example: {"001": "Done"}
-STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done", "201": "Done", "210": "Done", "604": "In progress"}
+STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done", "201": "Done", "210": "Done", "211": "Done", "212": "Done", "604": "In progress"}
 # 604: Stream auto-captions + transcripts table + captions:fetch done; mobile player and Whisper (for R2) remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 

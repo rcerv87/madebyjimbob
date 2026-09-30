@@ -46,6 +46,8 @@ columns are added by the story noted.
 | offset_ms | int | position in video; index `(video_id, offset_ms)` |
 | sent_at | timestamptz | original send time |
 | hidden | boolean | moderation; never hard-delete |
+| posted_live | boolean | sent during the live stream (YouTube imports, live native) vs. posted while watching later |
+| reply_to_id | FK chat_messages | the exact message answered; shown as a quote |
 | created_at | timestamptz | |
 
 ### comments
@@ -64,6 +66,17 @@ columns are added by the story noted.
 | pinned | boolean | |
 | posted_at | timestamptz | |
 | hidden | boolean | moderation; never hard-delete |
+| offset_ms | int | optional moment in the video; timestamped comments appear in the chat feed. YouTube imports take the first time typed in the comment |
+| reply_to_id | FK comments | the exact comment answered (thread start or another reply); shown as a quote |
+
+### watch_progress
+| column | type | notes |
+|---|---|---|
+| user_id, video_id | PK | |
+| position_ms | int | where the viewer stopped; resume if past 10s and not in the last 30s |
+| updated_at | timestamptz | |
+
+Signed-out viewers keep their position in the browser (`localStorage`).
 
 Comments are separate from `chat_messages`: they aren't tied to a playback position and they thread.
 

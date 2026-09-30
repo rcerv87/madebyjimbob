@@ -113,10 +113,26 @@ function videoCard(v) {
   };
 }
 
+// What a reply quotes: the exact message or comment it answers (joined in as rt_* columns).
+const replyTo = (r) =>
+  r.rt_id ? { id: r.rt_id, author: r.rt_author, body: r.rt_body, offsetMs: r.rt_offset } : null;
+
+const CHAT_SELECT = `SELECT m.*, rt.id AS rt_id, rt.author_name AS rt_author, left(rt.body, 140) AS rt_body,
+    rt.offset_ms AS rt_offset
+  FROM chat_messages m LEFT JOIN chat_messages rt ON rt.id = m.reply_to_id AND NOT rt.hidden`;
+
+const COMMENT_SELECT = `SELECT c.*, rt.id AS rt_id, rt.author_name AS rt_author, left(rt.body, 140) AS rt_body,
+    rt.offset_ms AS rt_offset,
+    (SELECT count(*) FROM comments r WHERE r.parent_id = c.id AND NOT r.hidden) AS reply_count
+  FROM comments c LEFT JOIN comments rt ON rt.id = c.reply_to_id AND NOT rt.hidden`;
+
 function commentRow(r) {
   return {
     id: r.id,
     parentId: r.parent_id,
+    replyTo: replyTo(r),
+    offsetMs: r.offset_ms,
+    replyCount: Number(r.reply_count || 0),
     source: r.source,
     author: r.author_name,
     authorPhoto: r.author_photo,
@@ -139,6 +155,8 @@ function chatRow(r) {
     amount: r.amount_text,
     mentions: r.mentions,
     offsetMs: r.offset_ms,
+    postedLive: r.posted_live,
+    replyTo: replyTo(r),
   };
 }
 
@@ -220,11 +238,16 @@ app.get(
 // ---------- videos ----------
 app.get(
   '/api/videos',
-  wrap(async (_req, res) => {
-    const { rows } = await pool.query(`
-    SELECT v.*, (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
-    FROM videos v ORDER BY v.published_at DESC NULLS LAST, v.id DESC`);
-    res.json({ videos: rows.map(videoCard) });
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    const { rows } = await pool.query(
+      `SELECT v.*, wp.position_ms AS progress_ms,
+         (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
+       FROM videos v LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = $1
+       ORDER BY v.published_at DESC NULLS LAST, v.id DESC`,
+      [user?.id ?? null],
+    );
+    res.json({ videos: rows.map((v) => ({ ...videoCard(v), progressMs: v.progress_ms ?? null })) });
   }),
 );
 
@@ -241,6 +264,12 @@ app.get(
     const v = rows[0];
     const user = await currentUser(req);
     const allowed = canWatch(user, v);
+    const progress = user
+      ? await pool.query('SELECT position_ms FROM watch_progress WHERE user_id = $1 AND video_id = $2', [
+          user.id,
+          v.id,
+        ])
+      : { rows: [] };
     res.json({
       video: {
         ...videoCard(v),
@@ -248,6 +277,7 @@ app.get(
         youtubeId: v.youtube_id,
         locked: !allowed,
         hls: allowed ? playback(v.stream_uid)?.hls : null,
+        resumeMs: progress.rows[0]?.position_ms ?? null,
       },
     });
   }),
@@ -259,6 +289,27 @@ app.post(
     if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
     await pool.query('UPDATE videos SET views = views + 1 WHERE id = $1', [req.params.id]);
     res.json({ ok: true });
+  }),
+);
+
+// Save where a signed-in viewer is in the video: { positionMs }. Signed-out viewers keep it locally.
+app.put(
+  '/api/videos/:id/progress',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to save your place across devices.' });
+    const video = await findVideo(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Video not found.' });
+    const n = Math.round(Number(req.body.positionMs));
+    if (!Number.isFinite(n) || n < 0)
+      return res.status(400).json({ error: 'positionMs must be a time in ms.' });
+    const positionMs = Math.min(n, video.duration_s ? video.duration_s * 1000 : MAX_OFFSET_MS, MAX_OFFSET_MS);
+    await pool.query(
+      `INSERT INTO watch_progress (user_id, video_id, position_ms) VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, video_id) DO UPDATE SET position_ms = EXCLUDED.position_ms, updated_at = now()`,
+      [user.id, video.id, positionMs],
+    );
+    res.json({ positionMs });
   }),
 );
 
@@ -274,22 +325,27 @@ app.get(
         return res.status(400).json({ error: 'afterId must be a message id.' });
       }
       const { rows } = await pool.query(
-        `SELECT * FROM chat_messages
-         WHERE video_id = $1 AND NOT hidden AND id > $2
-         ORDER BY id LIMIT $3`,
+        `${CHAT_SELECT} WHERE m.video_id = $1 AND NOT m.hidden AND m.id > $2 ORDER BY m.id LIMIT $3`,
         [video.id, req.query.afterId, CHAT_WINDOW_MAX],
       );
       return res.json({ messages: rows.map(chatRow) });
     }
     const from = Math.min(MAX_OFFSET_MS, Math.max(0, Number(req.query.from) || 0));
     const to = Math.min(MAX_OFFSET_MS, Number(req.query.to) || from + 120_000);
-    const { rows } = await pool.query(
-      `SELECT * FROM chat_messages
-     WHERE video_id = $1 AND NOT hidden AND offset_ms >= $2 AND offset_ms < $3
-     ORDER BY offset_ms, id LIMIT $4`,
-      [video.id, from, to, CHAT_WINDOW_MAX],
-    );
-    res.json({ messages: rows.map(chatRow) });
+    // Timestamped comments in the same window show up in the chat feed as comment bubbles.
+    const [chat, comments] = await Promise.all([
+      pool.query(
+        `${CHAT_SELECT} WHERE m.video_id = $1 AND NOT m.hidden AND m.offset_ms >= $2 AND m.offset_ms < $3
+         ORDER BY m.offset_ms, m.id LIMIT $4`,
+        [video.id, from, to, CHAT_WINDOW_MAX],
+      ),
+      pool.query(
+        `${COMMENT_SELECT} WHERE c.video_id = $1 AND NOT c.hidden AND c.offset_ms >= $2 AND c.offset_ms < $3
+         ORDER BY c.offset_ms, c.id LIMIT 500`,
+        [video.id, from, to],
+      ),
+    ]);
+    res.json({ messages: chat.rows.map(chatRow), comments: comments.rows.map(commentRow) });
   }),
 );
 
@@ -306,6 +362,19 @@ app.post(
     const body = filterText(req.body.text || '').slice(0, 200);
     if (!body) return res.status(400).json({ error: 'Type a message first.' });
 
+    let target = null;
+    if (req.body.replyToId !== undefined && req.body.replyToId !== null) {
+      const { rows } = /^\d{1,18}$/.test(String(req.body.replyToId))
+        ? await pool.query(
+            `SELECT id, author_name, left(body, 140) AS body, offset_ms FROM chat_messages
+             WHERE id = $1 AND video_id = $2 AND NOT hidden`,
+            [req.body.replyToId, video.id],
+          )
+        : { rows: [] };
+      if (!rows[0]) return res.status(400).json({ error: 'That message can’t be replied to.' });
+      target = rows[0];
+    }
+
     // Claim the slot before any await so parallel requests can't slip through.
     const now = Date.now();
     if (now - (lastPost.get(user.id) || 0) < 1500) {
@@ -320,14 +389,22 @@ app.post(
       Math.max(0, Math.round(Number(req.body.offsetMs) || 0)),
     );
 
+    // Live native chat arrives with Phase 3; until then every native post is replay chat.
     const { rows } = await pool.query(
-      `INSERT INTO chat_messages (video_id, source, user_id, author_name, body, mentions, offset_ms, sent_at)
-     VALUES ($1, 'native', $2, $3, $4, $5, $6, now()) RETURNING *`,
-      [video.id, user.id, user.username, body, extractMentions(body), offsetMs],
+      `INSERT INTO chat_messages
+         (video_id, source, user_id, author_name, body, mentions, offset_ms, sent_at, posted_live, reply_to_id)
+       VALUES ($1, 'native', $2, $3, $4, $5, $6, now(), false, $7) RETURNING *`,
+      [video.id, user.id, user.username, body, extractMentions(body), offsetMs, target?.id ?? null],
     );
     await pool.query('UPDATE users SET xp = xp + 5 WHERE id = $1', [user.id]);
 
-    const msg = chatRow(rows[0]);
+    const msg = chatRow({
+      ...rows[0],
+      rt_id: target?.id,
+      rt_author: target?.author_name,
+      rt_body: target?.body,
+      rt_offset: target?.offset_ms,
+    });
     broadcast(video.id, { type: 'chat', message: msg });
     res.json({ message: msg });
   }),
@@ -343,10 +420,12 @@ app.get(
     const sort = req.query.sort === 'new' ? 'new' : 'top';
     const offset = Math.max(0, Math.floor(Number(req.query.offset) || 0));
     const order =
-      sort === 'new' ? 'posted_at DESC, id DESC' : 'pinned DESC, like_count DESC, posted_at DESC, id DESC';
+      sort === 'new'
+        ? 'c.posted_at DESC, c.id DESC'
+        : 'c.pinned DESC, c.like_count DESC, c.posted_at DESC, c.id DESC';
     const [page, totals] = await Promise.all([
       pool.query(
-        `SELECT * FROM comments WHERE video_id = $1 AND parent_id IS NULL AND NOT hidden
+        `${COMMENT_SELECT} WHERE c.video_id = $1 AND c.parent_id IS NULL AND NOT c.hidden
          ORDER BY ${order} LIMIT $2 OFFSET $3`,
         [video.id, COMMENTS_PAGE, offset],
       ),
@@ -359,7 +438,7 @@ app.get(
     const ids = page.rows.map((r) => r.id);
     const replies = ids.length
       ? await pool.query(
-          `SELECT * FROM comments WHERE parent_id = ANY($1::bigint[]) AND NOT hidden ORDER BY posted_at, id`,
+          `${COMMENT_SELECT} WHERE c.parent_id = ANY($1::bigint[]) AND NOT c.hidden ORDER BY c.posted_at, c.id`,
           [ids],
         )
       : { rows: [] };
@@ -374,7 +453,33 @@ app.get(
   }),
 );
 
-// Post a native comment, or a reply to a top-level comment: { text, parentId? }
+// One whole thread, given any comment in it (e.g. from a comment bubble in the chat).
+app.get(
+  '/api/videos/:id/comments/:commentId',
+  wrap(async (req, res) => {
+    const video = await watchableVideo(req, res, await currentUser(req));
+    if (!video) return;
+    if (!/^\d{1,18}$/.test(req.params.commentId))
+      return res.status(404).json({ error: 'Comment not found.' });
+    const found = await pool.query(
+      'SELECT COALESCE(parent_id, id) AS thread_id FROM comments WHERE id = $1 AND video_id = $2 AND NOT hidden',
+      [req.params.commentId, video.id],
+    );
+    if (!found.rows[0]) return res.status(404).json({ error: 'Comment not found.' });
+    const threadId = found.rows[0].thread_id;
+    const [top, replies] = await Promise.all([
+      pool.query(`${COMMENT_SELECT} WHERE c.id = $1 AND NOT c.hidden`, [threadId]),
+      pool.query(`${COMMENT_SELECT} WHERE c.parent_id = $1 AND NOT c.hidden ORDER BY c.posted_at, c.id`, [
+        threadId,
+      ]),
+    ]);
+    if (!top.rows[0]) return res.status(404).json({ error: 'Comment not found.' });
+    res.json({ comment: { ...commentRow(top.rows[0]), replies: replies.rows.map(commentRow) } });
+  }),
+);
+
+// Post a native comment: { text, offsetMs?, replyToId? }. replyToId can be any comment on the video;
+// the reply joins that comment's thread and quotes it. (parentId is accepted as an older name.)
 const lastComment = new Map();
 app.post(
   '/api/videos/:id/comments',
@@ -390,16 +495,27 @@ app.post(
       return res.status(400).json({ error: `Keep comments under ${COMMENT_MAX_CHARS} characters.` });
     }
 
-    let parentId = null;
-    if (req.body.parentId !== undefined && req.body.parentId !== null) {
-      const { rows } = /^\d{1,18}$/.test(String(req.body.parentId))
+    let target = null;
+    const replyToId = req.body.replyToId ?? req.body.parentId;
+    if (replyToId !== undefined && replyToId !== null) {
+      const { rows } = /^\d{1,18}$/.test(String(replyToId))
         ? await pool.query(
-            'SELECT id FROM comments WHERE id = $1 AND video_id = $2 AND parent_id IS NULL AND NOT hidden',
-            [req.body.parentId, video.id],
+            `SELECT id, parent_id, author_name, left(body, 140) AS body, offset_ms FROM comments
+             WHERE id = $1 AND video_id = $2 AND NOT hidden`,
+            [replyToId, video.id],
           )
         : { rows: [] };
       if (!rows[0]) return res.status(400).json({ error: 'That comment can’t be replied to.' });
-      parentId = rows[0].id;
+      target = rows[0];
+    }
+
+    let offsetMs = null;
+    if (req.body.offsetMs !== undefined && req.body.offsetMs !== null) {
+      const n = Math.round(Number(req.body.offsetMs));
+      if (!Number.isFinite(n) || n < 0) {
+        return res.status(400).json({ error: 'That timestamp isn’t a valid time in the video.' });
+      }
+      offsetMs = Math.min(n, video.duration_s ? video.duration_s * 1000 : MAX_OFFSET_MS, MAX_OFFSET_MS);
     }
 
     const now = Date.now();
@@ -409,11 +525,31 @@ app.post(
     lastComment.set(user.id, now);
 
     const { rows } = await pool.query(
-      `INSERT INTO comments (video_id, source, parent_id, user_id, author_name, body)
-       VALUES ($1, 'native', $2, $3, $4, $5) RETURNING *`,
-      [video.id, parentId, user.id, user.username, body],
+      `INSERT INTO comments (video_id, source, parent_id, reply_to_id, user_id, author_name, body, offset_ms)
+       VALUES ($1, 'native', $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [
+        video.id,
+        target ? (target.parent_id ?? target.id) : null,
+        target?.id ?? null,
+        user.id,
+        user.username,
+        body,
+        offsetMs,
+      ],
     );
-    res.json({ comment: { ...commentRow(rows[0]), replies: [] } });
+    const comment = {
+      ...commentRow({
+        ...rows[0],
+        rt_id: target?.id,
+        rt_author: target?.author_name,
+        rt_body: target?.body,
+        rt_offset: target?.offset_ms,
+      }),
+      replies: [],
+    };
+    // Timestamped comments also appear right away in the chat feed of everyone watching.
+    if (offsetMs !== null) broadcast(video.id, { type: 'comment', comment });
+    res.json({ comment });
   }),
 );
 

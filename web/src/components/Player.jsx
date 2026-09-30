@@ -66,12 +66,15 @@ export async function findAudioUrl(masterUrl) {
 // Keys: J/L = -10s/+10s, K or Space = play/pause.
 // Listen only: switches to an audio-only player at the same position. Phones keep audio players
 // running when the screen locks (video players are paused), so this is what makes locked listening work.
-export default function Player({ src, poster, title, onTime, playerRef }) {
+export default function Player({ src, poster, title, startMs = 0, onTime, playerRef }) {
   const videoRef = useRef(null);
   const audioRef = useRef(null);
   const audioUrl = useRef(null);
   const audioCleanup = useRef(null);
   const listenRef = useRef(false);
+  // Where to begin (resume point or ?t=), read once when the stream attaches.
+  const startRef = useRef(startMs);
+  startRef.current = startMs;
   const tapRef = useRef({ last: 0, timer: null, press: null, pressed: false });
   const [ripple, setRipple] = useState(null);
   const [fast, setFast] = useState(false);
@@ -115,6 +118,7 @@ export default function Player({ src, poster, title, onTime, playerRef }) {
       .catch(() => {});
     const detach = attachHls(video, src, {
       onReady: () => {
+        if (startRef.current > 0 && video.currentTime < 1) video.currentTime = startRef.current / 1000;
         video.playbackRate = speedRef.current;
         autoplay(video);
       },

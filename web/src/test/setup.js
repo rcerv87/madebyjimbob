@@ -20,6 +20,7 @@ globalThis.FakeWebSocket = FakeWebSocket;
 // jsdom doesn't implement media playback.
 window.HTMLMediaElement.prototype.play = () => Promise.resolve();
 window.HTMLMediaElement.prototype.pause = () => {};
+window.HTMLMediaElement.prototype.load = () => {};
 window.HTMLMediaElement.prototype.canPlayType = () => '';
 
 // Route API calls to per-test handlers: mockApi({ '/videos': {...} }).

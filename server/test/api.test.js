@@ -366,21 +366,30 @@ describe('comments', () => {
     assert.equal(list.data.comments[0].replies[0].body, 'a reply');
   });
 
-  test('replies must target a top-level comment on the same video', async () => {
+  test('replies must target a comment on the same video (a reply to a reply stays in its thread)', async () => {
     const id = await seedVideo();
     const other = await seedVideo();
     const parent = await seedComment(id, { ext: `rt-${id}`, body: 'parent' });
     const child = await seedComment(id, { ext: `rt-${id}-c`, parent, body: 'child' });
     const elsewhere = await seedComment(other, { ext: `rt-${other}`, body: 'other video' });
-    for (const [i, parentId] of [child, elsewhere, 'abc', 999999].entries()) {
+    for (const [i, replyToId] of [elsewhere, 'abc', 999999].entries()) {
       const token = await signIn(call, `replier_${i}`);
       const r = await call(`/videos/${id}/comments`, {
         method: 'POST',
         token,
-        body: { text: 'x', parentId },
+        body: { text: 'x', replyToId },
       });
-      assert.equal(r.status, 400, `parentId ${parentId}`);
+      assert.equal(r.status, 400, `replyToId ${replyToId}`);
     }
+    const token = await signIn(call, 'replier_ok');
+    const ok = await call(`/videos/${id}/comments`, {
+      method: 'POST',
+      token,
+      body: { text: 'x', replyToId: child },
+    });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.data.comment.parentId, parent);
+    assert.equal(ok.data.comment.replyTo.id, child);
   });
 
   test('rate limits comments to one per 5 seconds', async () => {
@@ -389,5 +398,179 @@ describe('comments', () => {
     const post = () => call(`/videos/${id}/comments`, { method: 'POST', token, body: { text: 'hello' } });
     const burst = await Promise.all([post(), post()]);
     assert.deepEqual(burst.map((r) => r.status).sort(), [200, 429]);
+  });
+});
+
+describe('conversation: replies, replay chat, timestamped comments', () => {
+  test('replay chat is marked, and replies quote the exact message they answer', async () => {
+    const id = await seedVideo();
+    await seedChat(id, [{ body: 'original live message', offsetMs: 10_000 }]);
+    const window = await call(`/videos/${id}/chat?from=0&to=120000`);
+    const live = window.data.messages[0];
+    assert.equal(live.postedLive, true);
+
+    const token = await signIn(call, 'chat_replier');
+    const reply = await call(`/videos/${id}/chat`, {
+      method: 'POST',
+      token,
+      body: { text: '@Viewer good point', offsetMs: 15_000, replyToId: live.id },
+    });
+    assert.equal(reply.status, 200);
+    assert.equal(reply.data.message.postedLive, false);
+    assert.deepEqual(reply.data.message.replyTo, {
+      id: live.id,
+      author: 'Viewer',
+      body: 'original live message',
+      offsetMs: 10_000,
+    });
+
+    const again = await call(`/videos/${id}/chat?from=0&to=120000`);
+    assert.equal(again.data.messages[1].replyTo.id, live.id);
+  });
+
+  test('chat replies must target a message on the same video', async () => {
+    const id = await seedVideo();
+    const other = await seedVideo();
+    await seedChat(other, [{ body: 'elsewhere', offsetMs: 0 }]);
+    const elsewhere = (await call(`/videos/${other}/chat?from=0&to=120000`)).data.messages[0];
+    for (const [i, replyToId] of [elsewhere.id, 'abc', 999999].entries()) {
+      const token = await signIn(call, `bad_chat_reply_${i}`);
+      const r = await call(`/videos/${id}/chat`, { method: 'POST', token, body: { text: 'x', replyToId } });
+      assert.equal(r.status, 400, `replyToId ${replyToId}`);
+    }
+  });
+
+  test('timestamped comments show up in the chat window at their moment', async () => {
+    const id = await seedVideo({ durationS: 600 });
+    const token = await signIn(call, 'stamp_commenter');
+    const c = await call(`/videos/${id}/comments`, {
+      method: 'POST',
+      token,
+      body: { text: 'this part right here', offsetMs: 65_000 },
+    });
+    assert.equal(c.status, 200);
+    assert.equal(c.data.comment.offsetMs, 65_000);
+
+    const inWindow = await call(`/videos/${id}/chat?from=0&to=120000`);
+    assert.deepEqual(
+      inWindow.data.comments.map((x) => x.body),
+      ['this part right here'],
+    );
+    const outside = await call(`/videos/${id}/chat?from=120000&to=240000`);
+    assert.deepEqual(outside.data.comments, []);
+
+    await sleep(5100);
+    const clamped = await call(`/videos/${id}/comments`, {
+      method: 'POST',
+      token,
+      body: { text: 'way past the end', offsetMs: 9_999_999 },
+    });
+    assert.equal(clamped.data.comment.offsetMs, 600_000);
+    const bad = await call(`/videos/${id}/comments`, {
+      method: 'POST',
+      token,
+      body: { text: 'x', offsetMs: -5 },
+    });
+    assert.equal(bad.status, 400);
+  });
+
+  test('any comment opens its whole thread', async () => {
+    const id = await seedVideo();
+    const other = await seedVideo();
+    const a = await signIn(call, 'opener_a');
+    const top = (await call(`/videos/${id}/comments`, { method: 'POST', token: a, body: { text: 'topic' } }))
+      .data.comment;
+    const b = await signIn(call, 'opener_b');
+    const reply = (
+      await call(`/videos/${id}/comments`, {
+        method: 'POST',
+        token: b,
+        body: { text: 'answer', replyToId: top.id },
+      })
+    ).data.comment;
+    for (const cid of [top.id, reply.id]) {
+      const t = await call(`/videos/${id}/comments/${cid}`);
+      assert.equal(t.status, 200);
+      assert.equal(t.data.comment.id, top.id);
+      assert.deepEqual(
+        t.data.comment.replies.map((r) => r.body),
+        ['answer'],
+      );
+    }
+    assert.equal((await call(`/videos/${other}/comments/${top.id}`)).status, 404, 'other video');
+    assert.equal((await call(`/videos/${id}/comments/abc`)).status, 404);
+  });
+
+  test('replying to a reply joins the same thread and quotes the reply', async () => {
+    const id = await seedVideo();
+    const a = await signIn(call, 'thread_a');
+    const b = await signIn(call, 'thread_b');
+    const top = (
+      await call(`/videos/${id}/comments`, { method: 'POST', token: a, body: { text: 'first point' } })
+    ).data.comment;
+    const r1 = (
+      await call(`/videos/${id}/comments`, {
+        method: 'POST',
+        token: b,
+        body: { text: 'disagree', replyToId: top.id },
+      })
+    ).data.comment;
+    await sleep(5100);
+    const r2 = (
+      await call(`/videos/${id}/comments`, {
+        method: 'POST',
+        token: a,
+        body: { text: 'why?', replyToId: r1.id },
+      })
+    ).data.comment;
+    assert.equal(r2.parentId, top.id, 'stays in the top-level thread');
+    assert.equal(r2.replyTo.id, r1.id);
+    assert.equal(r2.replyTo.body, 'disagree');
+
+    const list = await call(`/videos/${id}/comments`);
+    const thread = list.data.comments.find((x) => x.id === top.id);
+    assert.equal(thread.replyCount, 2);
+    assert.equal(thread.replies[1].replyTo.author, 'thread_b');
+  });
+});
+
+describe('watch progress', () => {
+  test('signed-in viewers resume where they stopped, on the video and in the list', async () => {
+    const id = await seedVideo({ durationS: 600 });
+    const token = await signIn(call, 'resumer');
+    assert.equal((await call(`/videos/${id}`, { token })).data.video.resumeMs, null);
+
+    const saved = await call(`/videos/${id}/progress`, {
+      method: 'PUT',
+      token,
+      body: { positionMs: 125_400 },
+    });
+    assert.equal(saved.status, 200);
+    assert.equal((await call(`/videos/${id}`, { token })).data.video.resumeMs, 125_400);
+    const card = (await call('/videos', { token })).data.videos.find((v) => v.id === id);
+    assert.equal(card.progressMs, 125_400);
+
+    const other = await signIn(call, 'someone_else');
+    assert.equal((await call(`/videos/${id}`, { token: other })).data.video.resumeMs, null, 'per viewer');
+    assert.equal((await call(`/videos/${id}`)).data.video.resumeMs, null, 'signed out');
+  });
+
+  test('clamps to the video length and rejects bad input', async () => {
+    const id = await seedVideo({ durationS: 600 });
+    const token = await signIn(call, 'resumer_2');
+    const r = await call(`/videos/${id}/progress`, { method: 'PUT', token, body: { positionMs: 9e9 } });
+    assert.equal(r.data.positionMs, 600_000);
+    assert.equal(
+      (await call(`/videos/${id}/progress`, { method: 'PUT', token, body: { positionMs: -1 } })).status,
+      400,
+    );
+    assert.equal(
+      (await call(`/videos/${id}/progress`, { method: 'PUT', body: { positionMs: 5 } })).status,
+      401,
+    );
+    assert.equal(
+      (await call('/videos/999999/progress', { method: 'PUT', token, body: { positionMs: 5 } })).status,
+      404,
+    );
   });
 });

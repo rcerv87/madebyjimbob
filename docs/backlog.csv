@@ -78,6 +78,15 @@ MBJ-210,Video comments,Chat & moderation,Phase 1 — VOD platform,Must,M,Done,"A
 - Comments section under the video: Top/Newest sort, 20 threads per page, replies collapsed per thread
 - Signed-in members post comments and replies (one level); tier-gated like chat; rate limited
 - YT/JB source tags and a Creator badge distinguish where each comment came from",MBJ-001
+MBJ-211,"One conversation across live chat, replay chat, and comments",Chat & moderation,Phase 1 — VOD platform,Must,L,Done,"As a viewer, I want to join the stream's conversation after it ended without losing what was said live or what each reply answers.","- Chat marks live vs replay messages; Live only (default) / Live + replay toggle with a count of hidden later posts
+- Chat and comment replies quote the exact message they answer; tapping the quote shows the original
+- Tap a name to reply with @name; typing @ suggests names from the video
+- Comments can carry a moment in the video and appear as bubbles in the chat feed; YouTube comments take the first typed time
+- Typed times in comments are clickable; a chat bubble opens its whole thread",MBJ-210
+MBJ-212,Resume where you left off,Chat & moderation,Phase 1 — VOD platform,Must,S,Done,"As a viewer, I want videos to pick up where I stopped, on any device.","- Position saved every 10s and on leaving the page; on the account when signed in, in the browser otherwise
+- Reopening resumes (past 10s, not in the last 30s) with Resumed from mm:ss and a Start over button
+- ?t=<seconds> links start at that time
+- Video cards show a watched progress bar",
 MBJ-301,Live video model and live page,Live via YouTube,Phase 3 — Live via YouTube,Must,M,To do,"As a viewer, I want to watch JimBob live without leaving the platform.","- `videos.status` and `videos.source` added (see DATA_MODEL)
 - Live page embeds the YouTube IFrame player for the active broadcast
 - ""Live now"" banner on Home while a stream is live
