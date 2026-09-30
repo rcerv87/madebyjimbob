@@ -1,3 +1,9 @@
+-- Baseline: the schema as it stood when migrations were introduced (MBJ-003).
+-- Written with IF NOT EXISTS so it also applies cleanly to databases created by the old
+-- schema.sql-on-boot setup; they get recorded as migrated without changes.
+
+-- Up Migration
+
 CREATE TABLE IF NOT EXISTS users (
   id                 BIGSERIAL PRIMARY KEY,
   username           TEXT UNIQUE NOT NULL,
@@ -49,3 +55,9 @@ CREATE INDEX IF NOT EXISTS chat_mentions     ON chat_messages USING GIN (mention
 
 -- MVP: password sign-in (replaced by real auth in MBJ-101)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+
+-- Down Migration
+
+DROP TABLE IF EXISTS chat_messages;
+DROP TABLE IF EXISTS videos;
+DROP TABLE IF EXISTS users;

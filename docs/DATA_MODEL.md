@@ -1,6 +1,6 @@
 # Data model
 
-Postgres is the system of record. Current tables exist in `server/db/schema.sql`; planned tables and
+Postgres is the system of record. Current tables are defined by the migrations in `server/migrations/` (baseline: `1790726400000_baseline.sql`); planned tables and
 columns are added by the story noted.
 
 ## Current

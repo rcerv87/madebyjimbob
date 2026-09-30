@@ -10,7 +10,7 @@ Planning docs: `CLAUDE.md` (start here), `BACKLOG.md`, and `docs/`.
 ```
 render.yaml                        Render blueprint: one web service + Postgres
 server/src/index.js                API, WebSocket chat rooms, serves the web app
-server/db/schema.sql               users, videos, chat_messages (runs automatically on boot)
+server/migrations/                 schema changes (node-pg-migrate); Render runs them before each deploy
 server/scripts/import-youtube.js   Past stream -> Cloudflare Stream + chat replay -> Postgres
 web/                               React app: home grid, watch page + chat, Studio dashboard
 ```
@@ -62,7 +62,7 @@ PostgreSQL install on Windows (no password, port 5544, data in `.localdb/`):
 
 ```bash
 npm install
-npm run dev:server     # API on :3000 (uses .env)
+npm run dev:server     # migrates, then API on :3000 (uses .env)
 npm run dev:web        # app on :5173, proxies /api and /ws
 ```
 

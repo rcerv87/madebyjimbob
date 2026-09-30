@@ -1,6 +1,6 @@
 # ADR-009: Migrations and TypeScript
 
-- **Status:** Proposed
+- **Status:** Migrations accepted and done (MBJ-003); TypeScript still proposed
 - **Date:** 2026-09-29
 
 ## Context

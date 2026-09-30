@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import pg from 'pg';
+import { runner } from 'node-pg-migrate';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,13 +14,22 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-export const pool = new pg.Pool({
+const connection = {
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
-  max: 10,
-});
+};
 
-export async function migrate() {
-  const sql = fs.readFileSync(path.join(__dirname, '../db/schema.sql'), 'utf8');
-  await pool.query(sql);
+export const pool = new pg.Pool({ ...connection, max: 10 });
+
+// Applies pending migrations from server/migrations. Returns the migrations that ran.
+export function migrate({ direction = 'up', log = () => {} } = {}) {
+  return runner({
+    databaseUrl: connection,
+    dir: path.join(__dirname, '../migrations'),
+    migrationsTable: 'pgmigrations',
+    direction,
+    count: direction === 'up' ? Infinity : 1,
+    checkOrder: true,
+    log,
+  });
 }
