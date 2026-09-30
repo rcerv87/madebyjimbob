@@ -98,3 +98,15 @@ test('hashed assets are cached for a year; the service worker is always re-check
   const sw = await fetch(`${site}/sw.js`);
   if (sw.status === 200) assert.equal(sw.headers.get('cache-control'), 'no-cache');
 });
+
+test('a "$" in a title or description shows exactly as typed', async () => {
+  const { rows } = await pool.query(
+    `INSERT INTO videos (youtube_id, title, description) VALUES ('pg-dollar', $1, $2) RETURNING id`,
+    ["Win $$$ & $' $& $1", 'Costs $5, $$ and $` too'],
+  );
+  const r = await get(`/watch/${rows[0].id}`);
+  assert.ok(r.html.includes("<title>Win $$$ &amp; $' $&amp; $1 · MADEbyJIMBOB</title>"), r.html);
+  assert.equal(meta(r.html, 'property', 'og:title'), "Win $$$ &amp; $' $&amp; $1 · MADEbyJIMBOB");
+  assert.equal(meta(r.html, 'name', 'description'), 'Costs $5, $$ and $` too');
+  assert.equal((r.html.match(/<\/head>/g) || []).length, 1);
+});

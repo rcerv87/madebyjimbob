@@ -36,7 +36,9 @@ export function timeAgo(date) {
   return `${years} year${years === 1 ? '' : 's'} ago`;
 }
 
-export const compact = (n) => Intl.NumberFormat('en', { notation: 'compact' }).format(n || 0);
+// One formatter for the whole app: building one is far slower than using it, and lists format a lot.
+const COMPACT = new Intl.NumberFormat('en', { notation: 'compact' });
+export const compact = (n) => COMPACT.format(n || 0);
 
 // "1 view", "12 views", "1.2K views"
 export const count = (n, noun, plural = `${noun}s`) => `${compact(n)} ${Number(n) === 1 ? noun : plural}`;

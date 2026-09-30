@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, formatTime, getToken } from '../api.js';
 
@@ -9,6 +9,21 @@ const VIEW_KEY = 'mbjb_chat_view';
 const MENTION_SPLIT = /((?<![A-Za-z0-9_])@[A-Za-z0-9_][A-Za-z0-9_.-]{1,30}[A-Za-z0-9_])/g;
 
 const handle = (author) => author.replace(/^@/, '');
+
+// How many entries of a list sorted by time are at or before `at` (binary search).
+function countUpTo(sorted, at, timeOf = (x) => x) {
+  let lo = 0;
+  let hi = sorted.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (timeOf(sorted[mid]) <= at) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+const itemTime = (item) => item.at;
+const inVideoOrder = (a, b) =>
+  a.at - b.at || (a.type === b.type ? a.order - b.order : a.type === 'chat' ? -1 : 1);
 const readView = () => {
   try {
     return localStorage.getItem(VIEW_KEY) === 'all' ? 'all' : 'live';
@@ -130,23 +145,27 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
     };
   }, [videoId, session.user?.id]);
 
-  // Everything up to the playhead, split into what this view shows and what it hides.
-  const { visible, hiddenCount } = useMemo(() => {
-    const items = [];
-    let hidden = 0;
+  // What this view shows, in video order, and the moments of what it hides. Sorted when the loaded chat
+  // or the view changes, not on every tick of the playhead.
+  const { items, hiddenAt } = useMemo(() => {
+    const shown = [];
+    const hidden = [];
     for (const m of byId.values()) {
-      if (m.offsetMs > timeMs) continue;
-      if (view === 'live' && m.postedLive === false) hidden += 1;
-      else items.push({ type: 'chat', key: `m${m.id}`, at: m.offsetMs, order: Number(m.id), m });
+      if (view === 'live' && m.postedLive === false) hidden.push(m.offsetMs);
+      else shown.push({ type: 'chat', key: `m${m.id}`, at: m.offsetMs, order: Number(m.id), m });
     }
     for (const c of commentsById.values()) {
-      if (c.offsetMs > timeMs) continue;
-      if (view === 'live') hidden += 1;
-      else items.push({ type: 'comment', key: `c${c.id}`, at: c.offsetMs, order: Number(c.id), c });
+      if (view === 'live') hidden.push(c.offsetMs);
+      else shown.push({ type: 'comment', key: `c${c.id}`, at: c.offsetMs, order: Number(c.id), c });
     }
-    items.sort((a, b) => a.at - b.at || (a.type === b.type ? a.order - b.order : a.type === 'chat' ? -1 : 1));
-    return { visible: items.slice(-VISIBLE), hiddenCount: hidden };
-  }, [byId, commentsById, timeMs, view]);
+    return { items: shown.sort(inVideoOrder), hiddenAt: hidden.sort((a, b) => a - b) };
+  }, [byId, commentsById, view]);
+
+  // Everything up to the playhead. Following playback is a binary search, and the list only changes
+  // (and re-renders) when a message reaches the playhead.
+  const upTo = countUpTo(items, timeMs, itemTime);
+  const hiddenCount = countUpTo(hiddenAt, timeMs);
+  const visible = useMemo(() => items.slice(Math.max(0, upTo - VISIBLE), upTo), [items, upTo]);
 
   useEffect(() => {
     const el = listRef.current;
@@ -167,27 +186,34 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
   };
 
   // Tapping a name (or Reply) starts a reply: @name in the box and a quote of the message.
-  const startReply = (m) => {
-    if (!session.user) return session.requireSignIn();
-    setReplyTarget({ id: m.id, author: m.author, body: m.body });
-    const mention = `@${handle(m.author)} `;
-    setText((t) => (t.startsWith(mention) ? t : mention + t));
-    setError('');
-    requestAnimationFrame(() => inputRef.current?.focus());
-  };
+  // (Stable callbacks, so messages already on screen don't re-render.)
+  const startReply = useCallback(
+    (m) => {
+      if (!session.user) return session.requireSignIn();
+      setReplyTarget({ id: m.id, author: m.author, body: m.body });
+      const mention = `@${handle(m.author)} `;
+      setText((t) => (t.startsWith(mention) ? t : mention + t));
+      setError('');
+      requestAnimationFrame(() => inputRef.current?.focus());
+    },
+    [session],
+  );
 
   // Tapping a quote shows the original: scroll to it if it's in the feed, otherwise seek there.
-  const showOriginal = (quote) => {
-    const el = listRef.current?.querySelector(`[data-msg="${quote.id}"]`);
-    if (el) {
-      pinned.current = false;
-      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      setFlashId(quote.id);
-      setTimeout(() => setFlashId(null), 1600);
-    } else if (quote.offsetMs !== null && quote.offsetMs !== undefined) {
-      onSeek?.(quote.offsetMs);
-    }
-  };
+  const showOriginal = useCallback(
+    (quote) => {
+      const el = listRef.current?.querySelector(`[data-msg="${quote.id}"]`);
+      if (el) {
+        pinned.current = false;
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        setFlashId(quote.id);
+        setTimeout(() => setFlashId(null), 1600);
+      } else if (quote.offsetMs !== null && quote.offsetMs !== undefined) {
+        onSeek?.(quote.offsetMs);
+      }
+    },
+    [onSeek],
+  );
 
   // @ suggestions: names seen in this video's chat and comments, matching what's typed after "@".
   const names = useMemo(() => {
@@ -388,7 +414,8 @@ function Quote({ q, onQuote }) {
   );
 }
 
-function ChatMessage({ m, me, flash, onSeek, onReply, onQuote }) {
+// Memoized: a message already on screen only re-renders when its own props change.
+const ChatMessage = memo(function ChatMessage({ m, me, flash, onSeek, onReply, onQuote }) {
   const mentionsMe = me && m.mentions?.includes(me.toLowerCase());
   const replay = m.postedLive === false;
   const body = m.body.split(MENTION_SPLIT).map((p, i) =>
@@ -446,10 +473,10 @@ function ChatMessage({ m, me, flash, onSeek, onReply, onQuote }) {
       <Stamp at={m.offsetMs} onSeek={onSeek} />
     </li>
   );
-}
+});
 
 // A timestamped comment, shown in the chat at its moment.
-function CommentBubble({ c, onSeek, onOpenThread }) {
+const CommentBubble = memo(function CommentBubble({ c, onSeek, onOpenThread }) {
   const threadId = c.parentId ?? c.id;
   return (
     <li className="chat-comment" data-comment={c.id}>
@@ -474,7 +501,7 @@ function CommentBubble({ c, onSeek, onOpenThread }) {
       <Stamp at={c.offsetMs} onSeek={onSeek} />
     </li>
   );
-}
+});
 
 function Avatar({ m }) {
   return m.authorPhoto ? (

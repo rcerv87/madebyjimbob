@@ -31,6 +31,7 @@ const collections = {
   '/collections/classic-art-prints/products.json': [],
   '/collections/digital-art/products.json': [],
 };
+let delayMs = 0;
 const store = http.createServer((req, res) => {
   hits += 1;
   const path = req.url.split('?')[0];
@@ -38,8 +39,10 @@ const store = http.createServer((req, res) => {
     res.writeHead(storeUp ? 404 : 503);
     return res.end();
   }
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ products: collections[path] }));
+  setTimeout(() => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ products: collections[path] }));
+  }, delayMs);
 });
 
 let call;
@@ -113,4 +116,20 @@ test('when the store is down: last good copy if we have one, otherwise a clear 5
   assert.equal(r.status, 502);
   assert.match(r.data.error, /store isn’t responding/);
   storeUp = true;
+});
+
+test('requests that arrive while the store is being asked share that one request', async () => {
+  clearShopCache();
+  delayMs = 100;
+  const before = hits;
+  try {
+    const results = await Promise.all([1, 2, 3].map(() => call('/shop?collection=books')));
+    assert.deepEqual(
+      results.map((r) => r.data.products.length),
+      [1, 1, 1],
+    );
+    assert.equal(hits - before, 1);
+  } finally {
+    delayMs = 0;
+  }
 });

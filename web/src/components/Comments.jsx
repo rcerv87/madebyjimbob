@@ -12,23 +12,33 @@ export default function Comments({ videoId, session, getTimeMs, onSeek, focusThr
   const [loadingMore, setLoadingMore] = useState(false);
   const focusRef = useRef(null);
 
+  // Late answers (after the sort or video changed) are dropped, so the list always matches the picker.
   useEffect(() => {
+    let cancelled = false;
     setData(null);
     setError('');
     api(`/videos/${videoId}/comments?sort=${sort}`)
-      .then(setData)
-      .catch((e) => setError(e.message));
+      .then((d) => !cancelled && setData(d))
+      .catch((e) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
   }, [videoId, sort]);
 
   // Opened from a comment bubble in the chat: load that whole thread and show it at the top.
   useEffect(() => {
     if (!focusThreadId) return setFocus(null);
+    let cancelled = false;
     api(`/videos/${videoId}/comments/${focusThreadId}`)
       .then((d) => {
+        if (cancelled) return;
         setFocus(d.comment);
         requestAnimationFrame(() => focusRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
   }, [videoId, focusThreadId]);
 
   const loadMore = async () => {
@@ -339,14 +349,7 @@ function CommentForm({
         <div className="comment-form-actions">
           {canStamp &&
             (stampMs === null ? (
-              <button
-                type="button"
-                className="time-chip add"
-                onClick={() => setStampMs(Math.floor(getTimeMs()))}
-                title="Attach this moment; the comment also shows in the chat at that time"
-              >
-                + Add {formatTime(getTimeMs() / 1000)}
-              </button>
+              <AddMomentButton getTimeMs={getTimeMs} onAdd={setStampMs} />
             ) : (
               <button
                 type="button"
@@ -367,5 +370,25 @@ function CommentForm({
         </div>
       )}
     </form>
+  );
+}
+
+// "+ Add 12:05": follows the video while the form is open (the page itself doesn't re-render as the
+// video plays), and attaches the moment it's tapped.
+function AddMomentButton({ getTimeMs, onAdd }) {
+  const [ms, setMs] = useState(getTimeMs);
+  useEffect(() => {
+    const timer = setInterval(() => setMs(getTimeMs()), 500);
+    return () => clearInterval(timer);
+  }, [getTimeMs]);
+  return (
+    <button
+      type="button"
+      className="time-chip add"
+      onClick={() => onAdd(Math.floor(getTimeMs()))}
+      title="Attach this moment; the comment also shows in the chat at that time"
+    >
+      + Add {formatTime(ms / 1000)}
+    </button>
   );
 }

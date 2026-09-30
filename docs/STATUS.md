@@ -1,6 +1,6 @@
 # MadeByJimBob — status
 
-Last updated: 2026-09-29. Update this file when a story ships or a decision is made.
+Last updated: 2026-09-30. Update this file when a story ships or a decision is made.
 Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlog_source.py`).
 
 ## At a glance
@@ -11,7 +11,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 163 automated tests (103 server, 60 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Quality | 174 automated tests (109 server, 65 web), lint, formatting, CI on GitHub; migrations run before each deploy |
 | Backlog | 100 stories; 17 done, 7 in progress |
 
 ## Waiting on Ruben
@@ -134,6 +134,17 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 ### Engineering
 - Migrations (node-pg-migrate; Render pre-deploy), structured logs with request ids and redaction,
   request ids on errors, 400/413 for bad input, CI workflow, LF line endings, ESLint + Prettier.
+- **Cleanup and speed pass (2026-09-30)**: while a video plays, only the chat follows the playhead (the rest
+  of the watch page no longer redraws 4 times a second), and the chat finds the playhead by binary search:
+  ~75% less JavaScript during playback of the 3-hour debate (measured in Chrome, desktop and phone).
+  Fewer database trips: the video page, view counts, Studio totals, and Studio playlists (one query instead
+  of one per playlist); the comments page joins only the 20 threads it shows (4x faster at channel size).
+  Store requests are shared while one is in flight.
+- Fixes from the same pass: signing in mid-video no longer restarts it or counts a second view; a slow answer
+  can't replace a newer page (quick taps on filters, videos, collections); a `$` in a title no longer garbles
+  link previews; bad tier or text input is a clear 400, not a 500; the search box clears with the search;
+  the notification bubble's timer isn't reset by browsing; lock-screen controls go away with the player; the
+  service worker keeps only good pages for offline and trims files from old deploys (cache `v2`).
 
 ## Decisions log
 
@@ -203,6 +214,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 12. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
 13. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
 14. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
+15. **Tech follow-ups** (after MBJ-101 merges, before the full-channel import) — a partial index on visible
+    chat so video cards count chat ~10x faster (186 ms → 19 ms for 45 streams / 260k messages in a test);
+    split `server/src/app.js` (1,200 lines) into route files; a WebSocket heartbeat to drop dead connections.
 
 ## Reference
 

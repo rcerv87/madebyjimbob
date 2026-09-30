@@ -20,11 +20,15 @@ export default function Shop() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     setData(null);
     setError('');
     api(`/shop?collection=${encodeURIComponent(collection)}`)
-      .then(setData)
-      .catch((e) => setError(e.message));
+      .then((d) => !cancelled && setData(d))
+      .catch((e) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
   }, [collection]);
 
   const pick = (handle) => setParams(handle === 'all' ? {} : { c: handle }, { replace: true });

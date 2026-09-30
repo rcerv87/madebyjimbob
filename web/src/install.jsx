@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { isStandalone } from './push.js';
+import { isIOS, isStandalone } from './device.js';
 
 const DISMISS_KEY = 'mbjb_install_hint_dismissed';
 
@@ -46,16 +46,13 @@ export function InstallButton() {
 export function IosInstallHint() {
   const [show, setShow] = useState(false);
   useEffect(() => {
-    const ios =
-      /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     let dismissed = false;
     try {
       dismissed = localStorage.getItem(DISMISS_KEY) === '1';
     } catch {
       dismissed = false;
     }
-    setShow(ios && !isStandalone() && !dismissed);
+    setShow(isIOS() && !isStandalone() && !dismissed);
   }, []);
   if (!show) return null;
   const dismiss = () => {

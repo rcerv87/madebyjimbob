@@ -11,11 +11,15 @@ export default function Playlist() {
   useTitle(data?.playlist.title || 'Playlist');
 
   useEffect(() => {
+    let cancelled = false;
     setData(null);
     setError('');
     api(`/playlists/${id}`)
-      .then(setData)
-      .catch((e) => setError(e.message));
+      .then((d) => !cancelled && setData(d))
+      .catch((e) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (error) return <p className="error page-msg">{error}</p>;
