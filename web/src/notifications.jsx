@@ -80,7 +80,10 @@ export function useNotifications(user) {
     api('/notifications/read', { method: 'POST', body: all ? {} : { ids } }).catch(() => {});
   }, []);
 
-  return { items, unread, toast, dismissToast: () => setToast(null), markRead };
+  // Stable, so the toast's 8-second timer isn't restarted every time the app re-renders (e.g. navigating).
+  const dismissToast = useCallback(() => setToast(null), []);
+
+  return { items, unread, toast, dismissToast, markRead };
 }
 
 export function Bell({ notes }) {

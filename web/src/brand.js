@@ -27,7 +27,5 @@ export const sized = (src, width) => {
   return u.href;
 };
 
-export const money = (n) =>
-  n === null || n === undefined
-    ? ''
-    : Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+const USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+export const money = (n) => (n === null || n === undefined ? '' : USD.format(n));

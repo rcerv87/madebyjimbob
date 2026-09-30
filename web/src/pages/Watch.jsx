@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, count, formatTime, timeAgo, TIER_LABEL } from '../api.js';
+import { createClock, useClock } from '../clock.js';
 import { readLocal, resumePoint, saveProgress } from '../progress.js';
 import Player from '../components/Player.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
@@ -12,18 +13,24 @@ import useTitle from '../useTitle.js';
 
 const SAVE_EVERY_MS = 10_000;
 
+// The chat follows the playhead; it's the only part of the page that re-renders as the video plays.
+function SyncedChat({ clock, ...props }) {
+  return <ChatPanel timeMs={useClock(clock)} {...props} />;
+}
+
 // background: kept mounted (hidden) under another page while its video plays in the Mini player.
 export default function Watch({ session, background = false }) {
   const { id } = useParams();
   const [params] = useSearchParams();
   const [video, setVideo] = useState(null);
   const [error, setError] = useState('');
-  const [timeMs, setTimeMs] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [startMs, setStartMs] = useState(0);
   const [resumedFrom, setResumedFrom] = useState(null);
   const [focusThread, setFocusThread] = useState(null);
+  const [clock] = useState(createClock);
   const playerRef = useRef(null);
+  const loadedId = useRef(null);
   useTitle(video?.title || null, !background);
   const lastSave = useRef(0);
   const navigate = useNavigate();
@@ -65,30 +72,53 @@ export default function Watch({ session, background = false }) {
   };
   const playNext = useCallback(() => ending && go(ending.next, ending.listening), [ending, go]);
 
+  // One view per video opened, not another when the viewer signs in or out.
   useEffect(() => {
-    setVideo(null);
-    setError('');
-    setTimeMs(0);
-    setFocusThread(null);
-    setResumedFrom(null);
-    setEnding(null);
+    api(`/videos/${id}/view`, { method: 'POST' }).catch(() => {});
+  }, [id]);
+
+  // A different video starts fresh. Signing in or out reloads this one in place, so a members video can
+  // unlock (and likes show your vote) without restarting what's playing. Late answers for an earlier
+  // video or session are dropped.
+  const tier = session.user?.tier;
+  useEffect(() => {
+    let cancelled = false;
+    const fresh = loadedId.current !== id;
+    if (fresh) {
+      loadedId.current = null;
+      setVideo(null);
+      setError('');
+      setExpanded(false);
+      setFocusThread(null);
+      setResumedFrom(null);
+      setEnding(null);
+      clock.set(0);
+    }
     api(`/videos/${id}`)
       .then((d) => {
-        // ?t=<seconds> (shared links, notifications) wins; otherwise resume where they left off.
-        const t = Number(params.get('t'));
-        if (Number.isFinite(t) && t > 0) {
-          setStartMs(t * 1000);
-        } else {
-          const resume = resumePoint(d.video.resumeMs ?? readLocal(id), d.video.durationS);
-          setStartMs(resume || 0);
-          setResumedFrom(resume);
+        if (cancelled) return;
+        if (fresh) {
+          // ?t=<seconds> (shared links, notifications) wins; otherwise resume where they left off.
+          const t = Number(params.get('t'));
+          if (Number.isFinite(t) && t > 0) {
+            setStartMs(t * 1000);
+          } else {
+            const resume = resumePoint(d.video.resumeMs ?? readLocal(id), d.video.durationS);
+            setStartMs(resume || 0);
+            setResumedFrom(resume);
+          }
         }
+        loadedId.current = id;
         setVideo(d.video);
       })
-      .catch((e) => setError(e.message));
-    api(`/videos/${id}/view`, { method: 'POST' }).catch(() => {});
+      .catch((e) => {
+        if (!cancelled && fresh) setError(e.message);
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ?t is read once per video, not on every change
-  }, [id, session.user?.tier]);
+  }, [id, tier, clock]);
 
   // Save the position every few seconds while watching, and right away when leaving the page.
   useEffect(() => {
@@ -109,25 +139,31 @@ export default function Watch({ session, background = false }) {
   // Opening a notification while already on this video: jump to the moment / open the thread.
   const tParam = params.get('t');
   const commentParam = params.get('comment');
+  const shownId = video?.id;
   useEffect(() => {
     const t = Number(tParam);
-    if (video && Number.isFinite(t) && t > 0 && playerRef.current) playerRef.current.currentTime = t;
-  }, [tParam, video]);
+    if (shownId && Number.isFinite(t) && t > 0 && playerRef.current) playerRef.current.currentTime = t;
+  }, [tParam, shownId]);
   useEffect(() => {
-    if (video && commentParam) setFocusThread(commentParam);
-  }, [commentParam, video]);
+    if (shownId && commentParam) setFocusThread(commentParam);
+  }, [commentParam, shownId]);
 
-  const onTime = (s) => {
-    setTimeMs(Math.floor(s * 1000));
-    if (Date.now() - lastSave.current > SAVE_EVERY_MS && s > 0) {
-      lastSave.current = Date.now();
-      saveProgress(id, s * 1000);
-    }
-  };
+  const onTime = useCallback(
+    (s) => {
+      clock.set(Math.floor(s * 1000));
+      if (Date.now() - lastSave.current > SAVE_EVERY_MS && s > 0) {
+        lastSave.current = Date.now();
+        saveProgress(id, s * 1000);
+      }
+    },
+    [clock, id],
+  );
 
-  const seek = (ms) => {
+  const seek = useCallback((ms) => {
     if (playerRef.current) playerRef.current.currentTime = ms / 1000;
-  };
+  }, []);
+  const getTimeMs = useCallback(() => Math.floor((playerRef.current?.currentTime || 0) * 1000), []);
+  const closeThread = useCallback(() => setFocusThread(null), []);
 
   if (error) return <p className="error page-msg">{error}</p>;
   if (!video) return <p className="muted page-msg">Loading…</p>;
@@ -184,11 +220,7 @@ export default function Watch({ session, background = false }) {
             {!video.locked && (
               <LikeButtons videoId={video.id} likes={video.likes} myVote={video.myVote} session={session} />
             )}
-            <ShareButton
-              title={video.title}
-              path={`/watch/${video.id}`}
-              getTimeMs={() => Math.floor((playerRef.current?.currentTime || 0) * 1000)}
-            />
+            <ShareButton title={video.title} path={`/watch/${video.id}`} getTimeMs={getTimeMs} />
           </div>
         </div>
         <div className={`description ${expanded ? 'open' : ''}`} onClick={() => setExpanded(true)}>
@@ -211,10 +243,10 @@ export default function Watch({ session, background = false }) {
         )}
       </div>
       {!video.locked && (
-        <ChatPanel
+        <SyncedChat
+          clock={clock}
           videoId={video.id}
-          timeMs={timeMs}
-          getTimeMs={() => Math.floor((playerRef.current?.currentTime || 0) * 1000)}
+          getTimeMs={getTimeMs}
           onSeek={seek}
           onOpenThread={setFocusThread}
           session={session}
@@ -225,10 +257,10 @@ export default function Watch({ session, background = false }) {
           <Comments
             videoId={video.id}
             session={session}
-            getTimeMs={() => Math.floor((playerRef.current?.currentTime || 0) * 1000)}
+            getTimeMs={getTimeMs}
             onSeek={seek}
             focusThreadId={focusThread}
-            onCloseFocus={() => setFocusThread(null)}
+            onCloseFocus={closeThread}
           />
         </div>
       )}

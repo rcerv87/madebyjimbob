@@ -98,7 +98,15 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   the release needs them (see STATUS.md Reference) → update STATUS.md and the backlog `STATUS` dict.
 - Real-browser checks use headless Chrome/Edge over the DevTools protocol (screenshots, DOM reads, device
   emulation for phones). A plain headless window can't go below ~500px, so phone "overflow" in plain
-  screenshots is fake; use `Emulation.setDeviceMetricsOverride`.
+  screenshots is fake; use `Emulation.setDeviceMetricsOverride`. Keep `--user-data-dir` short (e.g.
+  `%TEMP%\cw123`): a long profile path breaks Chrome's Cache Storage on Windows, so the service worker fails
+  to install ("Entry already exists" / "Unexpected internal error") though the site is fine.
+- The player reports its time ~4 times a second. Never keep that in the watch page's state (it re-renders the
+  whole page); it lives in the clock from `web/src/clock.js`, and only what shows the time subscribes
+  (`useClock`: the chat). Measure playback cost with `Performance.getMetrics` (ScriptDuration) over 20 s.
+- Navigations run as transitions (React Router v7 flags in `web/src/routerFuture.js`). A handler that
+  navigates and also sets state deciding what's mounted must do both in one `startTransition`, or React
+  renders the in-between state first (it once unmounted the Mini player's video; see `keepPlaying.js`).
 - After changing server code, restart the local server before browser-testing; a stale server returns old
   API shapes (this broke the dashboard once).
 - Web tests that render `ChatPanel` need a router (`MemoryRouter`) because it reads `?chat=`.

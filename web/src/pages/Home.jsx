@@ -25,7 +25,9 @@ export default function Home() {
   const sort = params.get('sort') || 'new';
   const chip = params.get('members') === '1' ? 'members' : params.get('kind') || 'all';
 
+  // Late answers for an earlier filter are dropped, so quick chip taps can't show the wrong list.
   useEffect(() => {
+    let cancelled = false;
     const query = new URLSearchParams();
     if (q) query.set('q', q);
     if (sort !== 'new') query.set('sort', sort);
@@ -33,8 +35,11 @@ export default function Home() {
     else if (chip !== 'all') query.set('kind', chip);
     setError('');
     api(`/videos?${query}`)
-      .then(setData)
-      .catch((e) => setError(e.message));
+      .then((d) => !cancelled && setData(d))
+      .catch((e) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
   }, [q, sort, chip]);
 
   const update = (changes) => {

@@ -65,13 +65,22 @@ async function fetchCollection(handle) {
 }
 
 // Cached products for a collection. Serves the last good copy if the store is briefly unreachable.
+// Requests that arrive while the store is being asked share that one request.
+const pending = new Map(); // handle -> Promise
 export async function collectionProducts(handle) {
   const hit = cache.get(handle);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.products;
+  if (!pending.has(handle)) {
+    const request = fetchCollection(handle)
+      .then((products) => {
+        cache.set(handle, { at: Date.now(), products });
+        return products;
+      })
+      .finally(() => pending.delete(handle));
+    pending.set(handle, request);
+  }
   try {
-    const products = await fetchCollection(handle);
-    cache.set(handle, { at: Date.now(), products });
-    return products;
+    return await pending.get(handle);
   } catch (err) {
     if (hit) {
       logger.warn({ err, handle }, 'store unreachable; serving cached products');
@@ -81,15 +90,19 @@ export async function collectionProducts(handle) {
   }
 }
 
+const ART_COLLECTIONS = COLLECTIONS.filter((c) => c.art);
+
 // The Art gallery: every art collection merged, newest first, each piece once.
 export async function artPieces() {
-  const lists = await Promise.all(COLLECTIONS.filter((c) => c.art).map((c) => collectionProducts(c.handle)));
+  const lists = await Promise.all(ART_COLLECTIONS.map((c) => collectionProducts(c.handle)));
   const seen = new Map();
   lists.forEach((list, i) => {
-    const collection = COLLECTIONS.filter((c) => c.art)[i];
-    for (const p of list) if (!seen.has(p.id)) seen.set(p.id, { ...p, collection: collection.label });
+    for (const p of list) if (!seen.has(p.id)) seen.set(p.id, { ...p, collection: ART_COLLECTIONS[i].label });
   });
   return [...seen.values()].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
-export const clearShopCache = () => cache.clear();
+export const clearShopCache = () => {
+  cache.clear();
+  pending.clear();
+};

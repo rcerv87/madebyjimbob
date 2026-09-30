@@ -152,4 +152,21 @@ describe('studio playlists', () => {
     const viewer = await signIn(call, 'library_viewer');
     assert.equal((await call('/studio/playlists', { token: viewer })).status, 403);
   });
+
+  test('Studio lists every playlist with its own videos, in order', async () => {
+    const make = async (title, videoIds) => {
+      const pid = (await call('/studio/playlists', { method: 'POST', token: admin, body: { title } })).data
+        .playlist.id;
+      await call(`/studio/playlists/${pid}/items`, { method: 'PUT', token: admin, body: { videoIds } });
+      return pid;
+    };
+    const a = await make('Two', [ids.guitar, ids.debate]);
+    const b = await make('One', [ids.short]);
+    const empty = await make('None', []);
+    const { data } = await call('/studio/playlists', { token: admin });
+    const videosOf = (pid) => titles({ data: data.playlists.find((p) => p.id === pid) });
+    assert.deepEqual(videosOf(a), ['Guitar build day', 'Evolution Debate']);
+    assert.deepEqual(videosOf(b), ['Quick take 50%_off']);
+    assert.deepEqual(videosOf(empty), []);
+  });
 });

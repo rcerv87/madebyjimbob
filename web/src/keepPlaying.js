@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 
 // Browsers pause a video once it leaves the page, so a video in the Mini player (picture-in-picture)
@@ -21,10 +21,14 @@ export function useKeepPlaying() {
     const leave = (e) => {
       const video = e.target;
       // Closing the Mini player pauses the video; "Back to tab" keeps it playing, so show its page again.
+      // One transition (navigations are transitions), so both changes land in the same render: never a
+      // moment with neither the Mini player nor the watch page, which would unmount the playing video.
       setTimeout(() => {
         const { onWatch: showing, lastWatch: back } = latest.current;
-        if (!showing && back && !video.paused) navigate(back);
-        setInPip(false);
+        startTransition(() => {
+          if (!showing && back && !video.paused) navigate(back);
+          setInPip(false);
+        });
       }, 150);
     };
     // Capture: these events are fired at the <video>.

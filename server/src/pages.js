@@ -21,11 +21,17 @@ const FALLBACK_TEMPLATE =
   '<!doctype html><html lang="en"><head><meta charset="UTF-8" /><title>MadeByJimBob</title>' +
   '<meta name="description" content="" /></head><body><div id="root"></div></body></html>';
 
-let template = null;
+// The built page, read again only when a new build replaces it (a cheap stat per request, not a read).
+let template = { mtimeMs: null, html: FALLBACK_TEMPLATE };
 function loadTemplate() {
-  if (template && process.env.NODE_ENV === 'production') return template;
-  template = fs.existsSync(DIST_INDEX) ? fs.readFileSync(DIST_INDEX, 'utf8') : FALLBACK_TEMPLATE;
-  return template;
+  let mtimeMs;
+  try {
+    mtimeMs = fs.statSync(DIST_INDEX).mtimeMs;
+  } catch {
+    return FALLBACK_TEMPLATE;
+  }
+  if (template.mtimeMs !== mtimeMs) template = { mtimeMs, html: fs.readFileSync(DIST_INDEX, 'utf8') };
+  return template.html;
 }
 
 const esc = (s) =>
@@ -125,11 +131,12 @@ export function renderPage(meta, { siteUrl, url, indexing }) {
     .filter(Boolean)
     .join('\n    ');
 
+  // Replacer functions, so a "$" in a title or description is never read as a pattern like $& or $'.
   return loadTemplate()
-    .replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(meta.title)}</title>`)
+    .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${esc(meta.title)}</title>`)
     .replace(
       /<meta name="description"[^>]*>/,
-      `<meta name="description" content="${esc(meta.description)}" />`,
+      () => `<meta name="description" content="${esc(meta.description)}" />`,
     )
-    .replace('</head>', `    ${tags}\n  </head>`);
+    .replace('</head>', () => `    ${tags}\n  </head>`);
 }

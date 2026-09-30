@@ -3,13 +3,7 @@
 // configured) | denied | off | on
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api.js';
-
-const isIOS = () =>
-  /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-export const isStandalone = () =>
-  window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+import { isIOS, isStandalone } from './device.js';
 
 const supported = () =>
   typeof window !== 'undefined' &&

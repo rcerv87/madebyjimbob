@@ -616,3 +616,50 @@ describe('video likes', () => {
     );
   });
 });
+
+describe('input checks', () => {
+  test('tier changes take only real tiers, and unknown videos are 404', async () => {
+    const admin = await signIn(call, 'test_admin');
+    const id = await seedVideo();
+    for (const minTier of ['constructor', 'toString', ['plus'], null]) {
+      const r = await call(`/studio/videos/${id}`, { method: 'PATCH', token: admin, body: { minTier } });
+      assert.equal(r.status, 400, `minTier ${JSON.stringify(minTier)}`);
+    }
+    for (const bad of ['999999', 'abc']) {
+      const r = await call(`/studio/videos/${bad}`, {
+        method: 'PATCH',
+        token: admin,
+        body: { minTier: 'plus' },
+      });
+      assert.equal(r.status, 404);
+    }
+    assert.equal((await call('/videos/abc/view', { method: 'POST' })).status, 404);
+  });
+
+  test('chat and comment text that is not a string counts as empty', async () => {
+    const token = await signIn(call, 'odd_texter');
+    const id = await seedVideo();
+    const chat = await call(`/videos/${id}/chat`, { method: 'POST', token, body: { text: { a: 1 } } });
+    assert.equal(chat.status, 400);
+    const comment = await call(`/videos/${id}/comments`, { method: 'POST', token, body: { text: ['hi'] } });
+    assert.equal(comment.status, 400);
+  });
+
+  test('Studio totals add up the videos and leave hidden chat out', async () => {
+    const admin = await signIn(call, 'test_admin');
+    const id = await seedVideo();
+    await seedChat(id, [
+      { body: 'one', offsetMs: 1_000 },
+      { body: 'two', offsetMs: 2_000 },
+      { body: 'gone', offsetMs: 3_000, hidden: true },
+    ]);
+    const { data } = await call('/studio/overview', { token: admin });
+    assert.equal(data.videos.find((v) => v.id === id).youtubeMsgs, 2);
+    const sum = (key) => data.videos.reduce((n, v) => n + v[key], 0);
+    assert.equal(data.totals.videos, data.videos.length);
+    assert.equal(data.totals.views, sum('views'));
+    assert.equal(data.totals.youtubeMsgs, sum('youtubeMsgs'));
+    assert.equal(data.totals.nativeMsgs, sum('nativeMsgs'));
+    assert.ok(data.totals.chatters >= 1);
+  });
+});

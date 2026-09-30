@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { TIER_LABEL } from '../api.js';
 import { BRAND } from '../brand.js';
@@ -7,8 +7,11 @@ import { InstallButton } from '../install.jsx';
 
 export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu }) {
   const [params] = useSearchParams();
-  const [q, setQ] = useState(params.get('q') || '');
+  const urlQ = params.get('q') || '';
+  const [q, setQ] = useState(urlQ);
   const navigate = useNavigate();
+  // Follow the URL (Clear search, the logo, Back) so the box never shows a search that's gone.
+  useEffect(() => setQ(urlQ), [urlQ]);
 
   const submit = (e) => {
     e.preventDefault();

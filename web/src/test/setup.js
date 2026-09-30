@@ -1,5 +1,14 @@
 import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import { createElement } from 'react';
+import { ROUTER_FUTURE } from '../routerFuture.js';
+
+// Tests route like the app: every MemoryRouter gets the app's React Router future flags.
+vi.mock('react-router-dom', async (importOriginal) => {
+  const router = await importOriginal();
+  const MemoryRouter = (props) => createElement(router.MemoryRouter, { future: ROUTER_FUTURE, ...props });
+  return { ...router, MemoryRouter };
+});
 
 // jsdom has no WebSocket server to talk to; a silent stand-in keeps ChatPanel happy.
 class FakeWebSocket {

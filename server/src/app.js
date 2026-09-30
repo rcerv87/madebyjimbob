@@ -96,9 +96,16 @@ function currentUser(req) {
 
 const canWatch = (user, video) => TIER_RANK[user?.tier || 'free'] >= TIER_RANK[video.min_tier];
 
+// A database id from a URL or body: digits only, and short enough for BIGINT.
+const isId = (value) => /^\d{1,18}$/.test(String(value));
+// Own keys only, so "constructor" or ["plus"] aren't taken for a tier.
+const isTier = (value) => typeof value === 'string' && Object.hasOwn(TIER_RANK, value);
+// Text from a JSON body; anything else (an object, a number) counts as empty rather than "[object Object]".
+const textField = (value) => (typeof value === 'string' ? value : '');
+
 // Returns the video row, or null for unknown or malformed ids.
 async function findVideo(id) {
-  if (!/^\d{1,18}$/.test(String(id))) return null;
+  if (!isId(id)) return null;
   const { rows } = await pool.query('SELECT id, title, min_tier, duration_s FROM videos WHERE id = $1', [id]);
   return rows[0] || null;
 }
@@ -129,6 +136,12 @@ async function requireAdmin(req, res, next) {
   }
 }
 
+const CHAT_COUNT =
+  '(SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count';
+// What a video card needs (not the description, which can be long), plus its chat count.
+const CARD_COLUMNS = `v.id, v.title, v.kind, v.duration_s, v.published_at, v.min_tier, v.views, v.stream_uid,
+    ${CHAT_COUNT}`;
+
 function videoCard(v) {
   return {
     id: v.id,
@@ -151,10 +164,13 @@ const CHAT_SELECT = `SELECT m.*, rt.id AS rt_id, rt.author_name AS rt_author, le
     rt.offset_ms AS rt_offset
   FROM chat_messages m LEFT JOIN chat_messages rt ON rt.id = m.reply_to_id AND NOT rt.hidden`;
 
-const COMMENT_SELECT = `SELECT c.*, rt.id AS rt_id, rt.author_name AS rt_author, left(rt.body, 140) AS rt_body,
-    rt.offset_ms AS rt_offset,
+// Comments with what each one quotes (rt_*) and its reply count. `from` can narrow the rows first (one
+// page of threads), so the quote join only touches those instead of every comment on the site.
+const commentSelect = (from = 'comments') => `SELECT c.*, rt.id AS rt_id, rt.author_name AS rt_author,
+    left(rt.body, 140) AS rt_body, rt.offset_ms AS rt_offset,
     (SELECT count(*) FROM comments r WHERE r.parent_id = c.id AND NOT r.hidden) AS reply_count
-  FROM comments c LEFT JOIN comments rt ON rt.id = c.reply_to_id AND NOT rt.hidden`;
+  FROM ${from} c LEFT JOIN comments rt ON rt.id = c.reply_to_id AND NOT rt.hidden`;
+const COMMENT_SELECT = commentSelect();
 
 function commentRow(r) {
   return {
@@ -289,8 +305,7 @@ app.get(
     const search = `($1::text IS NULL OR v.title ILIKE $1 OR v.description ILIKE $1)`;
     const [list, counts] = await Promise.all([
       pool.query(
-        `SELECT v.*, wp.position_ms AS progress_ms,
-           (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
+        `SELECT ${CARD_COLUMNS}, wp.position_ms AS progress_ms
          FROM videos v LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = $2
          WHERE ${search} AND ($3::text IS NULL OR v.kind = $3) AND (NOT $4 OR v.min_tier <> 'free')
          ORDER BY ${order}`,
@@ -357,41 +372,49 @@ app.get(
   }),
 );
 
+// Playlist videos in order, as cards, keyed by playlist id: one playlist's, or every playlist's
+// (playlistId null, for Studio) in a single query.
 async function playlistVideos(playlistId, userId) {
   const { rows } = await pool.query(
-    `SELECT v.*, pi.position, wp.position_ms AS progress_ms,
-       (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
+    `SELECT ${CARD_COLUMNS}, pi.playlist_id, wp.position_ms AS progress_ms
      FROM ${PLAYLIST_VIDEOS}
      LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = $2
-     WHERE pi.playlist_id = $1 ORDER BY pi.position`,
-    [playlistId, userId ?? null],
+     WHERE $1::bigint IS NULL OR pi.playlist_id = $1 ORDER BY pi.playlist_id, pi.position`,
+    [playlistId ?? null, userId ?? null],
   );
-  return rows.map((v) => ({ ...videoCard(v), progressMs: v.progress_ms ?? null }));
+  const byPlaylist = new Map();
+  for (const v of rows) {
+    const list = byPlaylist.get(String(v.playlist_id)) || [];
+    list.push({ ...videoCard(v), progressMs: v.progress_ms ?? null });
+    byPlaylist.set(String(v.playlist_id), list);
+  }
+  return byPlaylist;
 }
 
 app.get(
   '/api/playlists/:id',
   wrap(async (req, res) => {
-    if (!/^\d{1,18}$/.test(req.params.id)) return res.status(404).json({ error: 'Playlist not found.' });
-    const { rows } = await pool.query(`${PLAYLIST_SUMMARY} WHERE p.id = $1`, [req.params.id]);
+    if (!isId(req.params.id)) return res.status(404).json({ error: 'Playlist not found.' });
+    const [{ rows }, user] = await Promise.all([
+      pool.query(`${PLAYLIST_SUMMARY} WHERE p.id = $1`, [req.params.id]),
+      currentUser(req),
+    ]);
     if (!rows[0]) return res.status(404).json({ error: 'Playlist not found.' });
-    const user = await currentUser(req);
-    res.json({ playlist: playlistCard(rows[0]), videos: await playlistVideos(rows[0].id, user?.id) });
+    const videos = await playlistVideos(rows[0].id, user?.id);
+    res.json({ playlist: playlistCard(rows[0]), videos: videos.get(String(rows[0].id)) || [] });
   }),
 );
 
 app.get(
   '/api/videos/:id',
   wrap(async (req, res) => {
-    if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
-    const { rows } = await pool.query(
-      `
-    SELECT v.*, (SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count
-    FROM videos v WHERE v.id = $1`,
-      [req.params.id],
-    );
+    if (!isId(req.params.id)) return res.status(404).json({ error: 'Video not found.' });
+    const [{ rows }, user] = await Promise.all([
+      pool.query(`SELECT v.*, ${CHAT_COUNT} FROM videos v WHERE v.id = $1`, [req.params.id]),
+      currentUser(req),
+    ]);
     const v = rows[0];
-    const user = await currentUser(req);
+    if (!v) return res.status(404).json({ error: 'Video not found.' });
     const allowed = canWatch(user, v);
     const [progress, votes] = await Promise.all([
       user
@@ -459,8 +482,10 @@ app.post(
 app.post(
   '/api/videos/:id/view',
   wrap(async (req, res) => {
-    if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
-    await pool.query('UPDATE videos SET views = views + 1 WHERE id = $1', [req.params.id]);
+    const { rowCount } = isId(req.params.id)
+      ? await pool.query('UPDATE videos SET views = views + 1 WHERE id = $1', [req.params.id])
+      : { rowCount: 0 };
+    if (!rowCount) return res.status(404).json({ error: 'Video not found.' });
     res.json({ ok: true });
   }),
 );
@@ -494,9 +519,7 @@ app.get(
     const video = await watchableVideo(req, res, await currentUser(req));
     if (!video) return;
     if (req.query.afterId !== undefined) {
-      if (!/^\d{1,18}$/.test(String(req.query.afterId))) {
-        return res.status(400).json({ error: 'afterId must be a message id.' });
-      }
+      if (!isId(req.query.afterId)) return res.status(400).json({ error: 'afterId must be a message id.' });
       const { rows } = await pool.query(
         `${CHAT_SELECT} WHERE m.video_id = $1 AND NOT m.hidden AND m.id > $2 ORDER BY m.id LIMIT $3`,
         [video.id, req.query.afterId, CHAT_WINDOW_MAX],
@@ -532,12 +555,12 @@ app.post(
     const video = await watchableVideo(req, res, user);
     if (!video) return;
 
-    const body = filterText(req.body.text || '').slice(0, 200);
+    const body = filterText(textField(req.body.text)).slice(0, 200);
     if (!body) return res.status(400).json({ error: 'Type a message first.' });
 
     let target = null;
     if (req.body.replyToId !== undefined && req.body.replyToId !== null) {
-      const { rows } = /^\d{1,18}$/.test(String(req.body.replyToId))
+      const { rows } = isId(req.body.replyToId)
         ? await pool.query(
             `SELECT id, user_id, author_name, left(body, 140) AS body, offset_ms FROM chat_messages
              WHERE id = $1 AND video_id = $2 AND NOT hidden`,
@@ -606,12 +629,10 @@ app.get(
       sort === 'new'
         ? 'c.posted_at DESC, c.id DESC'
         : 'c.pinned DESC, c.like_count DESC, c.posted_at DESC, c.id DESC';
+    const pageOfThreads = `(SELECT * FROM comments c WHERE c.video_id = $1 AND c.parent_id IS NULL
+        AND NOT c.hidden ORDER BY ${order} LIMIT $2 OFFSET $3)`;
     const [page, totals] = await Promise.all([
-      pool.query(
-        `${COMMENT_SELECT} WHERE c.video_id = $1 AND c.parent_id IS NULL AND NOT c.hidden
-         ORDER BY ${order} LIMIT $2 OFFSET $3`,
-        [video.id, COMMENTS_PAGE, offset],
-      ),
+      pool.query(`${commentSelect(pageOfThreads)} ORDER BY ${order}`, [video.id, COMMENTS_PAGE, offset]),
       pool.query(
         `SELECT count(*) AS total, count(*) FILTER (WHERE parent_id IS NULL) AS threads
          FROM comments WHERE video_id = $1 AND NOT hidden`,
@@ -642,8 +663,7 @@ app.get(
   wrap(async (req, res) => {
     const video = await watchableVideo(req, res, await currentUser(req));
     if (!video) return;
-    if (!/^\d{1,18}$/.test(req.params.commentId))
-      return res.status(404).json({ error: 'Comment not found.' });
+    if (!isId(req.params.commentId)) return res.status(404).json({ error: 'Comment not found.' });
     const found = await pool.query(
       'SELECT COALESCE(parent_id, id) AS thread_id FROM comments WHERE id = $1 AND video_id = $2 AND NOT hidden',
       [req.params.commentId, video.id],
@@ -672,7 +692,7 @@ app.post(
     const video = await watchableVideo(req, res, user);
     if (!video) return;
 
-    const body = filterComment(req.body.text || '');
+    const body = filterComment(textField(req.body.text));
     if (!body) return res.status(400).json({ error: 'Write a comment first.' });
     if (body.length > COMMENT_MAX_CHARS) {
       return res.status(400).json({ error: `Keep comments under ${COMMENT_MAX_CHARS} characters.` });
@@ -681,7 +701,7 @@ app.post(
     let target = null;
     const replyToId = req.body.replyToId ?? req.body.parentId;
     if (replyToId !== undefined && replyToId !== null) {
-      const { rows } = /^\d{1,18}$/.test(String(replyToId))
+      const { rows } = isId(replyToId)
         ? await pool.query(
             `SELECT id, parent_id, user_id, author_name, left(body, 140) AS body, offset_ms FROM comments
              WHERE id = $1 AND video_id = $2 AND NOT hidden`,
@@ -802,9 +822,7 @@ app.post(
   wrap(async (req, res) => {
     const user = await currentUser(req);
     if (!user) return res.status(401).json({ error: 'Sign in to see notifications.' });
-    const ids = Array.isArray(req.body.ids)
-      ? req.body.ids.filter((id) => /^\d{1,18}$/.test(String(id)))
-      : null;
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.filter((id) => isId(id)) : null;
     await pool.query(
       `UPDATE notifications SET read_at = now()
        WHERE user_id = $1 AND read_at IS NULL AND ($2::bigint[] IS NULL OR id = ANY($2::bigint[]))`,
@@ -869,15 +887,8 @@ app.use('/api/studio', requireAdmin);
 app.get(
   '/api/studio/overview',
   wrap(async (_req, res) => {
-    const [totals, perVideo, topChatters] = await Promise.all([
-      pool.query(`
-      SELECT
-        (SELECT count(*) FROM videos)                                                    AS videos,
-        (SELECT coalesce(sum(views),0) FROM videos)                                      AS views,
-        (SELECT count(*) FROM chat_messages WHERE source = 'youtube' AND NOT hidden)     AS youtube_msgs,
-        (SELECT count(*) FROM chat_messages WHERE source = 'native' AND NOT hidden)      AS native_msgs,
-        (SELECT count(*) FROM chat_messages WHERE kind = 'paid' AND NOT hidden)          AS paid_msgs,
-        (SELECT count(DISTINCT author_name) FROM chat_messages WHERE NOT hidden)         AS chatters`),
+    // Totals add up the per-video rows; only unique chatters needs its own pass over the chat.
+    const [perVideo, chatters, topChatters] = await Promise.all([
       pool.query(`
       SELECT v.id, v.title, v.published_at, v.views, v.min_tier, v.duration_s,
         count(c.*) FILTER (WHERE c.source = 'youtube') AS youtube_msgs,
@@ -887,34 +898,36 @@ app.get(
         (SELECT count(*) FROM video_votes vv WHERE vv.video_id = v.id AND vv.value = -1) AS dislikes
       FROM videos v LEFT JOIN chat_messages c ON c.video_id = v.id AND NOT c.hidden
       GROUP BY v.id ORDER BY v.published_at DESC NULLS LAST`),
+      pool.query('SELECT count(DISTINCT author_name) AS n FROM chat_messages WHERE NOT hidden'),
       pool.query(`
       SELECT author_name, source, count(*) AS msgs, count(*) FILTER (WHERE kind = 'paid') AS paid
       FROM chat_messages WHERE NOT hidden
       GROUP BY author_name, source ORDER BY msgs DESC LIMIT 15`),
     ]);
-    const t = totals.rows[0];
+    const videos = perVideo.rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      publishedAt: r.published_at,
+      views: r.views,
+      minTier: r.min_tier,
+      durationS: r.duration_s,
+      youtubeMsgs: Number(r.youtube_msgs),
+      nativeMsgs: Number(r.native_msgs),
+      paidMsgs: Number(r.paid_msgs),
+      likes: Number(r.likes),
+      dislikes: Number(r.dislikes),
+    }));
+    const sum = (key) => videos.reduce((n, v) => n + v[key], 0);
     res.json({
       totals: {
-        videos: Number(t.videos),
-        views: Number(t.views),
-        youtubeMsgs: Number(t.youtube_msgs),
-        nativeMsgs: Number(t.native_msgs),
-        paidMsgs: Number(t.paid_msgs),
-        chatters: Number(t.chatters),
+        videos: videos.length,
+        views: sum('views'),
+        youtubeMsgs: sum('youtubeMsgs'),
+        nativeMsgs: sum('nativeMsgs'),
+        paidMsgs: sum('paidMsgs'),
+        chatters: Number(chatters.rows[0].n),
       },
-      videos: perVideo.rows.map((r) => ({
-        id: r.id,
-        title: r.title,
-        publishedAt: r.published_at,
-        views: r.views,
-        minTier: r.min_tier,
-        durationS: r.duration_s,
-        youtubeMsgs: Number(r.youtube_msgs),
-        nativeMsgs: Number(r.native_msgs),
-        paidMsgs: Number(r.paid_msgs),
-        likes: Number(r.likes),
-        dislikes: Number(r.dislikes),
-      })),
+      videos,
       topChatters: topChatters.rows.map((r) => ({
         author: r.author_name,
         source: r.source,
@@ -929,9 +942,11 @@ app.patch(
   '/api/studio/videos/:id',
   wrap(async (req, res) => {
     const { minTier } = req.body;
-    if (TIER_RANK[minTier] === undefined) return res.status(400).json({ error: 'Unknown tier.' });
-    if (!(await findVideo(req.params.id))) return res.status(404).json({ error: 'Video not found.' });
-    await pool.query('UPDATE videos SET min_tier = $1 WHERE id = $2', [minTier, req.params.id]);
+    if (!isTier(minTier)) return res.status(400).json({ error: 'Unknown tier.' });
+    const { rowCount } = isId(req.params.id)
+      ? await pool.query('UPDATE videos SET min_tier = $1 WHERE id = $2', [minTier, req.params.id])
+      : { rowCount: 0 };
+    if (!rowCount) return res.status(404).json({ error: 'Video not found.' });
     res.json({ ok: true });
   }),
 );
@@ -991,13 +1006,13 @@ app.post(
 app.get(
   '/api/studio/playlists',
   wrap(async (_req, res) => {
-    const { rows } = await pool.query(
-      `${PLAYLIST_SUMMARY} ORDER BY p.source = 'native' DESC, p.updated_at DESC`,
-    );
-    const playlists = await Promise.all(
-      rows.map(async (r) => ({ ...playlistCard(r), videos: await playlistVideos(r.id) })),
-    );
-    res.json({ playlists });
+    const [{ rows }, videos] = await Promise.all([
+      pool.query(`${PLAYLIST_SUMMARY} ORDER BY p.source = 'native' DESC, p.updated_at DESC`),
+      playlistVideos(null),
+    ]);
+    res.json({
+      playlists: rows.map((r) => ({ ...playlistCard(r), videos: videos.get(String(r.id)) || [] })),
+    });
   }),
 );
 
@@ -1009,7 +1024,7 @@ function playlistFields(body) {
 }
 
 async function nativePlaylist(req, res) {
-  if (!/^\d{1,18}$/.test(req.params.id)) {
+  if (!isId(req.params.id)) {
     res.status(404).json({ error: 'Playlist not found.' });
     return null;
   }
@@ -1073,12 +1088,7 @@ app.put(
     const p = await nativePlaylist(req, res);
     if (!p) return;
     const ids = Array.isArray(req.body.videoIds) ? req.body.videoIds.map(String) : null;
-    if (
-      !ids ||
-      ids.some((id) => !/^\d{1,18}$/.test(id)) ||
-      new Set(ids).size !== ids.length ||
-      ids.length > 500
-    ) {
+    if (!ids || ids.some((id) => !isId(id)) || new Set(ids).size !== ids.length || ids.length > 500) {
       return res.status(400).json({ error: 'videoIds must be a list of different video ids (up to 500).' });
     }
     const { rows } = await pool.query('SELECT count(*) FROM videos WHERE id = ANY($1::bigint[])', [ids]);

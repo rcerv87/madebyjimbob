@@ -1,16 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
+import { isIOS } from '../device.js';
 
-// iPhone/iPad: Safari's built-in HLS player is the one iOS keeps playing on the lock screen.
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 
-const isAppleMobile =
-  typeof navigator !== 'undefined' &&
-  (/iPhone|iPad|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+// iPhone/iPad: Safari's built-in HLS player is the one iOS keeps playing on the lock screen.
+const isAppleMobile = isIOS();
 
 // Phones pause <video> when the screen locks; desktop browsers keep playing it in background tabs.
 const isPhone = () => isAppleMobile || /Android/i.test(navigator.userAgent);
+
+// Lock-screen controls; older browsers throw for actions they don't know (e.g. nexttrack).
+function setMediaAction(action, handler) {
+  try {
+    navigator.mediaSession.setActionHandler(action, handler);
+  } catch {
+    /* not supported here */
+  }
+}
 
 // Use Safari's own HLS on Apple mobile; hls.js wherever Media Source Extensions exist (Chrome, Edge,
 // Firefox, desktop Safari), since other browsers' native HLS varies a lot (Chrome's is new).
@@ -254,7 +261,8 @@ export default function Player({
     if (document.hidden && pausedAt.current - hiddenAt.current < 1000) listenWhileLocked();
   }
 
-  // Lock-screen / notification controls act on whichever player is active.
+  // Lock-screen / notification controls act on whichever player is active. They're removed when the
+  // player goes, so a leftover ⏭ can't act on a page the viewer has left.
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -262,10 +270,14 @@ export default function Player({
       artist: 'JimBob',
       artwork: poster ? [{ src: poster, sizes: '640x360', type: 'image/jpeg' }] : [],
     });
-    navigator.mediaSession.setActionHandler('seekbackward', () => actions.current.seek(-10));
-    navigator.mediaSession.setActionHandler('seekforward', () => actions.current.seek(10));
-    navigator.mediaSession.setActionHandler('play', () => active()?.play());
-    navigator.mediaSession.setActionHandler('pause', () => active()?.pause());
+    setMediaAction('seekbackward', () => actions.current.seek(-10));
+    setMediaAction('seekforward', () => actions.current.seek(10));
+    setMediaAction('play', () => active()?.play());
+    setMediaAction('pause', () => active()?.pause());
+    return () => {
+      navigator.mediaSession.metadata = null;
+      for (const action of ['seekbackward', 'seekforward', 'play', 'pause']) setMediaAction(action, null);
+    };
   }, [title, poster]);
 
   // Lock-screen ⏭ / ⏮ appear only when there's somewhere to go.
@@ -273,15 +285,15 @@ export default function Player({
   const hasPrevious = Boolean(onPrevious);
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
-    const set = (action, handler) => {
-      try {
-        navigator.mediaSession.setActionHandler(action, handler);
-      } catch {
-        /* older browsers don't know this action */
-      }
+    setMediaAction('nexttrack', hasNext ? () => tracks.current.onNext?.(listenRef.current) : null);
+    setMediaAction(
+      'previoustrack',
+      hasPrevious ? () => tracks.current.onPrevious?.(listenRef.current) : null,
+    );
+    return () => {
+      setMediaAction('nexttrack', null);
+      setMediaAction('previoustrack', null);
     };
-    set('nexttrack', hasNext ? () => tracks.current.onNext?.(listenRef.current) : null);
-    set('previoustrack', hasPrevious ? () => tracks.current.onPrevious?.(listenRef.current) : null);
   }, [hasNext, hasPrevious]);
 
   useEffect(() => {
