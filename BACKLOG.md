@@ -165,13 +165,13 @@ Acceptance criteria:
 
 ### MBJ-007 — Structured logging
 
-**Status:** To do · **Phase 0 — Foundation** · **Priority:** Should · **Size:** S
+**Status:** Done · **Phase 0 — Foundation** · **Priority:** Should · **Size:** S
 
 As the operator, I want useful logs when something breaks in production.
 
 Acceptance criteria:
-- [ ] pino logger with request id per HTTP request
-- [ ] Errors logged with stack; no secrets or tokens logged
+- [x] pino logger with request id per HTTP request
+- [x] Errors logged with stack; no secrets or tokens logged
 
 ### MBJ-008 — Staging environment
 

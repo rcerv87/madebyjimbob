@@ -65,6 +65,7 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - Chat messages always carry `offset_ms` (position in the video). That field is what makes replay sync work — never drop it.
 - Chat `source` is one of `youtube | rumble | native`. New sources get a new enum value, not a new table.
 - Tier checks happen on the server. The client only hides UI.
+- Logging: use `logger` / `req.log` from `server/src/logger.js`, never `console`. Credentials are redacted by path (`REDACT_PATHS`); add new sensitive fields there.
 - Secrets live in env vars. Add every new var to `.env.example` and `render.yaml` (`sync: false`).
 - UI copy: sentence case, plain verbs, errors say what happened and how to fix it.
 - Keep dependencies lean; mention any new dependency and why in the PR description.

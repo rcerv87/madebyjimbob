@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { startServer, stopServer, client, seedVideo, seedChat, signIn, sleep } from './helpers.js';
 
 let call;
+let apiBase;
 before(async () => {
   const { base } = await startServer();
+  apiBase = base;
   call = client(base);
 });
 after(stopServer);
@@ -238,5 +240,35 @@ describe('studio', () => {
     });
     assert.equal(ok.status, 200);
     assert.equal((await call(`/videos/${id}`)).data.video.minTier, 'plus');
+  });
+});
+
+describe('request handling', () => {
+  test('every response carries a request id, reusing a safe incoming one', async () => {
+    const fresh = await fetch(`${apiBase}/health`);
+    assert.match(fresh.headers.get('x-request-id'), /^[0-9a-f-]{36}$/);
+    const given = await fetch(`${apiBase}/health`, { headers: { 'X-Request-Id': 'trace-123' } });
+    assert.equal(given.headers.get('x-request-id'), 'trace-123');
+    const unsafe = await fetch(`${apiBase}/health`, { headers: { 'X-Request-Id': 'bad id <script>' } });
+    assert.notEqual(unsafe.headers.get('x-request-id'), 'bad id <script>');
+  });
+
+  test('malformed JSON is a 400, not a server error', async () => {
+    const res = await fetch(`${apiBase}/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"username": ',
+    });
+    assert.equal(res.status, 400);
+    assert.match((await res.json()).error, /valid JSON/);
+  });
+
+  test('oversized bodies are a 413', async () => {
+    const res = await fetch(`${apiBase}/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'x'.repeat(60_000) }),
+    });
+    assert.equal(res.status, 413);
   });
 });

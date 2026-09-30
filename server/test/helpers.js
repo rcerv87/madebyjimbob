@@ -22,6 +22,7 @@ process.env.PGSSL = process.env.PGSSL_TEST || 'false';
 process.env.ADMIN_USERNAMES = 'test_admin';
 process.env.ALLOW_TEST_TIERS = 'true';
 process.env.BANNED_WORDS = 'badword';
+process.env.LOG_LEVEL = process.env.LOG_LEVEL_TEST || 'silent';
 
 const { pool, migrate } = await import('../src/db.js');
 const { server } = await import('../src/app.js');

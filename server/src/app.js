@@ -8,6 +8,7 @@ import { WebSocketServer } from 'ws';
 import { pool } from './db.js';
 import { filterText, extractMentions } from './moderation.js';
 import { playback } from './stream.js';
+import { logger, httpLogger } from './logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TIER_RANK = { free: 0, plus: 1, premium: 2 };
@@ -22,6 +23,7 @@ const ADMINS = new Set(
 );
 
 const app = express();
+app.use(httpLogger);
 app.use(express.json({ limit: '50kb' }));
 
 // ---------- helpers ----------
@@ -392,9 +394,17 @@ const dist = path.join(__dirname, '../../web/dist');
 app.use(express.static(dist));
 app.get(/^(?!\/api).*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')));
 
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(500).json({ error: 'Something went wrong on the server.' });
+app.use((err, req, res, _next) => {
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'The request body isn’t valid JSON.' });
+  }
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'The request is too large.' });
+  }
+  res.err = err; // pino-http logs it, with stack, on the request's line
+  res.status(500).json({
+    error: `Something went wrong on the server. If it keeps happening, mention code ${req.id}.`,
+  });
 });
 
 // ---------- realtime: one room per video ----------
@@ -438,7 +448,7 @@ wss.on('connection', (ws) => {
       if (!rooms.has(joined)) rooms.set(joined, new Set());
       rooms.get(joined).add(ws);
     } catch (err) {
-      console.error(err);
+      logger.error({ err, videoId: msg.videoId }, 'WebSocket join failed');
     }
   });
   ws.on('close', () => joined && leave(ws, joined));

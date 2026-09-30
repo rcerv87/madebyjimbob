@@ -18,7 +18,7 @@ MBJ-005,CI pipeline,Foundation,Phase 0 — Foundation,Must,S,In progress,"As the
 MBJ-006,Extract YouTube replay parser,Foundation,Phase 0 — Foundation,Must,S,Done,"As the developer, I want the chat replay parser as a tested module so live ingest can reuse it.","- Parser lives in `server/src/ingest/youtubeReplay.js` with pure functions
 - Fixture-based tests cover text, emoji, super chat, membership, negative offsets
 - Import script uses the module; behavior unchanged",MBJ-001
-MBJ-007,Structured logging,Foundation,Phase 0 — Foundation,Should,S,To do,"As the operator, I want useful logs when something breaks in production.","- pino logger with request id per HTTP request
+MBJ-007,Structured logging,Foundation,Phase 0 — Foundation,Should,S,Done,"As the operator, I want useful logs when something breaks in production.","- pino logger with request id per HTTP request
 - Errors logged with stack; no secrets or tokens logged",
 MBJ-008,Staging environment,Foundation,Phase 0 — Foundation,Should,S,To do,"As the product owner, I want to review changes before they reach JimBob's audience.","- Separate Render service + database for staging deployed from `staging` branch
 - Documented in README",MBJ-003
