@@ -28,6 +28,14 @@ services:
         value: 'false'
       - key: LOG_LEVEL
         value: info
+      # Web Push (phone notifications). The public key is safe to publish; the private key is secret:
+      # add it by hand in Render → madebyjimbob → Environment (copy from your local .env).
+      - key: VAPID_PUBLIC_KEY
+        value: BH1VujLaplskaCgClakGNih8KJnpfZQeCmIPrYHdjRoG3Lz40RPA-ys-l_w6l0alxJOT4BC-rM1agNIyMi6epf0
+      - key: VAPID_SUBJECT
+        value: https://madebyjimbob.onrender.com
+      - key: VAPID_PRIVATE_KEY
+        sync: false
 
 databases:
   - name: madebyjimbob-db

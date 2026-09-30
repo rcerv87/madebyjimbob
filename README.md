@@ -3,7 +3,7 @@
 YouTube-style site for JimBob's past streams: videos on Cloudflare Stream, the original
 YouTube live chat replaying in sync, and members posting new chat at their point in the video.
 
-Planning docs: `CLAUDE.md` (start here), `BACKLOG.md`, and `docs/`.
+Where things stand: `docs/STATUS.md`. Planning docs: `CLAUDE.md` (start here), `BACKLOG.md`, and `docs/`.
 
 ## What's in here
 
@@ -27,6 +27,8 @@ web/                               React app: home grid, watch page + chat, Stud
 1. Push this repo to GitHub (private is fine).
 2. Render → **New → Blueprint** → pick the repo. It creates the web service (Starter) and Postgres.
    When asked, set `ADMIN_USERNAMES` (e.g. `jimbob`). `CF_STREAM_CUSTOMER_CODE` is already in `render.yaml`.
+   For push notifications also set `VAPID_PRIVATE_KEY` (the public key is in `render.yaml`; generate a pair with
+   `node -e "console.log(require('web-push').generateVAPIDKeys())"` and update both if you ever rotate).
 3. Render builds, runs migrations (pre-deploy), and starts the app. Open the `.onrender.com` URL and
    **sign up as an admin username right away**, so nobody else can claim it.
 4. Load videos into the Render database from your machine: copy the database's **External Database URL**

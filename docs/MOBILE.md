@@ -1,6 +1,14 @@
 # Mobile app
 
-## Stack
+## Where we are (2026-09-29)
+
+The web app is an installable **PWA** (MBJ-213) with **Web Push** (MBJ-214): Home Screen icon,
+full-screen, lock-screen audio via Listen only, and notifications (iPhone: after Add to Home Screen).
+Store apps come next. Before starting MBJ-401, decide between the plan below (Expo, ADR-008) and
+wrapping this same web app with **Capacitor**, which reuses all current screens and adds native push,
+background audio, and store packaging much sooner. Record the decision as a new ADR.
+
+## Stack (plan per ADR-008)
 - Expo (React Native), TypeScript, Expo Router.
 - `expo-video` for playback: HLS, PiP, background audio, now-playing controls.
 - `react-native-gesture-handler` + `react-native-reanimated` for player gestures.

@@ -30,6 +30,10 @@ export default [
     },
   },
   {
+    files: ['web/public/sw.js'],
+    languageOptions: { ecmaVersion: 2024, sourceType: 'script', globals: globals.serviceworker },
+  },
+  {
     files: ['web/src/test/**', 'web/vite.config.js'],
     languageOptions: { globals: { ...globals.node, mockApi: 'readonly', FakeWebSocket: 'readonly' } },
   },

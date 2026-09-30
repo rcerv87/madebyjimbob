@@ -1,5 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import ChatPanel from '../components/ChatPanel.jsx';
 
 const msg = (id, offsetMs, body, over = {}) => ({
@@ -17,7 +18,9 @@ const msg = (id, offsetMs, body, over = {}) => ({
 
 function renderPanel({ timeMs = 0, user = null, requireSignIn = () => {} } = {}) {
   return render(
-    <ChatPanel videoId="7" timeMs={timeMs} getTimeMs={() => timeMs} session={{ user, requireSignIn }} />,
+    <MemoryRouter>
+      <ChatPanel videoId="7" timeMs={timeMs} getTimeMs={() => timeMs} session={{ user, requireSignIn }} />
+    </MemoryRouter>,
   );
 }
 
@@ -29,12 +32,14 @@ describe('ChatPanel', () => {
     expect(screen.queryByText('later')).toBeNull();
 
     rerender(
-      <ChatPanel
-        videoId="7"
-        timeMs={60_000}
-        getTimeMs={() => 60_000}
-        session={{ user: null, requireSignIn: () => {} }}
-      />,
+      <MemoryRouter>
+        <ChatPanel
+          videoId="7"
+          timeMs={60_000}
+          getTimeMs={() => 60_000}
+          session={{ user: null, requireSignIn: () => {} }}
+        />
+      </MemoryRouter>,
     );
     expect(await screen.findByText('later')).toBeTruthy();
   });
@@ -75,13 +80,15 @@ describe('ChatPanel', () => {
     mockApi({ '/videos/7/chat': { messages: [msg(1, 65_000, 'at 1:05')] } });
     const onSeek = vi.fn();
     render(
-      <ChatPanel
-        videoId="7"
-        timeMs={90_000}
-        getTimeMs={() => 90_000}
-        onSeek={onSeek}
-        session={{ user: null, requireSignIn: () => {} }}
-      />,
+      <MemoryRouter>
+        <ChatPanel
+          videoId="7"
+          timeMs={90_000}
+          getTimeMs={() => 90_000}
+          onSeek={onSeek}
+          session={{ user: null, requireSignIn: () => {} }}
+        />
+      </MemoryRouter>,
     );
     fireEvent.click(await screen.findByRole('button', { name: 'Play from 1:05' }));
     expect(onSeek).toHaveBeenCalledWith(65_000);

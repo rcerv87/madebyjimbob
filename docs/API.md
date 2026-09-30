@@ -22,6 +22,11 @@ Admins are the usernames in `ADMIN_USERNAMES`; they get `isAdmin: true` and see 
 | POST | `/videos/:id/chat` | required | `{ text, offsetMs, replyToId? }` → `{ message }`; broadcast to room. Native posts are replay chat (`postedLive: false`) until live native chat exists. 403 below the video's tier; `offsetMs` clamped to the video's length |
 | GET | `/videos/:id/comments?sort=top\|new&offset=` | optional | `{ total, comments, nextOffset }`: 20 top-level comments per page (top = pinned, then likes), each with all its `replies`. 403 below the video's tier |
 | POST | `/videos/:id/comments` | required | `{ text, offsetMs?, replyToId? }` → `{ comment }`. `replyToId` can be any comment on the video; the reply joins its thread and quotes it. `offsetMs` puts the comment in the chat feed at that moment (broadcast as `comment`). Up to 2,000 chars, line breaks kept, banned words masked, one per 5s |
+| GET | `/notifications` | required | `{ unread, notifications }`: latest 30 mentions/replies, each `{ id, type: mention\|reply, where: chat\|comment, videoId, videoTitle, actor, excerpt, offsetMs, commentId, read, createdAt }` |
+| POST | `/notifications/read` | required | `{ ids? }`: mark those read, or all when omitted |
+| GET | `/push/key` | — | `{ publicKey }` (null when push isn't configured) |
+| POST | `/push/subscribe` | required | `{ subscription }` from `PushManager.subscribe()`; 503 when push isn't configured |
+| DELETE | `/push/subscribe` | required | `{ endpoint }` |
 | GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded) |
 | PATCH | `/studio/videos/:id` | admin | `{ minTier }` |
 | GET | `/health` | — | Liveness |
@@ -53,6 +58,7 @@ Endpoint `/ws`.
 Client → server:
 | type | payload |
 |---|---|
+| `auth` | `{ token }` — receive this user's notifications on this socket |
 | `join` | `{ videoId, token? }` — leave previous room, join this one. Refused with `error` if the token's tier can't watch the video |
 
 Server → client:
@@ -61,6 +67,7 @@ Server → client:
 | `chat` | `{ message }` |
 | `error` | `{ error }` — join refused |
 | `comment` | `{ comment }` — a new timestamped comment, shown in the chat feed |
+| `notify` | `{ notification }` — to the recipient's authed sockets: someone mentioned or replied to them |
 | `vote` (MBJ-203) | `{ messageId, votes }` |
 | `hide` (MBJ-204) | `{ messageId }` |
 | `pin` (MBJ-207) | `{ message, until }` |
@@ -77,7 +84,6 @@ Server → client:
 | POST | `/mod/messages/:id/hide`, `/mod/users/:id/timeout`, `/mod/users/:id/ban` | MBJ-204 |
 | PATCH | `/mod/videos/:id/room` | MBJ-204 |
 | POST | `/videos/:id/tips` | MBJ-207 |
-| GET | `/notifications` | MBJ-202 |
 | GET | `/live/current` | MBJ-301 |
 | POST | `/account/youtube/link` | MBJ-305 |
 | GET | `/podcast/:feedToken.xml` | MBJ-503 |

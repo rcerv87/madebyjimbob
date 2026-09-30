@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, formatTime, getToken } from '../api.js';
 
 const WINDOW_MS = 120_000;
@@ -23,6 +24,8 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
   const [byId, setById] = useState(() => new Map());
   const [commentsById, setCommentsById] = useState(() => new Map());
   const [view, setView] = useState(readView);
+  const [params] = useSearchParams();
+  const chatParam = params.get('chat');
   const loaded = useRef(new Set());
   const listRef = useRef(null);
   const inputRef = useRef(null);
@@ -60,6 +63,11 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
       /* private mode: the choice just isn't remembered */
     }
   };
+
+  // Links from notifications (?chat=all) open the view that includes the message.
+  useEffect(() => {
+    if (chatParam === 'all') setView('all');
+  }, [chatParam]);
 
   // Reset when switching videos
   useEffect(() => {

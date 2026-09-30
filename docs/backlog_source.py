@@ -13,6 +13,7 @@ EPICS = {
     "5": ("Owned live & audio", "Platform-independent live, audio-only, and podcast feeds."),
     "6": ("Engagement & AI", "XP, badges, captions, recaps, call-ins."),
     "7": ("Studio & analytics", "Creator tools and audience insight."),
+    "8": ("Library & community", "Videos dashboard, playlists, up next, posts, and live presence."),
 }
 
 # id, phase, priority, size, title, user story, acceptance criteria, depends on
@@ -143,6 +144,27 @@ S = [
  ["Position saved every 10s and on leaving the page; on the account when signed in, in the browser otherwise",
   "Reopening resumes (past 10s, not in the last 30s) with Resumed from mm:ss and a Start over button",
   "?t=<seconds> links start at that time", "Video cards show a watched progress bar"], []),
+("213", 1, "Must", "M", "Installable web app (PWA)",
+ "As a viewer, I want to add the site to my phone's Home Screen and use it like an app.",
+ ["Web app manifest and icons; installable in Chrome/Edge (no installability errors)",
+  "Service worker caches the app shell; API, WebSockets, and video are never cached",
+  "Install app button where the browser supports it; one-time Share -> Add to Home Screen hint on iPhone"], []),
+("214", 1, "Must", "M", "Push notifications (web)",
+ "As a member, I want a notification on my phone when someone mentions or replies to me, even with the app closed.",
+ ["Web Push with VAPID keys; subscribe/unsubscribe endpoints; dead subscriptions removed",
+  "Turn on from the bell; iPhone asks to add to Home Screen first",
+  "Tapping a notification opens the video at that moment (and the thread for comments)",
+  "Needs VAPID_PRIVATE_KEY set on Render"], ["202", "213"]),
+("215", 1, "Should", "M", "Link YouTube and Rumble names to a profile",
+ "As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.",
+ ["Profile lets a member claim a YouTube handle and gets a one-time code",
+  "Posting the code in JimBob's live chat or as a comment verifies the claim on the next import",
+  "Rumble names verified by hand in Studio until Rumble chat ingest exists",
+  "Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member"], ["202"]),
+("216", 1, "Should", "S", "Count one view per viewer",
+ "As JimBob, I want view counts I can trust.",
+ ["A view counts once per viewer per video per day (account, or browser for signed-out)",
+  "Refreshes and resumed sessions don't add views"], []),
 # ---------------- 3 Live via YouTube ----------------
 ("301", 3, "Must", "M", "Live video model and live page",
  "As a viewer, I want to watch JimBob live without leaving the platform.",
@@ -228,6 +250,10 @@ S = [
  "As JimBob, I want owned streams archived automatically.",
  ["Live segments assembled into a VOD after the stream", "Chat replays in sync"], ["501"]),
 
+("506", 4, "Should", "M", "Move stored video to R2 (ADR-010)",
+ "As JimBob, I want my library in plain files I control, at a fraction of Stream's storage cost.",
+ ["Decision recorded on ADR-010", "Import transcodes to an HLS ladder + audio-only with ffmpeg and uploads to R2",
+  "Gated videos protected by a short-lived token checked at the edge", "Existing Stream videos migrated; captions kept (transcripts table)"], []),
 # ---------------- 6 Engagement & AI ----------------
 ("601", 5, "Must", "S", "Watch and listen tracking",
  "As JimBob, I want to know who actually watches and listens.",
@@ -267,6 +293,33 @@ S = [
 ("704", 1, "Should", "S", "Data export",
  "As JimBob, I want a copy of everything that's mine.",
  ["CSV export of chat (per video or all), members, and tips"], ["102"]),
+# ---------------- 8 Library & community ----------------
+("801", 1, "Must", "M", "Videos dashboard with filters",
+ "As a viewer, I want to find videos by type and search, starting from everything.",
+ ["Video types from import: regular, short, past live (vertical + short = short; was_live = live)",
+  "Filter chips: All, Videos, Shorts, Live, Members only; search and sort (newest, most viewed)",
+  "Members-only items show which tier unlocks them; access still enforced on the server"], []),
+("802", 1, "Must", "M", "Playlists",
+ "As a viewer, I want JimBob's playlists, and as JimBob I want to build my own.",
+ ["Import YouTube playlists with their order", "Studio: create, rename, reorder, add/remove videos",
+  "Playlists tab lists them with count and total length"], ["801"]),
+("803", 1, "Must", "S", "Up next and autoplay",
+ "As a viewer, I want the next video to start when one ends.",
+ ["Queue beside the player from the playlist (or related videos)", "Autoplay next with a short countdown and cancel",
+  "Works in Listen only too"], ["802"]),
+("804", 1, "Should", "L", "Posts",
+ "As JimBob, I want to post updates, images, and polls; as a member, I want to discuss them.",
+ ["Studio composer: text, image, poll", "Posts tab and post page; members-only posts respect tiers",
+  "Threaded, quote-aware comments reuse the comments system", "Check whether YouTube Community posts can be imported"], []),
+("805", 1, "Should", "S", "Live indicator",
+ "As a viewer, I want to see at a glance when JimBob is live.",
+ ["Red ring + LIVE badge on JimBob's avatar and the header when live", "Live card at the top of Videos",
+  "Studio Go live switch pointing at the YouTube live URL until MBJ-301 detects it automatically"], []),
+("806", 4, "Should", "M", "Import the whole channel",
+ "As the operator, I want to load JimBob's full library in one run.",
+ ["Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list",
+  "Proposes file-to-video matches for review; OBS recordings matched by date and length with an offset adjustment",
+  "Skips videos already imported; deletes local copies after upload; resumable overnight run"], ["506"]),
 ]
 
 PHASES = {0: "Phase 0 — Foundation", 1: "Phase 1 — VOD platform", 2: "Phase 2 — Mobile",
@@ -280,10 +333,15 @@ SPRINTS = [
     ("Sprint 5", "Shared types + mobile start", ["004", "401", "402"]),
     ("Sprint 6", "Mobile core", ["403", "404", "406"]),
     ("Sprint 7", "Go live", ["301", "205", "302", "303"]),
+    ("Next", "Library & presence (Ruben's order)", ["801", "802", "803", "805", "804"]),
 ]
 
 # Story status lives here, not in BACKLOG.md (that file is regenerated). Example: {"001": "Done"}
-STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done", "201": "Done", "210": "Done", "211": "Done", "212": "Done", "604": "In progress"}
+STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
+          "201": "Done", "202": "Done", "210": "Done", "211": "Done", "212": "Done", "213": "Done",
+          "214": "Done", "604": "In progress"}
+# 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
+# 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 604: Stream auto-captions + transcripts table + captions:fetch done; mobile player and Whisper (for R2) remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
@@ -295,6 +353,7 @@ def main():
     out = ["# Backlog — MadeByJimBob", "",
            "Generated from `docs/backlog_source.py` — edit there and re-run `python3 docs/backlog_source.py`.",
            "", "**Priority:** Must / Should / Could.  **Size:** S (≤1 day), M (2–3 days), L (~1 week), XL (>1 week).",
+           "", "Current state, decisions, and what's next: `docs/STATUS.md`.",
            "", "## Done (POC)", "",
            "- Stored video playback from Cloudflare Stream with gestures, mini player, listen-only, lock-screen metadata",
            "- YouTube import: video → Stream, chat replay → Postgres with `offset_ms`",

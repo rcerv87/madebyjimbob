@@ -49,7 +49,7 @@ MBJ-107,Owned email list,Accounts & memberships,Phase 1 — VOD platform,Must,S,
 MBJ-201,Chat replay polish,Chat & moderation,Phase 1 — VOD platform,Should,M,Done,"As a viewer, I want chat that feels as good as YouTube's.","- ""Jump to latest"" button appears when scrolled up; resumes auto-scroll
 - Hovering a message shows its video timestamp; clicking seeks the player there
 - On WebSocket reconnect, missed messages are fetched since the last id",
-MBJ-202,@mention autocomplete and notifications,Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a member, I want to know when someone mentions me.","- Typing `@` suggests recent chatters in this video
+MBJ-202,@mention autocomplete and notifications,Chat & moderation,Phase 1 — VOD platform,Should,M,Done,"As a member, I want to know when someone mentions me.","- Typing `@` suggests recent chatters in this video
 - Mentioned native users get an in-app notification (bell with count)
 - Clicking a notification opens the video at that message's timestamp",MBJ-101
 MBJ-203,Upvotes and top questions,Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a viewer, I want to upvote good messages; as JimBob, I want the best questions surfaced.","- One vote per user per message; toggle to remove
@@ -87,6 +87,19 @@ MBJ-212,Resume where you left off,Chat & moderation,Phase 1 — VOD platform,Mus
 - Reopening resumes (past 10s, not in the last 30s) with Resumed from mm:ss and a Start over button
 - ?t=<seconds> links start at that time
 - Video cards show a watched progress bar",
+MBJ-213,Installable web app (PWA),Chat & moderation,Phase 1 — VOD platform,Must,M,Done,"As a viewer, I want to add the site to my phone's Home Screen and use it like an app.","- Web app manifest and icons; installable in Chrome/Edge (no installability errors)
+- Service worker caches the app shell; API, WebSockets, and video are never cached
+- Install app button where the browser supports it; one-time Share -> Add to Home Screen hint on iPhone",
+MBJ-214,Push notifications (web),Chat & moderation,Phase 1 — VOD platform,Must,M,Done,"As a member, I want a notification on my phone when someone mentions or replies to me, even with the app closed.","- Web Push with VAPID keys; subscribe/unsubscribe endpoints; dead subscriptions removed
+- Turn on from the bell; iPhone asks to add to Home Screen first
+- Tapping a notification opens the video at that moment (and the thread for comments)
+- Needs VAPID_PRIVATE_KEY set on Render","MBJ-202, MBJ-213"
+MBJ-215,Link YouTube and Rumble names to a profile,Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.","- Profile lets a member claim a YouTube handle and gets a one-time code
+- Posting the code in JimBob's live chat or as a comment verifies the claim on the next import
+- Rumble names verified by hand in Studio until Rumble chat ingest exists
+- Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member",MBJ-202
+MBJ-216,Count one view per viewer,Chat & moderation,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want view counts I can trust.","- A view counts once per viewer per video per day (account, or browser for signed-out)
+- Refreshes and resumed sessions don't add views",
 MBJ-301,Live video model and live page,Live via YouTube,Phase 3 — Live via YouTube,Must,M,To do,"As a viewer, I want to watch JimBob live without leaving the platform.","- `videos.status` and `videos.source` added (see DATA_MODEL)
 - Live page embeds the YouTube IFrame player for the active broadcast
 - ""Live now"" banner on Home while a stream is live
@@ -151,6 +164,10 @@ MBJ-504,Restream to YouTube and Rumble,Owned live & audio,Phase 4 — Owned live
 - Targets configurable in Studio",MBJ-501
 MBJ-505,Owned live recordings,Owned live & audio,Phase 4 — Owned live + audio,Should,M,To do,"As JimBob, I want owned streams archived automatically.","- Live segments assembled into a VOD after the stream
 - Chat replays in sync",MBJ-501
+MBJ-506,Move stored video to R2 (ADR-010),Owned live & audio,Phase 4 — Owned live + audio,Should,M,To do,"As JimBob, I want my library in plain files I control, at a fraction of Stream's storage cost.","- Decision recorded on ADR-010
+- Import transcodes to an HLS ladder + audio-only with ffmpeg and uploads to R2
+- Gated videos protected by a short-lived token checked at the edge
+- Existing Stream videos migrated; captions kept (transcripts table)",
 MBJ-601,Watch and listen tracking,Engagement & AI,Phase 5 — Engagement,Must,S,To do,"As JimBob, I want to know who actually watches and listens.","- Client heartbeat every 60s while playing (video or listen-only)
 - Stored in `watch_sessions` with mode",MBJ-101
 MBJ-602,"XP, levels, badges",Engagement & AI,Phase 5 — Engagement,Should,M,To do,"As a regular, I want my loyalty visible in chat.","- XP from watch/listen time, messages, and upvotes received; tier multipliers per PRD
@@ -175,3 +192,22 @@ MBJ-702,Chat analytics,Studio & analytics,Phase 5 — Engagement,Should,M,To do,
 - Top questions and per-stream sentiment summary",MBJ-102
 MBJ-703,Members and revenue dashboard,Studio & analytics,Phase 1 — VOD platform,Should,M,To do,"As JimBob, I want to see who pays and how much I earn.","- Active members by tier, churn, MRR, tip totals by source","MBJ-104, MBJ-102"
 MBJ-704,Data export,Studio & analytics,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want a copy of everything that's mine.","- CSV export of chat (per video or all), members, and tips",MBJ-102
+MBJ-801,Videos dashboard with filters,Library & community,Phase 1 — VOD platform,Must,M,To do,"As a viewer, I want to find videos by type and search, starting from everything.","- Video types from import: regular, short, past live (vertical + short = short; was_live = live)
+- Filter chips: All, Videos, Shorts, Live, Members only; search and sort (newest, most viewed)
+- Members-only items show which tier unlocks them; access still enforced on the server",
+MBJ-802,Playlists,Library & community,Phase 1 — VOD platform,Must,M,To do,"As a viewer, I want JimBob's playlists, and as JimBob I want to build my own.","- Import YouTube playlists with their order
+- Studio: create, rename, reorder, add/remove videos
+- Playlists tab lists them with count and total length",MBJ-801
+MBJ-803,Up next and autoplay,Library & community,Phase 1 — VOD platform,Must,S,To do,"As a viewer, I want the next video to start when one ends.","- Queue beside the player from the playlist (or related videos)
+- Autoplay next with a short countdown and cancel
+- Works in Listen only too",MBJ-802
+MBJ-804,Posts,Library & community,Phase 1 — VOD platform,Should,L,To do,"As JimBob, I want to post updates, images, and polls; as a member, I want to discuss them.","- Studio composer: text, image, poll
+- Posts tab and post page; members-only posts respect tiers
+- Threaded, quote-aware comments reuse the comments system
+- Check whether YouTube Community posts can be imported",
+MBJ-805,Live indicator,Library & community,Phase 1 — VOD platform,Should,S,To do,"As a viewer, I want to see at a glance when JimBob is live.","- Red ring + LIVE badge on JimBob's avatar and the header when live
+- Live card at the top of Videos
+- Studio Go live switch pointing at the YouTube live URL until MBJ-301 detects it automatically",
+MBJ-806,Import the whole channel,Library & community,Phase 4 — Owned live + audio,Should,M,To do,"As the operator, I want to load JimBob's full library in one run.","- Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list
+- Proposes file-to-video matches for review; OBS recordings matched by date and length with an offset adjustment
+- Skips videos already imported; deletes local copies after upload; resumable overnight run",MBJ-506
