@@ -16,8 +16,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 
 ## Done (MVP hardening)
 
-- Username + password sign-in (scrypt); taken names need their password. Replaced by MBJ-101
-- Tier picker only when `ALLOW_TEST_TIERS=true`; Studio restricted to `ADMIN_USERNAMES`
+- Username + password sign-in (scrypt); replaced by real accounts in MBJ-101
+- Studio restricted to verified `ADMIN_EMAILS` (roles in MBJ-102)
 - Chat read, post, and WebSocket join enforce the video's tier
 - Malformed or unknown video ids return 400/404 instead of 500
 
@@ -237,15 +237,15 @@ Real users, tiers, payments, and server-enforced access.
 
 ### MBJ-101 — Real authentication
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-003
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-003
 
 As a viewer, I want a real account so my identity, tier, and history are mine.
 
 Acceptance criteria:
-- [ ] Self-hosted auth (ADR-006) with email + password, magic link, Google, and Apple sign-in
-- [ ] Users choose a unique username at signup (3–32 `[A-Za-z0-9_]`)
-- [ ] POC `/session` endpoint and `session_token` column removed
-- [ ] Tier can no longer be self-selected
+- [x] Self-hosted auth (ADR-006) with email + password (magic link, Google, and Apple sign-in are MBJ-110)
+- [x] Users choose a unique username at signup (3–32 `[A-Za-z0-9_]`)
+- [x] POC `/session` endpoint and `session_token` column removed
+- [x] Tier can no longer be self-selected
 
 ### MBJ-102 — Roles and Studio access
 
@@ -321,7 +321,7 @@ Acceptance criteria:
 
 ### MBJ-108 — Registration
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
 
 As a new viewer, I want to create an account in under a minute so I can chat, comment, and join.
 
@@ -389,7 +389,7 @@ Acceptance criteria:
 
 ### MBJ-113 — Password reset and email change
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
 
 As a member, I want to get back into my account if I forget my password, and keep my email up to date.
 

@@ -8,6 +8,12 @@ const bannedRe = banned.length ? new RegExp(`\\b(${banned.map(escape).join('|')}
 
 const mask = (text) => (bannedRe ? text.replace(bannedRe, (m) => '*'.repeat(m.length)) : text);
 
+// Usernames: any banned word anywhere in the name (names have no spaces, so word boundaries don't help).
+export function containsBannedWord(text) {
+  const t = String(text).toLowerCase();
+  return banned.some((w) => t.includes(w));
+}
+
 // Chat: one line.
 export function filterText(text) {
   return mask(String(text).replace(/\s+/g, ' ').trim());

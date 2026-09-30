@@ -60,13 +60,12 @@ describe('ChatPanel', () => {
     expect(screen.getByText('$20.00')).toBeTruthy();
   });
 
-  test('joins the video room over WebSocket with the saved token', async () => {
-    localStorage.setItem('mbjb_token', 'tok123');
+  test('joins the video room over WebSocket (the session cookie says who you are)', async () => {
     mockApi({ '/videos/7/chat': { messages: [] } });
     renderPanel();
     const ws = FakeWebSocket.instances[0];
     ws.onopen();
-    expect(ws.sent[0]).toEqual({ type: 'join', videoId: '7', token: 'tok123' });
+    expect(ws.sent[0]).toEqual({ type: 'join', videoId: '7' });
   });
 
   test('highlights whole YouTube handles but not emails', async () => {

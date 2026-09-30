@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { TIER_LABEL } from '../api.js';
 import { BRAND } from '../brand.js';
@@ -49,9 +49,7 @@ export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu }) {
           <>
             {notes && <Bell notes={notes} />}
             <span className={`tier-pill tier-${user.tier}`}>{TIER_LABEL[user.tier]}</span>
-            <span className="avatar" title={user.username}>
-              {user.username[0].toUpperCase()}
-            </span>
+            <AccountMenu user={user} onSignOut={onSignOut} />
             <button className="text-btn" onClick={onSignOut}>
               Sign out
             </button>
@@ -63,5 +61,59 @@ export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu }) {
         )}
       </div>
     </header>
+  );
+}
+
+// The avatar opens who you're signed in as and Sign out (the only way to sign out on phones).
+function AccountMenu({ user, onSignOut }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => !ref.current?.contains(e.target) && setOpen(false);
+    const onKey = (e) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="account-menu-wrap" ref={ref}>
+      <button
+        type="button"
+        className="avatar"
+        aria-label="Account"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={user.username}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {user.username[0].toUpperCase()}
+      </button>
+      {open && (
+        <div className="account-menu" role="menu">
+          <p className="account-menu-who">
+            <strong>{user.username}</strong>
+            {user.email && <span className="muted small">{user.email}</span>}
+            <span className="muted small">{TIER_LABEL[user.tier]} member</span>
+          </p>
+          <button
+            type="button"
+            role="menuitem"
+            className="account-menu-item"
+            onClick={() => {
+              setOpen(false);
+              onSignOut();
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

@@ -22,7 +22,7 @@ MBJ-007,Structured logging,Foundation,Phase 0 — Foundation,Should,S,Done,"As t
 - Errors logged with stack; no secrets or tokens logged",
 MBJ-008,Staging environment,Foundation,Phase 0 — Foundation,Should,S,To do,"As the product owner, I want to review changes before they reach JimBob's audience.","- Separate Render service + database for staging deployed from `staging` branch
 - Documented in README",MBJ-003
-MBJ-101,Real authentication,Accounts & memberships,Phase 1 — VOD platform,Must,L,To do,"As a viewer, I want a real account so my identity, tier, and history are mine.","- Self-hosted auth (ADR-006) with email + password, magic link, Google, and Apple sign-in
+MBJ-101,Real authentication,Accounts & memberships,Phase 1 — VOD platform,Must,L,Done,"As a viewer, I want a real account so my identity, tier, and history are mine.","- Self-hosted auth (ADR-006) with email + password (magic link, Google, and Apple sign-in are MBJ-110)
 - Users choose a unique username at signup (3–32 `[A-Za-z0-9_]`)
 - POC `/session` endpoint and `session_token` column removed
 - Tier can no longer be self-selected",MBJ-003
@@ -50,7 +50,7 @@ MBJ-107,Owned email list,Accounts & memberships,Phase 1 — VOD platform,Must,S,
 - Admin can export opted-in users as CSV from Studio
 - Unsubscribe link handling documented
 - Start from the existing Shopify newsletter list (export from Shopify customers who accepted marketing)","MBJ-101, MBJ-102"
-MBJ-108,Registration,Accounts & memberships,Phase 1 — VOD platform,Must,M,To do,"As a new viewer, I want to create an account in under a minute so I can chat, comment, and join.","- `/join` page and a sign-up dialog anywhere an action needs an account (chat, comment, like); afterwards you land back where you were, with the action ready
+MBJ-108,Registration,Accounts & memberships,Phase 1 — VOD platform,Must,M,In progress,"As a new viewer, I want to create an account in under a minute so I can chat, comment, and join.","- `/join` page and a sign-up dialog anywhere an action needs an account (chat, comment, like); afterwards you land back where you were, with the action ready
 - Fields: email, username, password (at least 10 characters, checked against known-leaked passwords); Google and Apple once MBJ-110 lands
 - Username: unique ignoring case, 3–32 `[A-Za-z0-9_]`, live availability check with suggestions; reserved names blocked (jimbob, admin, mod, support, and staff names); banned words blocked
 - ""I'm 13 or older"" checkbox; Terms and Privacy links; optional email-list opt-in (MBJ-107)
@@ -78,7 +78,7 @@ MBJ-112,Payments and fees decision (ADR),Accounts & memberships,Phase 1 — VOD 
 - Model real money with JimBob's numbers: memberships, Bob Chats/tips by size, merch orders, and the current Shopify plan and apps
 - Decide merch: keep Shopify, or move to our own checkout (Stripe) with a print-on-demand partner for fulfilment; show the yearly saving and the work involved
 - Record the decision as an ADR and update MBJ-104, MBJ-109, MBJ-111, and MBJ-807",
-MBJ-113,Password reset and email change,Accounts & memberships,Phase 1 — VOD platform,Must,M,To do,"As a member, I want to get back into my account if I forget my password, and keep my email up to date.","- ""Forgot password?"" sends a reset link (one use, expires in 1 h); the response never reveals whether the email has an account
+MBJ-113,Password reset and email change,Accounts & memberships,Phase 1 — VOD platform,Must,M,In progress,"As a member, I want to get back into my account if I forget my password, and keep my email up to date.","- ""Forgot password?"" sends a reset link (one use, expires in 1 h); the response never reveals whether the email has an account
 - Resetting or changing the password signs out every other device
 - Change email: confirm with the password, verify the new address, and notify the old one with a link to undo within 7 days
 - Change password from Account settings (current password required)

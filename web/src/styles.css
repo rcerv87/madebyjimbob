@@ -109,6 +109,8 @@ code {
 }
 .search {
   flex: 1;
+  /* Shrink on phones instead of pushing Sign in / the avatar off the screen. */
+  min-width: 0;
   max-width: 560px;
   margin: 0 auto;
   display: flex;
@@ -134,6 +136,7 @@ code {
 }
 .account {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 10px;
 }
@@ -145,6 +148,51 @@ code {
   border-radius: 50%;
   background: var(--raised);
   font-weight: 600;
+}
+button.avatar {
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+button.avatar[aria-expanded='true'] {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.account-menu-wrap {
+  position: relative;
+}
+.account-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(260px, calc(100vw - 24px));
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  z-index: 30;
+  overflow: hidden;
+}
+.account-menu-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.account-menu-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: none;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+.account-menu-item:hover,
+.account-menu-item:focus-visible {
+  background: var(--panel);
 }
 .icon-btn {
   background: none;
@@ -1737,6 +1785,9 @@ code {
   }
 }
 .install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 600;
   color: var(--accent-text);
 }
@@ -2563,12 +2614,16 @@ td select,
   z-index: 50;
   background: rgba(5, 7, 10, 0.7);
   display: grid;
+  /* One column no wider than the screen, so long text wraps instead of widening the dialog. */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: 16px;
 }
 .dialog {
   width: 100%;
   max-width: 380px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -2601,6 +2656,90 @@ td select,
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* ---------- sign-in and account ---------- */
+.dialog .hint,
+.narrow-page .hint {
+  margin-top: -8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.dialog label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.dialog label.check input {
+  height: 18px;
+  width: 18px;
+  accent-color: var(--accent);
+}
+.forgot-link {
+  align-self: flex-start;
+  margin-top: -6px;
+}
+.auth-switch {
+  text-align: center;
+  color: var(--muted);
+}
+.narrow-page {
+  max-width: 420px;
+  margin: 32px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.narrow-page label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.narrow-page input {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.narrow-page .primary-btn {
+  align-self: flex-start;
+}
+.account-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold);
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 0.92rem;
+}
+.account-notice.ok {
+  border-left-color: var(--accent);
+}
+.account-notice > span:first-child {
+  flex: 1 1 260px;
+}
+.account-notice input {
+  flex: 1 1 200px;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.account-notice .error {
+  flex-basis: 100%;
 }
 
 /* ---------- responsive ---------- */
@@ -2677,7 +2816,28 @@ td select,
     padding: 16px;
   }
   .account .tier-pill,
-  .account .text-btn {
+  .account > .text-btn {
+    display: none;
+  }
+  /* Everything in the top bar has to fit a 360px phone. */
+  .topbar {
+    gap: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .search button {
+    width: 42px;
+  }
+  .account {
+    gap: 4px;
+  }
+  .account .primary-btn {
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 480px) {
+  .install-label {
     display: none;
   }
 }

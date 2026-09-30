@@ -6,13 +6,14 @@
     "start": "node src/index.js",
     "dev": "npm run migrate && node --watch src/index.js",
     "import": "node scripts/import-youtube.js",
-    "test": "node --test --test-concurrency=1 \"test/**/*.test.js\"",
+    "test": "node --test --test-concurrency=1 --test-timeout=60000 \"test/**/*.test.js\"",
     "migrate": "node scripts/migrate.js",
     "migrate:create": "node-pg-migrate create --migrations-dir migrations --migration-file-language sql",
     "captions:fetch": "node scripts/fetch-captions.js",
     "import:playlists": "node scripts/import-playlists.js"
   },
   "dependencies": {
+    "better-auth": "^1.7.6",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "node-pg-migrate": "^9.0.0",

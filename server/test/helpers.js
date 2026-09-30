@@ -19,8 +19,11 @@ if (testUrl === process.env.DATABASE_URL || !/test/i.test(new URL(testUrl).pathn
 // Must be set before src/db.js and src/app.js load.
 process.env.DATABASE_URL = testUrl;
 process.env.PGSSL = process.env.PGSSL_TEST || 'false';
-process.env.ADMIN_USERNAMES = 'test_admin';
-process.env.ALLOW_TEST_TIERS = 'true';
+// test_admin@test.example is an admin once verified; signIn() verifies it.
+process.env.ADMIN_EMAILS = 'test_admin@test.example,jimbob@test.example';
+process.env.BETTER_AUTH_SECRET = 'test-secret-that-is-at-least-32-characters-long';
+process.env.PASSWORD_LEAK_CHECK = 'off'; // no calls to Have I Been Pwned from tests
+process.env.AUTH_RATE_LIMIT = 'off';
 process.env.BANNED_WORDS = 'badword';
 process.env.LOG_LEVEL = process.env.LOG_LEVEL_TEST || 'silent';
 // Push off in tests (no real pushes), whatever the local .env has.
@@ -52,10 +55,13 @@ export async function stopServer() {
 
 export function client(base) {
   return async function call(pathname, { method = 'GET', body, token } = {}) {
-    const headers = { 'Content-Type': 'application/json' };
+    // Browsers always send Origin; Better Auth refuses state-changing requests without it (CSRF).
+    const headers = { 'Content-Type': 'application/json', Origin: new URL(base).origin };
     if (token) headers.Authorization = `Bearer ${token}`;
     const res = await fetch(base + pathname, { method, headers, body: body && JSON.stringify(body) });
-    return { status: res.status, data: await res.json().catch(() => null) };
+    // Better Auth hands the session token for Bearer use in this header (bearer plugin).
+    const newToken = res.headers.get('set-auth-token');
+    return { status: res.status, data: await res.json().catch(() => null), token: newToken };
   };
 }
 
@@ -80,10 +86,25 @@ export async function seedChat(videoId, messages) {
   }
 }
 
-export async function signIn(call, username, tier = 'free', password = 'password123') {
-  const r = await call('/session', { method: 'POST', body: { username, password, tier } });
-  if (r.status !== 200) throw new Error(`sign-in failed for ${username}: ${JSON.stringify(r.data)}`);
-  return r.data.token;
+export const emailFor = (username) => `${username.toLowerCase()}@test.example`;
+
+// Real sign-up (or sign-in when the name exists) through Better Auth; returns a Bearer token.
+// Tiers can't be chosen by users, so a test tier is set straight in the database.
+export async function signIn(call, username, tier = 'free', password = 'password1234') {
+  let r = await call('/auth/sign-up/email', {
+    method: 'POST',
+    body: { email: emailFor(username), password, name: username, username },
+  });
+  if (r.status !== 200)
+    r = await call('/auth/sign-in/username', { method: 'POST', body: { username, password } });
+  if (r.status !== 200 || !r.token)
+    throw new Error(`sign-in failed for ${username}: ${JSON.stringify(r.data)}`);
+  await pool.query('UPDATE users SET tier = $1, email_verified = email_verified OR $2 WHERE id = $3', [
+    tier,
+    username === 'test_admin',
+    r.data.user.id,
+  ]);
+  return r.token;
 }
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

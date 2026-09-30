@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api, formatTime, getToken, timeAgo } from './api.js';
+import { api, formatTime, timeAgo } from './api.js';
 import { usePush } from './push.js';
 
 // Link a notification opens: the video at that moment, plus the comment thread for comments.
@@ -46,7 +46,7 @@ export function useNotifications(user) {
     let retry;
     const connect = () => {
       ws = new WebSocket(`${proto}://${location.host}/ws`);
-      ws.onopen = () => ws.send(JSON.stringify({ type: 'auth', token: getToken() }));
+      ws.onopen = () => ws.send(JSON.stringify({ type: 'auth' }));
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data);
         if (msg.type !== 'notify') return;

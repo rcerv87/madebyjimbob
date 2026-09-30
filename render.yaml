@@ -19,13 +19,14 @@ services:
       # Not secret: it appears in every public Stream URL.
       - key: CF_STREAM_CUSTOMER_CODE
         value: xw9exz2muwhw7zsm
-      # Comma-separated usernames that can open Studio. Sign up as one of them right after deploy.
-      - key: ADMIN_USERNAMES
+      # Comma-separated emails that can open Studio once verified (MBJ-101). Add by hand in Render.
+      - key: ADMIN_EMAILS
         sync: false
+      # Signs session cookies; Render generates it once. Changing it signs everyone out.
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
       - key: BANNED_WORDS
         sync: false
-      - key: ALLOW_TEST_TIERS
-        value: 'false'
       - key: LOG_LEVEL
         value: info
       # Web Push (phone notifications). The public key is safe to publish; the private key is secret:

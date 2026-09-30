@@ -74,7 +74,8 @@ export async function sendEmail({ to, template, data = {}, userId = null }) {
     );
 
   const { rowCount } = await pool.query('SELECT 1 FROM email_suppressions WHERE email = $1', [address]);
-  if (rowCount) {
+  // .invalid never receives mail (RFC 2606); POC accounts have placeholder addresses there.
+  if (rowCount || address.endsWith('.invalid')) {
     await log('suppressed');
     return { status: 'suppressed' };
   }

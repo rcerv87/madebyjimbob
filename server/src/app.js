@@ -1,8 +1,6 @@
 import express from 'express';
 import http from 'http';
 import path from 'path';
-import crypto from 'crypto';
-import { promisify } from 'util';
 import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import { pool } from './db.js';
@@ -11,6 +9,8 @@ import { playback } from './stream.js';
 import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
 import { pageMeta, renderPage } from './pages.js';
+import { toNodeHandler } from 'better-auth/node';
+import { auth, sessionUser, ADMIN_EMAILS } from './auth.js';
 import {
   addUserSocket,
   removeUserSocket,
@@ -35,18 +35,18 @@ const CHAT_WINDOW_MAX = 3000;
 const COMMENTS_PAGE = 20;
 const COMMENT_MAX_CHARS = 2000;
 const MAX_OFFSET_MS = 2_147_483_647; // chat_messages.offset_ms is INT
-const ALLOW_TEST_TIERS = process.env.ALLOW_TEST_TIERS === 'true';
-const ADMINS = new Set(
-  (process.env.ADMIN_USERNAMES || '')
-    .split(',')
-    .map((u) => u.trim().toLowerCase())
-    .filter(Boolean),
-);
 
 const app = express();
 // Behind Render's proxy: trust X-Forwarded-Proto so page URLs (link previews, canonical) use https.
 app.set('trust proxy', 1);
 app.use(httpLogger);
+// The client IP as Express sees it behind Render's proxy, for Better Auth's rate limits and session list.
+app.use((req, _res, next) => {
+  req.headers['x-mbj-client-ip'] = req.ip;
+  next();
+});
+// Sign-up, sign-in, sign-out, email verification, password reset (Better Auth reads its own body).
+app.all('/api/auth/*', toNodeHandler(auth));
 app.use(
   express.json({
     limit: '50kb',
@@ -59,40 +59,8 @@ app.use(
 
 // ---------- helpers ----------
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
-const scrypt = promisify(crypto.scrypt);
-
-async function hashPassword(password) {
-  const salt = crypto.randomBytes(16);
-  const hash = await scrypt(password, salt, 64);
-  return `scrypt$${salt.toString('hex')}$${hash.toString('hex')}`;
-}
-
-async function checkPassword(password, stored) {
-  const [scheme, salt, hash] = String(stored).split('$');
-  if (scheme !== 'scrypt' || !salt || !hash) return false;
-  const actual = await scrypt(password, Buffer.from(salt, 'hex'), 64);
-  return crypto.timingSafeEqual(actual, Buffer.from(hash, 'hex'));
-}
-
-function publicUser(u) {
-  if (!u) return null;
-  const isAdmin = ADMINS.has(u.username.toLowerCase());
-  // Admins see every tier so JimBob and mods can check gated videos.
-  return { id: u.id, username: u.username, tier: isAdmin ? 'premium' : u.tier, xp: u.xp, isAdmin };
-}
-
-async function userByToken(token) {
-  if (!token) return null;
-  const { rows } = await pool.query('SELECT id, username, tier, xp FROM users WHERE session_token = $1', [
-    String(token),
-  ]);
-  return publicUser(rows[0]);
-}
-
-function currentUser(req) {
-  const h = req.get('authorization') || '';
-  return h.startsWith('Bearer ') ? userByToken(h.slice(7)) : Promise.resolve(null);
-}
+// The signed-in user (session cookie, or `Authorization: Bearer` for tests and apps), or null.
+const currentUser = (req) => sessionUser(req.headers);
 
 const canWatch = (user, video) => TIER_RANK[user?.tier || 'free'] >= TIER_RANK[video.min_tier];
 
@@ -206,74 +174,7 @@ function chatRow(r) {
   };
 }
 
-// ---------- session (MVP: username + password; real auth comes in MBJ-101) ----------
-const failedSignIns = new Map(); // lowercased username -> { count, until }
-
-app.get('/api/config', (_req, res) => res.json({ allowTestTiers: ALLOW_TEST_TIERS }));
-
-app.post(
-  '/api/session',
-  wrap(async (req, res) => {
-    const username = String(req.body.username || '').trim();
-    const password = String(req.body.password || '');
-    if (!/^[A-Za-z0-9_]{3,32}$/.test(username)) {
-      return res.status(400).json({ error: 'Use 3–32 letters, numbers, or underscores.' });
-    }
-    if (password.length < 8 || password.length > 200) {
-      return res.status(400).json({ error: 'Use a password of at least 8 characters.' });
-    }
-
-    const key = username.toLowerCase();
-    const lock = failedSignIns.get(key);
-    if (lock && lock.count >= 10 && lock.until > Date.now()) {
-      return res.status(429).json({ error: 'Too many wrong passwords. Try again in 15 minutes.' });
-    }
-
-    const token = crypto.randomBytes(24).toString('hex');
-    const testTier = ALLOW_TEST_TIERS && TIER_RANK[req.body.tier] !== undefined ? req.body.tier : null;
-    const { rows: existing } = await pool.query(
-      'SELECT id, username, password_hash FROM users WHERE lower(username) = $1',
-      [key],
-    );
-
-    let user;
-    if (existing[0]) {
-      const found = existing[0];
-      // POC accounts have no password yet; the first sign-in sets it.
-      if (found.password_hash && !(await checkPassword(password, found.password_hash))) {
-        const n = lock && lock.until > Date.now() ? lock.count + 1 : 1;
-        failedSignIns.set(key, { count: n, until: Date.now() + 15 * 60_000 });
-        return res.status(401).json({ error: 'That username is taken, or the password is wrong.' });
-      }
-      failedSignIns.delete(key);
-      const hash = found.password_hash || (await hashPassword(password));
-      const { rows } = await pool.query(
-        `UPDATE users SET session_token = $1, password_hash = $2, tier = COALESCE($3, tier)
-       WHERE id = $4 RETURNING id, username, tier, xp`,
-        [token, hash, testTier, found.id],
-      );
-      user = rows[0];
-    } else {
-      const { rows } = await pool.query(
-        `INSERT INTO users (username, tier, session_token, password_hash) VALUES ($1, $2, $3, $4)
-       RETURNING id, username, tier, xp`,
-        [username, testTier || 'free', token, await hashPassword(password)],
-      );
-      user = rows[0];
-    }
-    res.json({ token, user: publicUser(user) });
-  }),
-);
-
-app.delete(
-  '/api/session',
-  wrap(async (req, res) => {
-    const user = await currentUser(req);
-    if (user) await pool.query('UPDATE users SET session_token = NULL WHERE id = $1', [user.id]);
-    res.json({ ok: true });
-  }),
-);
-
+// ---------- account ----------
 app.get(
   '/api/me',
   wrap(async (req, res) => {
@@ -1189,9 +1090,14 @@ function leave(ws, roomId) {
   if (!room.size) rooms.delete(roomId);
 }
 
-wss.on('connection', (ws) => {
+// Who's on this socket: the session cookie sent with the upgrade (web), or a `token` in the message
+// (apps and tests, same as a Bearer header).
+wss.on('connection', (ws, req) => {
   let joined = null;
   let userId = null;
+  const connectionUser = sessionUser(req.headers).catch(() => null);
+  const userFor = (msg) =>
+    msg.token ? sessionUser({ authorization: `Bearer ${String(msg.token)}` }) : connectionUser;
   ws.on('message', async (raw) => {
     let msg;
     try {
@@ -1199,10 +1105,10 @@ wss.on('connection', (ws) => {
     } catch {
       return;
     }
-    // { type: 'auth', token }: receive this user's notifications on this socket.
+    // { type: 'auth' }: receive this user's notifications on this socket.
     if (msg.type === 'auth') {
       try {
-        const user = await userByToken(msg.token);
+        const user = await userFor(msg);
         if (userId) removeUserSocket(userId, ws);
         userId = user?.id ?? null;
         if (userId) addUserSocket(userId, ws);
@@ -1214,7 +1120,7 @@ wss.on('connection', (ws) => {
     if (msg.type !== 'join') return;
     try {
       const video = await findVideo(msg.videoId);
-      const user = await userByToken(msg.token);
+      const user = await userFor(msg);
       if (!video || !canWatch(user, video)) {
         ws.send(JSON.stringify({ type: 'error', error: 'You can’t join this chat.' }));
         return;
@@ -1233,4 +1139,4 @@ wss.on('connection', (ws) => {
   });
 });
 
-export { app, server, ADMINS };
+export { app, server, ADMIN_EMAILS };

@@ -80,6 +80,12 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - Chat messages always carry `offset_ms` (position in the video). That field is what makes replay sync work — never drop it.
 - Chat `source` is one of `youtube | rumble | native`. New sources get a new enum value, not a new table.
 - Tier checks happen on the server. The client only hides UI.
+- Accounts: Better Auth (`server/src/auth.js`, ADR-006) on our tables (`users`, `sessions`, `accounts`,
+  `verifications`); its endpoints live under `/api/auth/*`. Get the signed-in user with `currentUser(req)` /
+  `sessionUser(headers)`. The web app uses the session cookie; tests and apps use `Authorization: Bearer`
+  (the `set-auth-token` header from sign-in). Tests sign up with `signIn(call, name, tier)` in `test/helpers.js`,
+  which sets the tier in the database (users can't choose one). Better Auth refuses requests without an
+  `Origin` header, so test clients send one.
 - Notifications: call `notifyFor()` from `server/src/notify.js` after saving anything that can mention or reply to someone; it stores, sends over WebSocket, and pushes.
 - Email: only through `sendEmail()` in `server/src/email.js` with a template from `emailTemplates.js` (never call
   the provider directly). It skips suppressed addresses and logs every send. Tests blank `RESEND_API_KEY` and
@@ -110,7 +116,7 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - After changing server code, restart the local server before browser-testing; a stale server returns old
   API shapes (this broke the dashboard once).
 - Web tests that render `ChatPanel` need a router (`MemoryRouter`) because it reads `?chat=`.
-- Server tests blank `VAPID_*` (no real pushes) and point `SHOP_URL` at a stub store; they never touch the
+- Server tests blank `VAPID_*` (no real pushes), turn off auth rate limits and the leaked-password check, and point `SHOP_URL` at a stub store; they never touch the
   real store or push services.
 - Autoplay rules: browsers allow sound only after a user gesture on the site; the player then waits with a
   Play button (never muted). Phones pause `<video>` when locked; Listen only switches to `<audio>`, and the player does that on its own
@@ -118,7 +124,7 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 
 ## Known POC shortcuts (tracked in backlog)
 
-- Username + password sign-in built in-house; tier picker when `ALLOW_TEST_TIERS=true` → MBJ-101
-- Studio access is the `ADMIN_USERNAMES` env list, not roles → MBJ-102
+- Studio access is the `ADMIN_EMAILS` env list (verified emails), not roles → MBJ-102
+- Google/Apple sign-in, magic links, passkeys, and the device list aren't built yet → MBJ-110
 - Stream URLs unsigned → MBJ-103
 - In-memory rate limit → MBJ-205 (Redis)
