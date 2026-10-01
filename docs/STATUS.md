@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 246 automated tests (149 server, 97 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 101 stories; 23 done, 11 in progress |
+| Quality | 251 automated tests (153 server, 98 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 101 stories; 24 done, 11 in progress |
 
 ## Waiting on Ruben
 
@@ -145,6 +145,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   YouTube @handle or Rumble name; a moderator confirms it in Studio → Linked accounts (shown how much that
   handle has posted). Then all of that YouTube channel's chat and comments (past and future, matched by channel
   id so renames don't break it) show their site name and tier, and @mentions of the handle notify them.
+- **Views count once per viewer per video per day** (MBJ-216): refreshes, resumed sessions, and second tabs
+  don't add views; signed-out viewers are told apart by a random browser id (no IPs stored).
 - **Download my data / delete my account** (MBJ-118, in /account → Privacy and data): a JSON file of everything
   we hold; deleting needs the password, signs out everywhere, and waits 30 days (signing in calls it off), then an
   hourly job erases the account. Their chat and comments stay as "Deleted user", or are blanked and hidden if they
@@ -217,7 +219,6 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   account (fix planned with MBJ-110's "merge an existing account").
 - No payments: everyone is Free unless an admin changes a video to Free (MBJ-104). Keep videos Free until then.
 - Paid-video links aren't signed; a copied Stream link plays for anyone (MBJ-103).
-- Every page open counts as a view (MBJ-216).
 - Account erasure runs hourly inside the web server; with more than one server it needs a single scheduled job.
   A deleted member's username becomes free again right away.
 - Rate limits and live chat rooms live in one server's memory; fine for one Render instance (MBJ-205 for more).

@@ -579,7 +579,7 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.

@@ -39,7 +39,7 @@ they get `isAdmin: true` and see every tier.
 | GET | `/playlists` | — | Playlists with at least one video on the site: `{ id, title, description, source, videoCount, durationS, thumbnail, firstVideoId }` |
 | GET | `/playlists/:id` | optional | `{ playlist, videos }` in playlist order (only videos on the site) |
 | GET | `/videos/:id` | optional | Video detail; `hls` only if tier allows, else `locked: true` |
-| POST | `/videos/:id/view` | — | Increment views |
+| POST | `/videos/:id/view` | optional | `{ viewer? }` (the web app's random browser id) → `{ ok, counted }`. Counts once per viewer per video per UTC day: the account when signed in, else the browser id, else a daily hash of address + browser (MBJ-216) |
 | GET | `/videos/:id/chat?from=&to=` | optional | Chat window by `offset_ms` (max 3,000). 403 if the viewer's tier can't watch the video |
 | GET | `/videos/:id/comments/:commentId` | optional | The whole thread containing that comment: `{ comment }` with `replies` |
 | POST | `/videos/:id/vote` | required | `{ value: 1 \| -1 \| 0 }` (0 clears) → `{ likes, myVote }`; tier-gated. Video detail includes `likes` and `myVote`; dislikes only appear in `/studio/overview` |

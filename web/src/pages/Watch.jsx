@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, count, formatTime, timeAgo, TIER_LABEL } from '../api.js';
 import { createClock, useClock } from '../clock.js';
-import { readLocal, resumePoint, saveProgress } from '../progress.js';
+import { readLocal, resumePoint, saveProgress, viewerId } from '../progress.js';
 import Player from '../components/Player.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
 import Comments from '../components/Comments.jsx';
@@ -74,7 +74,7 @@ export default function Watch({ session, background = false }) {
 
   // One view per video opened, not another when the viewer signs in or out.
   useEffect(() => {
-    api(`/videos/${id}/view`, { method: 'POST' }).catch(() => {});
+    api(`/videos/${id}/view`, { method: 'POST', body: { viewer: viewerId() } }).catch(() => {});
   }, [id]);
 
   // A different video starts fresh. Signing in or out reloads this one in place, so a members video can

@@ -36,3 +36,18 @@ export function resumePoint(savedMs, durationS) {
   if (durationS && savedMs > durationS * 1000 - 30_000) return null;
   return savedMs;
 }
+
+// A random id for this browser, so a signed-out viewer counts once per video per day (MBJ-216). Not tied to
+// anything else; clearing site data makes a new one.
+export function viewerId() {
+  try {
+    let id = localStorage.getItem('mbjb_viewer');
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem('mbjb_viewer', id);
+    }
+    return id;
+  } catch {
+    return undefined;
+  }
+}
