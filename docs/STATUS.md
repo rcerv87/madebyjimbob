@@ -28,17 +28,16 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 6. **JimBob's OK** on using his avatar, banner art, and store products in the platform before the link goes wide.
 7. **Turn on account email** (MBJ-114, ADR-012; free until launch, then $20/month). About 15 minutes plus DNS time:
    1. Sign up at https://resend.com with an address you'll keep (ideally one JimBob can also reach).
-   2. Resend → **Domains** → **Add domain** → `madebyjimbob.com`. It lists 3–4 DNS records.
-   3. Open the place madebyjimbob.com's DNS is managed (Shopify admin → Settings → Domains → madebyjimbob.com →
-      DNS settings if the domain was bought through Shopify; otherwise the registrar). Add each record exactly
+   2. Resend → **Domains** → **Add domain** → `madebyjimbob.app` (the beta address; `.com` later, ADR-011). It lists 3–4 DNS records.
+   3. Open the DNS settings where madebyjimbob.app was bought. Add each record exactly
       as Resend shows it. If there is no `_dmarc` TXT record yet, also add `_dmarc` → `v=DMARC1; p=none;`.
       Don't touch the existing records the store uses.
    4. Resend → **Verify DNS records** (minutes to a few hours).
-   5. Resend → **API Keys** → **Create API key** → permission **Sending access**, domain `madebyjimbob.com` → copy it.
+   5. Resend → **API Keys** → **Create API key** → permission **Sending access**, domain `madebyjimbob.app` → copy it.
    6. Resend → **Webhooks** → **Add webhook** → URL `https://madebyjimbob.onrender.com/api/webhooks/resend`,
       events **email.bounced** and **email.complained** → save, then copy its **signing secret** (`whsec_…`).
    7. Render → `madebyjimbob` → **Environment** → add `RESEND_API_KEY` (step 5), `EMAIL_FROM` =
-      `MADEbyJIMBOB <hello@madebyjimbob.com>`, `EMAIL_REPLY_TO` = the inbox replies should reach,
+      `MADEbyJIMBOB <hello@madebyjimbob.app>`, `EMAIL_REPLY_TO` = the inbox replies should reach,
       `RESEND_WEBHOOK_SECRET` (step 6). Save; Render redeploys.
    8. Studio → **Account email** → pick a template → **Send test** to your own address. Check it arrives (not in spam).
 8. **Studio on the live site needs admin emails** (MBJ-101 moved admins from usernames to verified emails):
@@ -47,15 +46,17 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    2. On the live site → **Sign in** → **Create an account** with that email (JimBob can take the username `jimbob`).
    3. Open the confirmation email and tap **Confirm email** (needs item 7 done first). Studio then appears.
    Locally: put your email in `ADMIN_EMAILS` in `.env` (the line is there, empty).
-9. **Cloudflare keys on Render** (needed for Replace video and for Delete to remove the file from Cloudflare):
+   Already done another way: `rcervantes` has `role = admin` on the live site (`npm run set-role -- <username> admin --live`).
+9. **Cloudflare keys on Render** (needed for Replace video, Add videos → From files, and for Delete to remove the file):
    1. First roll the token (item 2) since the old one was pasted in chat; put the new one in your local `.env`.
    2. Render → `madebyjimbob` → **Environment** → add `CF_ACCOUNT_ID` and `CF_API_TOKEN` (same values as `.env`).
-10. **Importing**: in a terminal in the project folder run `npm run import:worker` and leave it open while
-   importing; then paste links in Studio → Add videos. Studio shows "Helper running" while it's on.
-11. **Optional: a free YouTube Data API key** makes Studio → From the channel list instantly, without the helper
-   (steps in this morning's summary). Add it on Render as `YOUTUBE_API_KEY`.
+10. **Importing**: double-click **MadeByJimBob Import Helper** on the desktop (a .bat running `npm run import:worker`,
+   restarts on crash; Ruben prefers double-click over auto-start) and leave it open while importing. Restart it after
+   a deploy that changes the helper. Studio shows "Helper running" while it's on.
+11. **YouTube Data API key: done 2026-10-01** (Ruben's Google account, restricted to YouTube Data API v3, in the local
+   `.env` that the helper reads). The API reports 1,016 videos vs yt-dlp's 926: re-request the channel list once.
 12. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
-   Google Takeout export of the channel (guide: the "JimBob's YouTube Backup" page); tier prices and perks;
+   Google Takeout export of the channel (Studio → Add videos → From files takes the folder; guide: the "JimBob's YouTube Backup" page); tier prices and perks;
    moderators; brand assets and domain.
 
 ## What's built
@@ -255,8 +256,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    them to Google/Apple/Outlook or subscribe to a feed, and get reminders.
 4. **Navigation bar** — top nav for every section, bottom tab bar on phones and in the app (MBJ-810);
    **social links and sharing** with link previews (MBJ-809).
-5. **Studio: manage videos and users** — upload from the browser, edit, replace, unpublish, delete
-   (MBJ-701); find members, ban/time out, highlight regulars and guests, roles, staff notes (MBJ-705, with the
+5. **Studio: manage users** (add from links/channel/files, replace, delete are done; edit and unpublish remain, MBJ-701); find members, ban/time out, highlight regulars and guests, roles, staff notes (MBJ-705, with the
    chat moderation tools in MBJ-204). Can start on today's admin list before real roles (MBJ-102).
 6. **Posts** — text, images, polls with threaded comments (MBJ-804).
 7. **Unwatched filter and binge queue** (MBJ-814) — quick win on top of saved watch progress: Unwatched / In
@@ -280,8 +280,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    steps: MBJ-116, 117, 115), **download/delete my account** and **block/mute/report** (MBJ-118, 119), memberships and
    the **payments API** (MBJ-104, 109), **saved payment methods and a prepaid wallet** so small Bob Chats don't
    lose ~9% to fees (MBJ-111), pricing page (MBJ-105), **founding members** (MBJ-811), **Store** (MBJ-807).
-12. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
-13. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
+13. **Library move** — R2 (MBJ-506) and the rest of the Takeout import (MBJ-806: match OBS recordings by date/length,
+    unattended overnight run), after the ADR-010 decision. Stream storage past 1,000 min is ~$5/month per 1,000 min.
 14. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
 15. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
 16. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
