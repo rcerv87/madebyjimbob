@@ -116,7 +116,8 @@ if (!streamUid && !chatOnly) {
 }
 
 // ---------- 5. database ----------
-await migrate();
+// The import helper sets IMPORT_SKIP_MIGRATE: the live database is migrated by deploys, not by imports.
+if (process.env.IMPORT_SKIP_MIGRATE !== '1') await migrate();
 const tier = ['free', 'plus', 'premium'].includes(flag('tier')) ? flag('tier') : 'free';
 const publishedAt =
   meta.release_timestamp || meta.timestamp

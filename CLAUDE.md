@@ -49,6 +49,8 @@ npm run lint                   # ESLint (flat config, eslint.config.js)
 npm run migrate                # apply pending migrations (`-- down` rolls back one)
 npm run captions:fetch         # save finished Stream captions into transcripts (`-- --generate` requests missing ones)
 npm run import:playlists -- <playlist or channel URL>   # YouTube playlists (order kept)
+npm run import:worker          # import helper: runs imports queued in Studio → Add videos (`-- --local` for local)
+npm run set-role -- <username> admin [--live]   # Studio access by account
 npm run migrate:create -- <name>   # new SQL migration in server/migrations/
 npm run format                 # Prettier; `format:check` to verify only
 npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only] [--no-comments]
@@ -131,7 +133,7 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 
 ## Known POC shortcuts (tracked in backlog)
 
-- Studio access is the `ADMIN_EMAILS` env list (verified emails), not roles → MBJ-102
+- Studio access: `users.role = 'admin'` (npm run set-role) or a verified email in `ADMIN_EMAILS`; mod tools and role management in Studio → MBJ-102
 - Google/Apple sign-in, magic links, passkeys, and the device list aren't built yet → MBJ-110
 - Stream URLs unsigned → MBJ-103
 - In-memory rate limit → MBJ-205 (Redis)

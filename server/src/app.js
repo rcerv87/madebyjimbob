@@ -5,7 +5,8 @@ import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import { pool } from './db.js';
 import { filterText, filterComment, extractMentions } from './moderation.js';
-import { playback } from './stream.js';
+import { playback, deleteFromStream, createDirectUpload, streamStatus, streamConfigured } from './stream.js';
+import { queueImports, listImports, jobRow } from './imports.js';
 import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
 import { pageMeta, renderPage } from './pages.js';
@@ -837,7 +838,7 @@ app.get(
     // Totals add up the per-video rows; only unique chatters needs its own pass over the chat.
     const [perVideo, chatters, topChatters] = await Promise.all([
       pool.query(`
-      SELECT v.id, v.title, v.published_at, v.views, v.min_tier, v.duration_s,
+      SELECT v.id, v.title, v.published_at, v.views, v.min_tier, v.duration_s, v.replacement_stream_uid,
         count(c.*) FILTER (WHERE c.source = 'youtube') AS youtube_msgs,
         count(c.*) FILTER (WHERE c.source = 'native')  AS native_msgs,
         count(c.*) FILTER (WHERE c.kind = 'paid')      AS paid_msgs,
@@ -857,6 +858,7 @@ app.get(
       publishedAt: r.published_at,
       views: r.views,
       minTier: r.min_tier,
+      replacing: Boolean(r.replacement_stream_uid),
       durationS: r.duration_s,
       youtubeMsgs: Number(r.youtube_msgs),
       nativeMsgs: Number(r.native_msgs),
@@ -990,6 +992,162 @@ app.post(
     if (!to) return res.status(400).json({ error: 'Enter an email address like name@example.com.' });
     const { status } = await sendEmail({ to, template, data: tpl.sample(), userId: req.user.id });
     res.json({ status });
+  }),
+);
+
+// Delete a video (MBJ-701): from the site with its chat, comments, likes, progress, and notifications, and
+// (removeFromStream) its file from Cloudflare Stream unless another video on the site uses the same file.
+// Its spots in imported YouTube playlists are kept, so it reappears there if it's imported again.
+app.delete(
+  '/api/studio/videos/:id',
+  wrap(async (req, res) => {
+    const video = await findVideo(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Video not found.' });
+    const { rows } = await pool.query('SELECT stream_uid FROM videos WHERE id = $1', [video.id]);
+    const uid = rows[0]?.stream_uid;
+    await pool.query(
+      'UPDATE playlist_items SET video_id = NULL WHERE video_id = $1 AND youtube_id IS NOT NULL',
+      [video.id],
+    );
+    await pool.query('DELETE FROM videos WHERE id = $1', [video.id]);
+    req.log.info({ videoId: video.id, title: video.title }, 'video deleted');
+    let stream = { deleted: false, reason: 'kept' };
+    if (req.body?.removeFromStream !== false && uid) {
+      const { rowCount: shared } = await pool.query('SELECT 1 FROM videos WHERE stream_uid = $1', [uid]);
+      stream = shared
+        ? { deleted: false, reason: 'shared' }
+        : await deleteFromStream(uid).catch(() => ({
+            deleted: false,
+            reason: 'cloudflare-unreachable',
+          }));
+    }
+    res.json({ ok: true, streamUid: uid || null, stream });
+  }),
+);
+
+// Replace a video's file (MBJ-701), e.g. with JimBob's Takeout download, keeping its chat and comments.
+// 1) POST { size, name } → a one-time Cloudflare upload URL the browser sends the file to directly.
+// 2) GET (Studio polls) → Cloudflare's progress; once it's ready, the new file is swapped in and the old one deleted.
+// 3) DELETE cancels.
+const NEED_CF_KEYS =
+  'Video files can’t be changed until CF_ACCOUNT_ID and CF_API_TOKEN are set on the server (Render → Environment).';
+
+app.post(
+  '/api/studio/videos/:id/replacement',
+  wrap(async (req, res) => {
+    const video = await findVideo(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Video not found.' });
+    if (!streamConfigured()) return res.status(503).json({ error: NEED_CF_KEYS });
+    const size = Number(req.body?.size);
+    if (!Number.isSafeInteger(size) || size <= 0)
+      return res.status(400).json({ error: 'Pick a video file.' });
+    const { uploadUrl, uid } = await createDirectUpload(size, req.body?.name || video.title);
+    const { rows } = await pool.query(
+      `UPDATE videos SET replacement_stream_uid = $2, replacement_started_at = now() WHERE id = $1
+       RETURNING (SELECT replacement_stream_uid FROM videos WHERE id = $1) AS previous`,
+      [video.id, uid],
+    );
+    // An unfinished earlier replacement is abandoned; delete its file.
+    if (rows[0]?.previous && rows[0].previous !== uid) deleteFromStream(rows[0].previous).catch(() => {});
+    res.json({ uploadUrl, uid });
+  }),
+);
+
+app.get(
+  '/api/studio/videos/:id/replacement',
+  wrap(async (req, res) => {
+    const video = await findVideo(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Video not found.' });
+    const { rows } = await pool.query('SELECT stream_uid, replacement_stream_uid FROM videos WHERE id = $1', [
+      video.id,
+    ]);
+    const { stream_uid: oldUid, replacement_stream_uid: newUid } = rows[0];
+    if (!newUid) return res.json({ state: 'none' });
+    if (!streamConfigured()) return res.status(503).json({ error: NEED_CF_KEYS });
+    const status = await streamStatus(newUid);
+    if (status.state === 'error') return res.json({ state: 'error', error: status.error });
+    if (!status.ready) return res.json({ state: status.state, pct: status.pct });
+    const { rowCount } = await pool.query(
+      `UPDATE videos SET stream_uid = $2, replacement_stream_uid = NULL, replacement_started_at = NULL,
+         duration_s = COALESCE($3, duration_s)
+       WHERE id = $1 AND replacement_stream_uid = $2`,
+      [video.id, newUid, status.duration ? Math.round(status.duration) : null],
+    );
+    if (rowCount && oldUid) {
+      const { rowCount: shared } = await pool.query('SELECT 1 FROM videos WHERE stream_uid = $1', [oldUid]);
+      if (!shared) await deleteFromStream(oldUid).catch(() => {});
+    }
+    req.log.info({ videoId: video.id }, 'video file replaced');
+    res.json({ state: 'swapped' });
+  }),
+);
+
+app.delete(
+  '/api/studio/videos/:id/replacement',
+  wrap(async (req, res) => {
+    const video = await findVideo(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Video not found.' });
+    const { rows } = await pool.query(
+      `UPDATE videos SET replacement_stream_uid = NULL, replacement_started_at = NULL WHERE id = $1
+       RETURNING (SELECT replacement_stream_uid FROM videos WHERE id = $1) AS pending`,
+      [video.id],
+    );
+    if (rows[0]?.pending) await deleteFromStream(rows[0].pending).catch(() => {});
+    res.json({ ok: true });
+  }),
+);
+
+// Add videos (MBJ-701): YouTube links queued here; the import helper on Ruben's PC does the work.
+app.get(
+  '/api/studio/imports',
+  wrap(async (_req, res) => res.json(await listImports())),
+);
+
+app.post(
+  '/api/studio/imports',
+  wrap(async (req, res) => {
+    const { urls, tier = 'free', withComments = true } = req.body || {};
+    // One link per line (or comma-separated).
+    const lines = Array.isArray(urls) ? urls : String(urls || '').split(/[\r\n,]+/);
+    if (TIER_RANK[tier] === undefined) return res.status(400).json({ error: 'Unknown tier.' });
+    if (lines.length > 200) return res.status(400).json({ error: 'Up to 200 links at a time.' });
+    const result = await queueImports(lines, {
+      tier,
+      withComments: withComments !== false,
+      requestedBy: req.user.id,
+    });
+    if (!result.queued.length && !result.skipped.length)
+      return res.status(400).json({ error: 'Paste one or more YouTube video links.' });
+    res.json(result);
+  }),
+);
+
+// Try a failed import again.
+app.post(
+  '/api/studio/imports/:id/retry',
+  wrap(async (req, res) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) return res.status(404).json({ error: 'No such import.' });
+    const { rows } = await pool.query(
+      `UPDATE import_jobs SET status = 'queued', step = NULL, error = NULL, started_at = NULL, finished_at = NULL
+       WHERE id = $1 AND status IN ('failed', 'cancelled') RETURNING *`,
+      [req.params.id],
+    );
+    if (!rows[0]) return res.status(409).json({ error: 'Only failed or cancelled imports can be retried.' });
+    res.json({ job: jobRow(rows[0]) });
+  }),
+);
+
+// Cancel a queued import, or clear a finished one from the list.
+app.delete(
+  '/api/studio/imports/:id',
+  wrap(async (req, res) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) return res.status(404).json({ error: 'No such import.' });
+    const { rows } = await pool.query('SELECT status FROM import_jobs WHERE id = $1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'No such import.' });
+    if (rows[0].status === 'running')
+      return res.status(409).json({ error: 'It’s importing right now. Stop the helper to cancel it.' });
+    await pool.query('DELETE FROM import_jobs WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
   }),
 );
 

@@ -570,7 +570,7 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.
@@ -583,6 +583,8 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "00
 # 106: /account with profile, sign-in and security (email, password, devices, activity), notification settings, membership matrix; profile editor, billing, and data/deletion arrive with MBJ-117, 104, 118.
 # 118: export JSON, delete with password, 30-day wait cancelled by signing in, hourly erase, keep-as-"Deleted user" or remove, emails at request and erase. Cancelling paid memberships first joins MBJ-104.
 # 215: members enter their YouTube @handle or Rumble name, a moderator confirms in Studio; YouTube matched by channel id (looked up by handle, filled in hourly/after imports); linked messages show site name + tier; @handle mentions notify.
+# 701: Studio add (YouTube links queued, import helper on Ruben's PC), replace video file (browser upload to Stream, swap keeps chat), delete (with the Stream file); edit metadata and browser upload of new videos remain.
+# 102: users.role + npm run set-role (admin opens Studio); mod role use, Studio role management, /api/mod/* remain.
 # 110: device list and sign out any device (in /account) done; Google/Apple/X/Facebook, magic link, passkeys, merging accounts remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 

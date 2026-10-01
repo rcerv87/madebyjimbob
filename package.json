@@ -21,7 +21,9 @@
     "migrate": "npm run migrate -w server --",
     "migrate:create": "npm run migrate:create -w server --",
     "captions:fetch": "npm run captions:fetch -w server --",
-    "import:playlists": "npm run import:playlists -w server --"
+    "import:playlists": "npm run import:playlists -w server --",
+    "import:worker": "npm run import:worker -w server --",
+    "set-role": "npm run set-role -w server --"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

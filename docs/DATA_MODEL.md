@@ -18,6 +18,7 @@ columns are added by the story noted.
 | tier | text | `free | plus | premium` — derived from entitlements after MBJ-104; never settable by the user |
 | youtube_channel_id | text | set when user links YouTube (MBJ-305) |
 | xp | int | never settable by the user |
+| role | text | `viewer \| mod \| admin`; admin opens Studio (`npm run set-role`), never settable by the user |
 | deletion_requested_at | timestamptz | set by Delete my account; erased 30 days later unless they sign in (MBJ-118) |
 | delete_content | boolean | also blank and hide their chat and comments when erased |
 | notification_prefs | jsonb | `{ mention: { site, push }, reply: { … } }`; missing = on (MBJ-106) |
@@ -73,6 +74,7 @@ One-time tokens (email verification, password reset, email change).
 | published_at | timestamptz | |
 | min_tier | text | access level |
 | kind | text | `video \| short \| live`; set on import (was live → live; vertical and ≤ 3 min → short) |
+| replacement_stream_uid, replacement_started_at | text, timestamptz | Studio → Replace video: the new file on Stream, swapped into `stream_uid` once Cloudflare has processed it |
 | views | int | |
 | created_at | timestamptz | |
 
@@ -239,6 +241,28 @@ YouTube and Rumble accounts linked to a member (MBJ-215). Chat and comment queri
 | handle | text | the name shown there (@handle) |
 | verified_by, verified_at | text, timestamptz | `admin` (confirmed in Studio) |
 | created_at | timestamptz | |
+
+### import_jobs
+YouTube links queued in Studio → Add videos (MBJ-701); the import helper on Ruben's PC works through them.
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| url, youtube_id | text | |
+| tier | text | access for the imported video |
+| with_comments | boolean | also import YouTube comments |
+| status | text | `queued \| running \| done \| failed \| cancelled` |
+| step, title, error | text | progress the helper reports; yt-dlp's error when it fails |
+| video_id | bigint → videos | set when the video is saved; null if it's deleted later |
+| requested_by | bigint → users | |
+| created_at, started_at, finished_at | timestamptz | |
+
+### import_workers
+When each import helper last checked in (Studio shows "Helper running" within a minute).
+| column | type | notes |
+|---|---|---|
+| name | text PK | the PC's name |
+| last_seen | timestamptz | |
+| job_id | bigint | what it's importing |
 
 ## Planned
 
