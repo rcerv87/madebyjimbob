@@ -57,7 +57,7 @@ export async function queueImports(lines, { tier = 'free', withComments = true, 
     seen.add(id);
     const { rows: onSite } = await pool.query('SELECT id FROM videos WHERE youtube_id = $1', [id]);
     if (onSite[0]) {
-      skipped.push({ url: raw, reason: 'Already on the site', videoId: onSite[0].id });
+      skipped.push({ url: raw, reason: 'You already have this', videoId: onSite[0].id });
       continue;
     }
     const { rowCount: waiting } = await pool.query(
@@ -76,6 +76,20 @@ export async function queueImports(lines, { tier = 'free', withComments = true, 
     queued.push(jobRow(rows[0]));
   }
   return { queued, skipped };
+}
+
+export async function helperStatus() {
+  const { rows } = await pool.query(
+    'SELECT name, last_seen FROM import_workers ORDER BY last_seen DESC LIMIT 1',
+  );
+  const w = rows[0];
+  return w
+    ? {
+        name: w.name,
+        lastSeen: w.last_seen,
+        online: Date.now() - new Date(w.last_seen).getTime() < WORKER_ONLINE_MS,
+      }
+    : null;
 }
 
 export async function listImports() {

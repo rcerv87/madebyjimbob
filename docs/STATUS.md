@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 238 automated tests (143 server, 95 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 101 stories; 22 done, 11 in progress |
+| Quality | 246 automated tests (149 server, 97 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 101 stories; 23 done, 11 in progress |
 
 ## Waiting on Ruben
 
@@ -52,7 +52,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    2. Render → `madebyjimbob` → **Environment** → add `CF_ACCOUNT_ID` and `CF_API_TOKEN` (same values as `.env`).
 10. **Importing**: in a terminal in the project folder run `npm run import:worker` and leave it open while
    importing; then paste links in Studio → Add videos. Studio shows "Helper running" while it's on.
-11. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
+11. **Optional: a free YouTube Data API key** makes Studio → From the channel list instantly, without the helper
+   (steps in this morning's summary). Add it on Render as `YOUTUBE_API_KEY`.
+12. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
    Google Takeout export of the channel (guide: the "JimBob's YouTube Backup" page); tier prices and perks;
    moderators; brand assets and domain.
 
@@ -158,6 +160,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   per-video stats, top chatters, set a video's tier, playlists, linked accounts, email, and (MBJ-701):
   - **Add videos**: paste YouTube links; the import helper on Ruben's PC (`npm run import:worker`) imports each
     (video, chat replay, comments) and Studio shows its progress.
+  - **From the channel** (MBJ-706): every video, stream, and short on a channel (JimBob's by default; 926 listed
+    on 2026-10-01: 284 videos, 590 streams of which 365 members-only, 52 shorts), marked on the site / queued /
+    not imported, with filters, search, Select all, and Queue N; members-only ones are flagged. The list comes
+    from the import helper, or instantly with a YouTube Data API key (`YOUTUBE_API_KEY`).
   - **Replace video**: upload a better file (e.g. Takeout) straight to Cloudflare; swapped in once processed,
     chat and comments kept, old file deleted.
   - **Delete**: the video and its chat, comments, likes, and progress, plus its Cloudflare file.
@@ -199,6 +205,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | 2026-09-30 | Keep the Shopify store for products and checkout; the platform shows it (ADR-011). Art = his illustrations and comics from the store's art collections |
 | 2026-09-30 | Platform adopts his store's brand (teal, Jost wordmark, avatar, banner art) |
 | 2026-09-30 | Account email through Resend from JimBob's domain; $0 now, $20/month from launch; templates and do-not-mail list stay in our database (ADR-012) |
+| 2026-10-01 | Studio lists the channel through the import helper (yt-dlp) until a YouTube Data API key is added |
 | 2026-09-30 | Beta on madebyjimbob.app (account email verified there), then switch to JimBob's .com; .app keeps redirecting (ADR-011) |
 | 2026-09-30 | Real accounts on Better Auth (ADR-006 accepted); admins by verified email instead of username; Google/Apple/magic link/passkeys moved to MBJ-110 |
 | 2026-09-30 | Registration and profiles split into MBJ-106, 108, 113–119; 13+ checkbox, profiles public but not in search, deleted members' messages stay as "Deleted user" |
@@ -222,50 +229,47 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## What's next (in order)
 
-1. **Pick videos from the channel** (MBJ-706): in Studio → Add videos, paste the channel and get every video,
-   stream, and short with check boxes and Select all; already-imported and queued ones are marked and can't be
-   picked, with a "Not imported" filter. Recommended: a free YouTube Data API key on Render for the list.
-2. **Turn on email** once madebyjimbob.app is verified in Resend (Waiting on Ruben #5, #7, #8); then check the first
+1. **Turn on email** once madebyjimbob.app is verified in Resend (Waiting on Ruben #5, #7, #8); then check the first
    real sign-up, confirmation, and password reset.
-3. **Phone apps for Android and iPhone** (MBJ-401 on): decide how to build them (wrap this web app vs a native
+2. **Phone apps for Android and iPhone** (MBJ-401 on): decide how to build them (wrap this web app vs a native
    app) and how iPhone builds happen from a Windows PC (a cloud build service); Apple and Google developer
    accounts.
-4. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805); with the **schedule
+3. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805); with the **schedule
    calendar** (MBJ-813): JimBob enters streams and debates in Studio, viewers see them in their time zone, add
    them to Google/Apple/Outlook or subscribe to a feed, and get reminders.
-5. **Navigation bar** — top nav for every section, bottom tab bar on phones and in the app (MBJ-810);
+4. **Navigation bar** — top nav for every section, bottom tab bar on phones and in the app (MBJ-810);
    **social links and sharing** with link previews (MBJ-809).
-6. **Studio: manage videos and users** — upload from the browser, edit, replace, unpublish, delete
+5. **Studio: manage videos and users** — upload from the browser, edit, replace, unpublish, delete
    (MBJ-701); find members, ban/time out, highlight regulars and guests, roles, staff notes (MBJ-705, with the
    chat moderation tools in MBJ-204). Can start on today's admin list before real roles (MBJ-102).
-7. **Posts** — text, images, polls with threaded comments (MBJ-804).
-8. **Unwatched filter and binge queue** (MBJ-814) — quick win on top of saved watch progress: Unwatched / In
+6. **Posts** — text, images, polls with threaded comments (MBJ-804).
+7. **Unwatched filter and binge queue** (MBJ-814) — quick win on top of saved watch progress: Unwatched / In
    progress / Watched chips and an automatic playlist of everything you haven't finished.
-9. **Gamification** — XP, levels, and activity badges for heavy chatters and commenters (MBJ-601, 602),
+8. **Gamification** — XP, levels, and activity badges for heavy chatters and commenters (MBJ-601, 602),
    watch-time rewards such as a free t-shirt after a set number of hours, delivered as a Shopify code (MBJ-611),
    and supporter shout-outs for super chats and Bob Chats, with a queue and optional on-stream overlay (MBJ-612).
-10. **AI stream notes** — a facilitator-style notes page per stream: summary, sections, who said what, key
+9. **AI stream notes** — a facilitator-style notes page per stream: summary, sections, who said what, key
    exchanges, super chats and Bob Chats with answers, questions and promises (MBJ-605); speaker labels (MBJ-608);
    tags for topics and people with browse pages (MBJ-609); search inside streams (MBJ-610). Transcripts for all
    4 videos are already stored. Together with **ratings, moment reactions, and hotspots** (MBJ-613): thumbs
    up/down, tag a moment or a stretch as funny/interesting/boring, and a minute-by-minute heatmap over the
    progress bar.
-11. **SEO before launch** — per-page titles, descriptions, and link previews filled in by the server, crawlable
+10. **SEO before launch** — per-page titles, descriptions, and link previews filled in by the server, crawlable
    video pages, VideoObject/Event structured data, sitemap and robots, real 404s, noindex the onrender preview,
    faster bundle (MBJ-815); then slugs, indexable transcripts, topic and guest landing pages (MBJ-816).
-12. **Accounts and money** — start with the **payments and fees decision** (MBJ-112: compare Stripe, PayPal, bank
+11. **Accounts and money** — start with the **payments and fees decision** (MBJ-112: compare Stripe, PayPal, bank
    payments, Shopify, app-store fees with JimBob's real numbers). Then real sign-in with **one-tap social
    sign-in, passkeys, and staying signed in** (MBJ-101, 110), the **email sender** (MBJ-114), **registration**,
    **password reset**, and **account settings** (MBJ-108, 113, 106), **profiles** (public page, editing, welcome
    steps: MBJ-116, 117, 115), **download/delete my account** and **block/mute/report** (MBJ-118, 119), memberships and
    the **payments API** (MBJ-104, 109), **saved payment methods and a prepaid wallet** so small Bob Chats don't
    lose ~9% to fees (MBJ-111), pricing page (MBJ-105), **founding members** (MBJ-811), **Store** (MBJ-807).
-13. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
-14. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
-15. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
-16. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
-17. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
-18. **Tech follow-ups** (after MBJ-101 merges, before the full-channel import) — a partial index on visible
+12. **Link YouTube/Rumble names to profiles** (MBJ-215); **one view per viewer** (MBJ-216).
+13. **Library move** — R2 (MBJ-506) and the whole-channel import from Takeout (MBJ-806), after the ADR-010 decision.
+14. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
+15. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
+16. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
+17. **Tech follow-ups** (after MBJ-101 merges, before the full-channel import) — a partial index on visible
     chat so video cards count chat ~10x faster (186 ms → 19 ms for 45 streams / 260k messages in a test);
     split `server/src/app.js` (1,200 lines) into route files; a WebSocket heartbeat to drop dead connections.
 

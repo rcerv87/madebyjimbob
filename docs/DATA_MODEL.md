@@ -264,6 +264,32 @@ When each import helper last checked in (Studio shows "Helper running" within a 
 | last_seen | timestamptz | |
 | job_id | bigint | what it's importing |
 
+### channel_listings
+Requests to list a YouTube channel for Studio → From the channel (MBJ-706).
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| channel_key, channel_url | text | key: lower-cased @handle or UC… id |
+| status | text | `queued \| running \| done \| failed` |
+| source | text | `api` (YOUTUBE_API_KEY, done by the server) or `helper` (yt-dlp on Ruben's PC) |
+| video_count, error | int, text | |
+| requested_by | bigint → users | |
+| created_at, started_at, finished_at | timestamptz | |
+
+### channel_videos
+The latest list per channel (replaced by each listing). Studio joins `videos` and `import_jobs` by `youtube_id`
+to mark each one on the site, queued, or new.
+| column | type | notes |
+|---|---|---|
+| channel_key, youtube_id | text | primary key |
+| title | text | |
+| kind | text | `video \| live \| short` (the helper uses the channel tab; the API calls ≤ 3 min non-live videos shorts) |
+| published_at | timestamptz | exact from the API, approximate from the helper; shorts from the helper have none |
+| duration_s | int | |
+| availability | text | YouTube's: `public`, `unlisted`, `subscriber_only` (members only), … |
+| position | int | order on the tab |
+| listed_at | timestamptz | |
+
 ## Planned
 
 | Change | Story |

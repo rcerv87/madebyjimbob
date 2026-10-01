@@ -6,13 +6,18 @@ import StudioVideoActions, { tusUpload } from '../components/StudioVideoActions.
 
 function fakeApi(routes) {
   globalThis.fetch = vi.fn(async (url, opts = {}) => {
-    const path = String(url).replace(/^\/api/, '');
+    const path = String(url)
+      .replace(/^\/api/, '')
+      .split('?')[0];
     const hit = routes[`${opts.method || 'GET'} ${path}`] || routes[path] || [404, { error: 'Not mocked' }];
     return new Response(JSON.stringify(hit[1]), { status: hit[0] });
   });
   return (method, path) =>
     globalThis.fetch.mock.calls
-      .filter(([url, opts = {}]) => String(url) === `/api${path}` && (opts.method || 'GET') === method)
+      .filter(
+        ([url, opts = {}]) =>
+          String(url).split('?')[0] === `/api${path}` && (opts.method || 'GET') === method,
+      )
       .map(([, opts]) => (opts.body ? JSON.parse(opts.body) : null));
 }
 
@@ -37,6 +42,10 @@ describe('Studio → Add videos', () => {
       ],
       'POST /studio/imports': [200, { queued: [{ id: 4 }], skipped: [] }],
       'POST /studio/imports/3/retry': [200, { job: {} }],
+      '/studio/channel': [
+        200,
+        { listing: null, counts: { all: 0 }, videos: [], total: 0, apiKey: false, helper: null },
+      ],
     });
     render(
       <MemoryRouter>
@@ -44,6 +53,7 @@ describe('Studio → Add videos', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('Helper not running')).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: 'Paste links' }));
     expect(screen.getByText('npm run import:worker')).toBeTruthy();
     expect(screen.getByText(/Video unavailable/)).toBeTruthy();
 
@@ -105,5 +115,79 @@ describe('Studio → replace or delete a video', () => {
     expect(
       globalThis.fetch.mock.calls.filter(([, o]) => o.method === 'PATCH').map(([, o]) => o.body.size),
     ).toEqual([50 * MB, 50 * MB, 50 * MB, 20 * MB]);
+  });
+});
+
+describe('Studio → Add videos → From the channel', () => {
+  const v = (id, over = {}) => ({
+    youtubeId: id,
+    title: `Title ${id}`,
+    kind: 'live',
+    publishedAt: new Date(),
+    durationS: 3600,
+    thumbnail: `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
+    state: 'new',
+    ...over,
+  });
+  const listing = { status: 'done', source: 'helper', videoCount: 3, finishedAt: new Date() };
+
+  test('lists the channel; already-imported and queued ones can’t be picked; Select all and queue', async () => {
+    const sent = fakeApi({
+      '/studio/imports': [200, { helper: { online: true, name: 'PC' }, jobs: [] }],
+      '/studio/channel': [
+        200,
+        {
+          listing,
+          apiKey: false,
+          counts: { all: 3, onsite: 1, queued: 0, new: 2 },
+          total: 3,
+          videos: [
+            v('AAAAAAAAAAA', { availability: 'subscriber_only' }),
+            v('BBBBBBBBBBB'),
+            v('CCCCCCCCCCC', { state: 'onsite', videoId: 7 }),
+          ],
+        },
+      ],
+      'POST /studio/imports': [200, { queued: [{}, {}], skipped: [] }],
+    });
+    render(
+      <MemoryRouter>
+        <StudioImports />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/3 videos, listed/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'On the site' }).getAttribute('href')).toBe('/watch/7');
+    expect(screen.getByLabelText('Import Title CCCCCCCCCCC').disabled).toBe(true);
+
+    fireEvent.click(screen.getByLabelText(/Select all shown \(2\)/));
+    expect(screen.getByText(/1 of these is members-only on YouTube/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Queue 2 videos' }));
+    expect(await screen.findByText('2 videos added to the import queue.')).toBeTruthy();
+    expect(sent('POST', '/studio/imports')).toEqual([
+      { urls: ['AAAAAAAAAAA', 'BBBBBBBBBBB'], tier: 'free', withComments: true },
+    ]);
+  });
+
+  test('with no list yet, asks for one and says when the helper isn’t running', async () => {
+    const sent = fakeApi({
+      '/studio/imports': [200, { helper: null, jobs: [] }],
+      '/studio/channel': [
+        200,
+        { listing: null, apiKey: false, counts: { all: 0 }, total: 0, videos: [], helper: null },
+      ],
+      'POST /studio/channel/refresh': [200, { listing: { status: 'queued', source: 'helper' } }],
+    });
+    render(
+      <MemoryRouter>
+        <StudioImports />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Get the list of videos' }));
+    await waitFor(() =>
+      expect(sent('POST', '/studio/channel/refresh')).toEqual([
+        { url: 'https://www.youtube.com/@madebyjimbob' },
+      ]),
+    );
+    expect(screen.getAllByText(/npm run import:worker/).length).toBeGreaterThan(0);
   });
 });

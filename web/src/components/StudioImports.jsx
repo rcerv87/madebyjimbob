@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, timeAgo, TIER_LABEL } from '../api.js';
+import StudioChannelPicker from './StudioChannelPicker.jsx';
 
 const STATUS_LABEL = {
   queued: 'Waiting',
@@ -14,6 +15,7 @@ const STATUS_LABEL = {
 // downloads each one and uploads it with its chat replay and comments.
 export default function StudioImports({ onImported }) {
   const [data, setData] = useState(null);
+  const [mode, setMode] = useState('channel'); // 'channel' | 'links'
   const [urls, setUrls] = useState('');
   const [tier, setTier] = useState('free');
   const [withComments, setWithComments] = useState(true);
@@ -91,45 +93,80 @@ export default function StudioImports({ onImported }) {
           </>
         )}
       </p>
-      <form className="import-form" onSubmit={submit}>
-        <textarea
-          value={urls}
-          onChange={(e) => setUrls(e.target.value)}
-          placeholder={'YouTube video links, one per line\nhttps://www.youtube.com/watch?v=…'}
-          aria-label="YouTube video links"
-          rows={4}
-          required
-        />
-        <div className="import-options">
-          <label>
-            Who can watch
-            <select value={tier} onChange={(e) => setTier(e.target.value)}>
-              {Object.entries(TIER_LABEL).map(([k, l]) => (
-                <option key={k} value={k}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={withComments}
-              onChange={(e) => setWithComments(e.target.checked)}
-            />
-            Also import YouTube comments
-          </label>
-          <button className="primary-btn" disabled={busy}>
-            {busy ? 'Adding…' : 'Add to queue'}
+      <div className="import-options">
+        <div className="chips" role="tablist" aria-label="How to add">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'channel'}
+            className={`chip ${mode === 'channel' ? 'active' : ''}`}
+            onClick={() => setMode('channel')}
+          >
+            From the channel
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'links'}
+            className={`chip ${mode === 'links' ? 'active' : ''}`}
+            onClick={() => setMode('links')}
+          >
+            Paste links
           </button>
         </div>
-      </form>
-      {result && (
-        <p className="small" role="status">
-          {result.queued.length} added to the queue.
-          {result.skipped.length > 0 &&
-            ` Skipped ${result.skipped.length}: ${result.skipped.map((s) => `${s.url} (${s.reason})`).join('; ')}.`}
-        </p>
+        <label>
+          Who can watch
+          <select value={tier} onChange={(e) => setTier(e.target.value)}>
+            {Object.entries(TIER_LABEL).map(([k, l]) => (
+              <option key={k} value={k}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={withComments} onChange={(e) => setWithComments(e.target.checked)} />
+          Also import YouTube comments
+        </label>
+      </div>
+      {mode === 'channel' ? (
+        <StudioChannelPicker tier={tier} withComments={withComments} onQueued={load} />
+      ) : (
+        <form className="import-form" onSubmit={submit}>
+          <textarea
+            value={urls}
+            onChange={(e) => setUrls(e.target.value)}
+            placeholder={'YouTube video links, one per line\nhttps://www.youtube.com/watch?v=…'}
+            aria-label="YouTube video links"
+            rows={4}
+            required
+          />
+          <div>
+            <button className="primary-btn" disabled={busy}>
+              {busy ? 'Adding…' : 'Add to queue'}
+            </button>
+          </div>
+        </form>
+      )}
+      {mode === 'links' && result && (
+        <div className="small" role="status">
+          <p>{result.queued.length} added to the queue.</p>
+          {result.skipped.length > 0 && (
+            <ul className="skipped">
+              {result.skipped.map((sk) => (
+                <li key={sk.url}>
+                  {sk.url}: {sk.reason}
+                  {sk.videoId && (
+                    <>
+                      {' '}
+                      (<Link to={`/watch/${sk.videoId}`}>open it</Link>)
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
       {error && <p className="error small">{error}</p>}
       {data?.jobs.length > 0 && (
