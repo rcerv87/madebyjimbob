@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import MemberBadge from './MemberBadge.jsx';
 import { api, compact, count, formatTime, splitTimestamps, timeAgo } from '../api.js';
 
 // YouTube-style comments under the video: imported YouTube comments and native ones, one level of
@@ -222,7 +223,13 @@ function Comment({ c, quote, flash, onReplyClick, onSeek, onQuote }) {
       <div className="comment-main">
         {c.pinned && <p className="comment-pinned">Pinned by JimBob</p>}
         <p className="comment-meta">
-          <span className={`comment-author ${c.isCreator ? 'creator' : ''}`}>{c.author}</span>
+          <span
+            className={`comment-author ${c.isCreator ? 'creator' : ''}`}
+            title={c.platformName ? `${c.platformName} on YouTube` : undefined}
+          >
+            {c.author}
+          </span>
+          <MemberBadge tier={c.memberTier} />
           {c.isCreator && <span className="creator-badge">Creator</span>}
           <span className={`source-tag ${c.source}`}>{c.source === 'youtube' ? 'YT' : 'JB'}</span>
           <span className="muted small">{timeAgo(c.postedAt)}</span>

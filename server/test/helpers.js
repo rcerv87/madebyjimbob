@@ -35,21 +35,32 @@ process.env.EMAIL_FROM = '';
 process.env.RESEND_WEBHOOK_SECRET = `whsec_${Buffer.from('test-webhook-secret').toString('base64')}`;
 
 const { pool, migrate } = await import('../src/db.js');
-const { server } = await import('../src/app.js');
+// The app (and Better Auth, which checks the database as soon as it loads) loads only after the test
+// database is rebuilt; loading it first let that check race the rebuild and stall every request.
+let server;
+let wss;
 
 export { pool };
 
 export async function startServer() {
   await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
   await migrate();
+  ({ server, wss } = await import('../src/app.js'));
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address();
   return { base: `http://127.0.0.1:${port}/api`, wsUrl: `ws://127.0.0.1:${port}/ws` };
 }
 
 export async function stopServer() {
+  // Live-chat sockets aren't HTTP connections, so closeAllConnections() skips them.
+  for (const client of wss.clients) client.terminate();
+  // fetch keeps connections alive and can open or reuse one after a single sweep, which kept server.close()
+  // waiting forever (the occasional hung test file). Keep closing them until the server is down.
+  const closed = new Promise((resolve) => server.close(resolve));
   server.closeAllConnections?.();
-  await new Promise((resolve) => server.close(resolve));
+  const sweep = setInterval(() => server.closeAllConnections?.(), 50);
+  await closed;
+  clearInterval(sweep);
   await pool.end();
 }
 

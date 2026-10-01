@@ -29,6 +29,7 @@ export default function Account({ session, onUserChanged }) {
       <h1>Account settings</h1>
       {emailResult && <EmailResult result={emailResult} onClose={() => setParams({}, { replace: true })} />}
       <ProfileSection user={user} />
+      <LinkedAccountsSection onUserChanged={onUserChanged} />
       <SecuritySection user={user} onUserChanged={onUserChanged} />
       <NotificationsSection />
       <MembershipSection user={user} />
@@ -668,6 +669,172 @@ function PrivacySection({ onUserChanged }) {
           </p>
         )}
       </div>
+    </section>
+  );
+}
+
+// Link YouTube and Rumble (MBJ-215): your comments and chat there show your name here, and @mentions of
+// your YouTube handle reach you.
+function LinkedAccountsSection({ onUserChanged }) {
+  const [links, setLinks] = useState(null);
+  const [error, setError] = useState('');
+  const [note, setNote] = useState('');
+  const [rumbleName, setRumbleName] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api('/account/links')
+      .then(setLinks)
+      .catch((e) => setError(e.message));
+  }, []);
+
+  const run = async (path, method = 'POST', body) => {
+    setError('');
+    setNote('');
+    setBusy(true);
+    try {
+      const next = await api(path, { method, body });
+      setLinks(next);
+      return next;
+    } catch (err) {
+      setError(err.message);
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const check = async () => {
+    const next = await run('/account/links/youtube/check');
+    if (next?.youtube?.status === 'verified') onUserChanged();
+    else if (next)
+      setNote('Not found yet. We’ll keep checking each time JimBob’s comments and chat are imported.');
+  };
+
+  const yt = links?.youtube;
+  const rumble = links?.rumble;
+  return (
+    <section className="panel settings-section" id="linked">
+      <h2>Linked accounts</h2>
+      <p className="muted small">
+        Link the accounts you use on JimBob’s YouTube and Rumble. Your comments and chat from there show your
+        name here, even if your name there is different, and people can @mention you by either name.
+      </p>
+
+      <div className="setting">
+        <div className="setting-head">
+          <div>
+            <h3>YouTube</h3>
+            {yt?.status === 'verified' && (
+              <p>
+                {yt.handle} <span className="badge ok">Linked</span>
+              </p>
+            )}
+            {!yt && <p className="muted small">Not linked.</p>}
+          </div>
+          {!yt && (
+            <button className="text-btn" disabled={busy} onClick={() => run('/account/links/youtube')}>
+              Link YouTube
+            </button>
+          )}
+          {yt?.status === 'verified' && (
+            <button
+              className="text-btn"
+              onClick={() => run('/account/links/youtube', 'DELETE').then(() => onUserChanged())}
+            >
+              Unlink
+            </button>
+          )}
+        </div>
+        {yt?.status === 'pending' && (
+          <div className="link-steps">
+            <p>Post this code as a comment on any of JimBob’s YouTube videos, or in his live chat:</p>
+            <p className="link-code">
+              <code>{yt.code}</code>
+              <button
+                type="button"
+                className="text-btn small"
+                onClick={() => navigator.clipboard?.writeText(yt.code).then(() => setNote('Copied.'))}
+              >
+                Copy
+              </button>
+            </p>
+            <p className="muted small">
+              Post it from the YouTube account you want to link. We match it each time JimBob’s comments and
+              chat are imported (usually after a stream), then hide the code from the replay. The code works
+              until {new Date(yt.expiresAt).toLocaleDateString()}.
+            </p>
+            <div className="form-actions">
+              <button className="primary-btn" disabled={busy} onClick={check}>
+                {busy ? 'Checking…' : 'I posted it, check now'}
+              </button>
+              <button className="text-btn" onClick={() => run('/account/links/youtube', 'DELETE')}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="setting">
+        <div className="setting-head">
+          <div>
+            <h3>Rumble</h3>
+            {rumble && (
+              <p>
+                {rumble.handle}{' '}
+                {rumble.status === 'verified' ? (
+                  <span className="badge ok">Linked</span>
+                ) : (
+                  <span className="badge">Waiting for a moderator</span>
+                )}
+              </p>
+            )}
+            {!rumble && <p className="muted small">Not linked.</p>}
+          </div>
+          {rumble && (
+            <button className="text-btn" onClick={() => run('/account/links/rumble', 'DELETE')}>
+              {rumble.status === 'verified' ? 'Unlink' : 'Cancel'}
+            </button>
+          )}
+        </div>
+        {rumble?.status === 'pending' && (
+          <p className="muted small">
+            A moderator confirms Rumble names by hand for now (we can’t read Rumble chat yet).
+          </p>
+        )}
+        {!rumble && (
+          <form
+            className="setting-form inline"
+            onSubmit={(e) => {
+              e.preventDefault();
+              run('/account/links/rumble', 'POST', { name: rumbleName }).then((r) => r && setRumbleName(''));
+            }}
+          >
+            <input
+              value={rumbleName}
+              onChange={(e) => setRumbleName(e.target.value)}
+              placeholder="Your Rumble name"
+              aria-label="Your Rumble name"
+              maxLength={51}
+              required
+            />
+            <button className="primary-btn" disabled={busy}>
+              Ask to link
+            </button>
+          </form>
+        )}
+      </div>
+      {note && (
+        <p className="small" role="status">
+          {note}
+        </p>
+      )}
+      {error && (
+        <p className="error small" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }

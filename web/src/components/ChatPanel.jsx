@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import MemberBadge from './MemberBadge.jsx';
 import { useSearchParams } from 'react-router-dom';
 import { api, formatTime } from '../api.js';
 
@@ -286,7 +287,10 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
     }
   };
 
-  const me = session.user?.username;
+  // Your site name and any linked YouTube/Rumble handles: mentions of any of them are yours.
+  const me = session.user
+    ? [session.user.username, ...(session.user.linkedHandles || [])].map((n) => n.toLowerCase()).join(',')
+    : '';
 
   return (
     <aside className="chat">
@@ -416,7 +420,7 @@ function Quote({ q, onQuote }) {
 
 // Memoized: a message already on screen only re-renders when its own props change.
 const ChatMessage = memo(function ChatMessage({ m, me, flash, onSeek, onReply, onQuote }) {
-  const mentionsMe = me && m.mentions?.includes(me.toLowerCase());
+  const mentionsMe = me && m.mentions?.some((n) => me.split(',').includes(n));
   const replay = m.postedLive === false;
   const body = m.body.split(MENTION_SPLIT).map((p, i) =>
     p.startsWith('@') ? (
@@ -427,10 +431,19 @@ const ChatMessage = memo(function ChatMessage({ m, me, flash, onSeek, onReply, o
       p
     ),
   );
+  // A linked account shows the member's site name; the platform name is in the tooltip (MBJ-215).
   const author = (
-    <button type="button" className="author" onClick={() => onReply(m)} title={`Reply to ${m.author}`}>
-      {m.author}
-    </button>
+    <>
+      <button
+        type="button"
+        className="author"
+        onClick={() => onReply(m)}
+        title={m.platformName ? `${m.platformName} on YouTube · reply` : `Reply to ${m.author}`}
+      >
+        {m.author}
+      </button>
+      <MemberBadge tier={m.memberTier} />
+    </>
   );
 
   if (m.kind === 'paid') {

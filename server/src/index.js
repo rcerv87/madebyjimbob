@@ -1,6 +1,7 @@
 import { server, ADMIN_EMAILS } from './app.js';
 import { usingFallbackSecret } from './auth.js';
 import { startErasureJob } from './deletion.js';
+import { startLinkCheckJob } from './links.js';
 import { logger } from './logger.js';
 
 // Migrations run separately (`npm run migrate`, Render's pre-deploy command), not on boot.
@@ -12,3 +13,5 @@ if (usingFallbackSecret)
 server.listen(PORT, () => logger.info(`MadeByJimBob running on :${PORT}`));
 // Erases accounts whose 30-day deletion wait is over (MBJ-118).
 startErasureJob();
+// Links YouTube accounts whose codes arrived in imported chat or comments (MBJ-215).
+startLinkCheckJob();

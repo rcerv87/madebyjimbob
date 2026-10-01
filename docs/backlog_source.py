@@ -570,7 +570,7 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.
@@ -582,6 +582,7 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "00
 # 113: forgot/reset, change password, change email (password + confirm new + 7-day undo to old), rate limits, security history.
 # 106: /account with profile, sign-in and security (email, password, devices, activity), notification settings, membership matrix; profile editor, billing, and data/deletion arrive with MBJ-117, 104, 118.
 # 118: export JSON, delete with password, 30-day wait cancelled by signing in, hourly erase, keep-as-"Deleted user" or remove, emails at request and erase. Cancelling paid memberships first joins MBJ-104.
+# 215: YouTube by one-time code (matched on import/hourly/check now, by channel id), Rumble confirmed in Studio; linked messages show site name + tier; @handle mentions notify. Rumble chat matching waits for Rumble ingest.
 # 110: device list and sign out any device (in /account) done; Google/Apple/X/Facebook, magic link, passkeys, merging accounts remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 

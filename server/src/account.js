@@ -10,6 +10,7 @@ import { sendEmail, normalizeEmail } from './email.js';
 import { maskEmail } from './emailTemplates.js';
 import { logSecurityEvent, requestOrigin } from './security.js';
 import { exportData, requestDeletion } from './deletion.js';
+import { linksFor, startYouTubeLink, verifyYouTubeCodes, requestRumbleLink } from './links.js';
 
 export const NOTIFICATION_TYPES = ['mention', 'reply'];
 export const NOTIFICATION_CHANNELS = ['site', 'push'];
@@ -76,6 +77,7 @@ function hourlyLimit(max) {
 const tooManyEmailChanges = hourlyLimit(5);
 const tooManyExports = hourlyLimit(5);
 const tooManyDeletes = hourlyLimit(5);
+const tooManyLinkChecks = hourlyLimit(20);
 
 async function passwordOk(req) {
   try {
@@ -248,6 +250,75 @@ router.get(
     });
     await auth.api.requestPasswordReset({ body: { email: oldEmail, redirectTo: '/reset-password' } });
     res.redirect('/?email=restored');
+  }),
+);
+
+// Linked YouTube and Rumble accounts (MBJ-215).
+router.get(
+  '/links',
+  requireUser,
+  wrap(async (req, res) => res.json(await linksFor(req.user.id))),
+);
+
+// A one-time code to post on JimBob's channel (the same one while it's still good).
+router.post(
+  '/links/youtube',
+  requireUser,
+  wrap(async (req, res) => {
+    try {
+      await startYouTubeLink(req.user.id);
+    } catch (err) {
+      if (err.message === 'already-linked')
+        return res.status(409).json({ error: 'Your YouTube account is already linked. Unlink it first.' });
+      throw err;
+    }
+    res.json(await linksFor(req.user.id));
+  }),
+);
+
+// "Check now": looks for the code in everything imported so far.
+router.post(
+  '/links/youtube/check',
+  requireUser,
+  wrap(async (req, res) => {
+    if (tooManyLinkChecks(req.user.id))
+      return res.status(429).json({ error: 'That’s a lot of checks. Try again in an hour.' });
+    await verifyYouTubeCodes();
+    res.json(await linksFor(req.user.id));
+  }),
+);
+
+router.post(
+  '/links/rumble',
+  requireUser,
+  wrap(async (req, res) => {
+    try {
+      await requestRumbleLink(req.user.id, req.body?.name);
+    } catch (err) {
+      if (err.message === 'bad-name')
+        return res
+          .status(400)
+          .json({ error: 'Enter your Rumble name: letters, numbers, dots, dashes, or underscores.' });
+      if (err.message === 'taken')
+        return res.status(409).json({ error: 'That Rumble name is already linked to another member.' });
+      throw err;
+    }
+    res.json(await linksFor(req.user.id));
+  }),
+);
+
+// Unlink, or cancel a request.
+router.delete(
+  '/links/:platform',
+  requireUser,
+  wrap(async (req, res) => {
+    if (!['youtube', 'rumble'].includes(req.params.platform))
+      return res.status(404).json({ error: 'Unknown platform.' });
+    await pool.query('DELETE FROM linked_accounts WHERE user_id = $1 AND platform = $2', [
+      req.user.id,
+      req.params.platform,
+    ]);
+    res.json(await linksFor(req.user.id));
   }),
 );
 
