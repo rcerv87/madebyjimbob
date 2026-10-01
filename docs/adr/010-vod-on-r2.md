@@ -38,3 +38,16 @@ Cloudflare Worker (or signed cookies) in front of the bucket (replaces MBJ-103's
 - **Migration:** the two demo videos on Stream can be re-imported; nothing else is on Stream yet.
 
 Prices are estimates as of this date; check current Cloudflare pricing before deciding.
+
+## Update 2026-10-01: Ruben's direction
+
+- **Cancel-proof is a core reason for the platform:** the whole archive must live on our own storage. Playing old streams
+  through YouTube embeds is ruled out, because a YouTube takedown would remove them from our site too.
+- **Versions per video:** 720p at an efficient bitrate (~0.7 GB/hour; streams are mostly talking), 360p for weak signal,
+  and audio only (podcast mode, ~30 MB/hour). Full 1080p only for recent streams, if at all.
+- **Cost target is tens of dollars, not hundreds:** about 2.2 TB for the 926-video listing (~2,325 hours) is ~$33/month on
+  R2 (~$13 on Backblaze B2 served through Cloudflare). Stream would be ~$700/month for storage alone.
+- **Originals:** keep a master copy off-platform as a cancel-proof backup (a USB drive at home, about $150 once), and
+  consider a second cloud copy of the compressed versions.
+- **Processing:** the helper on Ruben's PC encodes them (free, overnight).
+- **Later:** downloads to watch offline in the phone apps (720p or audio, expiring), and audio downloads on the website.
