@@ -3,7 +3,7 @@
 Base path `/api`. JSON in and out. Errors: `{ "error": "Human-readable message." }` with a 4xx/5xx status. Every response has an `X-Request-Id` header (a safe incoming one is reused); 500 errors quote it so reports can be matched to logs. Malformed JSON bodies are 400, bodies over 50 KB are 413.
 Auth (MBJ-101): Better Auth under `/auth/*`. The web app uses the `mbj.session_token` httpOnly cookie; apps and tests can send
 `Authorization: Bearer <token>` with the token from the `set-auth-token` response header of sign-up/sign-in. State-changing
-auth requests need an `Origin` header (browsers send it). Admins are users whose **verified** email is in `ADMIN_EMAILS`;
+auth requests need an `Origin` header (browsers send it). Admins are users with `role = 'admin'` (set with `npm run set-role`) or whose **verified** email is in `ADMIN_EMAILS`;
 they get `isAdmin: true` and see every tier.
 
 ## Current
@@ -55,6 +55,14 @@ they get `isAdmin: true` and see every tier.
 | DELETE | `/push/subscribe` | required | `{ endpoint }` |
 | GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded) |
 | PATCH | `/studio/videos/:id` | admin | `{ minTier }` |
+| DELETE | `/studio/videos/:id` | admin | `{ removeFromStream? }` (default true). Deletes the video and its chat, comments, likes, progress, and notifications; keeps its spots in imported YouTube playlists (unlinked). Returns `{ ok, streamUid, stream: { deleted, reason } }`; `reason` is `not-configured` (no Cloudflare keys on the server), `shared` (another video uses the file), or a Cloudflare error |
+| POST | `/studio/videos/:id/replacement` | admin | `{ size, name }` → `{ uploadUrl, uid }`: a one-time Cloudflare tus URL the browser uploads the new file to directly (pieces of 50 MB). 503 without Cloudflare keys |
+| GET | `/studio/videos/:id/replacement` | admin | `{ state: none \| queued \| inprogress \| error \| swapped, pct? }`. Once Cloudflare has processed the file it's swapped in (chat and comments kept, length updated) and the old file deleted |
+| DELETE | `/studio/videos/:id/replacement` | admin | Cancels a replacement and deletes the uploaded file |
+| GET | `/studio/imports` | admin | `{ jobs, helper }`: the last 100 imports `{ id, url, youtubeId, tier, status: queued\|running\|done\|failed\|cancelled, step, title, error, videoId, … }` and the import helper `{ name, lastSeen, online }` |
+| POST | `/studio/imports` | admin | `{ urls (one per line, or an array), tier, withComments }` → `{ queued, skipped: [{ url, reason }] }`; skips bad links, ones already queued, and videos already on the site. The helper on Ruben's PC (`npm run import:worker`) does the work |
+| POST | `/studio/imports/:id/retry` | admin | Puts a failed or cancelled import back in the queue |
+| DELETE | `/studio/imports/:id` | admin | Cancels a queued import or clears a finished one (409 while it's running) |
 | GET | `/studio/playlists` | admin | All playlists with their videos (including empty ones) |
 | POST | `/studio/playlists` | admin | `{ title, description? }` → `{ playlist }` (source `native`) |
 | PATCH | `/studio/playlists/:id` | admin | `{ title?, description? }`; 409 for YouTube playlists |

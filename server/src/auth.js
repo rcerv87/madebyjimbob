@@ -121,6 +121,8 @@ export const auth = betterAuth({
       // Never settable at sign-up or by the user: tiers come from payments (MBJ-104).
       tier: { type: 'string', required: false, defaultValue: 'free', input: false },
       xp: { type: 'number', required: false, defaultValue: 0, input: false },
+      // 'admin' opens Studio (npm run set-role); never settable by the user.
+      role: { type: 'string', required: false, defaultValue: 'viewer', input: false },
     },
     changeEmail: { enabled: true, updateEmailWithoutVerification: true },
   },
@@ -261,7 +263,7 @@ export function publicUser(u) {
   if (!u) return null;
   const email = String(u.email || '').toLowerCase();
   const hasEmail = email && !email.endsWith(NO_EMAIL_DOMAIN);
-  const isAdmin = Boolean(u.emailVerified && hasEmail && ADMIN_EMAILS.has(email));
+  const isAdmin = u.role === 'admin' || Boolean(u.emailVerified && hasEmail && ADMIN_EMAILS.has(email));
   return {
     id: Number(u.id),
     username: u.displayUsername || u.username,

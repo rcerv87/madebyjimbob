@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 225 automated tests (134 server, 91 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 100 stories; 22 done, 9 in progress |
+| Quality | 238 automated tests (143 server, 95 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 100 stories; 22 done, 11 in progress |
 
 ## Waiting on Ruben
 
@@ -47,7 +47,12 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    2. On the live site → **Sign in** → **Create an account** with that email (JimBob can take the username `jimbob`).
    3. Open the confirmation email and tap **Confirm email** (needs item 7 done first). Studio then appears.
    Locally: put your email in `ADMIN_EMAILS` in `.env` (the line is there, empty).
-9. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
+9. **Cloudflare keys on Render** (needed for Replace video and for Delete to remove the file from Cloudflare):
+   1. First roll the token (item 2) since the old one was pasted in chat; put the new one in your local `.env`.
+   2. Render → `madebyjimbob` → **Environment** → add `CF_ACCOUNT_ID` and `CF_API_TOKEN` (same values as `.env`).
+10. **Importing**: in a terminal in the project folder run `npm run import:worker` and leave it open while
+   importing; then paste links in Studio → Add videos. Studio shows "Helper running" while it's on.
+11. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
    Google Takeout export of the channel (guide: the "JimBob's YouTube Backup" page); tier prices and perks;
    moderators; brand assets and domain.
 
@@ -149,7 +154,13 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   Studio → Account email to preview each one and send a test. Off until the Resend keys are on Render.
 - Tiers enforced on the server for video, chat, comments, and the live WebSocket (the socket knows you from
   the session cookie).
-- Studio (verified emails in `ADMIN_EMAILS`): totals, per-video stats, top chatters, set a video's tier, email.
+- Studio (accounts with the admin role, `npm run set-role`, or verified emails in `ADMIN_EMAILS`): totals,
+  per-video stats, top chatters, set a video's tier, playlists, linked accounts, email, and (MBJ-701):
+  - **Add videos**: paste YouTube links; the import helper on Ruben's PC (`npm run import:worker`) imports each
+    (video, chat replay, comments) and Studio shows its progress.
+  - **Replace video**: upload a better file (e.g. Takeout) straight to Cloudflare; swapped in once processed,
+    chat and comments kept, old file deleted.
+  - **Delete**: the video and its chat, comments, likes, and progress, plus its Cloudflare file.
 
 ### Importing and data
 - `npm run import:youtube -- <url>`: video → Stream, chat replay, comments (with typed times and reply links).

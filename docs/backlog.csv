@@ -26,7 +26,7 @@ MBJ-101,Real authentication,Accounts & memberships,Phase 1 — VOD platform,Must
 - Users choose a unique username at signup (3–32 `[A-Za-z0-9_]`)
 - POC `/session` endpoint and `session_token` column removed
 - Tier can no longer be self-selected",MBJ-003
-MBJ-102,Roles and Studio access,Accounts & memberships,Phase 1 — VOD platform,Must,S,To do,"As JimBob, I want only me and my mods to reach Studio and mod tools.","- `users.role` = viewer | mod | admin
+MBJ-102,Roles and Studio access,Accounts & memberships,Phase 1 — VOD platform,Must,S,In progress,"As JimBob, I want only me and my mods to reach Studio and mod tools.","- `users.role` = viewer | mod | admin
 - `/api/studio/*` and `/api/mod/*` return 403 for viewers
 - Studio nav hidden for viewers
 - Admin can promote/demote mods in Studio",MBJ-101
@@ -288,7 +288,7 @@ MBJ-606,Call-ins,Engagement & AI,Phase 5 — Engagement,Could,XL,To do,"As a Pre
 - Approved caller appears in OBS via browser source","MBJ-104, MBJ-301"
 MBJ-607,Polls and predictions,Engagement & AI,Phase 5 — Engagement,Could,L,To do,"As a viewer, I want to spend points and play along.","- Mods create polls/predictions during a stream
 - Viewers vote with points; results broadcast live",MBJ-602
-MBJ-701,Video management in Studio,Studio & analytics,Phase 1 — VOD platform,Must,L,To do,"As JimBob, I want to upload, edit, replace, and delete videos without a terminal.","- Upload a video file from the browser (resumable, straight to Cloudflare Stream or R2 per ADR-010) with progress; it appears once processing finishes
+MBJ-701,Video management in Studio,Studio & analytics,Phase 1 — VOD platform,Must,L,In progress,"As JimBob, I want to upload, edit, replace, and delete videos without a terminal.","- Upload a video file from the browser (resumable, straight to Cloudflare Stream or R2 per ADR-010) with progress; it appears once processing finishes
 - Start a YouTube import from a URL (background job with status: downloading, uploading, processing, chat, comments, captions)
 - Edit title, description, type (video/short/live), tier, publish date, and thumbnail (pick a frame or upload an image)
 - Unpublish/hide a video (keeps chat, comments, and stats) vs. delete it (confirm step; removes the file from Stream and its chat, comments, and playlist entries)

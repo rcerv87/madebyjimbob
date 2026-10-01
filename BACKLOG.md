@@ -249,7 +249,7 @@ Acceptance criteria:
 
 ### MBJ-102 — Roles and Studio access
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-101
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-101
 
 As JimBob, I want only me and my mods to reach Studio and mod tools.
 
@@ -1087,7 +1087,7 @@ Creator tools and audience insight.
 
 ### MBJ-701 — Video management in Studio
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-102
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-102
 
 As JimBob, I want to upload, edit, replace, and delete videos without a terminal.
 

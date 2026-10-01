@@ -1472,6 +1472,105 @@ button.avatar[aria-expanded='true'] {
   overflow: hidden;
 }
 
+/* ---------- studio add / replace / delete videos ---------- */
+.studio-imports {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.studio-imports code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--bg);
+}
+.import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.import-form textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font: inherit;
+}
+.import-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.import-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.import-options select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.import-options label.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.import-jobs li > div:first-child {
+  min-width: 0;
+}
+.import-jobs a {
+  overflow-wrap: anywhere;
+}
+.import-error {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  max-height: 8em;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+.badge.bad {
+  background: color-mix(in srgb, var(--danger) 25%, transparent);
+  color: var(--text);
+}
+.video-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  margin-top: 4px;
+}
+.video-actions .text-btn.small {
+  padding: 2px 4px;
+  font-size: 0.8rem;
+}
+.delete-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.delete-confirm label.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.danger-btn.small {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
 /* ---------- studio linked accounts ---------- */
 .studio-links {
   margin-top: 24px;

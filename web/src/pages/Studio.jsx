@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, compact, formatTime, TIER_LABEL } from '../api.js';
 import StudioPlaylists from '../components/StudioPlaylists.jsx';
 import StudioEmail from '../components/StudioEmail.jsx';
 import StudioLinks from '../components/StudioLinks.jsx';
+import StudioImports from '../components/StudioImports.jsx';
+import StudioVideoActions from '../components/StudioVideoActions.jsx';
 import useTitle from '../useTitle.js';
 
 export default function Studio({ user }) {
@@ -12,14 +14,17 @@ export default function Studio({ user }) {
   const [saveError, setSaveError] = useState('');
   useTitle('Studio');
 
-  const load = () =>
-    api('/studio/overview')
-      .then(setData)
-      .catch((e) => setError(e.message));
+  const load = useCallback(
+    () =>
+      api('/studio/overview')
+        .then(setData)
+        .catch((e) => setError(e.message)),
+    [],
+  );
   useEffect(() => {
     setError('');
     if (user?.isAdmin) load();
-  }, [user?.isAdmin]);
+  }, [user?.isAdmin, load]);
 
   const setTier = async (id, minTier) => {
     setSaveError('');
@@ -50,6 +55,8 @@ export default function Studio({ user }) {
         <Stat label="Super chats" value={t.paidMsgs} accent />
       </section>
 
+      <StudioImports onImported={load} />
+
       <div className="studio-cols">
         <section className="panel">
           <h2>Content</h2>
@@ -74,6 +81,7 @@ export default function Studio({ user }) {
                   <tr key={v.id}>
                     <td className="title-cell">
                       <Link to={`/watch/${v.id}`}>{v.title}</Link>
+                      <StudioVideoActions video={v} onChanged={load} />
                     </td>
                     <td>{v.durationS ? formatTime(v.durationS) : '—'}</td>
                     <td>{compact(v.views)}</td>
