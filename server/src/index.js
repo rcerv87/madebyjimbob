@@ -3,6 +3,7 @@ import { usingFallbackSecret } from './auth.js';
 import { startErasureJob } from './deletion.js';
 import { startLinkCheckJob } from './links.js';
 import { startViewCleanup } from './views.js';
+import { startReplacementJob } from './replacements.js';
 import { logger } from './logger.js';
 
 // Migrations run separately (`npm run migrate`, Render's pre-deploy command), not on boot.
@@ -18,3 +19,5 @@ startErasureJob();
 startLinkCheckJob();
 // Forgets who viewed what after a day; only today's views are needed to count each viewer once (MBJ-216).
 startViewCleanup();
+// Swaps in replacement files once Cloudflare has processed them, even with Studio closed (MBJ-701).
+startReplacementJob();

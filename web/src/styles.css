@@ -1823,6 +1823,35 @@ button.comment-author:hover {
   }
 }
 
+/* ---------- studio: from files ---------- */
+.file-import {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.file-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.file-pick {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.file-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.file-link {
+  max-width: 420px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
 /* ---------- studio linked accounts ---------- */
 .studio-links {
   margin-top: 24px;

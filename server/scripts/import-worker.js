@@ -62,6 +62,8 @@ function runImport(job) {
   return new Promise((resolve) => {
     const args = ['scripts/import-youtube.js', job.url, '--tier', job.tier];
     if (!job.withComments) args.push('--no-comments');
+    // Added from a file: the video is already on Cloudflare; fetch only the title, chat, and comments.
+    if (job.streamUid) args.push('--stream-uid', job.streamUid);
     const child = spawn(process.execPath, args, {
       cwd: path.join(__dirname, '..'),
       env: { ...process.env, PATH, IMPORT_SKIP_MIGRATE: '1' },

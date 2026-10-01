@@ -36,6 +36,7 @@ export function jobRow(r) {
     title: r.title,
     error: r.error,
     videoId: r.video_id,
+    streamUid: r.stream_uid,
     createdAt: r.created_at,
     startedAt: r.started_at,
     finishedAt: r.finished_at,
@@ -61,7 +62,7 @@ export async function queueImports(lines, { tier = 'free', withComments = true, 
       continue;
     }
     const { rowCount: waiting } = await pool.query(
-      `SELECT 1 FROM import_jobs WHERE youtube_id = $1 AND status IN ('queued', 'running')`,
+      `SELECT 1 FROM import_jobs WHERE youtube_id = $1 AND status IN ('uploading', 'queued', 'running')`,
       [id],
     );
     if (waiting) {

@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 269 automated tests (163 server, 106 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 101 stories; 26 done, 11 in progress |
+| Quality | 276 automated tests (167 server, 109 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 101 stories; 26 done, 12 in progress |
 
 ## Waiting on Ruben
 
@@ -175,6 +175,12 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
     on 2026-10-01: 284 videos, 590 streams of which 365 members-only, 52 shorts), marked on the site / queued /
     not imported, with filters, search, Select all, and Queue N; members-only ones are flagged. The list comes
     from the import helper, or instantly with a YouTube Data API key (`YOUTUBE_API_KEY`).
+  - **From files**: pick files or JimBob's whole Google Takeout folder; each file is matched to its YouTube video
+    (Takeout's videos.csv, or the channel list's titles) for review, then uploaded straight to Cloudflare. New
+    videos get their title, chat, and comments from the helper without downloading; videos already on the site get
+    the better file swapped in (finished in the background). Shows how many Stream minutes it adds first.
+  - **Import helper**: double-click "MadeByJimBob Import Helper" on Ruben's desktop (restarts itself if it
+    crashes; close the window to stop).
   - **Replace video**: upload a better file (e.g. Takeout) straight to Cloudflare; swapped in once processed,
     chat and comments kept, old file deleted.
   - **Delete**: the video and its chat, comments, likes, and progress, plus its Cloudflare file.
