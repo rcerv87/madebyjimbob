@@ -1472,6 +1472,18 @@ button.avatar[aria-expanded='true'] {
   overflow: hidden;
 }
 
+/* ---------- studio linked accounts ---------- */
+.studio-links {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.studio-links h3 {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+}
+
 /* ---------- studio email ---------- */
 .studio-email {
   margin-top: 24px;
@@ -2927,6 +2939,39 @@ a.text-btn {
   flex: none;
   margin-top: 2px;
   accent-color: var(--accent);
+}
+.link-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.link-code {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.link-code code {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px dashed var(--accent);
+}
+.setting-form.inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.setting-form.inline input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.member-badge {
+  margin-left: 6px;
+  font-size: 0.65rem;
+  vertical-align: middle;
 }
 .account-menu a.account-menu-item {
   display: block;

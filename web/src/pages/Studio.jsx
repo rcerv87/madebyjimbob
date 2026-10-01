@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api, compact, formatTime, TIER_LABEL } from '../api.js';
 import StudioPlaylists from '../components/StudioPlaylists.jsx';
 import StudioEmail from '../components/StudioEmail.jsx';
+import StudioLinks from '../components/StudioLinks.jsx';
 import useTitle from '../useTitle.js';
 
 export default function Studio({ user }) {
@@ -118,6 +119,7 @@ export default function Studio({ user }) {
       </div>
 
       <StudioPlaylists allVideos={data.videos} />
+      <StudioLinks />
       <StudioEmail />
     </div>
   );

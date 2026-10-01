@@ -161,7 +161,7 @@ MBJ-214,Push notifications (web),Chat & moderation,Phase 1 — VOD platform,Must
 - Turn on from the bell; iPhone asks to add to Home Screen first
 - Tapping a notification opens the video at that moment (and the thread for comments)
 - Needs VAPID_PRIVATE_KEY set on Render","MBJ-202, MBJ-213"
-MBJ-215,Link YouTube and Rumble names to a profile,Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.","- Profile lets a member claim a YouTube handle and gets a one-time code
+MBJ-215,Link YouTube and Rumble names to a profile,Chat & moderation,Phase 1 — VOD platform,Should,M,Done,"As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.","- Profile lets a member claim a YouTube handle and gets a one-time code
 - Posting the code in JimBob's live chat or as a comment verifies the claim on the next import
 - Rumble names verified by hand in Studio until Rumble chat ingest exists
 - Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member",MBJ-202

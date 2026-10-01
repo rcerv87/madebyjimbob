@@ -136,7 +136,7 @@ export function startErasureJob() {
 // Everything we hold about the member, as one JSON document (no password hashes or session tokens).
 export async function exportData(userId) {
   const q = (sql) => pool.query(sql, [userId]).then((r) => r.rows);
-  const [profile, comments, chat, likes, progress, notifications, devices, security, emails] =
+  const [profile, comments, chat, likes, progress, notifications, devices, security, emails, links] =
     await Promise.all([
       q(`SELECT id, username, display_name, email, email_verified, image, tier, xp, notification_prefs, created_at,
          deletion_requested_at FROM users WHERE id = $1`),
@@ -156,6 +156,8 @@ export async function exportData(userId) {
        ORDER BY created_at`),
       q(`SELECT e.template, e.status, e.created_at FROM emails e JOIN users u ON u.id = $1
        WHERE e.user_id = u.id OR e.to_email = u.email ORDER BY e.created_at`),
+      q(`SELECT platform, status, handle, external_id, verified_by, verified_at, created_at FROM linked_accounts
+         WHERE user_id = $1`),
     ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -169,6 +171,7 @@ export async function exportData(userId) {
     signedInDevices: devices,
     securityHistory: security,
     emailsSent: emails,
+    linkedAccounts: links,
     // Paid memberships, tips, and receipts appear here once payments exist (MBJ-104, 109).
     payments: [],
   };

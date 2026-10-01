@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 215 automated tests (129 server, 86 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 100 stories; 21 done, 9 in progress |
+| Quality | 225 automated tests (134 server, 91 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 100 stories; 22 done, 9 in progress |
 
 ## Waiting on Ruben
 
@@ -133,6 +133,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   restores it, signs out everywhere, and sends a reset link), signed-in devices with sign out one or all, recent
   activity (sign-ins, password and email changes), notification switches per type for the bell and push, and
   the membership perks table.
+- **Linked YouTube and Rumble accounts** (MBJ-215, Account settings → Linked accounts): a member posts a one-time
+  code on JimBob's YouTube (comment or live chat); the next import, the hourly check, or "check now" links that
+  channel by its id, so all their YouTube chat and comments (past and future) show their site name and tier, and
+  @mentions of their YouTube handle notify them. Rumble names are confirmed in Studio → Linked accounts.
 - **Download my data / delete my account** (MBJ-118, in /account → Privacy and data): a JSON file of everything
   we hold; deleting needs the password, signs out everywhere, and waits 30 days (signing in calls it off), then an
   hourly job erases the account. Their chat and comments stay as "Deleted user", or are blanked and hidden if they

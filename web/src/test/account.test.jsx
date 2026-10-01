@@ -189,3 +189,40 @@ describe('privacy and data', () => {
     expect(sent('POST', '/account/delete')).toEqual([{ password: 'password1234', deleteContent: true }]);
   });
 });
+
+describe('linked accounts', () => {
+  test('linking YouTube shows a code to post, and "check now" looks for it', async () => {
+    const pending = {
+      youtube: { status: 'pending', code: 'MBJ-7KQ2M9', expiresAt: new Date() },
+      rumble: null,
+    };
+    const sent = fakeApi({
+      ...routes,
+      '/account/links': [200, { youtube: null, rumble: null }],
+      'POST /account/links/youtube': [200, pending],
+      'POST /account/links/youtube/check': [200, pending],
+    });
+    renderAccount();
+    fireEvent.click(await screen.findByRole('button', { name: 'Link YouTube' }));
+    expect(await screen.findByText('MBJ-7KQ2M9')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'I posted it, check now' }));
+    expect(await screen.findByText(/Not found yet/)).toBeTruthy();
+    expect(sent('POST', '/account/links/youtube/check')).toHaveLength(1);
+  });
+
+  test('a linked YouTube account and a Rumble name waiting for a moderator', async () => {
+    fakeApi({
+      ...routes,
+      '/account/links': [
+        200,
+        {
+          youtube: { status: 'verified', handle: '@FanOnYT' },
+          rumble: { status: 'pending', handle: 'RumbleFan' },
+        },
+      ],
+    });
+    renderAccount();
+    expect(await screen.findByText(/@FanOnYT/)).toBeTruthy();
+    expect(screen.getByText('Waiting for a moderator')).toBeTruthy();
+  });
+});

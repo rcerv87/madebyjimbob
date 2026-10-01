@@ -12,6 +12,7 @@ import { pageMeta, renderPage } from './pages.js';
 import { toNodeHandler } from 'better-auth/node';
 import { auth, sessionUser, ADMIN_EMAILS } from './auth.js';
 import accountRouter from './account.js';
+import { linkedHandles, linkRow } from './links.js';
 import {
   addUserSocket,
   removeUserSocket,
@@ -144,17 +145,31 @@ function videoCard(v) {
 const replyTo = (r) =>
   r.rt_id ? { id: r.rt_id, author: r.rt_author, body: r.rt_body, offsetMs: r.rt_offset } : null;
 
+// Imported messages from a linked YouTube/Rumble account carry the member's site name and tier (MBJ-215).
+const memberJoin = (
+  alias,
+) => `LEFT JOIN linked_accounts la ON la.status = 'verified' AND la.platform = ${alias}.source
+    AND la.external_id = ${alias}.author_channel_id
+  LEFT JOIN users lu ON lu.id = la.user_id`;
+
 const CHAT_SELECT = `SELECT m.*, rt.id AS rt_id, rt.author_name AS rt_author, left(rt.body, 140) AS rt_body,
-    rt.offset_ms AS rt_offset
-  FROM chat_messages m LEFT JOIN chat_messages rt ON rt.id = m.reply_to_id AND NOT rt.hidden`;
+    rt.offset_ms AS rt_offset, lu.username AS member_name, lu.tier AS member_tier
+  FROM chat_messages m LEFT JOIN chat_messages rt ON rt.id = m.reply_to_id AND NOT rt.hidden
+  ${memberJoin('m')}`;
 
 // Comments with what each one quotes (rt_*) and its reply count. `from` can narrow the rows first (one
 // page of threads), so the quote join only touches those instead of every comment on the site.
 const commentSelect = (from = 'comments') => `SELECT c.*, rt.id AS rt_id, rt.author_name AS rt_author,
     left(rt.body, 140) AS rt_body, rt.offset_ms AS rt_offset,
-    (SELECT count(*) FROM comments r WHERE r.parent_id = c.id AND NOT r.hidden) AS reply_count
-  FROM ${from} c LEFT JOIN comments rt ON rt.id = c.reply_to_id AND NOT rt.hidden`;
+    (SELECT count(*) FROM comments r WHERE r.parent_id = c.id AND NOT r.hidden) AS reply_count,
+    lu.username AS member_name, lu.tier AS member_tier
+  FROM ${from} c LEFT JOIN comments rt ON rt.id = c.reply_to_id AND NOT rt.hidden
+  ${memberJoin('c')}`;
 const COMMENT_SELECT = commentSelect();
+
+// The member behind a linked account: shown under their site name, with the platform name kept.
+const member = (r) =>
+  r.member_name ? { author: r.member_name, platformName: r.author_name, memberTier: r.member_tier } : {};
 
 function commentRow(r) {
   return {
@@ -171,6 +186,7 @@ function commentRow(r) {
     likes: r.like_count,
     pinned: r.pinned,
     postedAt: r.posted_at,
+    ...member(r),
   };
 }
 
@@ -187,6 +203,7 @@ function chatRow(r) {
     offsetMs: r.offset_ms,
     postedLive: r.posted_live,
     replyTo: replyTo(r),
+    ...member(r),
   };
 }
 
@@ -203,6 +220,7 @@ app.get(
         [user.id],
       );
       user.deletionCancelled = rowCount > 0;
+      user.linkedHandles = await linkedHandles(user.id);
     }
     res.json({ user });
   }),
@@ -880,6 +898,48 @@ app.patch(
   }),
 );
 
+// Studio linked accounts (MBJ-215): Rumble names waiting for a moderator, and every confirmed link.
+app.get(
+  '/api/studio/links',
+  wrap(async (_req, res) => {
+    const { rows } = await pool.query(
+      `SELECT la.*, u.username FROM linked_accounts la JOIN users u ON u.id = la.user_id
+       WHERE la.status = 'verified' OR la.platform = 'rumble'
+       ORDER BY la.status = 'pending' DESC, la.verified_at DESC NULLS LAST, la.created_at DESC LIMIT 200`,
+    );
+    res.json({ links: rows.map((r) => ({ ...linkRow(r), username: r.username })) });
+  }),
+);
+
+app.post(
+  '/api/studio/links/:id/approve',
+  wrap(async (req, res) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) return res.status(404).json({ error: 'No such link.' });
+    try {
+      const { rowCount } = await pool.query(
+        `UPDATE linked_accounts SET status = 'verified', verified_by = 'admin', verified_at = now()
+         WHERE id = $1 AND platform = 'rumble' AND status = 'pending'`,
+        [req.params.id],
+      );
+      if (!rowCount) return res.status(404).json({ error: 'That request is gone or already confirmed.' });
+    } catch (err) {
+      if (err.code === '23505')
+        return res.status(409).json({ error: 'That Rumble name is already linked to another member.' });
+      throw err;
+    }
+    res.json({ ok: true });
+  }),
+);
+
+app.delete(
+  '/api/studio/links/:id',
+  wrap(async (req, res) => {
+    if (!/^\d{1,18}$/.test(req.params.id)) return res.status(404).json({ error: 'No such link.' });
+    await pool.query('DELETE FROM linked_accounts WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  }),
+);
+
 // Studio email: whether sending is on, the templates (preview and send a test), and recent sends.
 // Addresses are masked; mods don't need members' full emails.
 app.get(
@@ -1170,4 +1230,4 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-export { app, server, ADMIN_EMAILS };
+export { app, server, wss, ADMIN_EMAILS };

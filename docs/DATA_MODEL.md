@@ -226,6 +226,21 @@ One-time links for our own flows (email change, its undo). Only a SHA-256 of the
 | data | jsonb | `{ newEmail, oldEmail }` |
 | expires_at, used_at, created_at | timestamptz | |
 
+### linked_accounts
+YouTube and Rumble accounts linked to a member (MBJ-215). Chat and comment queries join verified rows on
+`(platform = source, external_id = author_channel_id)` to show the member's name and tier.
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| user_id | bigint → users | cascade; one row per platform per member |
+| platform | text | `youtube \| rumble` |
+| status | text | `pending \| verified`; one verified member per (platform, external_id) |
+| code, expires_at | text, timestamptz | pending YouTube link: the code to post (14 days) |
+| external_id | text | YouTube channel id (UC…), or the lower-cased Rumble name |
+| handle | text | the name shown there (@handle) |
+| verified_by, verified_at | text, timestamptz | `code` (posted on the channel) or `admin` (Studio) |
+| created_at | timestamptz | |
+
 ## Planned
 
 | Change | Story |

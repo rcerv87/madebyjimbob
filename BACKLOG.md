@@ -644,15 +644,15 @@ Acceptance criteria:
 
 ### MBJ-215 — Link YouTube and Rumble names to a profile
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-202
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-202
 
 As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.
 
 Acceptance criteria:
-- [ ] Profile lets a member claim a YouTube handle and gets a one-time code
-- [ ] Posting the code in JimBob's live chat or as a comment verifies the claim on the next import
-- [ ] Rumble names verified by hand in Studio until Rumble chat ingest exists
-- [ ] Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member
+- [x] Profile lets a member claim a YouTube handle and gets a one-time code
+- [x] Posting the code in JimBob's live chat or as a comment verifies the claim on the next import
+- [x] Rumble names verified by hand in Studio until Rumble chat ingest exists
+- [x] Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member
 
 ### MBJ-216 — Count one view per viewer
 

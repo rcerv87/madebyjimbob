@@ -129,3 +129,25 @@ describe('ChatPanel', () => {
     expect(requireSignIn).toHaveBeenCalled();
   });
 });
+
+describe('linked YouTube accounts in chat', () => {
+  test("show the member's site name and tier, with the YouTube name in the tooltip", async () => {
+    mockApi({
+      '/videos/7/chat': {
+        messages: [
+          msg(1, 0, 'hello', { author: 'SiteFan', platformName: '@FanOnYT', memberTier: 'premium' }),
+        ],
+      },
+    });
+    renderPanel({ timeMs: 5000 });
+    const name = await screen.findByText('SiteFan');
+    expect(name.getAttribute('title')).toMatch(/@FanOnYT on YouTube/);
+    expect(screen.getByText('Premium')).toBeTruthy();
+  });
+
+  test('a mention of your linked YouTube handle is highlighted as yours', async () => {
+    mockApi({ '/videos/7/chat': { messages: [msg(1, 0, '@fanonyt nice', { mentions: ['fanonyt'] })] } });
+    renderPanel({ timeMs: 5000, user: { username: 'SiteFan', linkedHandles: ['fanonyt'] } });
+    expect((await screen.findByText('@fanonyt')).closest('li').className).toContain('mentions-me');
+  });
+});

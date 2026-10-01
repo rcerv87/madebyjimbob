@@ -121,9 +121,13 @@ export async function notifyFor({
   if (replyToUserId && String(replyToUserId) !== String(actor.id))
     recipients.set(String(replyToUserId), 'reply');
   if (mentions?.length) {
-    const { rows } = await pool.query('SELECT id FROM users WHERE lower(username) = ANY($1::text[])', [
-      mentions,
-    ]);
+    // Site usernames, and YouTube/Rumble handles linked to a member (MBJ-215).
+    const { rows } = await pool.query(
+      `SELECT id FROM users WHERE lower(username) = ANY($1::text[])
+       UNION SELECT user_id FROM linked_accounts
+         WHERE status = 'verified' AND lower(ltrim(handle, '@')) = ANY($1::text[])`,
+      [mentions],
+    );
     for (const r of rows) {
       const id = String(r.id);
       if (id !== String(actor.id) && !recipients.has(id)) recipients.set(id, 'mention');
