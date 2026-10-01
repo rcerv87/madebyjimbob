@@ -54,3 +54,8 @@ Prices are estimates as of this date; check current Cloudflare pricing before de
 - **Decided (Ruben, 2026-10-01):** keep a second cloud copy of the compressed versions on Backblaze B2 (~$13/month), so
   there are three copies (R2 for playback, B2, and the originals on a home drive), and losing one provider doesn't lose
   the archive. Total ≈ $46/month for the full library.
+- **Revised (Ruben, 2026-10-01): B2 replaces R2.** Backblaze B2 holds the copies people watch (720p, 360p, audio), ~$13/month
+  for ~2.2 TB. Backups: the originals on JimBob's home drive, plus YouTube's own copy. No second paid cloud for now.
+  Watching is free up to 3× the stored amount per month (~6.6 TB, ~9,000 viewer-hours at 720p), then ~$10 per TB.
+  Don't rely on serving B2 video through Cloudflare's free CDN, because its terms limit video that isn't stored on Cloudflare.
+  YouTube is a backup only; the site never plays from it. Add a second cloud copy if YouTube removes the channel or traffic grows.
