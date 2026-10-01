@@ -27,6 +27,18 @@ API without replacing Shopify (MBJ-807).
 Either way, the platform's navigation links to the store and the store's menu links back, so they read as
 one site.
 
+## Beta address (2026-09-30)
+
+Until JimBob decides, the platform runs its beta on **madebyjimbob.app**, registered by Ruben with JimBob's OK
+and handed over later; account email is verified on it in Resend. At the switch to madebyjimbob.com:
+
+- Render: add the custom domain, set `SITE_URL` and `ALLOW_INDEXING=true`; add madebyjimbob.com in Resend and
+  change `EMAIL_FROM`. No code changes.
+- Keep madebyjimbob.app redirecting to madebyjimbob.com permanently (old Home Screen icons, emailed links, shares).
+- Everyone signs in again and turns push back on (both are tied to the address); accounts and history carry over.
+- Publish the phone apps on the .com address if possible: app links are tied to one domain.
+- During the beta, .app stays out of search (`ALLOW_INDEXING` unset).
+
 ## Consequences
 
 - No rebuilding of products, payments, or shipping; JimBob keeps using the Shopify admin he knows.

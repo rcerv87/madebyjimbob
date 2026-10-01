@@ -22,8 +22,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    then update `CF_API_TOKEN` in `.env`.
 3. **Decide R2 vs Stream** for the full library (`docs/adr/010-vod-on-r2.md`) before importing more than a few streams.
 4. **GitHub branch rule:** Settings → Branches → rule for `main` → require the **CI / check** status (finishes MBJ-005).
-5. **Domain:** choose where the platform lives: madebyjimbob.com with the store at shop.madebyjimbob.com
-   (recommended), or the platform on watch.madebyjimbob.com (`docs/adr/011-domain-and-store.md`).
+5. **Domain:** beta runs on **madebyjimbob.app** (buy it with JimBob's OK, about $15/year; Cloudflare). Later,
+   JimBob chooses the final address: madebyjimbob.com with the store at shop.madebyjimbob.com (recommended), or
+   watch.madebyjimbob.com. The switch checklist is in `docs/adr/011-domain-and-store.md` ("Beta address").
 6. **JimBob's OK** on using his avatar, banner art, and store products in the platform before the link goes wide.
 7. **Turn on account email** (MBJ-114, ADR-012; free until launch, then $20/month). About 15 minutes plus DNS time:
    1. Sign up at https://resend.com with an address you'll keep (ideally one JimBob can also reach).
@@ -187,6 +188,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | 2026-09-30 | Keep the Shopify store for products and checkout; the platform shows it (ADR-011). Art = his illustrations and comics from the store's art collections |
 | 2026-09-30 | Platform adopts his store's brand (teal, Jost wordmark, avatar, banner art) |
 | 2026-09-30 | Account email through Resend from JimBob's domain; $0 now, $20/month from launch; templates and do-not-mail list stay in our database (ADR-012) |
+| 2026-09-30 | Beta on madebyjimbob.app (account email verified there), then switch to JimBob's .com; .app keeps redirecting (ADR-011) |
 | 2026-09-30 | Real accounts on Better Auth (ADR-006 accepted); admins by verified email instead of username; Google/Apple/magic link/passkeys moved to MBJ-110 |
 | 2026-09-30 | Registration and profiles split into MBJ-106, 108, 113–119; 13+ checkbox, profiles public but not in search, deleted members' messages stay as "Deleted user" |
 
