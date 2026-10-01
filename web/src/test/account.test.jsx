@@ -165,3 +165,27 @@ describe('account settings page', () => {
     expect(describeDevice(null)).toBe('Unknown device');
   });
 });
+
+describe('privacy and data', () => {
+  test('download is a plain link to the export', () => {
+    fakeApi(routes);
+    renderAccount();
+    expect(screen.getByRole('link', { name: 'Download' }).getAttribute('href')).toBe('/api/account/export');
+  });
+
+  test('deleting asks what to do with messages and for the password, then signs out', async () => {
+    const sent = fakeApi({ ...routes, 'POST /account/delete': [200, { ok: true, eraseOn: new Date() }] });
+    const onUserChanged = vi.fn();
+    render(
+      <MemoryRouter initialEntries={['/account']}>
+        <Account session={{ user, requireSignIn: () => {} }} onUserChanged={onUserChanged} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Delete…' }));
+    fireEvent.click(screen.getByLabelText(/Remove them too/));
+    fireEvent.change(screen.getByLabelText('Your password'), { target: { value: 'password1234' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete my account' }));
+    await waitFor(() => expect(onUserChanged).toHaveBeenCalledWith(null));
+    expect(sent('POST', '/account/delete')).toEqual([{ password: 'password1234', deleteContent: true }]);
+  });
+});

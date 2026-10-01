@@ -145,3 +145,24 @@ describe('account menu', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 });
+
+describe('account deletion notices', () => {
+  const renderAt = (u, path) =>
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <AccountNotice user={u} onUserChanged={() => {}} />
+      </MemoryRouter>,
+    );
+
+  test('after asking to delete: 30 days, and signing in keeps the account', () => {
+    fakeApi({});
+    renderAt(null, '/?deletion=requested');
+    expect(screen.getByText(/deleted in 30 days/)).toBeTruthy();
+  });
+
+  test('after signing back in: the deletion is off', () => {
+    fakeApi({});
+    renderAt({ ...me.user, emailVerified: true, deletionCancelled: true }, '/');
+    expect(screen.getByText(/called off your account deletion/)).toBeTruthy();
+  });
+});

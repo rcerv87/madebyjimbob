@@ -18,8 +18,14 @@ columns are added by the story noted.
 | tier | text | `free | plus | premium` — derived from entitlements after MBJ-104; never settable by the user |
 | youtube_channel_id | text | set when user links YouTube (MBJ-305) |
 | xp | int | never settable by the user |
+| deletion_requested_at | timestamptz | set by Delete my account; erased 30 days later unless they sign in (MBJ-118) |
+| delete_content | boolean | also blank and hide their chat and comments when erased |
 | notification_prefs | jsonb | `{ mention: { site, push }, reply: { … } }`; missing = on (MBJ-106) |
 | created_at, updated_at | timestamptz | |
+
+Erasing an account (MBJ-118) sets `chat_messages.user_id` and `comments.user_id` to null (their foreign keys are
+`ON DELETE SET NULL`) and renames the author "Deleted user"; everything else tied to the user cascades, and the
+`emails` rows for their address are deleted after the last email.
 
 Better Auth (MBJ-101, ADR-006) maps its models onto these snake_case tables in `server/src/auth.js`; ids are serial.
 
@@ -205,7 +211,7 @@ A member's security history (MBJ-113), shown on /account.
 |---|---|---|
 | id | bigserial PK | |
 | user_id | bigint → users | cascade |
-| type | text | `account_created`, `signed_in`, `password_changed`, `password_reset`, `email_change_requested`, `email_changed`, `email_change_undone` |
+| type | text | `account_created`, `signed_in`, `password_changed`, `password_reset`, `email_change_requested`, `email_changed`, `email_change_undone`, `deletion_requested`, `deletion_cancelled` |
 | ip_address, user_agent | text | |
 | detail | text | masked emails for email changes |
 | created_at | timestamptz | |

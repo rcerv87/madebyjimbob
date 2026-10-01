@@ -194,7 +194,17 @@ function chatRow(r) {
 app.get(
   '/api/me',
   wrap(async (req, res) => {
-    res.json({ user: await currentUser(req) });
+    const user = await currentUser(req);
+    if (user) {
+      // Signing in called off a pending account deletion in the last few minutes: the site says so.
+      const { rowCount } = await pool.query(
+        `SELECT 1 FROM security_events WHERE user_id = $1 AND type = 'deletion_cancelled'
+           AND created_at > now() - interval '10 minutes'`,
+        [user.id],
+      );
+      user.deletionCancelled = rowCount > 0;
+    }
+    res.json({ user });
   }),
 );
 

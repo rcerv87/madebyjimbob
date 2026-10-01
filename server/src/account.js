@@ -9,6 +9,7 @@ import { auth, baseURL, sessionUser } from './auth.js';
 import { sendEmail, normalizeEmail } from './email.js';
 import { maskEmail } from './emailTemplates.js';
 import { logSecurityEvent, requestOrigin } from './security.js';
+import { exportData, requestDeletion } from './deletion.js';
 
 export const NOTIFICATION_TYPES = ['mention', 'reply'];
 export const NOTIFICATION_CHANNELS = ['site', 'push'];
@@ -61,14 +62,31 @@ async function useToken(token, purpose) {
   return rows[0] || null;
 }
 
-// A few email-change requests per member per hour (each one sends an email).
-const emailChangeTries = new Map();
-function tooManyEmailChanges(userId) {
-  const now = Date.now();
-  const recent = (emailChangeTries.get(userId) || []).filter((t) => now - t < 60 * 60 * 1000);
-  recent.push(now);
-  emailChangeTries.set(userId, recent);
-  return recent.length > 5;
+// A few tries per member per hour for actions that send email or build big responses.
+function hourlyLimit(max) {
+  const tries = new Map();
+  return (userId) => {
+    const now = Date.now();
+    const recent = (tries.get(userId) || []).filter((t) => now - t < 60 * 60 * 1000);
+    recent.push(now);
+    tries.set(userId, recent);
+    return recent.length > max;
+  };
+}
+const tooManyEmailChanges = hourlyLimit(5);
+const tooManyExports = hourlyLimit(5);
+const tooManyDeletes = hourlyLimit(5);
+
+async function passwordOk(req) {
+  try {
+    await auth.api.verifyPassword({
+      body: { password: String(req.body?.password || '') },
+      headers: fromNodeHeaders(req.headers),
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 router.get(
@@ -138,14 +156,8 @@ router.post(
       return res.status(400).json({ error: 'That’s already your email.' });
     if (tooManyEmailChanges(req.user.id))
       return res.status(429).json({ error: 'Too many tries. Wait an hour, then try again.' });
-    try {
-      await auth.api.verifyPassword({
-        body: { password: String(req.body?.password || '') },
-        headers: fromNodeHeaders(req.headers),
-      });
-    } catch {
+    if (!(await passwordOk(req)))
       return res.status(400).json({ error: 'That password isn’t right. Check it and try again.' });
-    }
     // Same answer whether or not the address is taken, so this can't be used to find accounts.
     const { rowCount: taken } = await pool.query('SELECT 1 FROM users WHERE email = $1', [newEmail]);
     if (!taken) {
@@ -236,6 +248,39 @@ router.get(
     });
     await auth.api.requestPasswordReset({ body: { email: oldEmail, redirectTo: '/reset-password' } });
     res.redirect('/?email=restored');
+  }),
+);
+
+// Download my data: everything we hold about the member as a JSON file.
+router.get(
+  '/export',
+  requireUser,
+  wrap(async (req, res) => {
+    if (tooManyExports(req.user.id))
+      return res.status(429).json({ error: 'Too many downloads. Wait an hour, then try again.' });
+    const data = await exportData(req.user.id);
+    const day = new Date().toISOString().slice(0, 10);
+    res.set('Content-Disposition', `attachment; filename="madebyjimbob-${req.user.username}-${day}.json"`);
+    res.set('Cache-Control', 'no-store');
+    res.type('application/json').send(JSON.stringify(data, null, 2));
+  }),
+);
+
+// Delete my account: { password, deleteContent }. Signs out everywhere; erased in 30 days unless they sign in.
+router.post(
+  '/delete',
+  requireUser,
+  wrap(async (req, res) => {
+    if (tooManyDeletes(req.user.id))
+      return res.status(429).json({ error: 'Too many tries. Wait an hour, then try again.' });
+    if (!(await passwordOk(req)))
+      return res.status(400).json({ error: 'That password isn’t right. Check it and try again.' });
+    const eraseOn = await requestDeletion(req.user, {
+      deleteContent: req.body?.deleteContent === true,
+      origin: requestOrigin(req.headers),
+      siteUrl: baseURL,
+    });
+    res.json({ ok: true, eraseOn });
   }),
 );
 

@@ -87,6 +87,9 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   which sets the tier in the database (users can't choose one). Better Auth refuses requests without an
   `Origin` header, so test clients send one.
 - Notifications: call `notifyFor()` from `server/src/notify.js` after saving anything that can mention or reply to someone; it stores, sends over WebSocket, and pushes.
+- Deleting accounts: `server/src/deletion.js`. A request waits 30 days (signing in cancels it); an hourly job in
+  the server process erases due accounts. New tables that reference `users` need `ON DELETE CASCADE` (or SET NULL
+  for content that should stay as "Deleted user"), and new personal data belongs in `exportData()`.
 - Email: only through `sendEmail()` in `server/src/email.js` with a template from `emailTemplates.js` (never call
   the provider directly). It skips suppressed addresses and logs every send. Tests blank `RESEND_API_KEY` and
   record sends with `setTransport()`.

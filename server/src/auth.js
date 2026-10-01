@@ -15,6 +15,7 @@ import { sendEmail, emailEnabled } from './email.js';
 import { logger } from './logger.js';
 import { containsBannedWord } from './moderation.js';
 import { logSecurityEvent, requestOrigin } from './security.js';
+import { cancelDeletionOnSignIn } from './deletion.js';
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -219,10 +220,10 @@ export const auth = betterAuth({
           const path = ctx?.path || '';
           if (path.startsWith('/sign-up') || path === '/change-password' || path === '/reset-password')
             return;
-          await logSecurityEvent(session.userId, 'signed_in', {
-            ip: session.ipAddress,
-            userAgent: session.userAgent,
-          });
+          const origin = { ip: session.ipAddress, userAgent: session.userAgent };
+          await logSecurityEvent(session.userId, 'signed_in', origin);
+          // Signing in within the 30 days calls off a pending account deletion (MBJ-118).
+          await cancelDeletionOnSignIn(session.userId, origin);
         },
       },
     },

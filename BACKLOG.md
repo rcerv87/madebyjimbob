@@ -453,16 +453,16 @@ Acceptance criteria:
 
 ### MBJ-118 — Download my data and delete my account
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101, MBJ-114
 
 As a member, I want to take my data with me or leave for good; as JimBob, I want the apps to pass store review.
 
 Acceptance criteria:
-- [ ] Download my data: profile, comments, chat messages, likes, watch history, and payments as a JSON file
-- [ ] Delete account from Account settings with the password (or a fresh sign-in); required in the phone apps by Apple and Google
-- [ ] 30 days to change your mind (signing in cancels it), then the account is erased; paid memberships are cancelled first
-- [ ] Chat messages and comments stay in replays as "Deleted user" so conversations still make sense; an option also removes them
-- [ ] Confirmation email at request and at erasure
+- [x] Download my data: profile, comments, chat messages, likes, watch history, and payments as a JSON file
+- [x] Delete account from Account settings with the password (or a fresh sign-in); required in the phone apps by Apple and Google
+- [x] 30 days to change your mind (signing in cancels it), then the account is erased; paid memberships are cancelled first
+- [x] Chat messages and comments stay in replays as "Deleted user" so conversations still make sense; an option also removes them
+- [x] Confirmation email at request and at erasure
 
 ### MBJ-119 — Block and mute
 

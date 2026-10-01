@@ -2883,6 +2883,51 @@ td select,
   font-weight: 600;
   font-size: 1.05rem;
 }
+.danger-btn {
+  background: var(--danger);
+  color: #2a0603;
+  border: 0;
+  border-radius: 18px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.danger-btn:disabled {
+  opacity: 0.6;
+}
+.text-btn.danger-text {
+  color: var(--danger);
+}
+a.text-btn {
+  text-decoration: none;
+  white-space: nowrap;
+}
+.choice {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.choice legend {
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.setting-form label.check {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--text);
+}
+.setting-form label.check input {
+  height: 18px;
+  width: 18px;
+  flex: none;
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
 .account-menu a.account-menu-item {
   display: block;
   text-decoration: none;
