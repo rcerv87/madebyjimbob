@@ -59,3 +59,6 @@ Prices are estimates as of this date; check current Cloudflare pricing before de
   Watching is free up to 3× the stored amount per month (~6.6 TB, ~9,000 viewer-hours at 720p), then ~$10 per TB.
   Don't rely on serving B2 video through Cloudflare's free CDN, because its terms limit video that isn't stored on Cloudflare.
   YouTube is a backup only; the site never plays from it. Add a second cloud copy if YouTube removes the channel or traffic grows.
+- **Keep it portable:** write files through the S3-compatible API that B2 and R2 share, with the bucket, endpoint, and
+  public URL coming only from settings. If the audience grows enough that B2's charges for watching matter, moving to R2
+  is a bucket copy plus changed settings, with no code changes.
