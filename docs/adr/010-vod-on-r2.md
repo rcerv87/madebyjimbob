@@ -62,3 +62,7 @@ Prices are estimates as of this date; check current Cloudflare pricing before de
 - **Keep it portable:** write files through the S3-compatible API that B2 and R2 share, with the bucket, endpoint, and
   public URL coming only from settings. If the audience grows enough that B2's charges for watching matter, moving to R2
   is a bucket copy plus changed settings, with no code changes.
+- **Podcast mode keeps B2 cheap.** With 100 members (10 heavy, 90 light), people watch about 4 TB a month, inside the
+  free 6.6 TB. If about 45% of hours are listened to as audio only (about 1/25th the data), the free allowance lasts to
+  ~300 members. Make listening the easy choice: a Listen button, switching to audio automatically when the screen
+  locks or the app is in the background, and audio downloads.
