@@ -51,3 +51,6 @@ Prices are estimates as of this date; check current Cloudflare pricing before de
   consider a second cloud copy of the compressed versions.
 - **Processing:** the helper on Ruben's PC encodes them (free, overnight).
 - **Later:** downloads to watch offline in the phone apps (720p or audio, expiring), and audio downloads on the website.
+- **Decided (Ruben, 2026-10-01):** keep a second cloud copy of the compressed versions on Backblaze B2 (~$13/month), so
+  there are three copies (R2 for playback, B2, and the originals on a home drive), and losing one provider doesn't lose
+  the archive. Total ≈ $46/month for the full library.
