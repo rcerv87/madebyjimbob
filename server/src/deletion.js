@@ -87,6 +87,7 @@ export async function eraseAccount(userId) {
        WHERE actor_id = $1`,
       [userId, DELETED_NAME, remove],
     );
+    await client.query('DELETE FROM video_views WHERE viewer_key = $1', [`u:${userId}`]);
     // Sessions, sign-in methods, progress, likes, push, notifications, security history, tokens cascade.
     await client.query('DELETE FROM users WHERE id = $1', [userId]);
     await client.query('COMMIT');

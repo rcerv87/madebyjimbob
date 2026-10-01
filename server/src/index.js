@@ -2,6 +2,7 @@ import { server, ADMIN_EMAILS } from './app.js';
 import { usingFallbackSecret } from './auth.js';
 import { startErasureJob } from './deletion.js';
 import { startLinkCheckJob } from './links.js';
+import { startViewCleanup } from './views.js';
 import { logger } from './logger.js';
 
 // Migrations run separately (`npm run migrate`, Render's pre-deploy command), not on boot.
@@ -15,3 +16,5 @@ server.listen(PORT, () => logger.info(`MadeByJimBob running on :${PORT}`));
 startErasureJob();
 // Fills in the channel for confirmed YouTube links once that handle shows up in an import (MBJ-215).
 startLinkCheckJob();
+// Forgets who viewed what after a day; only today's views are needed to count each viewer once (MBJ-216).
+startViewCleanup();

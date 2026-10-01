@@ -657,13 +657,13 @@ Acceptance criteria:
 
 ### MBJ-216 — Count one view per viewer
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
 
 As JimBob, I want view counts I can trust.
 
 Acceptance criteria:
-- [ ] A view counts once per viewer per video per day (account, or browser for signed-out)
-- [ ] Refreshes and resumed sessions don't add views
+- [x] A view counts once per viewer per video per day (account, or browser for signed-out)
+- [x] Refreshes and resumed sessions don't add views
 
 ## Epic 3xx — Live via YouTube
 

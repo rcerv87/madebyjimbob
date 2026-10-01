@@ -80,6 +80,29 @@ describe('Watch page', () => {
     expect(calls('/videos/1/view', 'POST')).toHaveLength(1);
   });
 
+  test('a view carries this browser’s id, the same one every time (one view per viewer, MBJ-216)', async () => {
+    fakeApi({
+      '/videos/1': videoData('1'),
+      '/videos/2': videoData('2'),
+      '/videos/1/view': { ok: true },
+      '/videos/2/view': { ok: true },
+      '/videos/1/chat': { messages: [] },
+      '/videos/2/chat': { messages: [] },
+      '/videos/1/comments': { total: 0, nextOffset: null, comments: [] },
+      '/videos/2/comments': { total: 0, nextOffset: null, comments: [] },
+      '/videos': { videos: [] },
+    });
+    render(<WatchAt path="/watch/1" session={signedOut} />);
+    await waitFor(() => expect(calls('/videos/1/view', 'POST')).toHaveLength(1));
+    fireEvent.click(screen.getByText('Go to /watch/2'));
+    await waitFor(() => expect(calls('/videos/2/view', 'POST')).toHaveLength(1));
+    const ids = [calls('/videos/1/view', 'POST')[0], calls('/videos/2/view', 'POST')[0]].map(
+      ([, opts]) => JSON.parse(opts.body).viewer,
+    );
+    expect(ids[0]).toMatch(/^[A-Za-z0-9-]{16,64}$/);
+    expect(ids[1]).toBe(ids[0]);
+  });
+
   test('a members video unlocks when the viewer signs in', async () => {
     let tier = 'free';
     fakeApi({

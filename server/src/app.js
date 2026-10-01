@@ -14,6 +14,7 @@ import { pageMeta, renderPage } from './pages.js';
 import { toNodeHandler } from 'better-auth/node';
 import { auth, sessionUser, ADMIN_EMAILS } from './auth.js';
 import accountRouter from './account.js';
+import { viewerKey, recordView } from './views.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
   addUserSocket,
@@ -429,11 +430,18 @@ app.post(
 app.post(
   '/api/videos/:id/view',
   wrap(async (req, res) => {
-    const { rowCount } = isId(req.params.id)
-      ? await pool.query('UPDATE videos SET views = views + 1 WHERE id = $1', [req.params.id])
-      : { rowCount: 0 };
-    if (!rowCount) return res.status(404).json({ error: 'Video not found.' });
-    res.json({ ok: true });
+    if (!isId(req.params.id)) return res.status(404).json({ error: 'Video not found.' });
+    // Once per viewer per video per day (MBJ-216): the account, or the browser id the web app sends.
+    const user = await currentUser(req);
+    const key = viewerKey({
+      userId: user?.id,
+      browserId: req.body?.viewer,
+      ip: req.ip,
+      userAgent: req.get('user-agent') || '',
+    });
+    const counted = await recordView(req.params.id, key);
+    if (counted === null) return res.status(404).json({ error: 'Video not found.' });
+    res.json({ ok: true, counted });
   }),
 );
 

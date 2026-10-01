@@ -165,7 +165,7 @@ MBJ-215,Link YouTube and Rumble names to a profile,Chat & moderation,Phase 1 —
 - The YouTube channel id is found from imported chat and comments by handle, so links survive renames
 - Rumble names verified by hand in Studio until Rumble chat ingest exists
 - Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member",MBJ-202
-MBJ-216,Count one view per viewer,Chat & moderation,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want view counts I can trust.","- A view counts once per viewer per video per day (account, or browser for signed-out)
+MBJ-216,Count one view per viewer,Chat & moderation,Phase 1 — VOD platform,Should,S,Done,"As JimBob, I want view counts I can trust.","- A view counts once per viewer per video per day (account, or browser for signed-out)
 - Refreshes and resumed sessions don't add views",
 MBJ-301,Live video model and live page,Live via YouTube,Phase 3 — Live via YouTube,Must,M,To do,"As a viewer, I want to watch JimBob live without leaving the platform.","- `videos.status` and `videos.source` added (see DATA_MODEL)
 - Live page embeds the YouTube IFrame player for the active broadcast

@@ -290,6 +290,15 @@ to mark each one on the site, queued, or new.
 | position | int | order on the tab |
 | listed_at | timestamptz | |
 
+### video_views
+Who has been counted on each video today (MBJ-216); `videos.views` is the running total. Rows older than yesterday
+are deleted hourly.
+| column | type | notes |
+|---|---|---|
+| video_id | bigint → videos | cascade |
+| viewer_key | text | `u:<user id>`, `b:<browser id>`, or `h:<daily hash>` (no IPs stored) |
+| day | date | UTC |
+
 ## Planned
 
 | Change | Story |
