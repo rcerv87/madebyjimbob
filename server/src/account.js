@@ -301,6 +301,38 @@ router.delete(
   }),
 );
 
+// What the member's public profile shares (MBJ-116).
+router.get(
+  '/profile',
+  requireUser,
+  wrap(async (req, res) => {
+    const { rows } = await pool.query(
+      'SELECT profile_show_chat, profile_indexable FROM users WHERE id = $1',
+      [req.user.id],
+    );
+    res.json({ showChat: rows[0].profile_show_chat, indexable: rows[0].profile_indexable });
+  }),
+);
+
+router.put(
+  '/profile',
+  requireUser,
+  wrap(async (req, res) => {
+    const { showChat, indexable } = req.body || {};
+    if (
+      (showChat !== undefined && typeof showChat !== 'boolean') ||
+      (indexable !== undefined && typeof indexable !== 'boolean')
+    )
+      return res.status(400).json({ error: 'Send { showChat?, indexable? } as true or false.' });
+    const { rows } = await pool.query(
+      `UPDATE users SET profile_show_chat = COALESCE($2, profile_show_chat), profile_indexable = COALESCE($3, profile_indexable)
+       WHERE id = $1 RETURNING profile_show_chat, profile_indexable`,
+      [req.user.id, showChat ?? null, indexable ?? null],
+    );
+    res.json({ showChat: rows[0].profile_show_chat, indexable: rows[0].profile_indexable });
+  }),
+);
+
 // Download my data: everything we hold about the member as a JSON file.
 router.get(
   '/export',

@@ -21,6 +21,7 @@ columns are added by the story noted.
 | role | text | `viewer \| mod \| admin`; admin opens Studio (`npm run set-role`), never settable by the user |
 | deletion_requested_at | timestamptz | set by Delete my account; erased 30 days later unless they sign in (MBJ-118) |
 | delete_content | boolean | also blank and hide their chat and comments when erased |
+| profile_show_chat, profile_indexable | boolean | public profile: show chat messages; let search engines list it (MBJ-116) |
 | notification_prefs | jsonb | `{ mention: { site, push }, reply: { … } }`; missing = on (MBJ-106) |
 | created_at, updated_at | timestamptz | |
 

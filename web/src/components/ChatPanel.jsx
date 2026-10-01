@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MemberBadge from './MemberBadge.jsx';
+import NameCard from './NameCard.jsx';
 import { useSearchParams } from 'react-router-dom';
 import { api, formatTime } from '../api.js';
 
@@ -200,6 +201,16 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
     [session],
   );
 
+  // "Mention" on a name card: @name at the end of what you're typing.
+  const mention = useCallback(
+    (name) => {
+      if (!session.user) return session.requireSignIn();
+      setText((t) => `${t}${t && !t.endsWith(' ') ? ' ' : ''}@${name} `);
+      requestAnimationFrame(() => inputRef.current?.focus());
+    },
+    [session],
+  );
+
   // Tapping a quote shows the original: scroll to it if it's in the feed, otherwise seek there.
   const showOriginal = useCallback(
     (quote) => {
@@ -323,6 +334,7 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
                 flash={flashId === item.m.id}
                 onSeek={onSeek}
                 onReply={startReply}
+                onMention={mention}
                 onQuote={showOriginal}
               />
             ) : (
@@ -419,7 +431,7 @@ function Quote({ q, onQuote }) {
 }
 
 // Memoized: a message already on screen only re-renders when its own props change.
-const ChatMessage = memo(function ChatMessage({ m, me, flash, onSeek, onReply, onQuote }) {
+const ChatMessage = memo(function ChatMessage({ m, me, flash, onSeek, onReply, onMention, onQuote }) {
   const mentionsMe = me && m.mentions?.some((n) => me.split(',').includes(n));
   const replay = m.postedLive === false;
   const body = m.body.split(MENTION_SPLIT).map((p, i) =>
@@ -431,17 +443,24 @@ const ChatMessage = memo(function ChatMessage({ m, me, flash, onSeek, onReply, o
       p
     ),
   );
-  // A linked account shows the member's site name; the platform name is in the tooltip (MBJ-215).
+  // A linked account shows the member's site name; the platform name is in the tooltip (MBJ-215). Members' names
+  // open their card (MBJ-116); other names reply straight away.
   const author = (
     <>
-      <button
-        type="button"
-        className="author"
-        onClick={() => onReply(m)}
-        title={m.platformName ? `${m.platformName} on YouTube · reply` : `Reply to ${m.author}`}
-      >
-        {m.author}
-      </button>
+      <NameCard
+        name={m.author}
+        profile={m.profile}
+        tier={m.memberTier}
+        platformName={m.platformName}
+        title={
+          m.platformName ? `${m.platformName} on YouTube` : m.profile ? undefined : `Reply to ${m.author}`
+        }
+        onPlainClick={() => onReply(m)}
+        actions={[
+          { label: 'Reply', onClick: () => onReply(m) },
+          { label: 'Mention', onClick: () => onMention(m.profile) },
+        ]}
+      />
       <MemberBadge tier={m.memberTier} />
     </>
   );

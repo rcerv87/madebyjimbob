@@ -427,17 +427,17 @@ Acceptance criteria:
 
 ### MBJ-116 — Public profile
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-101
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-101
 
 As a viewer, I want to see who someone in chat is; as a member, I want a page that shows I'm part of the community.
 
 Acceptance criteria:
-- [ ] `/@username` page: avatar, display name, bio, links, joined date, tier badge, and badges/level once MBJ-602 lands
-- [ ] Recent public activity: comments with the video and moment they're on (each opens the video there); chat messages only if the member allows it
-- [ ] Tapping a name or avatar in chat or comments opens a small profile card with "View profile" and "Mention"
-- [ ] Linked YouTube/Rumble names shown once verified (MBJ-215)
-- [ ] Anyone can view profiles, signed in or not; they aren't in search results (noindex) unless the member turns that on
-- [ ] Banned members' profiles show only the username
+- [x] `/@username` page: avatar, display name, bio, links, joined date, tier badge, and badges/level once MBJ-602 lands
+- [x] Recent public activity: comments with the video and moment they're on (each opens the video there); chat messages only if the member allows it
+- [x] Tapping a name or avatar in chat or comments opens a small profile card with "View profile" and "Mention"
+- [x] Linked YouTube/Rumble names shown once verified (MBJ-215)
+- [x] Anyone can view profiles, signed in or not; they aren't in search results (noindex) unless the member turns that on
+- [x] Banned members' profiles show only the username
 
 ### MBJ-117 — Edit profile
 

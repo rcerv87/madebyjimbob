@@ -15,6 +15,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth, sessionUser, ADMIN_EMAILS } from './auth.js';
 import accountRouter from './account.js';
 import { viewerKey, recordView } from './views.js';
+import { findProfile, profileFor } from './profiles.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
   addUserSocket,
@@ -173,6 +174,8 @@ const COMMENT_SELECT = commentSelect();
 // The member behind a linked account: shown under their site name, with the platform name kept.
 const member = (r) =>
   r.member_name ? { author: r.member_name, platformName: r.author_name, memberTier: r.member_tier } : {};
+// The site member behind a message or comment, for their profile card (MBJ-116): native posts and linked accounts.
+const profileOf = (r) => r.member_name || (r.source === 'native' && r.user_id ? r.author_name : null);
 
 function commentRow(r) {
   return {
@@ -189,6 +192,7 @@ function commentRow(r) {
     likes: r.like_count,
     pinned: r.pinned,
     postedAt: r.posted_at,
+    profile: profileOf(r),
     ...member(r),
   };
 }
@@ -206,6 +210,7 @@ function chatRow(r) {
     offsetMs: r.offset_ms,
     postedLive: r.posted_live,
     replyTo: replyTo(r),
+    profile: profileOf(r),
     ...member(r),
   };
 }
@@ -226,6 +231,17 @@ app.get(
       user.linkedHandles = await linkedHandles(user.id);
     }
     res.json({ user });
+  }),
+);
+
+// Public profile (MBJ-116): anyone can view; activity on videos above the viewer's tier is left out.
+app.get(
+  '/api/profiles/:username',
+  wrap(async (req, res) => {
+    const found = await findProfile(req.params.username);
+    if (!found) return res.status(404).json({ error: 'No member with that name.' });
+    const viewer = await currentUser(req);
+    res.json({ profile: await profileFor(found, viewer?.tier || 'free') });
   }),
 );
 
