@@ -649,8 +649,8 @@ Acceptance criteria:
 As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.
 
 Acceptance criteria:
-- [x] Profile lets a member claim a YouTube handle and gets a one-time code
-- [x] Posting the code in JimBob's live chat or as a comment verifies the claim on the next import
+- [x] Account settings: a member enters their YouTube @handle (or Rumble name); a moderator confirms it in Studio
+- [x] The YouTube channel id is found from imported chat and comments by handle, so links survive renames
 - [x] Rumble names verified by hand in Studio until Rumble chat ingest exists
 - [x] Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member
 

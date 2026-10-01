@@ -88,7 +88,7 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   `Origin` header, so test clients send one.
 - Notifications: call `notifyFor()` from `server/src/notify.js` after saving anything that can mention or reply to someone; it stores, sends over WebSocket, and pushes.
 - Linked accounts (MBJ-215): `server/src/links.js`. Imports must keep `author_channel_id` on YouTube rows (it's how
-  linked members are recognised); `import-youtube.js` runs `verifyYouTubeCodes()` at the end.
+  linked members are recognised); `import-youtube.js` runs `resolvePendingChannels()` at the end.
 - Server tests load the app only after rebuilding the test database (`startServer()` in `test/helpers.js`):
   Better Auth checks the database as soon as it loads, and racing the rebuild stalled requests.
 - Deleting accounts: `server/src/deletion.js`. A request waits 30 days (signing in cancels it); an hourly job in

@@ -28,10 +28,8 @@ they get `isAdmin: true` and see every tier.
 | POST | `/account/email` | session | `{ newEmail, password }` → `{ ok, sentTo }`. Emails a 24-hour confirmation link to the new address (none if it already has an account; same answer). 400 wrong password, 429 over 5 an hour |
 | GET | `/account/email/confirm?token=` | — | The link in that email: switches the email (confirmed), emails the old address a 7-day undo link, redirects to `/account?email=changed` (or `expired` / `taken`) |
 | GET | `/account/email/undo?token=` | — | "This wasn't me": restores the old email, signs out every device, emails a password-reset link, redirects to `/?email=restored` (or `undo-expired`) |
-| GET | `/account/links` | session | `{ youtube, rumble }`, each null or `{ id, status: pending\|verified, code, expiresAt, handle, verifiedBy, verifiedAt }` (MBJ-215) |
-| POST | `/account/links/youtube` | session | A one-time code (`MBJ-XXXXXX`, 14 days) to post as a comment or in live chat on JimBob's channel; the same code while it's good. 409 if already linked |
-| POST | `/account/links/youtube/check` | session | Looks for posted codes in imported YouTube chat and comments now (also runs after every import and hourly); links the posting channel by channel id and hides the code message |
-| POST | `/account/links/rumble` | session | `{ name }` → pending until a moderator confirms in Studio. 409 if another member has that name |
+| GET | `/account/links` | session | `{ youtube, rumble }`, each null or `{ id, status: pending\|verified, handle, verifiedBy, verifiedAt }` (MBJ-215) |
+| POST | `/account/links/:platform` | session | `youtube` or `rumble`, `{ name }` (a YouTube @handle or channel link, or a Rumble name) → pending until a moderator confirms in Studio. For YouTube the channel id is looked up from imported chat and comments by handle. 400 bad name, 409 linked to another member |
 | DELETE | `/account/links/:platform` | session | Unlink, or cancel a request |
 | GET | `/account/export` | session | Download my data: a JSON attachment (profile, comments, chat messages, likes, watch progress, notifications, devices, security history, emails sent, payments) with no password hashes or session tokens. 5 an hour |
 | POST | `/account/delete` | session | `{ password, deleteContent? }` → `{ ok, eraseOn }`. Signs out every device, emails the date; the account is erased 30 days later unless they sign in (which cancels it). `deleteContent: true` blanks and hides their chat and comments instead of keeping them as "Deleted user". 400 wrong password |
@@ -62,8 +60,8 @@ they get `isAdmin: true` and see every tier.
 | PATCH | `/studio/playlists/:id` | admin | `{ title?, description? }`; 409 for YouTube playlists |
 | DELETE | `/studio/playlists/:id` | admin | Native playlists only |
 | PUT | `/studio/playlists/:id/items` | admin | `{ videoIds }` replaces the playlist's videos in that order |
-| GET | `/studio/links` | admin | `{ links }`: pending Rumble requests first, then every verified link, with the member's `username` |
-| POST | `/studio/links/:id/approve` | admin | Confirms a pending Rumble name (409 if another member has it) |
+| GET | `/studio/links` | admin | `{ links }`: requests waiting first (YouTube ones with `messagesSeen`, how much that handle has posted), then every confirmed link, with the member's `username` |
+| POST | `/studio/links/:id/approve` | admin | Confirms a request (409 if that account is linked to another member) |
 | DELETE | `/studio/links/:id` | admin | Turns down or unlinks |
 | GET | `/studio/email` | admin | `{ enabled, from, templates: [{ id, label }], suppressed, recent }`; `recent` is the last 20 sends `{ id, to (masked), template, status, error, createdAt }` |
 | GET | `/studio/email/preview/:template` | admin | `{ subject, html, text }` rendered with sample data |

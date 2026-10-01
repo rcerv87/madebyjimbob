@@ -13,5 +13,5 @@ if (usingFallbackSecret)
 server.listen(PORT, () => logger.info(`MadeByJimBob running on :${PORT}`));
 // Erases accounts whose 30-day deletion wait is over (MBJ-118).
 startErasureJob();
-// Links YouTube accounts whose codes arrived in imported chat or comments (MBJ-215).
+// Fills in the channel for confirmed YouTube links once that handle shows up in an import (MBJ-215).
 startLinkCheckJob();
