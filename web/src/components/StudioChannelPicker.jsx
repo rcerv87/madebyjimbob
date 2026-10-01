@@ -54,7 +54,7 @@ export default function StudioChannelPicker({ tier, withComments, onQueued }) {
     return () => clearInterval(t);
   }, [waiting, fetchPage]);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setError('');
     try {
       await api('/studio/channel/refresh', { method: 'POST', body: { url: loadedUrl } });
@@ -62,7 +62,16 @@ export default function StudioChannelPicker({ tier, withComments, onQueued }) {
     } catch (err) {
       setError(err.message);
     }
-  };
+  }, [loadedUrl, fetchPage]);
+
+  // A channel that's never been listed: ask for its list right away (once per channel per visit).
+  const asked = useRef(new Set());
+  const unlisted = data && data.listing === null ? loadedUrl : null;
+  useEffect(() => {
+    if (!unlisted || asked.current.has(unlisted)) return;
+    asked.current.add(unlisted);
+    refresh();
+  }, [unlisted, refresh]);
 
   const load = (e) => {
     e.preventDefault();
