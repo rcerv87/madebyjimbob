@@ -235,10 +235,9 @@ YouTube and Rumble accounts linked to a member (MBJ-215). Chat and comment queri
 | user_id | bigint → users | cascade; one row per platform per member |
 | platform | text | `youtube \| rumble` |
 | status | text | `pending \| verified`; one verified member per (platform, external_id) |
-| code, expires_at | text, timestamptz | pending YouTube link: the code to post (14 days) |
-| external_id | text | YouTube channel id (UC…), or the lower-cased Rumble name |
+| external_id | text | YouTube channel id (UC…, looked up from imported messages by handle; filled in later if the handle hasn't posted yet), or the lower-cased Rumble name |
 | handle | text | the name shown there (@handle) |
-| verified_by, verified_at | text, timestamptz | `code` (posted on the channel) or `admin` (Studio) |
+| verified_by, verified_at | text, timestamptz | `admin` (confirmed in Studio) |
 | created_at | timestamptz | |
 
 ## Planned

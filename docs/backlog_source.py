@@ -248,8 +248,8 @@ S = [
   "Needs VAPID_PRIVATE_KEY set on Render"], ["202", "213"]),
 ("215", 1, "Should", "M", "Link YouTube and Rumble names to a profile",
  "As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.",
- ["Profile lets a member claim a YouTube handle and gets a one-time code",
-  "Posting the code in JimBob's live chat or as a comment verifies the claim on the next import",
+ ["Account settings: a member enters their YouTube @handle (or Rumble name); a moderator confirms it in Studio",
+  "The YouTube channel id is found from imported chat and comments by handle, so links survive renames",
   "Rumble names verified by hand in Studio until Rumble chat ingest exists",
   "Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member"], ["202"]),
 ("216", 1, "Should", "S", "Count one view per viewer",
@@ -582,7 +582,7 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "00
 # 113: forgot/reset, change password, change email (password + confirm new + 7-day undo to old), rate limits, security history.
 # 106: /account with profile, sign-in and security (email, password, devices, activity), notification settings, membership matrix; profile editor, billing, and data/deletion arrive with MBJ-117, 104, 118.
 # 118: export JSON, delete with password, 30-day wait cancelled by signing in, hourly erase, keep-as-"Deleted user" or remove, emails at request and erase. Cancelling paid memberships first joins MBJ-104.
-# 215: YouTube by one-time code (matched on import/hourly/check now, by channel id), Rumble confirmed in Studio; linked messages show site name + tier; @handle mentions notify. Rumble chat matching waits for Rumble ingest.
+# 215: members enter their YouTube @handle or Rumble name, a moderator confirms in Studio; YouTube matched by channel id (looked up by handle, filled in hourly/after imports); linked messages show site name + tier; @handle mentions notify.
 # 110: device list and sign out any device (in /account) done; Google/Apple/X/Facebook, magic link, passkeys, merging accounts remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 

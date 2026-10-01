@@ -133,10 +133,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   restores it, signs out everywhere, and sends a reset link), signed-in devices with sign out one or all, recent
   activity (sign-ins, password and email changes), notification switches per type for the bell and push, and
   the membership perks table.
-- **Linked YouTube and Rumble accounts** (MBJ-215, Account settings → Linked accounts): a member posts a one-time
-  code on JimBob's YouTube (comment or live chat); the next import, the hourly check, or "check now" links that
-  channel by its id, so all their YouTube chat and comments (past and future) show their site name and tier, and
-  @mentions of their YouTube handle notify them. Rumble names are confirmed in Studio → Linked accounts.
+- **Linked YouTube and Rumble accounts** (MBJ-215, Account settings → Linked accounts): a member enters their
+  YouTube @handle or Rumble name; a moderator confirms it in Studio → Linked accounts (shown how much that
+  handle has posted). Then all of that YouTube channel's chat and comments (past and future, matched by channel
+  id so renames don't break it) show their site name and tier, and @mentions of the handle notify them.
 - **Download my data / delete my account** (MBJ-118, in /account → Privacy and data): a JSON file of everything
   we hold; deleting needs the password, signs out everywhere, and waits 30 days (signing in calls it off), then an
   hourly job erases the account. Their chat and comments stay as "Deleted user", or are blanked and hidden if they

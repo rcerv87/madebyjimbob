@@ -673,14 +673,11 @@ function PrivacySection({ onUserChanged }) {
   );
 }
 
-// Link YouTube and Rumble (MBJ-215): your comments and chat there show your name here, and @mentions of
-// your YouTube handle reach you.
+// Link YouTube and Rumble (MBJ-215): enter your name there, a moderator confirms it, and your comments and
+// chat from there show your name here; @mentions of that name reach you.
 function LinkedAccountsSection({ onUserChanged }) {
   const [links, setLinks] = useState(null);
   const [error, setError] = useState('');
-  const [note, setNote] = useState('');
-  const [rumbleName, setRumbleName] = useState('');
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     api('/account/links')
@@ -688,147 +685,44 @@ function LinkedAccountsSection({ onUserChanged }) {
       .catch((e) => setError(e.message));
   }, []);
 
-  const run = async (path, method = 'POST', body) => {
+  const change = async (platform, method, body) => {
     setError('');
-    setNote('');
-    setBusy(true);
     try {
-      const next = await api(path, { method, body });
+      const next = await api(`/account/links/${platform}`, { method, body });
       setLinks(next);
-      return next;
+      onUserChanged();
+      return true;
     } catch (err) {
       setError(err.message);
-      return null;
-    } finally {
-      setBusy(false);
+      return false;
     }
   };
 
-  const check = async () => {
-    const next = await run('/account/links/youtube/check');
-    if (next?.youtube?.status === 'verified') onUserChanged();
-    else if (next)
-      setNote('Not found yet. We’ll keep checking each time JimBob’s comments and chat are imported.');
-  };
-
-  const yt = links?.youtube;
-  const rumble = links?.rumble;
   return (
     <section className="panel settings-section" id="linked">
       <h2>Linked accounts</h2>
       <p className="muted small">
-        Link the accounts you use on JimBob’s YouTube and Rumble. Your comments and chat from there show your
-        name here, even if your name there is different, and people can @mention you by either name.
+        Link the accounts you use on JimBob’s YouTube and Rumble. Once a moderator confirms it, your comments
+        and chat from there show your name here, even if your name there is different, and people can @mention
+        you by either name.
       </p>
-
-      <div className="setting">
-        <div className="setting-head">
-          <div>
-            <h3>YouTube</h3>
-            {yt?.status === 'verified' && (
-              <p>
-                {yt.handle} <span className="badge ok">Linked</span>
-              </p>
-            )}
-            {!yt && <p className="muted small">Not linked.</p>}
-          </div>
-          {!yt && (
-            <button className="text-btn" disabled={busy} onClick={() => run('/account/links/youtube')}>
-              Link YouTube
-            </button>
-          )}
-          {yt?.status === 'verified' && (
-            <button
-              className="text-btn"
-              onClick={() => run('/account/links/youtube', 'DELETE').then(() => onUserChanged())}
-            >
-              Unlink
-            </button>
-          )}
-        </div>
-        {yt?.status === 'pending' && (
-          <div className="link-steps">
-            <p>Post this code as a comment on any of JimBob’s YouTube videos, or in his live chat:</p>
-            <p className="link-code">
-              <code>{yt.code}</code>
-              <button
-                type="button"
-                className="text-btn small"
-                onClick={() => navigator.clipboard?.writeText(yt.code).then(() => setNote('Copied.'))}
-              >
-                Copy
-              </button>
-            </p>
-            <p className="muted small">
-              Post it from the YouTube account you want to link. We match it each time JimBob’s comments and
-              chat are imported (usually after a stream), then hide the code from the replay. The code works
-              until {new Date(yt.expiresAt).toLocaleDateString()}.
-            </p>
-            <div className="form-actions">
-              <button className="primary-btn" disabled={busy} onClick={check}>
-                {busy ? 'Checking…' : 'I posted it, check now'}
-              </button>
-              <button className="text-btn" onClick={() => run('/account/links/youtube', 'DELETE')}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="setting">
-        <div className="setting-head">
-          <div>
-            <h3>Rumble</h3>
-            {rumble && (
-              <p>
-                {rumble.handle}{' '}
-                {rumble.status === 'verified' ? (
-                  <span className="badge ok">Linked</span>
-                ) : (
-                  <span className="badge">Waiting for a moderator</span>
-                )}
-              </p>
-            )}
-            {!rumble && <p className="muted small">Not linked.</p>}
-          </div>
-          {rumble && (
-            <button className="text-btn" onClick={() => run('/account/links/rumble', 'DELETE')}>
-              {rumble.status === 'verified' ? 'Unlink' : 'Cancel'}
-            </button>
-          )}
-        </div>
-        {rumble?.status === 'pending' && (
-          <p className="muted small">
-            A moderator confirms Rumble names by hand for now (we can’t read Rumble chat yet).
-          </p>
-        )}
-        {!rumble && (
-          <form
-            className="setting-form inline"
-            onSubmit={(e) => {
-              e.preventDefault();
-              run('/account/links/rumble', 'POST', { name: rumbleName }).then((r) => r && setRumbleName(''));
-            }}
-          >
-            <input
-              value={rumbleName}
-              onChange={(e) => setRumbleName(e.target.value)}
-              placeholder="Your Rumble name"
-              aria-label="Your Rumble name"
-              maxLength={51}
-              required
-            />
-            <button className="primary-btn" disabled={busy}>
-              Ask to link
-            </button>
-          </form>
-        )}
-      </div>
-      {note && (
-        <p className="small" role="status">
-          {note}
-        </p>
+      {links && (
+        <>
+          <PlatformLink
+            platform="youtube"
+            label="YouTube"
+            placeholder="Your YouTube handle, like @name"
+            link={links.youtube}
+            onChange={change}
+          />
+          <PlatformLink
+            platform="rumble"
+            label="Rumble"
+            placeholder="Your Rumble name"
+            link={links.rumble}
+            onChange={change}
+          />
+        </>
       )}
       {error && (
         <p className="error small" role="alert">
@@ -836,5 +730,64 @@ function LinkedAccountsSection({ onUserChanged }) {
         </p>
       )}
     </section>
+  );
+}
+
+function PlatformLink({ platform, label, placeholder, link, onChange }) {
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    if (await onChange(platform, 'POST', { name })) setName('');
+    setBusy(false);
+  };
+
+  return (
+    <div className="setting">
+      <div className="setting-head">
+        <div>
+          <h3>{label}</h3>
+          {link ? (
+            <p>
+              {link.handle}{' '}
+              {link.status === 'verified' ? (
+                <span className="badge ok">Linked</span>
+              ) : (
+                <span className="badge">Waiting for a moderator</span>
+              )}
+            </p>
+          ) : (
+            <p className="muted small">Not linked.</p>
+          )}
+        </div>
+        {link && (
+          <button className="text-btn" onClick={() => onChange(platform, 'DELETE')}>
+            {link.status === 'verified' ? 'Unlink' : 'Cancel'}
+          </button>
+        )}
+      </div>
+      {link?.status === 'pending' && (
+        <p className="muted small">
+          A moderator checks it’s really you, so nobody can claim someone else’s name.
+        </p>
+      )}
+      {!link && (
+        <form className="setting-form inline" onSubmit={submit}>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={placeholder}
+            aria-label={placeholder}
+            maxLength={120}
+            required
+          />
+          <button className="primary-btn" disabled={busy}>
+            Ask to link
+          </button>
+        </form>
+      )}
+    </div>
   );
 }

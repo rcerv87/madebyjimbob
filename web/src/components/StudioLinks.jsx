@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, timeAgo } from '../api.js';
 
-// Studio: Rumble names waiting for a moderator, and every linked YouTube/Rumble account (MBJ-215).
+// Studio: YouTube and Rumble names waiting for a moderator, and every linked account (MBJ-215).
 export default function StudioLinks() {
   const [links, setLinks] = useState(null);
   const [error, setError] = useState('');
@@ -30,7 +30,7 @@ export default function StudioLinks() {
     <section className="panel studio-links">
       <h2>Linked accounts</h2>
       {error && <p className="error small">{error}</p>}
-      <h3>Rumble names to confirm</h3>
+      <h3>Waiting to be confirmed</h3>
       {pending.length === 0 ? (
         <p className="muted small">None waiting. Members ask from Account settings → Linked accounts.</p>
       ) : (
@@ -39,7 +39,16 @@ export default function StudioLinks() {
             <li key={l.id}>
               <div>
                 <strong>{l.username}</strong>
-                <span>says they’re {l.handle} on Rumble</span>
+                <span>
+                  says they’re {l.handle} on {l.platform === 'youtube' ? 'YouTube' : 'Rumble'}
+                </span>
+                {l.platform === 'youtube' && (
+                  <span className="muted small">
+                    {l.messagesSeen
+                      ? `${l.messagesSeen} message${l.messagesSeen === 1 ? '' : 's'} from that handle so far`
+                      : 'hasn’t posted in imported chat or comments yet'}
+                  </span>
+                )}
                 <span className="muted small">asked {timeAgo(l.createdAt).toLowerCase()}</span>
               </div>
               <div className="form-actions">
@@ -66,9 +75,7 @@ export default function StudioLinks() {
                 <span>
                   {l.handle} on {l.platform === 'youtube' ? 'YouTube' : 'Rumble'}
                 </span>
-                <span className="muted small">
-                  {l.verifiedBy === 'code' ? 'posted their code' : 'confirmed by a moderator'}
-                </span>
+                <span className="muted small">confirmed {timeAgo(l.verifiedAt).toLowerCase()}</span>
               </div>
               <button className="text-btn" onClick={() => act(`/studio/links/${l.id}`, 'DELETE')}>
                 Unlink

@@ -191,23 +191,20 @@ describe('privacy and data', () => {
 });
 
 describe('linked accounts', () => {
-  test('linking YouTube shows a code to post, and "check now" looks for it', async () => {
-    const pending = {
-      youtube: { status: 'pending', code: 'MBJ-7KQ2M9', expiresAt: new Date() },
-      rumble: null,
-    };
+  test('linking YouTube asks for the handle and then waits for a moderator', async () => {
+    const pending = { youtube: { status: 'pending', handle: '@FanOnYT' }, rumble: null };
     const sent = fakeApi({
       ...routes,
       '/account/links': [200, { youtube: null, rumble: null }],
       'POST /account/links/youtube': [200, pending],
-      'POST /account/links/youtube/check': [200, pending],
     });
     renderAccount();
-    fireEvent.click(await screen.findByRole('button', { name: 'Link YouTube' }));
-    expect(await screen.findByText('MBJ-7KQ2M9')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'I posted it, check now' }));
-    expect(await screen.findByText(/Not found yet/)).toBeTruthy();
-    expect(sent('POST', '/account/links/youtube/check')).toHaveLength(1);
+    fireEvent.change(await screen.findByLabelText('Your YouTube handle, like @name'), {
+      target: { value: '@FanOnYT' },
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Ask to link' })[0]);
+    expect(await screen.findByText('Waiting for a moderator')).toBeTruthy();
+    expect(sent('POST', '/account/links/youtube')).toEqual([{ name: '@FanOnYT' }]);
   });
 
   test('a linked YouTube account and a Rumble name waiting for a moderator', async () => {

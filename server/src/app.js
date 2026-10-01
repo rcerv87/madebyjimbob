@@ -12,7 +12,7 @@ import { pageMeta, renderPage } from './pages.js';
 import { toNodeHandler } from 'better-auth/node';
 import { auth, sessionUser, ADMIN_EMAILS } from './auth.js';
 import accountRouter from './account.js';
-import { linkedHandles, linkRow } from './links.js';
+import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
   addUserSocket,
   removeUserSocket,
@@ -898,16 +898,23 @@ app.patch(
   }),
 );
 
-// Studio linked accounts (MBJ-215): Rumble names waiting for a moderator, and every confirmed link.
+// Studio linked accounts (MBJ-215): requests waiting for a moderator (with how much that YouTube handle has
+// posted, to help decide), and every confirmed link.
 app.get(
   '/api/studio/links',
   wrap(async (_req, res) => {
     const { rows } = await pool.query(
       `SELECT la.*, u.username FROM linked_accounts la JOIN users u ON u.id = la.user_id
-       WHERE la.status = 'verified' OR la.platform = 'rumble'
        ORDER BY la.status = 'pending' DESC, la.verified_at DESC NULLS LAST, la.created_at DESC LIMIT 200`,
     );
-    res.json({ links: rows.map((r) => ({ ...linkRow(r), username: r.username })) });
+    const links = await Promise.all(
+      rows.map(async (r) => {
+        const seen =
+          r.platform === 'youtube' && r.status === 'pending' ? await findYouTubeChannel(r.handle) : null;
+        return { ...linkRow(r), username: r.username, messagesSeen: seen?.messages ?? null };
+      }),
+    );
+    res.json({ links });
   }),
 );
 
@@ -916,15 +923,11 @@ app.post(
   wrap(async (req, res) => {
     if (!/^\d{1,18}$/.test(req.params.id)) return res.status(404).json({ error: 'No such link.' });
     try {
-      const { rowCount } = await pool.query(
-        `UPDATE linked_accounts SET status = 'verified', verified_by = 'admin', verified_at = now()
-         WHERE id = $1 AND platform = 'rumble' AND status = 'pending'`,
-        [req.params.id],
-      );
-      if (!rowCount) return res.status(404).json({ error: 'That request is gone or already confirmed.' });
+      if (!(await approveLink(req.params.id)))
+        return res.status(404).json({ error: 'That request is gone or already confirmed.' });
     } catch (err) {
-      if (err.code === '23505')
-        return res.status(409).json({ error: 'That Rumble name is already linked to another member.' });
+      if (err.message === 'taken')
+        return res.status(409).json({ error: 'That account is already linked to another member.' });
       throw err;
     }
     res.json({ ok: true });

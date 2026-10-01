@@ -163,10 +163,11 @@ if (withComments && fs.existsSync(infoFile)) {
   );
 }
 
-// Anyone who posted their link code in this video's chat or comments gets linked now (MBJ-215).
-const { verifyYouTubeCodes } = await import('../src/links.js');
-const linked = await verifyYouTubeCodes();
-if (linked) console.log(`Linked ${linked} YouTube account${linked === 1 ? '' : 's'} to members.`);
+// Confirmed YouTube links whose channel first appears in this import get matched now (MBJ-215).
+const { resolvePendingChannels } = await import('../src/links.js');
+const matched = await resolvePendingChannels();
+if (matched)
+  console.log(`Matched ${matched} linked YouTube account${matched === 1 ? '' : 's'} to their channel.`);
 
 await pool.end();
 console.log('Done.');

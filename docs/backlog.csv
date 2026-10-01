@@ -161,8 +161,8 @@ MBJ-214,Push notifications (web),Chat & moderation,Phase 1 — VOD platform,Must
 - Turn on from the bell; iPhone asks to add to Home Screen first
 - Tapping a notification opens the video at that moment (and the thread for comments)
 - Needs VAPID_PRIVATE_KEY set on Render","MBJ-202, MBJ-213"
-MBJ-215,Link YouTube and Rumble names to a profile,Chat & moderation,Phase 1 — VOD platform,Should,M,Done,"As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.","- Profile lets a member claim a YouTube handle and gets a one-time code
-- Posting the code in JimBob's live chat or as a comment verifies the claim on the next import
+MBJ-215,Link YouTube and Rumble names to a profile,Chat & moderation,Phase 1 — VOD platform,Should,M,Done,"As a member, I want my YouTube/Rumble chat history and mentions tied to my site account.","- Account settings: a member enters their YouTube @handle (or Rumble name); a moderator confirms it in Studio
+- The YouTube channel id is found from imported chat and comments by handle, so links survive renames
 - Rumble names verified by hand in Studio until Rumble chat ingest exists
 - Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member",MBJ-202
 MBJ-216,Count one view per viewer,Chat & moderation,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want view counts I can trust.","- A view counts once per viewer per video per day (account, or browser for signed-out)
