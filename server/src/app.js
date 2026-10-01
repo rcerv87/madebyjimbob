@@ -6,7 +6,8 @@ import { WebSocketServer } from 'ws';
 import { pool } from './db.js';
 import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback, deleteFromStream, createDirectUpload, streamStatus, streamConfigured } from './stream.js';
-import { queueImports, listImports, jobRow } from './imports.js';
+import { queueImports, listImports, jobRow, helperStatus } from './imports.js';
+import { parseChannel, requestListing, channelPage, JIMBOB_CHANNEL } from './channel.js';
 import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
 import { pageMeta, renderPage } from './pages.js';
@@ -1119,6 +1120,42 @@ app.post(
     if (!result.queued.length && !result.skipped.length)
       return res.status(400).json({ error: 'Paste one or more YouTube video links.' });
     res.json(result);
+  }),
+);
+
+// From the channel (MBJ-706): the channel's videos, each marked on the site / queued / new, filtered and paged.
+app.get(
+  '/api/studio/channel',
+  wrap(async (req, res) => {
+    const channel = parseChannel(req.query.url || JIMBOB_CHANNEL);
+    if (!channel)
+      return res
+        .status(400)
+        .json({ error: 'Paste a YouTube channel link, like https://www.youtube.com/@name.' });
+    const [page, helper] = await Promise.all([
+      channelPage(channel, {
+        show: req.query.show === 'all' ? 'all' : 'new',
+        kind: String(req.query.kind || 'all'),
+        q: String(req.query.q || '').slice(0, 100),
+        offset: req.query.offset,
+        limit: req.query.limit,
+      }),
+      helperStatus(),
+    ]);
+    res.json({ ...page, helper });
+  }),
+);
+
+// Get a fresh list: right away with a YouTube API key, otherwise the import helper does it.
+app.post(
+  '/api/studio/channel/refresh',
+  wrap(async (req, res) => {
+    const channel = parseChannel(req.body?.url || JIMBOB_CHANNEL);
+    if (!channel)
+      return res
+        .status(400)
+        .json({ error: 'Paste a YouTube channel link, like https://www.youtube.com/@name.' });
+    res.json({ listing: await requestListing(channel, req.user.id) });
   }),
 );
 

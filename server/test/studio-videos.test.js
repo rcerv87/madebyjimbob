@@ -131,7 +131,7 @@ describe('adding videos (import queue)', () => {
     assert.equal(r.data.queued[0].tier, 'plus');
     assert.deepEqual(
       r.data.skipped.map((s) => s.reason),
-      ['Not a YouTube video link', 'Already on the site'],
+      ['Not a YouTube video link', 'You already have this'],
     );
     const again = await call('/studio/imports', {
       method: 'POST',

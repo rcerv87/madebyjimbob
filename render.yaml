@@ -46,6 +46,9 @@ services:
         sync: false
       - key: RESEND_WEBHOOK_SECRET
         sync: false
+      # Optional: makes Studio's channel list instant (MBJ-706); without it the import helper lists the channel.
+      - key: YOUTUBE_API_KEY
+        sync: false
 
 databases:
   - name: madebyjimbob-db

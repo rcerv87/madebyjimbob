@@ -807,7 +807,8 @@ button.avatar[aria-expanded='true'] {
 .chip:hover {
   background: var(--line);
 }
-.chip[aria-pressed='true'] {
+.chip[aria-pressed='true'],
+.chip.active {
   background: var(--text);
   color: var(--bg);
 }
@@ -1569,6 +1570,121 @@ button.avatar[aria-expanded='true'] {
 .danger-btn.small {
   padding: 4px 10px;
   font-size: 0.8rem;
+}
+
+/* Studio columns shrink to the screen; wide tables scroll inside their panel instead of widening the page. */
+.studio-cols > * {
+  min-width: 0;
+}
+
+/* ---------- studio: from the channel ---------- */
+.channel-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.channel-load,
+.channel-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.channel-load input,
+.channel-filters input,
+.channel-filters select {
+  flex: 1 1 200px;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.channel-filters select {
+  flex: 0 0 auto;
+}
+.channel-list-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 12px;
+}
+.channel-list-head label.check,
+.channel-list li > input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.channel-list-head input,
+.channel-list li > input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--accent);
+}
+.channel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 560px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.channel-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.channel-list li:last-child {
+  border-bottom: 0;
+}
+.channel-list li.done {
+  opacity: 0.65;
+}
+.channel-list img {
+  width: 96px;
+  height: 54px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--raised);
+}
+.channel-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.channel-item a {
+  overflow-wrap: anywhere;
+}
+.channel-item .badge:first-child {
+  margin-left: 0;
+}
+.channel-queue {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 0;
+  background: var(--panel);
+}
+.skipped {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+@media (max-width: 480px) {
+  .channel-list img {
+    width: 72px;
+    height: 40px;
+  }
 }
 
 /* ---------- studio linked accounts ---------- */

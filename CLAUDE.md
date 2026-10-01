@@ -49,7 +49,7 @@ npm run lint                   # ESLint (flat config, eslint.config.js)
 npm run migrate                # apply pending migrations (`-- down` rolls back one)
 npm run captions:fetch         # save finished Stream captions into transcripts (`-- --generate` requests missing ones)
 npm run import:playlists -- <playlist or channel URL>   # YouTube playlists (order kept)
-npm run import:worker          # import helper: runs imports queued in Studio → Add videos (`-- --local` for local)
+npm run import:worker          # import helper: runs imports queued in Studio → Add videos and lists channels for From the channel (`-- --local` for local)
 npm run set-role -- <username> admin [--live]   # Studio access by account
 npm run migrate:create -- <name>   # new SQL migration in server/migrations/
 npm run format                 # Prettier; `format:check` to verify only
