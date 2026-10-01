@@ -257,3 +257,101 @@ describe('replacing a video file', () => {
     assert.deepEqual(rows[0], { stream_uid: 'uid_keep', replacement_stream_uid: null });
   });
 });
+
+describe('adding from a file (no download; the helper fetches chat and comments)', () => {
+  const upload = (body) => call('/studio/imports/file', { method: 'POST', token: admin, body });
+
+  test('needs Cloudflare keys on the server', async () => {
+    assert.equal((await upload({ video: 'FILEVIDEO01', size: 10 })).status, 503);
+  });
+
+  test('uploads, waits, then hands the helper a job with the file already on Cloudflare', async () => {
+    await pool.query('TRUNCATE import_jobs');
+    let n = 0;
+    stubCloudflare((url, opts) => {
+      if (url.includes('direct_user=true')) {
+        n += 1;
+        return new Response(null, {
+          status: 201,
+          headers: { Location: `https://upload.example/${n}`, 'stream-media-id': `uid_file_${n}` },
+        });
+      }
+      return new Response('{}', { status: opts.method === 'DELETE' ? 200 : 404 });
+    });
+    assert.equal((await upload({ video: 'not a link', size: 10 })).status, 400);
+
+    const first = await upload({
+      video: 'https://youtu.be/FILEVIDEO01',
+      size: 9_000_000_000,
+      name: 'Debate.mp4',
+      tier: 'plus',
+    });
+    assert.equal(first.status, 200);
+    assert.equal(first.data.uploadUrl, 'https://upload.example/1');
+    assert.deepEqual(
+      [first.data.job.status, first.data.job.streamUid, first.data.job.tier],
+      ['uploading', 'uid_file_1', 'plus'],
+    );
+    assert.equal(await claimNext(), null, 'the helper waits until the upload finishes');
+
+    // Picking the file again (say the upload was interrupted) starts over and deletes the half-done one.
+    const again = await upload({ video: 'FILEVIDEO01', size: 9_000_000_000 });
+    assert.equal(again.data.job.streamUid, 'uid_file_2');
+    assert.ok(cfCalls.some((c) => c.method === 'DELETE' && c.url.endsWith('/uid_file_1')));
+
+    const done = await call(`/studio/imports/${again.data.job.id}/uploaded`, {
+      method: 'POST',
+      token: admin,
+    });
+    assert.equal(done.data.job.status, 'queued');
+    assert.equal(
+      (await call(`/studio/imports/${again.data.job.id}/uploaded`, { method: 'POST', token: admin })).status,
+      409,
+    );
+    const job = await claimNext();
+    assert.equal(job.streamUid, 'uid_file_2', 'the helper gets the file id (and passes --stream-uid)');
+    assert.equal((await upload({ video: 'FILEVIDEO01', size: 10 })).status, 409, 'already queued');
+  });
+
+  test('a video already on the site says so (use Replace video); cancelling deletes the uploaded file', async () => {
+    stubCloudflare((url, opts) =>
+      url.includes('direct_user=true')
+        ? new Response(null, {
+            status: 201,
+            headers: { Location: 'https://u/x', 'stream-media-id': 'uid_cancel' },
+          })
+        : new Response('{}', { status: opts.method === 'DELETE' ? 200 : 404 }),
+    );
+    const onSite = await seedVideo();
+    await pool.query(`UPDATE videos SET youtube_id = 'ONSITEFILE1' WHERE id = $1`, [onSite]);
+    const dup = await upload({ video: 'ONSITEFILE1', size: 10 });
+    assert.equal(dup.status, 409);
+    assert.equal(dup.data.videoId, onSite);
+
+    const started = await upload({ video: 'CANCELFILE1', size: 10 });
+    assert.equal(
+      (await call(`/studio/imports/${started.data.job.id}`, { method: 'DELETE', token: admin })).status,
+      200,
+    );
+    assert.ok(cfCalls.some((c) => c.method === 'DELETE' && c.url.endsWith('/uid_cancel')));
+  });
+
+  test('replacements finish in the background once Cloudflare is ready', async () => {
+    const { finishReplacements } = await import('../src/replacements.js');
+    const id = await videoWithStuff({ uid: 'uid_bg_old' });
+    await pool.query(`UPDATE videos SET replacement_stream_uid = 'uid_bg_new' WHERE id = $1`, [id]);
+    stubCloudflare((url, opts) =>
+      (opts.method || 'GET') === 'DELETE'
+        ? new Response('{}', { status: 200 })
+        : new Response(
+            JSON.stringify({ result: { readyToStream: true, status: { state: 'ready' }, duration: 100 } }),
+            {
+              status: 200,
+            },
+          ),
+    );
+    assert.ok((await finishReplacements()) >= 1);
+    const { rows } = await pool.query('SELECT stream_uid FROM videos WHERE id = $1', [id]);
+    assert.equal(rows[0].stream_uid, 'uid_bg_new');
+  });
+});

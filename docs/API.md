@@ -69,8 +69,10 @@ they get `isAdmin: true` and see every tier.
 | POST | `/studio/imports` | admin | `{ urls (one per line, or an array), tier, withComments }` → `{ queued, skipped: [{ url, reason }] }`; skips bad links, ones already queued, and videos already on the site (reason "You already have this", with its `videoId`). The helper on Ruben's PC (`npm run import:worker`) does the work |
 | GET | `/studio/channel?url=&show=new\|all&kind=all\|video\|live\|short&q=&offset=&limit=` | admin | From the channel (MBJ-706): `{ channel, listing, apiKey, counts: { all, onsite, queued, new }, total, offset, videos: [{ youtubeId, title, kind, publishedAt, durationS, availability, thumbnail, state: onsite\|queued\|new, videoId }], helper }`. `url` defaults to JimBob's channel; `show=new` (default) leaves out what's on the site or queued; 100 per page (max 500) |
 | POST | `/studio/channel/refresh` | admin | `{ url? }` → `{ listing }`: a fresh list, made right away with `YOUTUBE_API_KEY`, otherwise by the import helper (`status: queued` until it does). One request per channel at a time |
+| POST | `/studio/imports/file` | admin | Add from a file: `{ video (YouTube link or id), size, name, tier, withComments }` → `{ job (status uploading, streamUid), uploadUrl }` (one-time Cloudflare tus URL). 409 if the video is on the site (`videoId`: use Replace video) or queued; a half-finished upload of the same video is replaced. 503 without Cloudflare keys |
+| POST | `/studio/imports/:id/uploaded` | admin | The browser finished sending the file: `uploading` → `queued`; the helper then fetches only the title, chat replay, and comments (`--stream-uid`) |
 | POST | `/studio/imports/:id/retry` | admin | Puts a failed or cancelled import back in the queue |
-| DELETE | `/studio/imports/:id` | admin | Cancels a queued import or clears a finished one (409 while it's running) |
+| DELETE | `/studio/imports/:id` | admin | Cancels a queued or uploading import, or clears a finished one (409 while it's running); an uploaded file that never became a video is deleted from Cloudflare |
 | GET | `/studio/playlists` | admin | All playlists with their videos (including empty ones) |
 | POST | `/studio/playlists` | admin | `{ title, description? }` → `{ playlist }` (source `native`) |
 | PATCH | `/studio/playlists/:id` | admin | `{ title?, description? }`; 409 for YouTube playlists |

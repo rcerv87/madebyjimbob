@@ -1223,7 +1223,7 @@ Acceptance criteria:
 
 ### MBJ-806 — Import the whole channel
 
-**Status:** To do · **Phase 4 — Owned live + audio** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-506
+**Status:** In progress · **Phase 4 — Owned live + audio** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-506
 
 As the operator, I want to load JimBob's full library in one run.
 

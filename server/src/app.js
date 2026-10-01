@@ -5,8 +5,9 @@ import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import { pool } from './db.js';
 import { filterText, filterComment, extractMentions } from './moderation.js';
-import { playback, deleteFromStream, createDirectUpload, streamStatus, streamConfigured } from './stream.js';
-import { queueImports, listImports, jobRow, helperStatus } from './imports.js';
+import { playback, deleteFromStream, createDirectUpload, streamConfigured } from './stream.js';
+import { queueImports, listImports, jobRow, helperStatus, youtubeId } from './imports.js';
+import { checkReplacement } from './replacements.js';
 import { parseChannel, requestListing, channelPage, JIMBOB_CHANNEL } from './channel.js';
 import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
@@ -1147,27 +1148,10 @@ app.get(
   wrap(async (req, res) => {
     const video = await findVideo(req.params.id);
     if (!video) return res.status(404).json({ error: 'Video not found.' });
-    const { rows } = await pool.query('SELECT stream_uid, replacement_stream_uid FROM videos WHERE id = $1', [
-      video.id,
-    ]);
-    const { stream_uid: oldUid, replacement_stream_uid: newUid } = rows[0];
-    if (!newUid) return res.json({ state: 'none' });
+    const { rows } = await pool.query('SELECT replacement_stream_uid FROM videos WHERE id = $1', [video.id]);
+    if (!rows[0].replacement_stream_uid) return res.json({ state: 'none' });
     if (!streamConfigured()) return res.status(503).json({ error: NEED_CF_KEYS });
-    const status = await streamStatus(newUid);
-    if (status.state === 'error') return res.json({ state: 'error', error: status.error });
-    if (!status.ready) return res.json({ state: status.state, pct: status.pct });
-    const { rowCount } = await pool.query(
-      `UPDATE videos SET stream_uid = $2, replacement_stream_uid = NULL, replacement_started_at = NULL,
-         duration_s = COALESCE($3, duration_s)
-       WHERE id = $1 AND replacement_stream_uid = $2`,
-      [video.id, newUid, status.duration ? Math.round(status.duration) : null],
-    );
-    if (rowCount && oldUid) {
-      const { rowCount: shared } = await pool.query('SELECT 1 FROM videos WHERE stream_uid = $1', [oldUid]);
-      if (!shared) await deleteFromStream(oldUid).catch(() => {});
-    }
-    req.log.info({ videoId: video.id }, 'video file replaced');
-    res.json({ state: 'swapped' });
+    res.json(await checkReplacement(video.id));
   }),
 );
 
@@ -1247,6 +1231,68 @@ app.post(
   }),
 );
 
+// Add from a file (MBJ-701; the Takeout path, MBJ-806, uses it per file): { video (YouTube link or id), size,
+// name, tier, withComments } → a one-time Cloudflare upload URL. The browser sends the file there, then calls
+// /uploaded; the helper fetches only the title, chat replay, and comments (no download).
+app.post(
+  '/api/studio/imports/file',
+  wrap(async (req, res) => {
+    if (!streamConfigured()) return res.status(503).json({ error: NEED_CF_KEYS });
+    const id = youtubeId(req.body?.video);
+    if (!id) return res.status(400).json({ error: 'Give the YouTube link (or id) this file belongs to.' });
+    const size = Number(req.body?.size);
+    if (!Number.isSafeInteger(size) || size <= 0)
+      return res.status(400).json({ error: 'Pick a video file.' });
+    const tier = req.body?.tier || 'free';
+    if (TIER_RANK[tier] === undefined) return res.status(400).json({ error: 'Unknown tier.' });
+    const { rows: onSite } = await pool.query('SELECT id FROM videos WHERE youtube_id = $1', [id]);
+    if (onSite[0])
+      return res
+        .status(409)
+        .json({ error: 'You already have this. Use Replace video on it instead.', videoId: onSite[0].id });
+    // A half-finished upload of the same video is replaced; anything queued or importing stays.
+    const { rows: waiting } = await pool.query(
+      `SELECT id, status, stream_uid FROM import_jobs WHERE youtube_id = $1 AND status IN ('uploading', 'queued', 'running')`,
+      [id],
+    );
+    if (waiting.some((j) => j.status !== 'uploading'))
+      return res.status(409).json({ error: 'Already queued.' });
+    for (const j of waiting) {
+      await pool.query('DELETE FROM import_jobs WHERE id = $1', [j.id]);
+      if (j.stream_uid) deleteFromStream(j.stream_uid).catch(() => {});
+    }
+    const { uploadUrl, uid } = await createDirectUpload(size, req.body?.name || id);
+    const { rows } = await pool.query(
+      `INSERT INTO import_jobs (url, youtube_id, tier, with_comments, status, stream_uid, title, requested_by)
+       VALUES ($1, $2, $3, $4, 'uploading', $5, $6, $7) RETURNING *`,
+      [
+        `https://www.youtube.com/watch?v=${id}`,
+        id,
+        tier,
+        req.body?.withComments !== false,
+        uid,
+        req.body?.name ? String(req.body.name).slice(0, 300) : null,
+        req.user.id,
+      ],
+    );
+    res.json({ job: jobRow(rows[0]), uploadUrl });
+  }),
+);
+
+// The browser finished sending the file: the helper can take it from here.
+app.post(
+  '/api/studio/imports/:id/uploaded',
+  wrap(async (req, res) => {
+    if (!isId(req.params.id)) return res.status(404).json({ error: 'No such import.' });
+    const { rows } = await pool.query(
+      `UPDATE import_jobs SET status = 'queued' WHERE id = $1 AND status = 'uploading' RETURNING *`,
+      [req.params.id],
+    );
+    if (!rows[0]) return res.status(409).json({ error: 'That import isn’t waiting for an upload.' });
+    res.json({ job: jobRow(rows[0]) });
+  }),
+);
+
 // Try a failed import again.
 app.post(
   '/api/studio/imports/:id/retry',
@@ -1271,7 +1317,12 @@ app.delete(
     if (!rows[0]) return res.status(404).json({ error: 'No such import.' });
     if (rows[0].status === 'running')
       return res.status(409).json({ error: 'It’s importing right now. Stop the helper to cancel it.' });
-    await pool.query('DELETE FROM import_jobs WHERE id = $1', [req.params.id]);
+    const { rows: gone } = await pool.query(
+      'DELETE FROM import_jobs WHERE id = $1 RETURNING stream_uid, video_id',
+      [req.params.id],
+    );
+    // A file uploaded for an import that never made a video is just taking up storage.
+    if (gone[0]?.stream_uid && !gone[0].video_id) deleteFromStream(gone[0].stream_uid).catch(() => {});
     res.json({ ok: true });
   }),
 );

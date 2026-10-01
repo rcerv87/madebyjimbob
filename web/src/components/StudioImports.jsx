@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, timeAgo, TIER_LABEL } from '../api.js';
 import StudioChannelPicker from './StudioChannelPicker.jsx';
+import StudioFileImport from './StudioFileImport.jsx';
 
 const STATUS_LABEL = {
+  uploading: 'Uploading',
   queued: 'Waiting',
   running: 'Importing',
   done: 'Done',
@@ -42,7 +44,7 @@ export default function StudioImports({ onImported }) {
     load();
   }, [load]);
   // Follow progress while anything is waiting or importing.
-  const active = data?.jobs.some((j) => j.status === 'queued' || j.status === 'running');
+  const active = data?.jobs.some((j) => ['uploading', 'queued', 'running'].includes(j.status));
   useEffect(() => {
     if (!active) return undefined;
     const t = setInterval(load, 5000);
@@ -107,6 +109,15 @@ export default function StudioImports({ onImported }) {
           <button
             type="button"
             role="tab"
+            aria-selected={mode === 'files'}
+            className={`chip ${mode === 'files' ? 'active' : ''}`}
+            onClick={() => setMode('files')}
+          >
+            From files
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={mode === 'links'}
             className={`chip ${mode === 'links' ? 'active' : ''}`}
             onClick={() => setMode('links')}
@@ -131,6 +142,8 @@ export default function StudioImports({ onImported }) {
       </div>
       {mode === 'channel' ? (
         <StudioChannelPicker tier={tier} withComments={withComments} onQueued={load} />
+      ) : mode === 'files' ? (
+        <StudioFileImport tier={tier} withComments={withComments} onQueued={load} />
       ) : (
         <form className="import-form" onSubmit={submit}>
           <textarea

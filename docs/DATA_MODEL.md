@@ -251,7 +251,8 @@ YouTube links queued in Studio → Add videos (MBJ-701); the import helper on Ru
 | url, youtube_id | text | |
 | tier | text | access for the imported video |
 | with_comments | boolean | also import YouTube comments |
-| status | text | `queued \| running \| done \| failed \| cancelled` |
+| stream_uid | text | added from a file: the upload on Cloudflare; the helper passes `--stream-uid` and skips the download |
+| status | text | `uploading \| queued \| running \| done \| failed \| cancelled` (`uploading`: added from a file, the browser is still sending it) |
 | step, title, error | text | progress the helper reports; yt-dlp's error when it fails |
 | video_id | bigint → videos | set when the video is saved; null if it's deleted later |
 | requested_by | bigint → users | |

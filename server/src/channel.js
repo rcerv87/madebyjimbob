@@ -221,7 +221,7 @@ const STATE_SQL = `CASE WHEN v.id IS NOT NULL THEN 'onsite' WHEN j.id IS NOT NUL
 const FROM_SQL = `FROM channel_videos cv
   LEFT JOIN videos v ON v.youtube_id = cv.youtube_id
   LEFT JOIN LATERAL (SELECT id FROM import_jobs ij WHERE ij.youtube_id = cv.youtube_id
-                       AND ij.status IN ('queued', 'running') LIMIT 1) j ON true`;
+                       AND ij.status IN ('uploading', 'queued', 'running') LIMIT 1) j ON true`;
 
 export async function channelPage(
   channel,

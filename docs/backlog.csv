@@ -331,7 +331,7 @@ MBJ-805,Live indicator,Library & community,Phase 1 — VOD platform,Should,S,To 
 - Live card at the top of Videos
 - Studio Go live switch pointing at the YouTube live URL until MBJ-301 detects it automatically
 - When not live, show the next stream from the schedule (weekdays around 12:00pm ET)",
-MBJ-806,Import the whole channel,Library & community,Phase 4 — Owned live + audio,Should,M,To do,"As the operator, I want to load JimBob's full library in one run.","- Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list
+MBJ-806,Import the whole channel,Library & community,Phase 4 — Owned live + audio,Should,M,In progress,"As the operator, I want to load JimBob's full library in one run.","- Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list
 - Proposes file-to-video matches for review; OBS recordings matched by date and length with an offset adjustment
 - Skips videos already imported; deletes local copies after upload; resumable overnight run",MBJ-506
 MBJ-807,Store (Shopify integration),Library & community,Phase 1 — VOD platform,Should,M,In progress,"As a fan, I want to browse and buy JimBob's merch without leaving his platform's look and feel.","- Decision: keep the existing Shopify store (madebyjimbob.com, ~150 products) for catalog, checkout, and fulfilment
