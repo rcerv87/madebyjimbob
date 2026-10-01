@@ -190,6 +190,8 @@ process.on('SIGINT', async () => {
   if (stopping) process.exit(1);
   stopping = true;
   console.log('\nStopping…');
+  // Never hang on the way out (a slow database connection could keep pool.end() waiting).
+  setTimeout(() => process.exit(0), 3000).unref();
   if (current) {
     current.child.kill();
     await requeueRunning().catch(() => {});
