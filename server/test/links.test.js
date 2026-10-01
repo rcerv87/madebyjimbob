@@ -106,7 +106,12 @@ describe('linking a YouTube account by handle', () => {
       token: fan,
       body: { text: 'good point @BigFanYT', offsetMs: 2000 },
     });
-    const notes = (await call('/notifications', { token: member })).data.notifications;
+    // Notifications go out just after the post is answered; give them a moment.
+    let notes = [];
+    for (let i = 0; i < 20 && !notes.length; i += 1) {
+      await new Promise((r) => setTimeout(r, 50));
+      notes = (await call('/notifications', { token: member })).data.notifications;
+    }
     assert.equal(notes[0]?.type, 'mention');
     assert.equal(notes[0]?.actor, 'yt_mentioner');
 

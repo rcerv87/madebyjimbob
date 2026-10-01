@@ -591,6 +591,7 @@ function PrivacySection({ onUserChanged }) {
   return (
     <section className="panel settings-section" id="privacy">
       <h2>Privacy and data</h2>
+      <HiddenMembers onUserChanged={onUserChanged} />
       <div className="setting">
         <div className="setting-head">
           <div>
@@ -838,6 +839,50 @@ function ProfileSharing({ username }) {
           </label>
         </>
       )}
+      {error && <p className="error small">{error}</p>}
+    </div>
+  );
+}
+
+// Members you blocked or muted (MBJ-119), with a way back.
+function HiddenMembers({ onUserChanged }) {
+  const [hidden, setHidden] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api('/account/blocks')
+      .then((d) => setHidden(d.hidden))
+      .catch((e) => setError(e.message));
+  }, []);
+  const undo = async (username) => {
+    try {
+      const d = await api(`/account/blocks/${encodeURIComponent(username)}`, { method: 'DELETE' });
+      setHidden(d.hidden);
+      onUserChanged();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  return (
+    <div className="setting">
+      <h3>Blocked and muted</h3>
+      <p className="muted small">
+        You don’t see their chat or comments, and they don’t notify you. Blocked members also can’t reply to
+        you; muted ones can’t tell. Mute, block, or report from anyone’s name.
+      </p>
+      {hidden?.length === 0 && <p className="muted small">Nobody.</p>}
+      <ul className="device-list">
+        {(hidden || []).map((h) => (
+          <li key={h.username}>
+            <div>
+              <Link to={`/@${h.username}`}>{h.username}</Link>
+              <span className="badge">{h.kind === 'block' ? 'Blocked' : 'Muted'}</span>
+            </div>
+            <button className="text-btn" onClick={() => undo(h.username)}>
+              {h.kind === 'block' ? 'Unblock' : 'Unmute'}
+            </button>
+          </li>
+        ))}
+      </ul>
       {error && <p className="error small">{error}</p>}
     </div>
   );

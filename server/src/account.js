@@ -10,6 +10,7 @@ import { sendEmail, normalizeEmail } from './email.js';
 import { maskEmail } from './emailTemplates.js';
 import { logSecurityEvent, requestOrigin } from './security.js';
 import { exportData, requestDeletion } from './deletion.js';
+import { setBlock, removeBlock, hiddenBy } from './blocks.js';
 import { linksFor, requestLink, PLATFORMS } from './links.js';
 
 export const NOTIFICATION_TYPES = ['mention', 'reply'];
@@ -298,6 +299,47 @@ router.delete(
       req.params.platform,
     ]);
     res.json(await linksFor(req.user.id));
+  }),
+);
+
+// Blocked and muted members (MBJ-119).
+router.get(
+  '/blocks',
+  requireUser,
+  wrap(async (req, res) => res.json({ hidden: await hiddenBy(req.user.id) })),
+);
+
+// { kind: 'block' | 'mute' }
+router.put(
+  '/blocks/:username',
+  requireUser,
+  wrap(async (req, res) => {
+    const kind = req.body?.kind;
+    if (!['block', 'mute'].includes(kind)) return res.status(400).json({ error: 'Choose block or mute.' });
+    try {
+      await setBlock(req.user.id, req.params.username, kind);
+    } catch (err) {
+      const why = {
+        'not-found': [404, 'No member with that name.'],
+        self: [400, 'You can’t block yourself.'],
+        staff: [
+          400,
+          'Moderators and JimBob can’t be blocked or muted. If one of them is a problem, report it.',
+        ],
+      }[err.message];
+      if (why) return res.status(why[0]).json({ error: why[1] });
+      throw err;
+    }
+    res.json({ hidden: await hiddenBy(req.user.id) });
+  }),
+);
+
+router.delete(
+  '/blocks/:username',
+  requireUser,
+  wrap(async (req, res) => {
+    await removeBlock(req.user.id, req.params.username);
+    res.json({ hidden: await hiddenBy(req.user.id) });
   }),
 );
 

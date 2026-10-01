@@ -68,6 +68,9 @@ export default function Comments({ videoId, session, getTimeMs, onSeek, focusThr
   if (!data) return <p className="muted comments">Loading comments…</p>;
 
   const shared = { videoId, session, getTimeMs, onSeek, onReply: addReply };
+  // Members you blocked or muted (MBJ-119) don't show.
+  const muted = new Set((session.user?.hidden || []).map((h) => h.username.toLowerCase()));
+  const shownTo = (c) => !(c.profile && muted.has(c.profile.toLowerCase()));
 
   return (
     <section className="comments" aria-label="Comments">
@@ -98,7 +101,7 @@ export default function Comments({ videoId, session, getTimeMs, onSeek, focusThr
       {data.comments.length === 0 && <p className="muted">No comments yet. Start the conversation.</p>}
       <ol className="comment-list">
         {data.comments
-          .filter((c) => c.id !== focus?.id)
+          .filter((c) => c.id !== focus?.id && shownTo(c))
           .map((c) => (
             <CommentThread key={c.id} c={c} {...shared} />
           ))}
@@ -137,7 +140,9 @@ function CommentThread({ c, videoId, session, getTimeMs, onSeek, onReply, startO
     });
   };
 
-  const common = { onSeek, onQuote: showOriginal };
+  const moderation = session.user ? { me: session.user.username, onChanged: session.refreshUser } : null;
+  const common = { onSeek, onQuote: showOriginal, moderation };
+  const muted = new Set((session.user?.hidden || []).map((h) => h.username.toLowerCase()));
 
   return (
     <li className="comment-thread">
@@ -171,18 +176,20 @@ function CommentThread({ c, videoId, session, getTimeMs, onSeek, onReply, startO
         )}
         {open && (
           <ol className="comment-list replies">
-            {c.replies.map((r) => (
-              <li key={r.id} data-comment={r.id}>
-                <Comment
-                  c={r}
-                  // A direct reply to the thread's first comment needs no quote; replies to replies do.
-                  quote={r.replyTo && r.replyTo.id !== c.id ? r.replyTo : null}
-                  flash={flashId === r.id}
-                  onReplyClick={() => reply(r)}
-                  {...common}
-                />
-              </li>
-            ))}
+            {c.replies
+              .filter((r) => !(r.profile && muted.has(r.profile.toLowerCase())))
+              .map((r) => (
+                <li key={r.id} data-comment={r.id}>
+                  <Comment
+                    c={r}
+                    // A direct reply to the thread's first comment needs no quote; replies to replies do.
+                    quote={r.replyTo && r.replyTo.id !== c.id ? r.replyTo : null}
+                    flash={flashId === r.id}
+                    onReplyClick={() => reply(r)}
+                    {...common}
+                  />
+                </li>
+              ))}
           </ol>
         )}
       </div>
@@ -207,7 +214,7 @@ function Body({ text, onSeek }) {
   );
 }
 
-function Comment({ c, quote, flash, onReplyClick, onSeek, onQuote }) {
+function Comment({ c, quote, flash, onReplyClick, onSeek, onQuote, moderation }) {
   return (
     <article className={`comment ${flash ? 'flash' : ''}`}>
       {c.authorPhoto ? (
@@ -231,6 +238,8 @@ function Comment({ c, quote, flash, onReplyClick, onSeek, onQuote }) {
             platformName={c.platformName}
             className={`comment-author ${c.isCreator ? 'creator' : ''}`}
             title={c.platformName ? `${c.platformName} on YouTube` : undefined}
+            moderation={moderation}
+            about={{ commentId: c.id }}
           />
           <MemberBadge tier={c.memberTier} />
           {c.isCreator && <span className="creator-badge">Creator</span>}

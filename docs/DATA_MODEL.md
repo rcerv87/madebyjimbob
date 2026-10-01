@@ -300,6 +300,26 @@ are deleted hourly.
 | viewer_key | text | `u:<user id>`, `b:<browser id>`, or `h:<daily hash>` (no IPs stored) |
 | day | date | UTC |
 
+### user_blocks
+Members a member blocked or muted (MBJ-119).
+| column | type | notes |
+|---|---|---|
+| user_id, blocked_id | bigint → users | primary key; cascade |
+| kind | text | `block` (also can't reply to you) or `mute` (they can't tell) |
+| created_at | timestamptz | |
+
+### reports
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| reporter_id, target_user_id | bigint → users | set null when the account goes |
+| target_name | text | kept with the report |
+| chat_message_id, comment_id | bigint | what was reported, if a message |
+| reason | text | `spam \| harassment \| hate \| sexual \| violence \| impersonation \| other` |
+| details, excerpt | text | the reporter's note; what the message said at the time |
+| status | text | `open \| resolved \| dismissed` |
+| handled_by, handled_at, created_at | | |
+
 ## Planned
 
 | Change | Story |

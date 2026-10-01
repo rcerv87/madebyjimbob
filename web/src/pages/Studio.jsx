@@ -4,6 +4,7 @@ import { api, compact, formatTime, TIER_LABEL } from '../api.js';
 import StudioPlaylists from '../components/StudioPlaylists.jsx';
 import StudioEmail from '../components/StudioEmail.jsx';
 import StudioLinks from '../components/StudioLinks.jsx';
+import StudioReports from '../components/StudioReports.jsx';
 import StudioImports from '../components/StudioImports.jsx';
 import StudioVideoActions from '../components/StudioVideoActions.jsx';
 import useTitle from '../useTitle.js';
@@ -56,6 +57,7 @@ export default function Studio({ user }) {
       </section>
 
       <StudioImports onImported={load} />
+      <StudioReports />
 
       <div className="studio-cols">
         <section className="panel">

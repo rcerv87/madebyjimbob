@@ -2,16 +2,19 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, formatTime, timeAgo } from '../api.js';
 import MemberBadge from '../components/MemberBadge.jsx';
+import { ReportDialog } from '../components/NameCard.jsx';
 import NotFound from './NotFound.jsx';
 import useTitle from '../useTitle.js';
 
 // A member's public profile at /@username (MBJ-116).
-export default function Profile() {
+export default function Profile({ session }) {
   const { handle } = useParams();
   const username = handle?.startsWith('@') ? handle.slice(1) : null;
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState('');
   const [missing, setMissing] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [note, setNote] = useState('');
   useTitle(profile ? `${profile.displayName} (@${profile.username})` : null);
 
   useEffect(() => {
@@ -35,6 +38,22 @@ export default function Profile() {
   if (!username || missing) return <NotFound />;
   if (error) return <p className="error page-msg">{error}</p>;
   if (!profile) return <p className="muted page-msg">Loading…</p>;
+
+  const viewer = session?.user;
+  const isMe = viewer && viewer.username.toLowerCase() === profile.username.toLowerCase();
+  const hiddenAs = viewer?.hidden?.find(
+    (h) => h.username.toLowerCase() === profile.username.toLowerCase(),
+  )?.kind;
+  const hide = async (kind) => {
+    try {
+      const path = `/account/blocks/${encodeURIComponent(profile.username)}`;
+      await (kind ? api(path, { method: 'PUT', body: { kind } }) : api(path, { method: 'DELETE' }));
+      setNote(kind === 'block' ? 'Blocked.' : kind === 'mute' ? 'Muted.' : 'Undone.');
+      session.refreshUser?.();
+    } catch (err) {
+      setNote(err.message);
+    }
+  };
 
   const at = (item, extra = '') => {
     const params = new URLSearchParams(extra);
@@ -74,6 +93,29 @@ export default function Profile() {
           )}
         </div>
       </header>
+      {viewer && !isMe && (
+        <div className="profile-actions">
+          {hiddenAs ? (
+            <button className="text-btn" onClick={() => hide(null)}>
+              {hiddenAs === 'block' ? 'Unblock' : 'Unmute'}
+            </button>
+          ) : (
+            <>
+              <button className="text-btn" onClick={() => hide('mute')}>
+                Mute
+              </button>
+              <button className="text-btn" onClick={() => hide('block')}>
+                Block
+              </button>
+            </>
+          )}
+          <button className="text-btn" onClick={() => setReporting(true)}>
+            Report…
+          </button>
+          {note && <span className="small">{note}</span>}
+        </div>
+      )}
+      {reporting && <ReportDialog username={profile.username} onClose={() => setReporting(false)} />}
 
       <section className="panel">
         <h2>Comments</h2>

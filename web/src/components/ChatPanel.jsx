@@ -149,19 +149,24 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
 
   // What this view shows, in video order, and the moments of what it hides. Sorted when the loaded chat
   // or the view changes, not on every tick of the playhead.
+  // Members you blocked or muted (MBJ-119): their messages and timestamped comments don't show at all.
+  const hiddenList = session.user?.hidden;
+  const muted = useMemo(() => new Set((hiddenList || []).map((h) => h.username.toLowerCase())), [hiddenList]);
   const { items, hiddenAt } = useMemo(() => {
     const shown = [];
     const hidden = [];
     for (const m of byId.values()) {
+      if (m.profile && muted.has(m.profile.toLowerCase())) continue;
       if (view === 'live' && m.postedLive === false) hidden.push(m.offsetMs);
       else shown.push({ type: 'chat', key: `m${m.id}`, at: m.offsetMs, order: Number(m.id), m });
     }
     for (const c of commentsById.values()) {
+      if (c.profile && muted.has(c.profile.toLowerCase())) continue;
       if (view === 'live') hidden.push(c.offsetMs);
       else shown.push({ type: 'comment', key: `c${c.id}`, at: c.offsetMs, order: Number(c.id), c });
     }
     return { items: shown.sort(inVideoOrder), hiddenAt: hidden.sort((a, b) => a - b) };
-  }, [byId, commentsById, view]);
+  }, [byId, commentsById, view, muted]);
 
   // Everything up to the playhead. Following playback is a binary search, and the list only changes
   // (and re-renders) when a message reaches the playhead.
@@ -302,6 +307,12 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
   const me = session.user
     ? [session.user.username, ...(session.user.linkedHandles || [])].map((n) => n.toLowerCase()).join(',')
     : '';
+  // Mute / Block / Report on name cards (MBJ-119), for signed-in viewers.
+  const refreshUser = session.refreshUser;
+  const moderation = useMemo(
+    () => (session.user ? { me: session.user.username, onChanged: refreshUser } : null),
+    [session.user, refreshUser],
+  );
 
   return (
     <aside className="chat">
@@ -331,6 +342,7 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
                 key={item.key}
                 m={item.m}
                 me={me}
+                moderation={moderation}
                 flash={flashId === item.m.id}
                 onSeek={onSeek}
                 onReply={startReply}
@@ -431,7 +443,16 @@ function Quote({ q, onQuote }) {
 }
 
 // Memoized: a message already on screen only re-renders when its own props change.
-const ChatMessage = memo(function ChatMessage({ m, me, flash, onSeek, onReply, onMention, onQuote }) {
+const ChatMessage = memo(function ChatMessage({
+  m,
+  me,
+  moderation,
+  flash,
+  onSeek,
+  onReply,
+  onMention,
+  onQuote,
+}) {
   const mentionsMe = me && m.mentions?.some((n) => me.split(',').includes(n));
   const replay = m.postedLive === false;
   const body = m.body.split(MENTION_SPLIT).map((p, i) =>
@@ -456,6 +477,8 @@ const ChatMessage = memo(function ChatMessage({ m, me, flash, onSeek, onReply, o
           m.platformName ? `${m.platformName} on YouTube` : m.profile ? undefined : `Reply to ${m.author}`
         }
         onPlainClick={() => onReply(m)}
+        moderation={moderation}
+        about={{ chatMessageId: m.id }}
         actions={[
           { label: 'Reply', onClick: () => onReply(m) },
           { label: 'Mention', onClick: () => onMention(m.profile) },

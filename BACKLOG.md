@@ -467,16 +467,16 @@ Acceptance criteria:
 
 ### MBJ-119 — Block and mute
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-101
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-101
 
 As a member, I want to stop seeing someone who bothers me.
 
 Acceptance criteria:
-- [ ] Block from the profile card or profile page; unblock from Account settings
-- [ ] A blocked member's chat messages, comments, and mentions are hidden for you; they can't mention you or reply to you
-- [ ] Mute (hide their messages) without them being able to tell
-- [ ] Blocking never hides mods or JimBob
-- [ ] Report a member (from the profile card, a message, or a comment) with a reason; reports land in a queue mods work from Studio (MBJ-204)
+- [x] Block from the profile card or profile page; unblock from Account settings
+- [x] A blocked member's chat messages, comments, and mentions are hidden for you; they can't mention you or reply to you
+- [x] Mute (hide their messages) without them being able to tell
+- [x] Blocking never hides mods or JimBob
+- [x] Report a member (from the profile card, a message, or a comment) with a reason; reports land in a queue mods work from Studio (MBJ-204)
 
 ## Epic 2xx — Chat & moderation
 

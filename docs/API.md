@@ -29,6 +29,10 @@ they get `isAdmin: true` and see every tier.
 | GET | `/account/email/confirm?token=` | — | The link in that email: switches the email (confirmed), emails the old address a 7-day undo link, redirects to `/account?email=changed` (or `expired` / `taken`) |
 | GET | `/account/email/undo?token=` | — | "This wasn't me": restores the old email, signs out every device, emails a password-reset link, redirects to `/?email=restored` (or `undo-expired`) |
 | GET | `/profiles/:username` | optional | Public profile (MBJ-116): `{ profile: { username, displayName, image, tier (plus/premium only), joinedAt, links: { youtube?, rumble? }, counts, showsChat, comments: [{ id, videoId, videoTitle, body, offsetMs, isReply, postedAt }], chat } }`; the last 20 of each, only on videos the viewer can watch; chat only if the member allows it. 404 unknown |
+| GET | `/account/blocks` | session | `{ hidden: [{ username, kind: block\|mute, since }] }` (MBJ-119; also on `/me` as `user.hidden`) |
+| PUT | `/account/blocks/:username` | session | `{ kind: block\|mute }`: hides their chat, comments, and mentions for you (the web app filters by each row's `profile`); block also stops them replying to you (403) and neither notifies you. 400 for yourself, moderators, and JimBob |
+| DELETE | `/account/blocks/:username` | session | Unblock / unmute |
+| POST | `/reports` | session | `{ username?, chatMessageId?, commentId?, reason: spam\|harassment\|hate\|sexual\|violence\|impersonation\|other, details? }` → `{ ok, id }`. 10 an hour |
 | GET / PUT | `/account/profile` | session | `{ showChat, indexable }`: what the public profile shares (chat messages) and whether search engines may list it |
 | GET | `/account/links` | session | `{ youtube, rumble }`, each null or `{ id, status: pending\|verified, handle, verifiedBy, verifiedAt }` (MBJ-215) |
 | POST | `/account/links/:platform` | session | `youtube` or `rumble`, `{ name }` (a YouTube @handle or channel link, or a Rumble name) → pending until a moderator confirms in Studio. For YouTube the channel id is looked up from imported chat and comments by handle. 400 bad name, 409 linked to another member |
@@ -72,6 +76,8 @@ they get `isAdmin: true` and see every tier.
 | PATCH | `/studio/playlists/:id` | admin | `{ title?, description? }`; 409 for YouTube playlists |
 | DELETE | `/studio/playlists/:id` | admin | Native playlists only |
 | PUT | `/studio/playlists/:id/items` | admin | `{ videoIds }` replaces the playlist's videos in that order |
+| GET | `/studio/reports?status=open\|resolved\|dismissed` | admin | `{ reports: [{ id, reporter, target, reason, details, excerpt, chatMessageId, commentId, videoId, offsetMs, reportsOnMember, status, createdAt }] }` |
+| POST | `/studio/reports/:id` | admin | `{ status: resolved\|dismissed\|open }` |
 | GET | `/studio/links` | admin | `{ links }`: requests waiting first (YouTube ones with `messagesSeen`, how much that handle has posted), then every confirmed link, with the member's `username` |
 | POST | `/studio/links/:id/approve` | admin | Confirms a request (409 if that account is linked to another member) |
 | DELETE | `/studio/links/:id` | admin | Turns down or unlinks |

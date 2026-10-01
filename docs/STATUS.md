@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 261 automated tests (158 server, 103 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 101 stories; 25 done, 11 in progress |
+| Quality | 269 automated tests (163 server, 106 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 101 stories; 26 done, 11 in progress |
 
 ## Waiting on Ruben
 
@@ -150,6 +150,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   names, and recent comments (each opens the video at that moment); chat messages only if the member turns that
   on in Account settings, and out of search unless they allow it. Tapping a member's name in chat or comments opens
   a card with View profile, Reply, and Mention.
+- **Block, mute, and report** (MBJ-119): from a member's name card or profile. Blocked and muted members' chat and
+  comments disappear for you and don't notify you; blocked ones can't reply to you; moderators and JimBob can't be
+  blocked. Reports (with a reason) land in Studio → Reports with the quoted message and a link to the moment; mods
+  mark them handled or dismissed. Account settings → Privacy lists who you've blocked or muted.
 - **Views count once per viewer per video per day** (MBJ-216): refreshes, resumed sessions, and second tabs
   don't add views; signed-out viewers are told apart by a random browser id (no IPs stored).
 - **Download my data / delete my account** (MBJ-118, in /account → Privacy and data): a JSON file of everything

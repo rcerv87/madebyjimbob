@@ -46,7 +46,11 @@ export default function App() {
     setUser(null);
   };
   // requireSignIn() or requireSignIn('signup' | 'forgot'); also safe as a click handler.
-  const session = { user, requireSignIn: (mode) => setSigningIn(typeof mode === 'string' ? mode : 'signin') };
+  const session = {
+    user,
+    requireSignIn: (mode) => setSigningIn(typeof mode === 'string' ? mode : 'signin'),
+    refreshUser,
+  };
   const notes = useNotifications(user);
   const { watchAt, background } = useKeepPlaying();
 
@@ -85,7 +89,7 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPassword session={session} />} />
             <Route path="/account" element={<Account session={session} onUserChanged={refreshUser} />} />
             {/* /@username profiles (MBJ-116); anything else here is a 404 page. */}
-            <Route path="/:handle" element={<Profile />} />
+            <Route path="/:handle" element={<Profile session={session} />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
