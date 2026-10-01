@@ -85,6 +85,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
 | MBJ-705 | User management in Studio | Studio & analytics | 1 | Must | M | MBJ-102, MBJ-204 |
+| MBJ-706 | Pick videos from the channel to import | Studio & analytics | 1 | Must | M | MBJ-701 |
 | MBJ-801 | Videos dashboard with filters | Library & community | 1 | Must | M | — |
 | MBJ-802 | Playlists | Library & community | 1 | Must | M | MBJ-801 |
 | MBJ-803 | Up next and autoplay | Library & community | 1 | Must | S | MBJ-802 |
@@ -1099,6 +1100,21 @@ Acceptance criteria:
 - [ ] Replace the video file but keep its chat, comments, captions, and link, with an offset adjustment if the new file starts earlier or later
 - [ ] Schedule a video to go public at a date and time; draft videos visible only in Studio
 - [ ] Every change recorded in an audit log (who, what, when)
+
+### MBJ-706 — Pick videos from the channel to import
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-701
+
+As the operator, I want to see every video on the channel and queue the ones I want in one go, without duplicates.
+
+Acceptance criteria:
+- [ ] Studio → Add videos → From the channel: paste a channel link (@handle, /channel/UC…, or a /videos, /streams, /shorts tab), JimBob's channel filled in by default
+- [ ] Lists every video, live stream, and short with thumbnail, title, date, length, and type; newest first; loads all of them (paged, not capped)
+- [ ] Each one shows On the site, Queued, or Not imported; filter Not imported (the default) / All, by type, and a title search
+- [ ] Check boxes plus Select all (of what's showing) and Queue N videos; videos already on the site or queued can't be checked and say so
+- [ ] Pasted links (the current box) that are already on the site say "You already have this" with a link to it (already skipped today)
+- [ ] Listing works from Render with a YouTube Data API key (free quota: about 1 unit per 50 videos via the channel's uploads playlist); without a key, the import helper lists the channel with yt-dlp and Studio shows the list when it's back
+- [ ] Tier and "also import comments" apply to everything queued in one go
 
 ### MBJ-702 — Chat analytics
 

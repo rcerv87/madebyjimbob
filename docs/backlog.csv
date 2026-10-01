@@ -295,6 +295,13 @@ MBJ-701,Video management in Studio,Studio & analytics,Phase 1 — VOD platform,M
 - Replace the video file but keep its chat, comments, captions, and link, with an offset adjustment if the new file starts earlier or later
 - Schedule a video to go public at a date and time; draft videos visible only in Studio
 - Every change recorded in an audit log (who, what, when)",MBJ-102
+MBJ-706,Pick videos from the channel to import,Studio & analytics,Phase 1 — VOD platform,Must,M,To do,"As the operator, I want to see every video on the channel and queue the ones I want in one go, without duplicates.","- Studio → Add videos → From the channel: paste a channel link (@handle, /channel/UC…, or a /videos, /streams, /shorts tab), JimBob's channel filled in by default
+- Lists every video, live stream, and short with thumbnail, title, date, length, and type; newest first; loads all of them (paged, not capped)
+- Each one shows On the site, Queued, or Not imported; filter Not imported (the default) / All, by type, and a title search
+- Check boxes plus Select all (of what's showing) and Queue N videos; videos already on the site or queued can't be checked and say so
+- Pasted links (the current box) that are already on the site say ""You already have this"" with a link to it (already skipped today)
+- Listing works from Render with a YouTube Data API key (free quota: about 1 unit per 50 videos via the channel's uploads playlist); without a key, the import helper lists the channel with yt-dlp and Studio shows the list when it's back
+- Tier and ""also import comments"" apply to everything queued in one go",MBJ-701
 MBJ-702,Chat analytics,Studio & analytics,Phase 5 — Engagement,Should,M,To do,"As JimBob, I want to see what landed with my audience.","- Messages-per-minute chart per stream with busiest moments linked to timestamps
 - Top questions and per-stream sentiment summary",MBJ-102
 MBJ-703,Members and revenue dashboard,Studio & analytics,Phase 1 — VOD platform,Should,M,To do,"As JimBob, I want to see who pays and how much I earn.","- Active members by tier, churn, MRR, tip totals by source","MBJ-104, MBJ-102"
