@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, timeAgo, TIER_LABEL } from '../api.js';
 import { PushPrompt } from '../notifications.jsx';
 import { usePush } from '../push.js';
@@ -32,12 +32,7 @@ export default function Account({ session, onUserChanged }) {
       <SecuritySection user={user} onUserChanged={onUserChanged} />
       <NotificationsSection />
       <MembershipSection user={user} />
-      <section className="panel settings-section" id="privacy">
-        <h2>Privacy and data</h2>
-        <p className="muted">
-          Coming soon: download a copy of everything you’ve posted, or delete your account.
-        </p>
-      </section>
+      <PrivacySection onUserChanged={onUserChanged} />
     </div>
   );
 }
@@ -417,6 +412,8 @@ const EVENT_LABEL = {
   email_change_requested: 'Asked to change email',
   email_changed: 'Email changed',
   email_change_undone: 'Email change undone',
+  deletion_requested: 'Asked to delete the account',
+  deletion_cancelled: 'Account deletion called off',
 };
 
 function Activity() {
@@ -561,6 +558,115 @@ function MembershipSection({ user }) {
             ))}
           </tbody>
         </table>
+      </div>
+    </section>
+  );
+}
+
+// Download my data, and delete my account (MBJ-118): 30 days to change your mind by signing in.
+function PrivacySection({ onUserChanged }) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [deleteContent, setDeleteContent] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      await api('/account/delete', { method: 'POST', body: { password, deleteContent } });
+      onUserChanged(null);
+      navigate('/?deletion=requested');
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="panel settings-section" id="privacy">
+      <h2>Privacy and data</h2>
+      <div className="setting">
+        <div className="setting-head">
+          <div>
+            <h3>Download your data</h3>
+            <p className="muted small">
+              Your profile, comments, chat messages, likes, watch history, and account activity, as a JSON
+              file.
+            </p>
+          </div>
+          <a className="text-btn" href="/api/account/export" download>
+            Download
+          </a>
+        </div>
+      </div>
+      <div className="setting">
+        <div className="setting-head">
+          <div>
+            <h3>Delete your account</h3>
+            <p className="muted small">
+              You’re signed out everywhere and the account is erased after 30 days. Sign in before then to
+              keep it.
+            </p>
+          </div>
+          {!open && (
+            <button className="text-btn danger-text" onClick={() => setOpen(true)}>
+              Delete…
+            </button>
+          )}
+        </div>
+        {open && (
+          <form className="setting-form" onSubmit={submit}>
+            <fieldset className="choice">
+              <legend>Your chat messages and comments</legend>
+              <label className="check">
+                <input
+                  type="radio"
+                  name="content"
+                  checked={!deleteContent}
+                  onChange={() => setDeleteContent(false)}
+                />
+                Keep them, shown as “Deleted user”, so conversations still make sense
+              </label>
+              <label className="check">
+                <input
+                  type="radio"
+                  name="content"
+                  checked={deleteContent}
+                  onChange={() => setDeleteContent(true)}
+                />
+                Remove them too (replies to your comments may disappear with them)
+              </label>
+            </fieldset>
+            <label>
+              Your password
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoFocus
+              />
+            </label>
+            <div className="form-actions">
+              <button className="danger-btn" disabled={busy}>
+                {busy ? 'Deleting…' : 'Delete my account'}
+              </button>
+              <button type="button" className="text-btn" onClick={() => setOpen(false)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+        {error && (
+          <p className="error small" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     </section>
   );

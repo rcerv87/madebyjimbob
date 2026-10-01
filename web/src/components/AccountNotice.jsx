@@ -11,6 +11,12 @@ export default function AccountNotice({ user, onUserChanged }) {
   const navigate = useNavigate();
   const [verified, setVerified] = useState(false);
   const [undo, setUndo] = useState(null); // 'restored' | 'undo-expired', from the "This wasn't me" link
+  const [deletion, setDeletion] = useState(false); // just asked to delete the account
+  const [welcomeBack, setWelcomeBack] = useState(true);
+  // Signed back in after asking to delete: the "will be deleted" note no longer applies.
+  useEffect(() => {
+    if (user) setDeletion(false);
+  }, [user]);
   const [dismissed, setDismissed] = useState(() => {
     try {
       return sessionStorage.getItem(DISMISSED) === '1';
@@ -27,6 +33,13 @@ export default function AccountNotice({ user, onUserChanged }) {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const email = location.pathname === '/account' ? null : params.get('email');
+    if (params.get('deletion') === 'requested') {
+      setDeletion(true);
+      params.delete('deletion');
+      const rest = params.toString();
+      navigate({ pathname: location.pathname, search: rest ? `?${rest}` : '' }, { replace: true });
+      return;
+    }
     if (params.get('verified') !== '1' && email !== 'restored' && email !== 'undo-expired') return;
     if (email) {
       setUndo(email);
@@ -90,6 +103,26 @@ export default function AccountNotice({ user, onUserChanged }) {
     }
   };
 
+  if (deletion) {
+    return (
+      <div className="account-notice" role="status">
+        <span>Your account will be deleted in 30 days. Changed your mind? Sign in before then.</span>
+        <button className="text-btn" onClick={() => setDeletion(false)}>
+          Close
+        </button>
+      </div>
+    );
+  }
+  if (user?.deletionCancelled && welcomeBack) {
+    return (
+      <div className="account-notice ok" role="status">
+        <span>Welcome back. Signing in called off your account deletion, so your account stays.</span>
+        <button className="text-btn" onClick={() => setWelcomeBack(false)}>
+          Close
+        </button>
+      </div>
+    );
+  }
   if (undo) {
     return (
       <div className={`account-notice ${undo === 'restored' ? 'ok' : ''}`} role="status">

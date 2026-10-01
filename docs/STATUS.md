@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 206 automated tests (124 server, 82 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 100 stories; 20 done, 9 in progress |
+| Quality | 215 automated tests (129 server, 86 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 100 stories; 21 done, 9 in progress |
 
 ## Waiting on Ruben
 
@@ -133,6 +133,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   restores it, signs out everywhere, and sends a reset link), signed-in devices with sign out one or all, recent
   activity (sign-ins, password and email changes), notification switches per type for the bell and push, and
   the membership perks table.
+- **Download my data / delete my account** (MBJ-118, in /account → Privacy and data): a JSON file of everything
+  we hold; deleting needs the password, signs out everywhere, and waits 30 days (signing in calls it off), then an
+  hourly job erases the account. Their chat and comments stay as "Deleted user", or are blanked and hidden if they
+  chose that; emails at request and at erasure.
 - Phones: the top bar now fits a 360px screen (Sign in used to sit off the edge and stretch every page), and
   tapping your avatar opens a menu with Sign out (phones had no way to sign out).
 - Account email ready (MBJ-114): Resend sender, 6 branded templates (verify, reset, email changed, new sign-in,
@@ -190,6 +194,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - No payments: everyone is Free unless an admin changes a video to Free (MBJ-104). Keep videos Free until then.
 - Paid-video links aren't signed; a copied Stream link plays for anyone (MBJ-103).
 - Every page open counts as a view (MBJ-216).
+- Account erasure runs hourly inside the web server; with more than one server it needs a single scheduled job.
+  A deleted member's username becomes free again right away.
 - Rate limits and live chat rooms live in one server's memory; fine for one Render instance (MBJ-205 for more).
 - Auto-captions can invent text during silence or music.
 - Downloading from YouTube with yt-dlp is against YouTube's terms; use Takeout or original recordings for the library.
