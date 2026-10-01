@@ -91,7 +91,7 @@ MBJ-114,Sending email (ADR),Accounts & memberships,Phase 1 — VOD platform,Must
 MBJ-115,Welcome steps,Accounts & memberships,Phase 1 — VOD platform,Should,S,To do,"As a new member, I want a quick start that makes the site mine without forcing anything.","- After sign-up: add an avatar, pick notifications (live alerts on by default), link YouTube (MBJ-215), see membership options
 - Every step can be skipped; a checklist on the profile shows what's left
 - Ends on the page they signed up from, or the latest video",MBJ-108
-MBJ-116,Public profile,Accounts & memberships,Phase 1 — VOD platform,Should,M,To do,"As a viewer, I want to see who someone in chat is; as a member, I want a page that shows I'm part of the community.","- `/@username` page: avatar, display name, bio, links, joined date, tier badge, and badges/level once MBJ-602 lands
+MBJ-116,Public profile,Accounts & memberships,Phase 1 — VOD platform,Should,M,Done,"As a viewer, I want to see who someone in chat is; as a member, I want a page that shows I'm part of the community.","- `/@username` page: avatar, display name, bio, links, joined date, tier badge, and badges/level once MBJ-602 lands
 - Recent public activity: comments with the video and moment they're on (each opens the video there); chat messages only if the member allows it
 - Tapping a name or avatar in chat or comments opens a small profile card with ""View profile"" and ""Mention""
 - Linked YouTube/Rumble names shown once verified (MBJ-215)

@@ -11,8 +11,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 251 automated tests (153 server, 98 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 101 stories; 24 done, 11 in progress |
+| Quality | 261 automated tests (158 server, 103 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 101 stories; 25 done, 11 in progress |
 
 ## Waiting on Ruben
 
@@ -119,7 +119,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - Members chat on replays at their moment in the video; everyone watching sees it live.
 - **Replies quote exactly what they answer**, in chat and comments; tapping a quote jumps to the original.
   Imported YouTube replies keep this link (1,371 reply-to-reply links restored).
-- Tap a name to reply; `@` suggests names; your mentions are highlighted.
+- Tap a member's name for their card (View profile, Reply, Mention); other names reply. `@` suggests names; your
+  mentions are highlighted.
 - **Comments** under each video: YouTube comments (threads, likes, pinned, Creator badge) and native ones.
   Comments can carry a moment; they then appear as bubbles in the chat and open their thread. Times typed in
   comments ("1:04:32") are clickable; 44 imported comments already carry one.
@@ -145,6 +146,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   YouTube @handle or Rumble name; a moderator confirms it in Studio → Linked accounts (shown how much that
   handle has posted). Then all of that YouTube channel's chat and comments (past and future, matched by channel
   id so renames don't break it) show their site name and tier, and @mentions of the handle notify them.
+- **Public profiles** (MBJ-116): `/@username` with name, member-since date, paid-tier badge, linked YouTube/Rumble
+  names, and recent comments (each opens the video at that moment); chat messages only if the member turns that
+  on in Account settings, and out of search unless they allow it. Tapping a member's name in chat or comments opens
+  a card with View profile, Reply, and Mention.
 - **Views count once per viewer per video per day** (MBJ-216): refreshes, resumed sessions, and second tabs
   don't add views; signed-out viewers are told apart by a random browser id (no IPs stored).
 - **Download my data / delete my account** (MBJ-118, in /account → Privacy and data): a JSON file of everything

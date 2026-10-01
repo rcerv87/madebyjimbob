@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { pool } from './db.js';
 import { playback } from './stream.js';
+import { findProfile } from './profiles.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_INDEX = path.join(__dirname, '../../web/dist/index.html');
@@ -71,6 +72,21 @@ export async function pageMeta(pathname) {
   if (p === '/studio') return { ...page('Studio'), noindex: true };
   if (p === '/reset-password') return { ...page('Reset password'), noindex: true };
   if (p === '/account') return { ...page('Account settings'), noindex: true };
+
+  // Profiles (MBJ-116): out of search unless the member allows it.
+  const profile = p.match(/^\/@([A-Za-z0-9_]{3,32})$/);
+  if (profile) {
+    const u = await findProfile(profile[1]);
+    if (!u) return notFound();
+    const name = u.display_name || u.username;
+    return {
+      ...page(
+        `${name} (@${u.username})`,
+        `${name} on MADEbyJIMBOB: comments and chat in JimBob's community.`,
+      ),
+      noindex: !u.profile_indexable,
+    };
+  }
 
   const watch = p.match(/^\/watch\/(\d{1,18})$/);
   if (watch) {

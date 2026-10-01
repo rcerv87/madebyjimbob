@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, timeAgo, TIER_LABEL } from '../api.js';
 import { PushPrompt } from '../notifications.jsx';
 import { usePush } from '../push.js';
@@ -70,7 +70,8 @@ function ProfileSection({ user }) {
           <p className="muted small">@{user.username}</p>
         </div>
       </div>
-      <p className="muted small">Profile photos, a bio, and a public profile page are coming soon.</p>
+      <ProfileSharing username={user.username} />
+      <p className="muted small">Profile photos and a bio are coming soon.</p>
     </section>
   );
 }
@@ -788,6 +789,56 @@ function PlatformLink({ platform, label, placeholder, link, onChange }) {
           </button>
         </form>
       )}
+    </div>
+  );
+}
+
+// What your public profile shares (MBJ-116). Comments always show there.
+function ProfileSharing({ username }) {
+  const [settings, setSettings] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api('/account/profile')
+      .then(setSettings)
+      .catch((e) => setError(e.message));
+  }, []);
+
+  const set = async (key, value) => {
+    setSettings((s) => ({ ...s, [key]: value }));
+    try {
+      setSettings(await api('/account/profile', { method: 'PUT', body: { [key]: value } }));
+      setError('');
+    } catch (err) {
+      setSettings((s) => ({ ...s, [key]: !value }));
+      setError(`Couldn’t save: ${err.message}`);
+    }
+  };
+
+  return (
+    <div className="profile-sharing">
+      <Link to={`/@${username}`}>View your public profile</Link>
+      {settings && (
+        <>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={settings.showChat}
+              onChange={(e) => set('showChat', e.target.checked)}
+            />
+            Show my chat messages on my profile (comments always show)
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={settings.indexable}
+              onChange={(e) => set('indexable', e.target.checked)}
+            />
+            Let search engines list my profile
+          </label>
+        </>
+      )}
+      {error && <p className="error small">{error}</p>}
     </div>
   );
 }

@@ -19,6 +19,7 @@ const Shop = lazy(() => import('./pages/Shop.jsx'));
 const Art = lazy(() => import('./pages/Art.jsx'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
 const Account = lazy(() => import('./pages/Account.jsx'));
+const Profile = lazy(() => import('./pages/Profile.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 import { useKeepPlaying } from './keepPlaying.js';
@@ -83,6 +84,8 @@ export default function App() {
             <Route path="/studio" element={<Studio user={user} />} />
             <Route path="/reset-password" element={<ResetPassword session={session} />} />
             <Route path="/account" element={<Account session={session} onUserChanged={refreshUser} />} />
+            {/* /@username profiles (MBJ-116); anything else here is a 404 page. */}
+            <Route path="/:handle" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

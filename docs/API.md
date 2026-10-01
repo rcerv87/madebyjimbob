@@ -28,6 +28,8 @@ they get `isAdmin: true` and see every tier.
 | POST | `/account/email` | session | `{ newEmail, password }` → `{ ok, sentTo }`. Emails a 24-hour confirmation link to the new address (none if it already has an account; same answer). 400 wrong password, 429 over 5 an hour |
 | GET | `/account/email/confirm?token=` | — | The link in that email: switches the email (confirmed), emails the old address a 7-day undo link, redirects to `/account?email=changed` (or `expired` / `taken`) |
 | GET | `/account/email/undo?token=` | — | "This wasn't me": restores the old email, signs out every device, emails a password-reset link, redirects to `/?email=restored` (or `undo-expired`) |
+| GET | `/profiles/:username` | optional | Public profile (MBJ-116): `{ profile: { username, displayName, image, tier (plus/premium only), joinedAt, links: { youtube?, rumble? }, counts, showsChat, comments: [{ id, videoId, videoTitle, body, offsetMs, isReply, postedAt }], chat } }`; the last 20 of each, only on videos the viewer can watch; chat only if the member allows it. 404 unknown |
+| GET / PUT | `/account/profile` | session | `{ showChat, indexable }`: what the public profile shares (chat messages) and whether search engines may list it |
 | GET | `/account/links` | session | `{ youtube, rumble }`, each null or `{ id, status: pending\|verified, handle, verifiedBy, verifiedAt }` (MBJ-215) |
 | POST | `/account/links/:platform` | session | `youtube` or `rumble`, `{ name }` (a YouTube @handle or channel link, or a Rumble name) → pending until a moderator confirms in Studio. For YouTube the channel id is looked up from imported chat and comments by handle. 400 bad name, 409 linked to another member |
 | DELETE | `/account/links/:platform` | session | Unlink, or cancel a request |
@@ -89,7 +91,7 @@ See you Friday",
 }
 ```
 
-Chat messages and comments from a linked YouTube/Rumble account also carry `platformName` (the name there) and
+Chat messages and comments carry `profile` (the site username to open a profile card for: native posts and linked accounts; null otherwise). Ones from a linked YouTube/Rumble account also carry `platformName` (the name there) and
 `memberTier`, and `author` is the member's site username (MBJ-215).
 
 ### Chat message shape
