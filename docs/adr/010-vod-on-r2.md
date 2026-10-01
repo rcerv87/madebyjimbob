@@ -46,12 +46,12 @@ Prices are estimates as of this date; check current Cloudflare pricing before de
 - **Versions per video:** 720p at an efficient bitrate (~0.7 GB/hour; streams are mostly talking), 360p for weak signal,
   and audio only (podcast mode, ~30 MB/hour). Full 1080p only for recent streams, if at all.
 - **Cost target is tens of dollars, not hundreds:** about 2.2 TB for the 926-video listing (~2,325 hours) is ~$33/month on
-  R2 (~$13 on Backblaze B2 served through Cloudflare). Stream would be ~$700/month for storage alone.
+  R2 (~$15 on Backblaze B2 served through Cloudflare). Stream would be ~$700/month for storage alone.
 - **Originals:** keep a master copy off-platform as a cancel-proof backup (a USB drive at home, about $150 once), and
   consider a second cloud copy of the compressed versions.
 - **Processing:** the helper on Ruben's PC encodes them (free, overnight).
 - **Later:** downloads to watch offline in the phone apps (720p or audio, expiring), and audio downloads on the website.
-- **Decided (Ruben, 2026-10-01):** keep a second cloud copy of the compressed versions on Backblaze B2 (~$13/month), so
+- **Decided (Ruben, 2026-10-01):** keep a second cloud copy of the compressed versions on Backblaze B2 (~$15/month), so
   there are three copies (R2 for playback, B2, and the originals on a home drive), and losing one provider doesn't lose
   the archive. Total ≈ $46/month for the full library.
 - **Revised (Ruben, 2026-10-01): B2 replaces R2.** Backblaze B2 holds the copies people watch (720p, 360p, audio), ~$13/month
@@ -66,3 +66,4 @@ Prices are estimates as of this date; check current Cloudflare pricing before de
   free 6.6 TB. If about 45% of hours are listened to as audio only (about 1/25th the data), the free allowance lasts to
   ~300 members. Make listening the easy choice: a Listen button, switching to audio automatically when the screen
   locks or the app is in the background, and audio downloads.
+- **Price check (2026-10-01):** B2 is $6.95/TB/month (pay as you go), so ~2.2 TB ≈ $15/month. B2 Overdrive (unlimited free egress) needs a multi-petabyte commitment, so it doesn't apply.
