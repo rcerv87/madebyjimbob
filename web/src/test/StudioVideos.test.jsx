@@ -168,7 +168,7 @@ describe('Studio → Add videos → From the channel', () => {
     ]);
   });
 
-  test('with no list yet, asks for one and says when the helper isn’t running', async () => {
+  test('a channel with no list yet asks for one by itself (once), and says when the helper isn’t running', async () => {
     const sent = fakeApi({
       '/studio/imports': [200, { helper: null, jobs: [] }],
       '/studio/channel': [
@@ -182,12 +182,13 @@ describe('Studio → Add videos → From the channel', () => {
         <StudioImports />
       </MemoryRouter>,
     );
-    fireEvent.click(await screen.findByRole('button', { name: 'Get the list of videos' }));
     await waitFor(() =>
       expect(sent('POST', '/studio/channel/refresh')).toEqual([
         { url: 'https://www.youtube.com/@madebyjimbob' },
       ]),
     );
     expect(screen.getAllByText(/npm run import:worker/).length).toBeGreaterThan(0);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(sent('POST', '/studio/channel/refresh')).toHaveLength(1);
   });
 });
