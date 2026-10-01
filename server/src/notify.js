@@ -4,6 +4,7 @@
 import webpush from 'web-push';
 import { pool } from './db.js';
 import { logger } from './logger.js';
+import { hidingFrom } from './blocks.js';
 
 const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
 export const pushEnabled = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
@@ -133,6 +134,9 @@ export async function notifyFor({
       if (id !== String(actor.id) && !recipients.has(id)) recipients.set(id, 'mention');
     }
   }
+  if (!recipients.size) return [];
+  // Nobody hears from someone they blocked or muted (MBJ-119).
+  for (const id of await hidingFrom([...recipients.keys()], actor.id)) recipients.delete(id);
   if (!recipients.size) return [];
 
   // Account settings: the bell and push can each be off per type (a missing setting means on).

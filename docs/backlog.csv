@@ -107,7 +107,7 @@ MBJ-118,Download my data and delete my account,Accounts & memberships,Phase 1 �
 - 30 days to change your mind (signing in cancels it), then the account is erased; paid memberships are cancelled first
 - Chat messages and comments stay in replays as ""Deleted user"" so conversations still make sense; an option also removes them
 - Confirmation email at request and at erasure","MBJ-101, MBJ-114"
-MBJ-119,Block and mute,Accounts & memberships,Phase 1 — VOD platform,Should,S,To do,"As a member, I want to stop seeing someone who bothers me.","- Block from the profile card or profile page; unblock from Account settings
+MBJ-119,Block and mute,Accounts & memberships,Phase 1 — VOD platform,Should,S,Done,"As a member, I want to stop seeing someone who bothers me.","- Block from the profile card or profile page; unblock from Account settings
 - A blocked member's chat messages, comments, and mentions are hidden for you; they can't mention you or reply to you
 - Mute (hide their messages) without them being able to tell
 - Blocking never hides mods or JimBob

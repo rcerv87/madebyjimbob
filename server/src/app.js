@@ -16,6 +16,7 @@ import { auth, sessionUser, ADMIN_EMAILS } from './auth.js';
 import accountRouter from './account.js';
 import { viewerKey, recordView } from './views.js';
 import { findProfile, profileFor } from './profiles.js';
+import { hasBlocked, hiddenBy, fileReport, listReports } from './blocks.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
   addUserSocket,
@@ -229,6 +230,8 @@ app.get(
       );
       user.deletionCancelled = rowCount > 0;
       user.linkedHandles = await linkedHandles(user.id);
+      // Members this viewer blocked or muted: the web app hides their chat and comments (MBJ-119).
+      user.hidden = await hiddenBy(user.id);
     }
     res.json({ user });
   }),
@@ -242,6 +245,36 @@ app.get(
     if (!found) return res.status(404).json({ error: 'No member with that name.' });
     const viewer = await currentUser(req);
     res.json({ profile: await profileFor(found, viewer?.tier || 'free') });
+  }),
+);
+
+// Report a member, or one of their chat messages or comments (MBJ-119): { username?, chatMessageId?,
+// commentId?, reason, details? }. Mods work the queue in Studio.
+const reportTries = new Map();
+app.post(
+  '/api/reports',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to report.' });
+    const now = Date.now();
+    const recent = (reportTries.get(user.id) || []).filter((t) => now - t < 60 * 60 * 1000);
+    if (recent.length >= 10)
+      return res.status(429).json({ error: 'That’s a lot of reports. Try again in an hour.' });
+    recent.push(now);
+    reportTries.set(user.id, recent);
+    const { username, chatMessageId, commentId, reason, details } = req.body || {};
+    if ((chatMessageId && !isId(chatMessageId)) || (commentId && !isId(commentId)))
+      return res.status(400).json({ error: 'That message can’t be reported.' });
+    try {
+      const id = await fileReport(user.id, { username, chatMessageId, commentId, reason, details });
+      res.json({ ok: true, id });
+    } catch (err) {
+      if (err.message === 'bad-reason')
+        return res.status(400).json({ error: 'Pick a reason for the report.' });
+      if (err.message === 'not-found')
+        return res.status(404).json({ error: 'That member or message is gone.' });
+      throw err;
+    }
   }),
 );
 
@@ -540,6 +573,8 @@ app.post(
         : { rows: [] };
       if (!rows[0]) return res.status(400).json({ error: 'That message can’t be replied to.' });
       target = rows[0];
+      if (await hasBlocked(target.user_id, user.id))
+        return res.status(403).json({ error: 'You can’t reply to this person.' });
     }
 
     // Claim the slot before any await so parallel requests can't slip through.
@@ -681,6 +716,8 @@ app.post(
         : { rows: [] };
       if (!rows[0]) return res.status(400).json({ error: 'That comment can’t be replied to.' });
       target = rows[0];
+      if (await hasBlocked(target.user_id, user.id))
+        return res.status(403).json({ error: 'You can’t reply to this person.' });
     }
 
     let offsetMs = null;
@@ -966,6 +1003,33 @@ app.delete(
   wrap(async (req, res) => {
     if (!/^\d{1,18}$/.test(req.params.id)) return res.status(404).json({ error: 'No such link.' });
     await pool.query('DELETE FROM linked_accounts WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  }),
+);
+
+// Studio reports (MBJ-119): the queue of reported members and messages; mods mark each handled or dismissed.
+// (Hiding messages and banning come with the moderation tools, MBJ-204.)
+app.get(
+  '/api/studio/reports',
+  wrap(async (req, res) => {
+    const status = ['open', 'resolved', 'dismissed'].includes(req.query.status) ? req.query.status : 'open';
+    res.json({ reports: await listReports(status) });
+  }),
+);
+
+app.post(
+  '/api/studio/reports/:id',
+  wrap(async (req, res) => {
+    const status = req.body?.status;
+    if (!['resolved', 'dismissed', 'open'].includes(status))
+      return res.status(400).json({ error: 'Unknown status.' });
+    if (!isId(req.params.id)) return res.status(404).json({ error: 'No such report.' });
+    const { rowCount } = await pool.query(
+      `UPDATE reports SET status = $2, handled_by = $3, handled_at = CASE WHEN $2 = 'open' THEN NULL ELSE now() END
+       WHERE id = $1`,
+      [req.params.id, status, req.user.id],
+    );
+    if (!rowCount) return res.status(404).json({ error: 'No such report.' });
     res.json({ ok: true });
   }),
 );
