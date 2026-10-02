@@ -285,6 +285,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 14. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
 15. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
 16. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
+    Then **owned live** (ADR-004, update of 2026-10-01): Owncast on a Hetzner CPX31 that Studio/app **Go Live**
+    creates and deletes on demand (~$15/month), segments on R2, sent at the same time as YouTube and Rumble.
 17. **Tech follow-ups** (after MBJ-101 merges, before the full-channel import) — a partial index on visible
     chat so video cards count chat ~10x faster (186 ms → 19 ms for 45 streams / 260k messages in a test);
     split `server/src/app.js` (1,200 lines) into route files; a WebSocket heartbeat to drop dead connections.
