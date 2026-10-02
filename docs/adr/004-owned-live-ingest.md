@@ -63,3 +63,9 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
   recording with `#EXT-X-DISCONTINUITY` at each join (Owncast's clock and file names restart), so viewers can still rewind
   to the start and it stays one replay. The site sets the video back to live (no length) and updates its length when
   the recording ends again. A stream of 5+ hours is ~3,000 playlist entries (~65 KB), fetched only by rewound viewers.
+- **Listening (2026-10-02):** the recorder installs ffmpeg (`apk add` in `node:22-alpine`) and copies the audio of the
+  smallest quality's segments (`-copyts -vn -c:a copy`) to `dvr/<id>/audio/`, listed in the master as
+  `#EXT-X-MEDIA:TYPE=AUDIO … URI="audio/index.m3u8"` so the site's player finds it for Listen only on replays. /live tracks
+  the viewer's spot in recording time (`gapS` subtracts time OBS was away) and switches video ↔ sound from that spot.
+  Owncast rewrites its first pieces just after OBS connects; the recorder skips renumbered pieces that arrive with no
+  pause in a stream's first 20 seconds, and treats a pause as a reconnect.

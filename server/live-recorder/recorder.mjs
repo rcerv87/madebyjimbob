@@ -3,12 +3,15 @@
 // the whole stream. Viewers rewind with it while live, and when the stream ends it becomes the replay.
 //
 // R2 layout:
-//   dvr/current.json             { id, startedAt, live, endedAt?, durationS? } — the newest recording
+//   dvr/current.json             { id, startedAt, live, gapS, endedAt?, durationS? } — the newest recording;
+//                                gapS = time skipped while OBS was away, so players can place live on the recording
 //   dvr/<id>/master.m3u8         the qualities
 //   dvr/<id>/<n>/index.m3u8      one quality's playlist (EVENT; ENDLIST once finished)
 //   dvr/<id>/<n>/<seq>.ts        the video
+//   dvr/<id>/audio/…             the sound alone (Listen only / podcast mode), cut from the smallest quality
 //
 // Env: R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, HLS_DIR (Owncast's data/hls, read-only).
+import { spawn, spawnSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { r2Put } from './r2put.mjs';
@@ -25,6 +28,27 @@ const QUIET_S = 12; // no new video this long = the stream ended (for now)
 const REJOIN_S = 600; // OBS back within this long after that: the same recording continues
 
 const log = (...a) => console.log(new Date().toISOString(), ...a);
+// ffmpeg copies the sound out of each segment (no re-encoding). Without it there's simply no audio-only copy.
+const DEBUG = Boolean(process.env.RECORDER_DEBUG);
+const HAS_FFMPEG = spawnSync('ffmpeg', ['-version']).status === 0;
+
+// The sound of one MPEG-TS segment, as MPEG-TS, keeping its timestamps so segments play back to back.
+function audioOf(bytes) {
+  return new Promise((resolve, reject) => {
+    const ff = spawn('ffmpeg', [
+      ...['-hide_banner', '-loglevel', 'error', '-copyts', '-i', 'pipe:0', '-vn', '-c:a', 'copy'],
+      ...['-muxdelay', '0', '-muxpreload', '0', '-f', 'mpegts', 'pipe:1'],
+    ]);
+    const out = [];
+    ff.stdout.on('data', (d) => out.push(d));
+    ff.on('error', reject);
+    ff.on('close', (code) =>
+      code === 0 ? resolve(Buffer.concat(out)) : reject(new Error(`ffmpeg ${code}`)),
+    );
+    ff.stdin.on('error', () => {});
+    ff.stdin.end(bytes);
+  });
+}
 const readText = (f) => fs.readFile(f, 'utf8').catch(() => null);
 
 // Owncast's master playlist → [{ n, info }] (info = the #EXT-X-STREAM-INF line).
@@ -80,7 +104,10 @@ const putJson = (key, value) => r2Put(cfg, key, JSON.stringify(value), 'applicat
 
 async function start(prefix, variants) {
   const id = new Date().toISOString().replace(/[:.]/g, '-');
-  rec = { id, prefix, startedAt: new Date().toISOString(), qualities: new Map(), chain: Promise.resolve() };
+  rec = {
+    ...{ id, prefix, startedAt: new Date().toISOString(), qualities: new Map(), chain: Promise.resolve() },
+    gapS: 0,
+  };
   for (const v of variants)
     rec.qualities.set(v.n, {
       n: v.n,
@@ -91,15 +118,25 @@ async function start(prefix, variants) {
       prefix,
       lastSeq: -1,
       disc: false,
+      runStart: Date.now(),
     });
+  // The sound alone comes from the smallest quality (lowest bandwidth).
+  const bandwidth = (v) => Number(v.info.match(/BANDWIDTH=(\d+)/)?.[1]) || 0;
+  const smallest = variants.reduce((a, b) => (bandwidth(b) < bandwidth(a) ? b : a));
+  rec.audio = HAS_FFMPEG ? { from: smallest.n, lines: [] } : null;
   const master = [
     '#EXTM3U',
     '#EXT-X-VERSION:3',
+    ...(rec.audio
+      ? [
+          '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="listen",NAME="Listen only",DEFAULT=NO,AUTOSELECT=NO,URI="audio/index.m3u8"',
+        ]
+      : []),
     ...variants.flatMap((v) => [v.info, `${v.n}/index.m3u8`]),
     '',
   ];
   await r2Put(cfg, `dvr/${id}/master.m3u8`, master.join('\n'), 'application/vnd.apple.mpegurl');
-  await putJson('dvr/current.json', { id, startedAt: rec.startedAt, live: true });
+  await putJson('dvr/current.json', { id, startedAt: rec.startedAt, live: true, gapS: 0 });
   log('recording started', id);
 }
 
@@ -124,8 +161,28 @@ function flush(r, q, ended = false) {
           'public, max-age=31536000, immutable',
         );
         q.lines.push({ file, dur, disc });
+        if (r.audio?.from === q.n) {
+          const sound = await audioOf(bytes).catch((err) => log('audio failed', err.message));
+          if (sound?.length) {
+            await r2Put(
+              cfg,
+              `dvr/${r.id}/audio/${file}`,
+              sound,
+              'video/mp2t',
+              'public, max-age=31536000, immutable',
+            );
+            r.audio.lines.push({ file, dur, disc });
+          }
+        }
       }
       await r2Put(cfg, `dvr/${r.id}/${q.n}/index.m3u8`, playlist(q, ended), 'application/vnd.apple.mpegurl');
+      if (r.audio?.from === q.n)
+        await r2Put(
+          cfg,
+          `dvr/${r.id}/audio/index.m3u8`,
+          playlist(r.audio, ended),
+          'application/vnd.apple.mpegurl',
+        );
     })
     .catch((err) => log('upload failed', err.message));
 }
@@ -134,13 +191,16 @@ function flush(r, q, ended = false) {
 // the start and it stays one replay.
 async function reopen(r, prefix) {
   rec = r;
-  for (const q of r.qualities.values()) Object.assign(q, { prefix, lastSeq: -1, disc: true });
+  r.gapS += Math.max(0, (Date.now() - r.lastPieceAt) / 1000);
+  for (const q of r.qualities.values())
+    Object.assign(q, { prefix, lastSeq: -1, disc: true, runStart: Date.now() });
   quiet.since = Date.now();
-  await putJson('dvr/current.json', { id: r.id, startedAt: r.startedAt, live: true });
+  await putJson('dvr/current.json', { id: r.id, startedAt: r.startedAt, live: true, gapS: r.gapS });
   log('recording continued', r.id);
 }
 
 async function finish(r) {
+  r.lastPieceAt = quiet.since;
   last = { rec: r, finishedAt: Date.now() };
   for (const q of r.qualities.values()) flush(r, q, true);
   await r.chain;
@@ -151,6 +211,7 @@ async function finish(r) {
     id: r.id,
     startedAt: r.startedAt,
     live: false,
+    gapS: r.gapS,
     endedAt: new Date().toISOString(),
     durationS,
   }).catch((err) => log('could not mark finished', err.message));
@@ -194,10 +255,35 @@ async function tick() {
   for (const q of rec.qualities.values()) {
     for (const x of await unhandled(q.n)) {
       x.seen.set(x.e.name, x.mtime);
-      // OBS reconnected mid-stream (new names, or numbering starting over): close the segment and mark the join.
+      // In the first seconds after OBS connects, Owncast rewrites its first pieces under the same names with no pause:
+      // those are copies of what's already recorded, so they're skipped.
+      const rewrite =
+        x.e.prefix === q.prefix &&
+        x.e.seq <= q.lastSeq &&
+        Date.now() - quiet.since < 3000 &&
+        Date.now() - q.runStart < 20000;
+      if (rewrite) {
+        if (DEBUG)
+          log('skip rewrite', q.n, x.e.name, 'last', q.lastSeq, 'quiet ms', Date.now() - quiet.since);
+        continue;
+      }
+      if (DEBUG && (x.e.prefix !== q.prefix || x.e.seq <= q.lastSeq))
+        log('join', q.n, x.e.name, 'last', q.lastSeq, 'quiet ms', Date.now() - quiet.since);
+      // OBS reconnected mid-stream (after a pause; new names, or numbering starting over): close the segment and mark
+      // the join.
       if (x.e.prefix !== q.prefix || x.e.seq <= q.lastSeq) {
         flush(rec, q);
-        Object.assign(q, { prefix: x.e.prefix, disc: q.disc || q.lastSeq >= 0 });
+        Object.assign(q, { prefix: x.e.prefix, disc: q.disc || q.lastSeq >= 0, runStart: Date.now() });
+        // Count the time OBS was away once (from the first quality) and tell players.
+        if (q === rec.qualities.values().next().value && q.lastSeq >= 0) {
+          rec.gapS += Math.max(0, (Date.now() - quiet.since) / 1000 - 1);
+          putJson('dvr/current.json', {
+            id: rec.id,
+            startedAt: rec.startedAt,
+            live: true,
+            gapS: rec.gapS,
+          }).catch(() => {});
+        }
       }
       q.lastSeq = x.e.seq;
       const bytes = await fs.readFile(path.join(x.dir, x.e.name)).catch(() => null);

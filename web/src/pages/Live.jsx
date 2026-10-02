@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { attachLive, attachRecording } from '../liveHls.js';
+import { findAudioUrl } from '../components/Player.jsx';
+import { isIOS } from '../device.js';
 import { api } from '../api.js';
 import useTitle from '../useTitle.js';
 import { createClock, useClock } from '../clock.js';
@@ -23,73 +25,205 @@ const hms = (s) => {
   return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
 };
 
+// Phones pause <video> when the screen locks but keep an audio player going.
+const isPhone = () => isIOS() || /Android/i.test(navigator.userAgent);
+
+function setMediaAction(action, handler) {
+  try {
+    navigator.mediaSession.setActionHandler(action, handler);
+  } catch {
+    /* not supported here */
+  }
+}
+
 // /live (ADR-004, MBJ-310): JimBob's stream on the platform's own server. Plays the low-delay live feed; rewinding
-// switches to the recording of the whole stream so far, and Back to LIVE switches back. Never starts muted: if the
-// browser blocks sound, a Play button waits for a tap.
+// switches to the recording of the whole stream so far, and Back to LIVE switches back. Listen (or locking the phone)
+// switches to the sound alone from the same spot, and back to video from wherever the sound got to. Never starts
+// muted: if the browser blocks sound, a Play button waits for a tap.
 function LivePlayer({ src, dvr, clock, seekRef }) {
   const ref = useRef(null);
+  const audioRef = useRef(null);
+  const audioUrl = useRef(null);
+  const audioCleanup = useRef(null);
+  const posRef = useRef(0); // where this viewer is in the stream, seconds from the start
+  const lockListen = useRef(false);
+  const hiddenAt = useRef(0);
+  const pausedAt = useRef(0);
   const [needsTap, setNeedsTap] = useState(false);
   const [rewindTo, setRewindTo] = useState(null); // seconds from the start, or null = live
-  const [pos, setPos] = useState(0);
+  const [attachKey, setAttachKey] = useState(0);
+  const [listening, setListening] = useState(false);
+  const listeningRef = useRef(false);
   const [, tick] = useState(0);
-  const startedMs = dvr ? new Date(dvr.startedAt).getTime() : 0;
+  // The recording skips the time OBS was away (gapS), so live on the recording is the clock minus that.
+  const startedMs = dvr ? new Date(dvr.startedAt).getTime() + (dvr.gapS || 0) * 1000 : 0;
   const elapsed = () => Math.max(0, (Date.now() - startedMs) / 1000 - LIVE_EDGE_S);
+  const liveAt = () => Math.max(0, (Date.now() - startedMs) / 1000 - LIVE_DELAY_S);
 
+  // The video: the live feed, or the recording from `rewindTo`.
   useEffect(() => {
     const el = ref.current;
-    if (!el) return undefined;
+    if (!el || listening) return undefined;
     const play = () => el.play().catch(() => setNeedsTap(true));
     if (rewindTo !== null && dvr) return attachRecording(el, dvr.url, rewindTo, play);
     if (!src) return undefined;
     return attachLive(el, src, play);
-    // Switching sources only when the mode flips, not on every seek inside the recording.
+    // Re-attach when the mode flips or after listening, not on every seek inside the recording.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, dvr?.url, rewindTo === null]);
+  }, [src, dvr?.url, rewindTo === null, attachKey, listening]);
 
-  // Clock for the timeline.
+  // The sound alone (podcast mode) from the recording, if the recorder makes one.
   useEffect(() => {
-    if (!dvr) return undefined;
-    const t = setInterval(() => {
-      tick((n) => n + 1);
-      if (ref.current && rewindTo !== null) setPos(ref.current.currentTime);
-    }, 1000);
-    return () => clearInterval(t);
-  }, [dvr, rewindTo]);
+    audioUrl.current = null;
+    if (dvr?.url)
+      findAudioUrl(dvr.url)
+        .then((u) => (audioUrl.current = u))
+        .catch(() => {});
+  }, [dvr?.url]);
 
-  // Where this viewer is in the stream (ms from the start), for the chat: now for live viewers, the playhead when
-  // rewound.
+  // Keep track of where the viewer is (only while something plays), for the chat, the timeline, and switching.
   useEffect(() => {
-    if (!dvr || !clock) return undefined;
     const t = setInterval(() => {
-      const ms =
-        rewindTo === null
-          ? Date.now() - startedMs - LIVE_DELAY_S * 1000
-          : Math.round((ref.current?.currentTime || 0) * 1000);
-      clock.set(Math.max(0, Math.round(ms / 250) * 250));
+      const audio = audioRef.current;
+      const video = ref.current;
+      if (listeningRef.current) {
+        if (audio && !audio.paused && dvr) posRef.current = audio.currentTime;
+      } else if (video && !video.paused) {
+        posRef.current = rewindTo === null ? liveAt() : video.currentTime;
+      }
+      clock?.set(Math.max(0, Math.round((posRef.current * 1000) / 250) * 250));
     }, 250);
-    return () => clearInterval(t);
+    const slow = setInterval(() => tick((n) => n + 1), 1000);
+    return () => {
+      clearInterval(t);
+      clearInterval(slow);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dvr, clock, rewindTo, startedMs]);
 
-  const seek = (t) => {
-    if (!dvr) return;
-    const target = Math.max(0, Math.min(t, elapsed()));
-    if (elapsed() - target < LIVE_EDGE_S) return setRewindTo(null);
-    if (rewindTo !== null && ref.current) {
-      ref.current.currentTime = target;
-      setPos(target);
-    } else {
-      setRewindTo(target);
-      setPos(target);
+  // Back to video at a spot: live if it's at the live edge, otherwise the recording there.
+  const showVideoAt = (at) => {
+    if (!dvr || elapsed() - at < LIVE_EDGE_S) setRewindTo(null);
+    else setRewindTo(at);
+    setAttachKey((k) => k + 1);
+  };
+
+  function startListening() {
+    const video = ref.current;
+    const audio = audioRef.current;
+    if (!audio || listeningRef.current) return;
+    const at = posRef.current;
+    video?.pause();
+    audioCleanup.current?.();
+    const play = () => audio.play().catch(() => {});
+    // The sound alone if the recorder makes it; otherwise the recording, or the live feed, played as sound.
+    audioCleanup.current = dvr
+      ? attachRecording(audio, audioUrl.current || dvr.url, at, play)
+      : attachLive(audio, src, play);
+    listeningRef.current = true;
+    setListening(true);
+  }
+
+  function stopListening() {
+    const audio = audioRef.current;
+    if (!listeningRef.current) return;
+    const at = posRef.current;
+    audio?.pause();
+    audioCleanup.current?.();
+    audioCleanup.current = null;
+    listeningRef.current = false;
+    setListening(false);
+    showVideoAt(at);
+  }
+
+  // Phone locked while playing: carry on as sound. Unlocked: back to video from wherever the sound got to.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) {
+        hiddenAt.current = Date.now();
+        const video = ref.current;
+        const playing = video && (!video.paused || hiddenAt.current - pausedAt.current < 1000);
+        if (isPhone() && playing && !listeningRef.current && !document.pictureInPictureElement) {
+          lockListen.current = true;
+          startListening();
+        }
+      } else if (lockListen.current) {
+        lockListen.current = false;
+        stopListening();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dvr, src]);
+
+  // Paused by the phone as the page hid (not by the viewer): that's a lock too.
+  const onVideoPause = () => {
+    pausedAt.current = Date.now();
+    if (document.hidden && pausedAt.current - hiddenAt.current < 1000 && isPhone() && !listeningRef.current) {
+      lockListen.current = true;
+      startListening();
     }
   };
 
+  // Lock-screen controls act on whichever player is on.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return undefined;
+    navigator.mediaSession.metadata = new MediaMetadata({ title: 'JimBob live', artist: 'MADEbyJIMBOB' });
+    const active = () => (listeningRef.current ? audioRef.current : ref.current);
+    setMediaAction('play', () => active()?.play());
+    setMediaAction('pause', () => active()?.pause());
+    setMediaAction('seekbackward', () => seek(posRef.current - 10));
+    setMediaAction('seekforward', () => seek(posRef.current + 10));
+    return () => {
+      navigator.mediaSession.metadata = null;
+      for (const a of ['play', 'pause', 'seekbackward', 'seekforward']) setMediaAction(a, null);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dvr]);
+
+  useEffect(() => () => audioCleanup.current?.(), []);
+
+  function seek(t) {
+    if (!dvr) return;
+    const target = Math.max(0, Math.min(t, elapsed()));
+    posRef.current = target;
+    if (listeningRef.current) {
+      const audio = audioRef.current;
+      if (audio) audio.currentTime = target;
+      return;
+    }
+    if (elapsed() - target < LIVE_EDGE_S) {
+      if (rewindTo !== null) setRewindTo(null);
+      return;
+    }
+    if (rewindTo !== null && ref.current) ref.current.currentTime = target;
+    else setRewindTo(target);
+  }
+
   if (seekRef) seekRef.current = seek;
-  const atLive = rewindTo === null;
-  const now = atLive ? elapsed() : pos;
+  const atLive = !listening && rewindTo === null;
+  const now = atLive ? elapsed() : posRef.current;
   return (
     <div className="live-player">
-      <video ref={ref} playsInline controls={!dvr} aria-label="JimBob live" />
-      {needsTap && (
+      <video
+        ref={ref}
+        playsInline
+        controls={!dvr}
+        aria-label="JimBob live"
+        onPause={onVideoPause}
+        hidden={listening}
+      />
+      <audio ref={audioRef} hidden />
+      {listening && (
+        <div className="live-listening">
+          <strong>🎧 Listening</strong>
+          <span className="muted small">
+            Sound only, uses about a tenth of the data. Keeps playing with the phone locked.
+          </span>
+        </div>
+      )}
+      {needsTap && !listening && (
         <button
           className="primary-btn live-tap"
           onClick={() => {
@@ -100,44 +234,68 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
           ▶ Play live
         </button>
       )}
-      {dvr && (
-        <div className="live-controls">
-          <button
-            className="text-btn"
-            onClick={() => (ref.current?.paused ? ref.current.play() : ref.current?.pause())}
-          >
-            ⏯
-          </button>
-          <button className="text-btn" onClick={() => seek(now - 60)} aria-label="Back 1 minute">
-            −1m
-          </button>
-          <button className="text-btn" onClick={() => seek(now - 10)} aria-label="Back 10 seconds">
-            −10s
-          </button>
-          <input
-            type="range"
-            className="live-scrub"
-            min={0}
-            max={Math.max(1, Math.round(elapsed()))}
-            value={Math.round(now)}
-            onChange={(e) => seek(Number(e.target.value))}
-            aria-label="Rewind the stream"
-          />
-          {!atLive && (
-            <button className="text-btn" onClick={() => seek(now + 10)} aria-label="Forward 10 seconds">
-              +10s
+      <div className="live-controls">
+        {dvr && (
+          <>
+            <button
+              className="text-btn"
+              onClick={() => {
+                const el = listeningRef.current ? audioRef.current : ref.current;
+                if (el?.paused) el.play();
+                else el?.pause();
+              }}
+            >
+              ⏯
             </button>
-          )}
-          <span className="small muted live-time">
-            {atLive ? hms(elapsed()) : `${hms(pos)} · ${hms(elapsed() - pos)} behind`}
-          </span>
+            <button className="text-btn" onClick={() => seek(now - 60)} aria-label="Back 1 minute">
+              −1m
+            </button>
+            <button className="text-btn" onClick={() => seek(now - 10)} aria-label="Back 10 seconds">
+              −10s
+            </button>
+            <input
+              type="range"
+              className="live-scrub"
+              min={0}
+              max={Math.max(1, Math.round(elapsed()))}
+              value={Math.round(Math.min(now, elapsed()))}
+              onChange={(e) => seek(Number(e.target.value))}
+              aria-label="Rewind the stream"
+            />
+            {!atLive && (
+              <button className="text-btn" onClick={() => seek(now + 10)} aria-label="Forward 10 seconds">
+                +10s
+              </button>
+            )}
+            <span className="small muted live-time">
+              {atLive ? hms(elapsed()) : `${hms(now)} · ${hms(Math.max(0, liveAt() - now))} behind`}
+            </span>
+          </>
+        )}
+        <button
+          className={listening ? 'primary-btn' : 'text-btn'}
+          onClick={() => (listening ? stopListening() : startListening())}
+          aria-pressed={listening}
+        >
+          {listening ? 'Watch' : '🎧 Listen'}
+        </button>
+        {dvr && (
           <button
             className={atLive ? 'live-badge live-go' : 'primary-btn live-go'}
-            onClick={() => setRewindTo(null)}
+            onClick={() => {
+              if (listeningRef.current) {
+                const audio = audioRef.current;
+                if (audio) audio.currentTime = Math.max(0, elapsed());
+                return;
+              }
+              setRewindTo(null);
+            }}
             disabled={atLive}
           >
             {atLive ? 'LIVE' : 'Back to LIVE'}
           </button>
+        )}
+        {!listening && (
           <button
             className="text-btn"
             onClick={() => ref.current?.requestFullscreen?.()}
@@ -145,8 +303,8 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
           >
             ⛶
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -1,9 +1,13 @@
 import Hls from 'hls.js';
+import { isIOS } from './device.js';
+
+// iPhone/iPad: Safari's own HLS player is the one iOS keeps playing when the phone locks.
+const native = (el) => el.canPlayType('application/vnd.apple.mpegurl') && (isIOS() || !Hls.isSupported());
 
 // Plays a live HLS stream (ADR-004) and keeps trying: right after OBS connects, the site can say "live" a few
 // seconds before the first video reaches R2, and a stream can hiccup mid-show. Returns a cleanup function.
 export function attachLive(el, src, onReady) {
-  if (!Hls.isSupported()) {
+  if (native(el)) {
     el.src = src;
     el.addEventListener('loadedmetadata', onReady, { once: true });
     const retry = () => setTimeout(() => el.isConnected && ((el.src = src), el.load()), 3000);
@@ -39,7 +43,7 @@ export function attachLive(el, src, onReady) {
 // Plays the whole stream so far from the recording (MBJ-310), starting at `startAt` seconds from the beginning. The
 // recording's playlist grows while live, so hls.js treats it as live, but nothing pulls the viewer to the live edge.
 export function attachRecording(el, url, startAt, onReady) {
-  if (!Hls.isSupported()) {
+  if (native(el)) {
     el.src = url;
     const seek = () => {
       el.currentTime = startAt;
