@@ -51,6 +51,25 @@ const VARIANTS = [
   },
 ];
 
+// Video to viewers from Cloudflare R2 (free to watch) when the R2_* settings are set; otherwise through this site.
+const r2 = () => {
+  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_URL } = process.env;
+  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET || !R2_PUBLIC_URL)
+    return null;
+  return {
+    enabled: true,
+    endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    accessKey: R2_ACCESS_KEY_ID,
+    secret: R2_SECRET_ACCESS_KEY,
+    bucket: R2_BUCKET,
+    region: 'auto',
+    acl: '',
+    forcePathStyle: true,
+    publicUrl: R2_PUBLIC_URL.replace(/\/+$/, ''),
+  };
+};
+export const r2Configured = () => Boolean(r2());
+
 const fixedBase = () => (process.env.OWNCAST_URL || '').replace(/\/+$/, '');
 export const liveConfigured = () => Boolean(fixedBase()) || hetznerConfigured();
 
@@ -247,6 +266,11 @@ async function configureOwncast(base, settings) {
   await post('video/streamoutputvariants', VARIANTS);
   await post('video/streamlatencylevel', 0);
   await post('name', 'MADEbyJIMBOB');
+  const storage = r2();
+  if (storage) {
+    const { publicUrl, ...config } = storage;
+    await post('s3', { ...config, servingEndpoint: publicUrl });
+  }
 }
 
 // Every minute: finish starting servers, delete idle or over-cap ones, and remove any stray live server.
@@ -303,8 +327,19 @@ export async function proxyHls(req, res) {
   if (!base) return res.status(404).end();
   const rest = req.params[0] || '';
   if (!/^[\w./-]+$/.test(rest) || rest.includes('..')) return res.status(400).end();
+  const storage = r2();
   try {
     const up = await fetch(`${base}/hls/${rest}`, { signal: AbortSignal.timeout(10000) });
+    // With R2, only this small list of qualities comes from here; each quality's playlist and video come from R2.
+    if (storage && rest === 'stream.m3u8' && up.ok) {
+      const list = (await up.text()).replace(
+        /^\S*?(\d+)\/stream\.m3u8$/gm,
+        `${storage.publicUrl}/hls/$1/stream.m3u8`,
+      );
+      res.set('Content-Type', 'application/vnd.apple.mpegurl');
+      res.set('Cache-Control', 'no-cache');
+      return res.send(list);
+    }
     res.status(up.status);
     res.set('Content-Type', up.headers.get('content-type') || 'application/octet-stream');
     res.set('Cache-Control', rest.endsWith('.m3u8') ? 'no-cache' : 'public, max-age=60');

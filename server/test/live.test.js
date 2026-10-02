@@ -46,14 +46,18 @@ function fakeFetch(url, opts = {}) {
     }
     if (u.pathname === '/hls/stream.m3u8')
       return Promise.resolve(
-        new Response('#EXTM3U\n', { headers: { 'content-type': 'application/x-mpegURL' } }),
+        new Response(
+          '#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nhttps://acct.r2.cloudflarestorage.com/madebyjimbob-live/hls/0/stream.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=2\n1/stream.m3u8\n',
+          { headers: { 'content-type': 'application/x-mpegURL' } },
+        ),
       );
   }
   return realFetch(url, opts);
 }
 
+let base;
 before(async () => {
-  const { base } = await startServer();
+  ({ base } = await startServer());
   call = client(base);
   globalThis.fetch = fakeFetch;
 });
@@ -71,6 +75,29 @@ beforeEach(async () => {
 });
 
 describe('Go Live (owned live, ADR-004)', () => {
+  test('with R2 set, Owncast uploads there and viewers get each quality from R2', async () => {
+    Object.assign(process.env, {
+      R2_ACCOUNT_ID: 'acct',
+      R2_ACCESS_KEY_ID: 'key',
+      R2_SECRET_ACCESS_KEY: 'secret',
+      R2_BUCKET: 'madebyjimbob-live',
+      R2_PUBLIC_URL: 'https://pub-test.r2.dev/',
+    });
+    try {
+      const admin = await signIn(call, 'test_admin');
+      await call('/studio/live/start', { method: 'POST', token: admin });
+      owncast = { online: true, config: [] };
+      await tickLive();
+      assert.ok(owncast.config.includes('s3'));
+      const list = await (await realFetch(`${new URL(base).origin}/live/hls/stream.m3u8`)).text();
+      assert.match(list, /^https:\/\/pub-test\.r2\.dev\/hls\/0\/stream\.m3u8$/m);
+      assert.match(list, /^https:\/\/pub-test\.r2\.dev\/hls\/1\/stream\.m3u8$/m);
+      assert.doesNotMatch(list, /cloudflarestorage/);
+    } finally {
+      process.env.R2_ACCOUNT_ID = '';
+    }
+  });
+
   test('hidden when no streaming server is set up; only admins can start one', async () => {
     process.env.HETZNER_API_TOKEN = '';
     assert.deepEqual((await call('/live')).data, { configured: false, online: false });
