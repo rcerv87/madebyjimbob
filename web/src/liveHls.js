@@ -35,3 +35,29 @@ export function attachLive(el, src, onReady) {
     hls?.destroy();
   };
 }
+
+// Plays the whole stream so far from the recording (MBJ-310), starting at `startAt` seconds from the beginning. The
+// recording's playlist grows while live, so hls.js treats it as live, but nothing pulls the viewer to the live edge.
+export function attachRecording(el, url, startAt, onReady) {
+  if (!Hls.isSupported()) {
+    el.src = url;
+    const seek = () => {
+      el.currentTime = startAt;
+      onReady();
+    };
+    el.addEventListener('loadedmetadata', seek, { once: true });
+    return () => {
+      el.removeEventListener('loadedmetadata', seek);
+      el.removeAttribute('src');
+    };
+  }
+  const hls = new Hls({ startPosition: startAt });
+  hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+  hls.on(Hls.Events.ERROR, (_e, data) => {
+    if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+    else if (data.fatal) hls.startLoad();
+  });
+  hls.loadSource(url);
+  hls.attachMedia(el);
+  return () => hls.destroy();
+}

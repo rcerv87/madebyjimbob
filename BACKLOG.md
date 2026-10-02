@@ -774,7 +774,7 @@ Acceptance criteria:
 
 ### MBJ-310 — Rewind the live stream and instant replay (beta priority)
 
-**Status:** To do · **Phase 3 — Live via YouTube** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-304
+**Status:** In progress · **Phase 3 — Live via YouTube** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-304
 
 As a viewer, I want to go back seconds or hours in a live stream and jump back to live; as JimBob, I want every stream on the site as a video the moment it ends.
 

@@ -52,3 +52,10 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
   - Delay: about 15 s with Owncast's defaults; about **4 s** with latency level 0 (1-second segments), a 1-second OBS
     keyframe interval, and a player kept 2 segments behind (hls.js `liveSyncDurationCount: 2`,
     `liveMaxLatencyDurationCount: 4`). These are the settings to ship.
+- **Rewind and replay (MBJ-310, built 2026-10-02):** instead of MediaMTX, a small Node recorder (`server/live-recorder`,
+  no packages, SigV4 uploads) runs in a `node:22-alpine` container next to Owncast, reading Owncast's local
+  `data/hls/<n>/` pieces. It joins them into ~6 s segments and writes `dvr/<id>/<n>/index.m3u8` (EVENT) plus
+  `dvr/current.json` to R2. Live viewers stay on Owncast's ~5 s feed; rewinding switches to the recording, which
+  keeps playlists small (6 s segments) and leaves live latency alone. End stream closes the playlists (`#EXT-X-ENDLIST`)
+  if the recorder hasn't, and the site saves the recording as a video (`videos.hls_url`, `live_recording_id`).
+  MediaMTX remains the plan for browser/WebRTC ingest (option 3).

@@ -4,6 +4,8 @@
 //   - Go Live in Studio: a Hetzner server created for the stream and deleted afterward (needs HETZNER_API_TOKEN).
 // Viewers get the video through /live/hls on this site for now; R2 delivery replaces that before big audiences.
 import crypto from 'crypto';
+import fs from 'fs';
+import { r2Put } from '../live-recorder/r2put.mjs';
 import { pool } from './db.js';
 import { logger } from './logger.js';
 import {
@@ -122,10 +124,17 @@ async function owncastStatus(base) {
   }
 }
 
+// While live with the recorder on: where the whole stream so far can be rewound (MBJ-310).
+async function withRewind(status) {
+  if (!status.online) return status;
+  const rec = await currentRecording();
+  return rec?.live ? { ...status, dvr: { url: recordingUrl(rec.id), startedAt: rec.startedAt } } : status;
+}
+
 export async function liveStatus() {
   const base = await owncastBase();
   if (!base) return { online: false };
-  return owncastStatus(base);
+  return withRewind(await owncastStatus(base));
 }
 
 const hoursBetween = (a, b) => (new Date(b || Date.now()) - new Date(a)) / 3_600_000;
@@ -159,7 +168,9 @@ export async function studioLive() {
   }
   const s = await activeServer();
   const status =
-    s?.status === 'ready' && s.ip ? await owncastStatus(`http://${s.ip}:8080`) : { online: false };
+    s?.status === 'ready' && s.ip
+      ? await withRewind(await owncastStatus(`http://${s.ip}:8080`))
+      : { online: false };
   // While starting: has Owncast come up yet? (For Studio's step-by-step status.)
   const answering =
     s?.status === 'starting' && s.hetzner_id && s.ip
@@ -191,15 +202,114 @@ export async function studioLive() {
 // ---------- Go Live ----------
 
 // From plain Ubuntu: install Docker, then start Owncast. From the saved image, Docker and the Owncast image are already
-// there, so only the old container and its data are cleared (each stream starts fresh).
+// there, so only the old containers and data are cleared (each stream starts fresh). With R2, the recorder (MBJ-310)
+// runs next to Owncast and copies every piece of the stream to R2.
 const INSTALL_DOCKER = 'package_update: true\npackages: [docker.io]\n';
-const cloudInit = (settings, fromImage) => `#cloud-config
-${fromImage ? '' : INSTALL_DOCKER}runcmd:
+const recorderFile = (name) =>
+  fs.readFileSync(new URL(`../live-recorder/${name}`, import.meta.url)).toString('base64');
+function recorderSetup() {
+  const storage = r2();
+  if (!storage) return { files: '', run: '' };
+  const files = ['r2put.mjs', 'recorder.mjs']
+    .map((f) => `  - path: /opt/recorder/${f}\n    encoding: b64\n    content: ${recorderFile(f)}\n`)
+    .join('');
+  const env = {
+    R2_ENDPOINT: storage.endpoint,
+    R2_ACCESS_KEY_ID: storage.accessKey,
+    R2_SECRET_ACCESS_KEY: storage.secret,
+    R2_BUCKET: storage.bucket,
+  };
+  const envArgs = Object.entries(env)
+    .map(([k, v]) => `-e ${k}='${v}'`)
+    .join(' ');
+  return {
+    files: `write_files:\n${files}`,
+    run: `  - docker run -d --name recorder --restart unless-stopped -v /opt/recorder:/app:ro -v /opt/owncast/hls:/hls:ro ${envArgs} node:22-alpine node /app/recorder.mjs\n`,
+  };
+}
+const cloudInit = (settings, fromImage) => {
+  const recorder = recorderSetup();
+  return `#cloud-config
+${fromImage ? '' : INSTALL_DOCKER}${recorder.files}runcmd:
   - systemctl enable --now docker
-  - docker rm -f owncast || true
+  - docker rm -f owncast recorder || true
   - rm -rf /opt/owncast
   - docker run -d --name owncast --restart unless-stopped -p 8080:8080 -p 1935:1935 -v /opt/owncast:/app/data owncast/owncast:latest -adminpassword '${settings.admin_password}'
-`;
+${recorder.run}`;
+};
+
+// ---------- recordings (MBJ-310) ----------
+
+// The newest recording, from dvr/current.json in R2: { id, startedAt, live, endedAt?, durationS? } or null.
+export async function currentRecording() {
+  const storage = r2();
+  if (!storage) return null;
+  try {
+    const res = await fetch(`${storage.publicUrl}/dvr/current.json?t=${Date.now()}`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+export const recordingUrl = (id) => `${r2().publicUrl}/dvr/${id}/master.m3u8`;
+
+const etDate = (iso) =>
+  new Date(iso).toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+// A finished recording becomes a video on the site (once).
+export async function saveReplay(recording) {
+  if (!recording?.id || recording.live) return null;
+  const { rows } = await pool.query(
+    `INSERT INTO videos (title, kind, duration_s, published_at, hls_url, live_recording_id)
+     VALUES ($1, 'live', $2, $3, $4, $5) ON CONFLICT (live_recording_id) DO NOTHING RETURNING id`,
+    [
+      `Live stream · ${etDate(recording.startedAt)}`,
+      recording.durationS || null,
+      recording.startedAt,
+      recordingUrl(recording.id),
+      recording.id,
+    ],
+  );
+  if (rows[0]) logger.info({ videoId: rows[0].id, recording: recording.id }, 'live replay saved');
+  return rows[0]?.id ?? null;
+}
+
+const getText = (url) =>
+  fetch(url, { signal: AbortSignal.timeout(5000) })
+    .then((res) => (res.ok ? res.text() : ''))
+    .catch(() => '');
+
+// End stream while OBS is still sending: close the recording's playlists here (the recorder goes away with the
+// server), then save the replay.
+export async function finishRecording() {
+  const storage = r2();
+  const rec = await currentRecording();
+  if (!storage || !rec?.id) return null;
+  if (rec.live) {
+    const master = await getText(`${storage.publicUrl}/dvr/${rec.id}/master.m3u8`);
+    let durationS = 0;
+    for (const [, n] of master.matchAll(/^(\d+)\/index\.m3u8$/gm)) {
+      const key = `dvr/${rec.id}/${n}/index.m3u8`;
+      const list = await getText(`${storage.publicUrl}/${key}?t=${Date.now()}`);
+      if (!list) continue;
+      const total = [...list.matchAll(/^#EXTINF:([\d.]+)/gm)].reduce((sum, m) => sum + Number(m[1]), 0);
+      durationS = Math.max(durationS, total);
+      if (!list.includes('#EXT-X-ENDLIST'))
+        await r2Put(storage, key, `${list.trimEnd()}\n#EXT-X-ENDLIST\n`, 'application/vnd.apple.mpegurl');
+    }
+    Object.assign(rec, { live: false, endedAt: new Date().toISOString(), durationS: Math.round(durationS) });
+    await r2Put(storage, 'dvr/current.json', JSON.stringify(rec), 'application/json');
+  }
+  return saveReplay(rec);
+}
 
 async function ensurePrimaryIp(settings) {
   if (settings.primary_ip_id) {
@@ -260,6 +370,8 @@ export async function endLive(reason = 'ended') {
     s.id,
     reason,
   ]);
+  if (s.ready_at)
+    await finishRecording().catch((err) => logger.warn({ err }, 'could not finish the recording'));
   // No saved image yet and this server got fully set up: save one first (a couple of minutes); the live job deletes
   // the server when the snapshot is done. Viewers already see the stream as ended.
   if (
@@ -377,6 +489,10 @@ export async function tickLive() {
       logger.warn({ liveServer: s.id }, 'owncast settings drifted; setting them again');
       await configureOwncast(base, settings).catch((err) => logger.warn({ err }, 'owncast setup failed'));
     }
+    // The recorder closed a recording on its own (OBS stopped): it becomes a video.
+    const rec = await currentRecording();
+    if (rec && !rec.live)
+      await saveReplay(rec).catch((err) => logger.warn({ err }, 'could not save the replay'));
     const status = await owncastStatus(base);
     if (status.online)
       await pool.query('UPDATE live_servers SET last_online_at = now() WHERE id = $1', [s.id]);

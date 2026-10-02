@@ -3640,3 +3640,27 @@ a.text-btn {
 .live-ready strong {
   font-size: 1.2rem;
 }
+
+/* Live rewind controls (MBJ-310) */
+.live-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.live-scrub {
+  flex: 1 1 160px;
+  min-width: 120px;
+  accent-color: #d93025;
+}
+.live-time {
+  font-variant-numeric: tabular-nums;
+}
+.live-go {
+  cursor: pointer;
+  border: 0;
+}
+.live-go:disabled {
+  cursor: default;
+}
