@@ -21,7 +21,8 @@ const cfg = {
 };
 const HLS = process.env.HLS_DIR || '/hls';
 const SEGMENT_S = 6; // join Owncast's 1-second pieces into segments this long
-const QUIET_S = 12; // no new video this long = the stream ended
+const QUIET_S = 12; // no new video this long = the stream ended (for now)
+const REJOIN_S = 600; // OBS back within this long after that: the same recording continues
 
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 const readText = (f) => fs.readFile(f, 'utf8').catch(() => null);
@@ -58,6 +59,7 @@ let rec = null; // the recording in progress
 const handled = new Map();
 const bootMs = Date.now();
 const quiet = { since: Date.now() };
+let last = null; // { rec, finishedAt }: the recording that ended most recently
 
 function playlist(q, ended) {
   const target = Math.ceil(Math.max(SEGMENT_S, ...q.lines.map((l) => l.dur)));
@@ -67,7 +69,8 @@ function playlist(q, ended) {
     '#EXT-X-PLAYLIST-TYPE:EVENT',
     `#EXT-X-TARGETDURATION:${target}`,
     '#EXT-X-MEDIA-SEQUENCE:0',
-    ...q.lines.map((l) => `#EXTINF:${l.dur.toFixed(3)},\n${l.file}`),
+    // A discontinuity marks where OBS reconnected (the video's clock starts over there).
+    ...q.lines.map((l) => `${l.disc ? '#EXT-X-DISCONTINUITY\n' : ''}#EXTINF:${l.dur.toFixed(3)},\n${l.file}`),
     ...(ended ? ['#EXT-X-ENDLIST'] : []),
     '',
   ].join('\n');
@@ -78,7 +81,17 @@ const putJson = (key, value) => r2Put(cfg, key, JSON.stringify(value), 'applicat
 async function start(prefix, variants) {
   const id = new Date().toISOString().replace(/[:.]/g, '-');
   rec = { id, prefix, startedAt: new Date().toISOString(), qualities: new Map(), chain: Promise.resolve() };
-  for (const v of variants) rec.qualities.set(v.n, { n: v.n, buf: [], bufDur: 0, seq: 0, lines: [] });
+  for (const v of variants)
+    rec.qualities.set(v.n, {
+      n: v.n,
+      buf: [],
+      bufDur: 0,
+      seq: 0,
+      lines: [],
+      prefix,
+      lastSeq: -1,
+      disc: false,
+    });
   const master = [
     '#EXTM3U',
     '#EXT-X-VERSION:3',
@@ -95,6 +108,8 @@ function flush(r, q, ended = false) {
   if (!q.buf.length && !ended) return;
   const bytes = Buffer.concat(q.buf);
   const dur = q.bufDur;
+  const disc = bytes.length ? q.disc : false;
+  if (bytes.length) q.disc = false;
   q.buf = [];
   q.bufDur = 0;
   r.chain = r.chain
@@ -108,14 +123,25 @@ function flush(r, q, ended = false) {
           'video/mp2t',
           'public, max-age=31536000, immutable',
         );
-        q.lines.push({ file, dur });
+        q.lines.push({ file, dur, disc });
       }
       await r2Put(cfg, `dvr/${r.id}/${q.n}/index.m3u8`, playlist(q, ended), 'application/vnd.apple.mpegurl');
     })
     .catch((err) => log('upload failed', err.message));
 }
 
+// OBS came back soon after the stream seemed to end: keep adding to the same recording, so viewers can still rewind to
+// the start and it stays one replay.
+async function reopen(r, prefix) {
+  rec = r;
+  for (const q of r.qualities.values()) Object.assign(q, { prefix, lastSeq: -1, disc: true });
+  quiet.since = Date.now();
+  await putJson('dvr/current.json', { id: r.id, startedAt: r.startedAt, live: true });
+  log('recording continued', r.id);
+}
+
 async function finish(r) {
+  last = { rec: r, finishedAt: Date.now() };
   for (const q of r.qualities.values()) flush(r, q, true);
   await r.chain;
   const durationS = Math.round(
@@ -161,18 +187,19 @@ async function tick() {
       for (const x of v.n === variants[0].n ? firstNew : await unhandled(v.n))
         if (x.mtime < cutoff) x.seen.set(x.e.name, x.mtime);
     if (!fresh.length) return;
-    await start(fresh[0].e.prefix, variants);
-  } else if (firstNew.some((x) => x.e.prefix !== rec.prefix)) {
-    const old = rec;
-    rec = null;
-    await finish(old); // OBS reconnected: a new recording
-    await start(firstNew.find((x) => x.e.prefix !== old.prefix).e.prefix, variants);
+    if (last && Date.now() - last.finishedAt < REJOIN_S * 1000) await reopen(last.rec, fresh[0].e.prefix);
+    else await start(fresh[0].e.prefix, variants);
   }
   let added = false;
   for (const q of rec.qualities.values()) {
     for (const x of await unhandled(q.n)) {
       x.seen.set(x.e.name, x.mtime);
-      if (x.e.prefix !== rec.prefix) continue;
+      // OBS reconnected mid-stream (new names, or numbering starting over): close the segment and mark the join.
+      if (x.e.prefix !== q.prefix || x.e.seq <= q.lastSeq) {
+        flush(rec, q);
+        Object.assign(q, { prefix: x.e.prefix, disc: q.disc || q.lastSeq >= 0 });
+      }
+      q.lastSeq = x.e.seq;
       const bytes = await fs.readFile(path.join(x.dir, x.e.name)).catch(() => null);
       if (!bytes) {
         log('missed piece', q.n, x.e.name);
