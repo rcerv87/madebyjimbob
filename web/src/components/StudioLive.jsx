@@ -48,10 +48,86 @@ const since = (iso) => {
 
 const SERVER_STATE = {
   off: 'Server off',
-  starting: 'Starting server… (about 3 minutes)',
+  starting: 'Starting server…',
   ready: 'Server ready',
   stopping: 'Shutting down…',
 };
+
+const STEPS = [
+  'Creating the server',
+  'Starting the streaming software',
+  'Applying settings',
+  'Ready for OBS',
+  'Live',
+];
+
+// Which step Go Live is on: 0–2 while starting, 3 ready (OBS can connect), 4 live.
+function stepOf(live) {
+  const srv = live.server || {};
+  if (live.online) return 4;
+  if (srv.status === 'ready') return 3;
+  if (srv.status !== 'starting') return -1;
+  if (!srv.created) return 0;
+  return srv.answering ? 2 : 1;
+}
+
+const clock = (since) => {
+  const s = Math.max(0, Math.round((Date.now() - new Date(since)) / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+
+// A short two-note chime when the server becomes ready (the page was clicked, so browsers allow sound).
+function chime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1320].forEach((f, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.18);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.3);
+      o.connect(g).connect(ctx.destination);
+      o.start(ctx.currentTime + i * 0.18);
+      o.stop(ctx.currentTime + i * 0.18 + 0.32);
+    });
+  } catch {
+    // no sound available
+  }
+}
+
+function LiveSteps({ live }) {
+  const step = stepOf(live);
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (step < 0 || step > 2) return undefined;
+    const t = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [step]);
+  if (step < 0) return null;
+  return (
+    <div className={`live-steps live-step-${step}`}>
+      {step === 3 && (
+        <div className="live-ready" role="status">
+          <strong>Ready to stream</strong>
+          <span>Start streaming in OBS now.</span>
+        </div>
+      )}
+      <ol>
+        {STEPS.map((label, i) => (
+          <li key={label} className={i < step ? 'done' : i === step ? 'current' : ''}>
+            <span className="live-dot" aria-hidden="true">
+              {i < step ? '✓' : i + 1}
+            </span>
+            {label}
+            {i === step && step < 3 && live.server?.createdAt && (
+              <span className="muted small"> · {clock(live.server.createdAt)}</span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 // Studio → Live (ADR-004): Go Live starts the streaming server on Hetzner (or uses Ruben's local test server),
 // then shows whether the stream is on, a preview, and what to put in OBS.
@@ -85,6 +161,15 @@ export default function StudioLive() {
     setBusy(false);
     setConfirmEnd(false);
   };
+
+  const step = live ? stepOf(live) : -1;
+  const lastStep = useRef(step);
+  useEffect(() => {
+    if (lastStep.current >= 0 && lastStep.current < 3 && step === 3) chime();
+    lastStep.current = step;
+    const base = document.title.replace(/^(● Ready · |● LIVE · )/, '');
+    document.title = step === 3 ? `● Ready · ${base}` : step === 4 ? `● LIVE · ${base}` : base;
+  }, [step]);
 
   if (!live?.configured) return null;
   const hetzner = live.mode === 'hetzner';
@@ -138,6 +223,7 @@ export default function StudioLive() {
           {live.server?.error && <span className="error small">{live.server.error}</span>}
         </div>
       )}
+      {hetzner && <LiveSteps live={live} />}
 
       {error && <p className="error small">{error}</p>}
       {live.error && ready && <p className="error small">{live.error}</p>}

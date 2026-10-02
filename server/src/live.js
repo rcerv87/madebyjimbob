@@ -160,6 +160,11 @@ export async function studioLive() {
   const s = await activeServer();
   const status =
     s?.status === 'ready' && s.ip ? await owncastStatus(`http://${s.ip}:8080`) : { online: false };
+  // While starting: has Owncast come up yet? (For Studio's step-by-step status.)
+  const answering =
+    s?.status === 'starting' && s.hetzner_id && s.ip
+      ? !(await owncastStatus(`http://${s.ip}:8080`)).error
+      : false;
   return {
     configured: true,
     mode: 'hetzner',
@@ -171,6 +176,8 @@ export async function studioLive() {
           type: s.server_type,
           error: s.error,
           saving: s.status === 'stopping' && Boolean(s.snapshot_action_id),
+          created: Boolean(s.hetzner_id),
+          answering,
         }
       : { status: 'off' },
     ...status,

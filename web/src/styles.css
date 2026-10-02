@@ -3577,3 +3577,66 @@ a.text-btn {
   color: inherit;
   font-weight: 600;
 }
+
+/* Go Live step-by-step status */
+.live-steps {
+  margin-top: 12px;
+}
+.live-steps ol {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+.live-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  opacity: 0.55;
+}
+.live-steps li.done {
+  opacity: 0.85;
+}
+.live-steps li.current {
+  opacity: 1;
+  font-weight: 600;
+}
+.live-dot {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  border: 1.5px solid currentColor;
+}
+.live-steps li.done .live-dot {
+  background: #1e8e3e;
+  border-color: #1e8e3e;
+  color: #fff;
+}
+.live-steps li.current .live-dot {
+  border-color: var(--accent, #27717a);
+}
+.live-step-4 li.current .live-dot {
+  background: #d93025;
+  border-color: #d93025;
+  color: #fff;
+}
+.live-ready {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #1e8e3e;
+  color: #fff;
+  font-size: 1.05rem;
+}
+.live-ready strong {
+  font-size: 1.2rem;
+}
