@@ -69,6 +69,10 @@ they get `isAdmin: true` and see every tier.
 | POST | `/studio/imports` | admin | `{ urls (one per line, or an array), tier, withComments }` → `{ queued, skipped: [{ url, reason }] }`; skips bad links, ones already queued, and videos already on the site (reason "You already have this", with its `videoId`). The helper on Ruben's PC (`npm run import:worker`) does the work |
 | GET | `/studio/channel?url=&show=new\|all&kind=all\|video\|live\|short&q=&offset=&limit=` | admin | From the channel (MBJ-706): `{ channel, listing, apiKey, counts: { all, onsite, queued, new }, total, offset, videos: [{ youtubeId, title, kind, publishedAt, durationS, availability, thumbnail, state: onsite\|queued\|new, videoId }], helper }`. `url` defaults to JimBob's channel; `show=new` (default) leaves out what's on the site or queued; 100 per page (max 500) |
 | POST | `/studio/channel/refresh` | admin | `{ url? }` → `{ listing }`: a fresh list, made right away with `YOUTUBE_API_KEY`, otherwise by the import helper (`status: queued` until it does). One request per channel at a time |
+| GET | `/live` | — | Owned live (ADR-004): `{ configured, online, viewers?, title?, startedAt?, hls }`; `hls` is `/live/hls/stream.m3u8` while live |
+| GET | `/studio/live` | admin | Studio → Live: `{ configured, mode (fixed \| hetzner), server { status off\|starting\|ready\|stopping, createdAt, readyAt, type, error }, online, viewers, hls, obs { server, streamKey }, usage { hours, costUsd }, limits { idleMinutes, capHours, hourlyUsd } }` |
+| POST | `/studio/live/start` | admin | Go Live: creates the Owncast server on Hetzner (CPX31, Ashburn, fixed Primary IP); a second call returns the same server. 503 without `HETZNER_API_TOKEN`, 502 if Hetzner refuses |
+| POST | `/studio/live/stop` | admin | End stream: deletes the server; returns the Studio state |
 | POST | `/studio/imports/file` | admin | Add from a file: `{ video (YouTube link or id), size, name, tier, withComments }` → `{ job (status uploading, streamUid), uploadUrl }` (one-time Cloudflare tus URL). 409 if the video is on the site (`videoId`: use Replace video) or queued; a half-finished upload of the same video is replaced. 503 without Cloudflare keys |
 | POST | `/studio/imports/:id/uploaded` | admin | The browser finished sending the file: `uploading` → `queued`; the helper then fetches only the title, chat replay, and comments (`--stream-uid`) |
 | POST | `/studio/imports/:id/retry` | admin | Puts a failed or cancelled import back in the queue |
@@ -111,6 +115,8 @@ Chat messages and comments carry `profile` (the site username to open a profile 
   "mentions": ["jimbob"], "offsetMs": 12000
 }
 ```
+
+Not under `/api`: `GET /live/hls/*` passes the live server's HLS playlists and segments through (small audiences; R2 later).
 
 ## WebSocket
 

@@ -79,7 +79,7 @@ describe('Home (videos dashboard)', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('Truck repair')).toBeTruthy();
-    expect(fetch.mock.calls[0][0]).toContain('q=truck');
+    expect(fetch.mock.calls.find(([u]) => String(u).includes('/videos'))[0]).toContain('q=truck');
     expect(screen.getByText(/1 result for/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Clear search' })).toBeTruthy();
   });

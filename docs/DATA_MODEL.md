@@ -321,6 +321,30 @@ Members a member blocked or muted (MBJ-119).
 | status | text | `open \| resolved \| dismissed` |
 | handled_by, handled_at, created_at | | |
 
+### live_settings
+One row (id 1) for owned live (ADR-004): what stays the same between streams.
+
+| column | type | notes |
+|---|---|---|
+| primary_ip_id | bigint | Hetzner Primary IP kept between streams (label `mbj=live`) |
+| ip | text | the address OBS streams to |
+| stream_key | text | OBS stream key (shown in Studio) |
+| admin_password | text | Owncast admin password, used by the site to set Owncast up |
+
+### live_servers
+One row per server Go Live created.
+
+| column | type | notes |
+|---|---|---|
+| hetzner_id | bigint | Hetzner server id |
+| status | text | `starting \| ready \| stopping \| stopped \| failed` |
+| server_type | text | e.g. `cpx31` |
+| ip | text | |
+| error | text | why it failed |
+| started_by | bigint → users | |
+| stop_reason | text | `ended \| idle \| cap \| failed` |
+| created_at, ready_at, last_online_at, ended_at | timestamptz | hours and cost in Studio come from these |
+
 ## Planned
 
 | Change | Story |

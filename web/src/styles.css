@@ -3406,6 +3406,9 @@ a.text-btn {
     margin-left: 0;
     padding: 0 0 24px;
   }
+  .live-page {
+    padding: 12px 16px 0;
+  }
   .grid {
     grid-template-columns: 1fr;
     gap: 24px;
@@ -3462,4 +3465,115 @@ a.text-btn {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Studio → Live (ADR-004) */
+.live-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.live-head h2 {
+  margin: 0;
+}
+.live-badge {
+  background: #d93025;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.live-preview {
+  width: 100%;
+  max-width: 720px;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 8px;
+  margin-top: 10px;
+  display: block;
+}
+.live-obs {
+  margin-top: 12px;
+}
+.live-obs summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.live-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+.live-field code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.15));
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.live-server {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.live-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.live-pending {
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-pending {
+    animation: none;
+  }
+}
+.live-page {
+  max-width: 1100px;
+}
+.live-page .live-head h1 {
+  margin: 0;
+}
+.live-player {
+  position: relative;
+  margin-top: 12px;
+}
+.live-player video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 10px;
+  display: block;
+}
+.live-tap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.live-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  border: 1px solid #d93025;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
 }

@@ -30,6 +30,9 @@ process.env.LOG_LEVEL = process.env.LOG_LEVEL_TEST || 'silent';
 process.env.VAPID_PUBLIC_KEY = '';
 process.env.VAPID_PRIVATE_KEY = '';
 // Email off in tests (never real mail); email.test.js records sends with setTransport().
+// Live streaming off unless a test turns it on with a fake Hetzner (never the real one).
+process.env.OWNCAST_URL = '';
+process.env.HETZNER_API_TOKEN = '';
 process.env.RESEND_API_KEY = '';
 process.env.EMAIL_FROM = '';
 process.env.RESEND_WEBHOOK_SECRET = `whsec_${Buffer.from('test-webhook-secret').toString('base64')}`;

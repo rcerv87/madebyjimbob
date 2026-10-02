@@ -5,6 +5,7 @@ import useTitle from '../useTitle.js';
 import VideoCard from '../components/VideoCard.jsx';
 import LibraryTabs from '../components/LibraryTabs.jsx';
 import BrandHero from '../components/BrandHero.jsx';
+import LiveBanner from '../components/LiveBanner.jsx';
 
 // Filter chips: start from everything, narrow by type or members-only. Kept in the URL so a
 // filtered view can be shared or bookmarked.
@@ -59,6 +60,7 @@ export default function Home() {
 
   return (
     <div className="library">
+      <LiveBanner />
       {!q && <BrandHero />}
       <LibraryTabs />
       <div className="library-bar">
