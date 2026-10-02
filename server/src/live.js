@@ -289,10 +289,14 @@ const getText = (url) =>
 
 // End stream while OBS is still sending: close the recording's playlists here (the recorder goes away with the
 // server), then save the replay.
-export async function finishRecording() {
+// Only recordings made on this server count (the bucket can hold older ones, or ones from local testing).
+const fromServer = (rec, server) =>
+  Boolean(rec?.id) && new Date(rec.startedAt) >= new Date(server.created_at);
+
+export async function finishRecording(server) {
   const storage = r2();
   const rec = await currentRecording();
-  if (!storage || !rec?.id) return null;
+  if (!storage || !fromServer(rec, server)) return null;
   if (rec.live) {
     const master = await getText(`${storage.publicUrl}/dvr/${rec.id}/master.m3u8`);
     let durationS = 0;
@@ -371,7 +375,7 @@ export async function endLive(reason = 'ended') {
     reason,
   ]);
   if (s.ready_at)
-    await finishRecording().catch((err) => logger.warn({ err }, 'could not finish the recording'));
+    await finishRecording(s).catch((err) => logger.warn({ err }, 'could not finish the recording'));
   // No saved image yet and this server got fully set up: save one first (a couple of minutes); the live job deletes
   // the server when the snapshot is done. Viewers already see the stream as ended.
   if (
@@ -491,7 +495,7 @@ export async function tickLive() {
     }
     // The recorder closed a recording on its own (OBS stopped): it becomes a video.
     const rec = await currentRecording();
-    if (rec && !rec.live)
+    if (fromServer(rec, s) && !rec.live)
       await saveReplay(rec).catch((err) => logger.warn({ err }, 'could not save the replay'));
     const status = await owncastStatus(base);
     if (status.online)

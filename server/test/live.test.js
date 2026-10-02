@@ -121,7 +121,11 @@ describe('Go Live (owned live, ADR-004)', () => {
     });
     const list = '#EXTM3U\n#EXT-X-PLAYLIST-TYPE:EVENT\n#EXTINF:6.000,\n0.ts\n#EXTINF:6.000,\n1.ts\n';
     Object.assign(r2.objects, {
-      'dvr/current.json': JSON.stringify({ id: 'rec1', startedAt: '2026-10-02T16:00:00Z', live: true }),
+      'dvr/current.json': JSON.stringify({
+        id: 'rec1',
+        startedAt: new Date(Date.now() + 1000).toISOString(),
+        live: true,
+      }),
       'dvr/rec1/master.m3u8':
         '#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\n0/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=2\n1/index.m3u8\n',
       'dvr/rec1/0/index.m3u8': list,
@@ -135,10 +139,7 @@ describe('Go Live (owned live, ADR-004)', () => {
       owncast = { online: true, config: [] };
       await tickLive();
       const live = (await call('/live')).data;
-      assert.deepEqual(live.dvr, {
-        url: 'https://pub-test.r2.dev/dvr/rec1/master.m3u8',
-        startedAt: '2026-10-02T16:00:00Z',
-      });
+      assert.equal(live.dvr.url, 'https://pub-test.r2.dev/dvr/rec1/master.m3u8');
 
       await call('/studio/live/stop', { method: 'POST', token: admin });
       assert.match(r2.objects['dvr/rec1/0/index.m3u8'], /#EXT-X-ENDLIST\n$/);
@@ -152,7 +153,7 @@ describe('Go Live (owned live, ADR-004)', () => {
       assert.equal(rows.length, 1);
       assert.equal(rows[0].kind, 'live');
       assert.equal(rows[0].duration_s, 12);
-      assert.equal(rows[0].title, 'Live stream · Oct 2, 2026');
+      assert.match(rows[0].title, /^Live stream · \w{3} \d{1,2}, \d{4}$/);
       const video = (await call(`/videos/${rows[0].id}`)).data.video;
       assert.equal(video.hls, 'https://pub-test.r2.dev/dvr/rec1/master.m3u8');
 
@@ -182,6 +183,34 @@ describe('Go Live (owned live, ADR-004)', () => {
       assert.match(list, /^https:\/\/pub-test\.r2\.dev\/hls\/0\/stream\.m3u8$/m);
       assert.match(list, /^https:\/\/pub-test\.r2\.dev\/hls\/1\/stream\.m3u8$/m);
       assert.doesNotMatch(list, /cloudflarestorage/);
+    } finally {
+      process.env.R2_ACCOUNT_ID = '';
+    }
+  });
+
+  test('a finished recording left in the bucket from before this server is not saved as a video', async () => {
+    Object.assign(process.env, {
+      R2_ACCOUNT_ID: 'acct',
+      R2_ACCESS_KEY_ID: 'key',
+      R2_SECRET_ACCESS_KEY: 'secret',
+      R2_BUCKET: 'madebyjimbob-live',
+      R2_PUBLIC_URL: 'https://pub-test.r2.dev/',
+    });
+    r2.objects['dvr/current.json'] = JSON.stringify({
+      id: 'old-test',
+      startedAt: '2026-01-01T00:00:00Z',
+      live: false,
+      durationS: 40,
+    });
+    try {
+      const admin = await signIn(call, 'test_admin');
+      await call('/studio/live/start', { method: 'POST', token: admin });
+      owncast = { online: false, config: [] };
+      await tickLive();
+      await tickLive();
+      await call('/studio/live/stop', { method: 'POST', token: admin });
+      const { rows } = await pool.query(`SELECT 1 FROM videos WHERE live_recording_id = 'old-test'`);
+      assert.equal(rows.length, 0);
     } finally {
       process.env.R2_ACCOUNT_ID = '';
     }
