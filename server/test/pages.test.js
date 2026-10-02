@@ -51,6 +51,9 @@ test('section and playlist pages get their own titles; images are absolute', asy
   const shop = await get('/shop');
   assert.match(shop.html, /<title>Shop · MADEbyJIMBOB<\/title>/);
   assert.equal(meta(shop.html, 'property', 'og:image'), `${site}/brand/header-art.jpg`);
+  const live = await get('/live');
+  assert.equal(live.status, 200);
+  assert.match(live.html, /<title>JimBob live · MADEbyJIMBOB<\/title>/);
   const pl = await get(`/playlist/${playlistId}`);
   assert.match(pl.html, /<title>Debates · MADEbyJIMBOB<\/title>/);
   assert.match(meta(pl.html, 'property', 'og:image'), /abc123/);

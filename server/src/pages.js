@@ -70,6 +70,7 @@ export async function pageMeta(pathname) {
   if (p === '/art')
     return page('Art', "JimBob's illustrations and comics: originals, prints, and digital art.");
   if (p === '/studio') return { ...page('Studio'), noindex: true };
+  if (p === '/live') return page('JimBob live', 'Watch JimBob live on MADEbyJIMBOB.');
   if (p === '/reset-password') return { ...page('Reset password'), noindex: true };
   if (p === '/account') return { ...page('Account settings'), noindex: true };
 
