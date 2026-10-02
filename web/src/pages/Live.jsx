@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import Hls from 'hls.js';
+import { attachLive } from '../liveHls.js';
 import { api } from '../api.js';
 import useTitle from '../useTitle.js';
 
@@ -12,20 +12,7 @@ function LivePlayer({ src }) {
     const el = ref.current;
     if (!el || !src) return undefined;
     const play = () => el.play().catch(() => setNeedsTap(true));
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 4,
-        maxLiveSyncPlaybackRate: 1.1,
-      });
-      hls.loadSource(src);
-      hls.attachMedia(el);
-      hls.on(Hls.Events.MANIFEST_PARSED, play);
-      return () => hls.destroy();
-    }
-    el.src = src;
-    el.addEventListener('loadedmetadata', play, { once: true });
-    return () => el.removeAttribute('src');
+    return attachLive(el, src, play);
   }, [src]);
   return (
     <div className="live-player">

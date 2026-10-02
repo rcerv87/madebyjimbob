@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Hls from 'hls.js';
+import { attachLive } from '../liveHls.js';
 import { api } from '../api.js';
 
 // Plays the live stream (muted preview, so Studio doesn't echo JimBob's own mic).
@@ -8,20 +8,7 @@ function LivePreview({ src }) {
   useEffect(() => {
     const el = ref.current;
     if (!el || !src) return undefined;
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        liveSyncDurationCount: 2,
-        liveMaxLatencyDurationCount: 4,
-        maxLiveSyncPlaybackRate: 1.1,
-      });
-      hls.loadSource(src);
-      hls.attachMedia(el);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => el.play().catch(() => {}));
-      return () => hls.destroy();
-    }
-    el.src = src;
-    el.play().catch(() => {});
-    return () => el.removeAttribute('src');
+    return attachLive(el, src, () => el.play().catch(() => {}));
   }, [src]);
   return <video ref={ref} className="live-preview" muted playsInline controls aria-label="Live preview" />;
 }
