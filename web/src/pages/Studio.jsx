@@ -5,6 +5,7 @@ import StudioPlaylists from '../components/StudioPlaylists.jsx';
 import StudioEmail from '../components/StudioEmail.jsx';
 import StudioLinks from '../components/StudioLinks.jsx';
 import StudioReports from '../components/StudioReports.jsx';
+import StudioLive from '../components/StudioLive.jsx';
 import StudioImports from '../components/StudioImports.jsx';
 import StudioVideoActions from '../components/StudioVideoActions.jsx';
 import useTitle from '../useTitle.js';
@@ -56,6 +57,7 @@ export default function Studio({ user }) {
         <Stat label="Super chats" value={t.paidMsgs} accent />
       </section>
 
+      <StudioLive />
       <StudioImports onImported={load} />
       <StudioReports />
 

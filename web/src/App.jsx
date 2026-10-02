@@ -12,6 +12,7 @@ import NotFound from './pages/NotFound.jsx';
 // so the first visit downloads only the shell and the Videos page.
 const Watch = lazy(() => import('./pages/Watch.jsx'));
 const Studio = lazy(() => import('./pages/Studio.jsx'));
+const Live = lazy(() => import('./pages/Live.jsx'));
 const Playlists = lazy(() => import('./pages/Playlists.jsx'));
 const Playlist = lazy(() => import('./pages/Playlist.jsx'));
 const Posts = lazy(() => import('./pages/Posts.jsx'));
@@ -86,6 +87,7 @@ export default function App() {
             <Route path="/art" element={<Art />} />
             <Route path="/watch/:id" element={null} />
             <Route path="/studio" element={<Studio user={user} />} />
+            <Route path="/live" element={<Live />} />
             <Route path="/reset-password" element={<ResetPassword session={session} />} />
             <Route path="/account" element={<Account session={session} onUserChanged={refreshUser} />} />
             {/* /@username profiles (MBJ-116); anything else here is a 404 page. */}

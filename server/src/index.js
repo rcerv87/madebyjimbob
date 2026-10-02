@@ -4,6 +4,7 @@ import { startErasureJob } from './deletion.js';
 import { startLinkCheckJob } from './links.js';
 import { startViewCleanup } from './views.js';
 import { startReplacementJob } from './replacements.js';
+import { startLiveJob } from './live.js';
 import { logger } from './logger.js';
 
 // Migrations run separately (`npm run migrate`, Render's pre-deploy command), not on boot.
@@ -21,3 +22,5 @@ startLinkCheckJob();
 startViewCleanup();
 // Swaps in replacement files once Cloudflare has processed them, even with Studio closed (MBJ-701).
 startReplacementJob();
+// Finishes starting live servers and deletes idle, over-cap, or stray ones (ADR-004).
+startLiveJob();

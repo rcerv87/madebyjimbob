@@ -8,6 +8,7 @@ import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback, deleteFromStream, createDirectUpload, streamConfigured } from './stream.js';
 import { queueImports, listImports, jobRow, helperStatus, youtubeId } from './imports.js';
 import { checkReplacement } from './replacements.js';
+import { liveConfigured, liveStatus, studioLive, goLive, endLive, proxyHls } from './live.js';
 import { parseChannel, requestListing, channelPage, JIMBOB_CHANNEL } from './channel.js';
 import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
@@ -216,6 +217,18 @@ function chatRow(r) {
     ...member(r),
   };
 }
+
+// ---------- owned live (ADR-004) ----------
+// Is JimBob live on the platform's own stream? The video plays from /live/hls/stream.m3u8.
+app.get(
+  '/api/live',
+  wrap(async (_req, res) => {
+    if (!liveConfigured()) return res.json({ configured: false, online: false });
+    const status = await liveStatus();
+    res.json({ configured: true, ...status, hls: status.online ? '/live/hls/stream.m3u8' : null });
+  }),
+);
+app.get(/^\/live\/hls\/(.+)$/, proxyHls);
 
 // ---------- account ----------
 app.get(
@@ -894,6 +907,35 @@ app.post(
 
 // ---------- studio dashboard (admins only) ----------
 app.use('/api/studio', requireAdmin);
+
+// Studio → Live (ADR-004): the stream's state, the server's, and what OBS needs.
+app.get(
+  '/api/studio/live',
+  wrap(async (_req, res) => res.json(await studioLive())),
+);
+
+// Go Live: create the streaming server on Hetzner (ready in ~3 minutes). End stream deletes it.
+app.post(
+  '/api/studio/live/start',
+  wrap(async (req, res) => {
+    try {
+      await goLive(req.user.id);
+    } catch (err) {
+      logger.warn({ err }, 'go live failed');
+      return res
+        .status(err.status === 503 ? 503 : 502)
+        .json({ error: `Couldn’t start the server: ${err.message}` });
+    }
+    res.json(await studioLive());
+  }),
+);
+app.post(
+  '/api/studio/live/stop',
+  wrap(async (_req, res) => {
+    await endLive('ended');
+    res.json(await studioLive());
+  }),
+);
 
 app.get(
   '/api/studio/overview',
