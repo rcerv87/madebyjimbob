@@ -263,8 +263,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    Owncast copies every piece to R2 (6-second segments, growing playlist); /live has −1m / −10s / +10s, a timeline of
    the whole stream, and Back to LIVE (rewinding switches to the recording, live stays ~5 s behind); End stream (or
    OBS stopping) closes the recording and it becomes a video (kind live, plays from R2, in the Live filter). Tested
-   end to end locally (rewind, back to live, 146 s replay plays and seeks, phone layout). **Left:** first real test on
-   Hetzner; live chat on /live saved with the replay; a thumbnail; moving replays to B2 (ADR-010).
+   end to end locally (rewind, back to live, 146 s replay plays and seeks, phone layout). **Live chat (2026-10-02):** /live shows the chat panel; the stream's video is created when the recording starts, chat sent while live is stamped at its moment and shows under Live only on the replay. The recorder tells streams apart by file time (Owncast reuses names), never mixes an earlier stream in, and caps Owncast's bogus last-piece lengths. **Left:** first real test on Hetzner; a thumbnail; moving replays to B2 (ADR-010); deleting old recordings from R2.
 1. **Turn on email** once madebyjimbob.app is verified in Resend (Waiting on Ruben #5, #7, #8); then check the first
    real sign-up, confirmation, and password reset.
 2. **Phone apps for Android and iPhone** (MBJ-401 on): decide how to build them (wrap this web app vs a native

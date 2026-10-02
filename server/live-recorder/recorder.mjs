@@ -38,12 +38,14 @@ function parseMaster(text) {
   return out;
 }
 
-// One quality's playlist → [{ name, seq, prefix, dur }].
+// One quality's playlist → [{ name, seq, prefix, dur }]. Owncast sometimes labels a stream's last piece far longer
+// than it is, so lengths are capped at twice the playlist's stated piece length.
 function parseMedia(text) {
   const out = [];
   let dur = 0;
+  const target = Number(text.match(/#EXT-X-TARGETDURATION:(\d+)/)?.[1]) || Infinity;
   for (const line of text.split('\n')) {
-    if (line.startsWith('#EXTINF:')) dur = parseFloat(line.slice(8));
+    if (line.startsWith('#EXTINF:')) dur = Math.min(parseFloat(line.slice(8)), target * 2);
     const m = line.trim().match(/^stream-(\w+)-(\d+)\.ts$/);
     if (m) out.push({ name: line.trim(), prefix: m[1], seq: Number(m[2]), dur });
   }
@@ -51,7 +53,10 @@ function parseMedia(text) {
 }
 
 let rec = null; // the recording in progress
-const done = new Set(); // streams already recorded (Owncast's last playlist stays after OBS stops)
+// Pieces already handled, per quality: file name → modified time. Owncast can reuse names after OBS reconnects, so a
+// piece is new when its name or its time is.
+const handled = new Map();
+const bootMs = Date.now();
 const quiet = { since: Date.now() };
 
 function playlist(q, ended) {
@@ -73,8 +78,7 @@ const putJson = (key, value) => r2Put(cfg, key, JSON.stringify(value), 'applicat
 async function start(prefix, variants) {
   const id = new Date().toISOString().replace(/[:.]/g, '-');
   rec = { id, prefix, startedAt: new Date().toISOString(), qualities: new Map(), chain: Promise.resolve() };
-  for (const v of variants)
-    rec.qualities.set(v.n, { n: v.n, lastSeq: -1, buf: [], bufDur: 0, seq: 0, lines: [] });
+  for (const v of variants) rec.qualities.set(v.n, { n: v.n, buf: [], bufDur: 0, seq: 0, lines: [] });
   const master = [
     '#EXTM3U',
     '#EXT-X-VERSION:3',
@@ -112,7 +116,6 @@ function flush(r, q, ended = false) {
 }
 
 async function finish(r) {
-  done.add(r.prefix);
   for (const q of r.qualities.values()) flush(r, q, true);
   await r.chain;
   const durationS = Math.round(
@@ -128,36 +131,55 @@ async function finish(r) {
   log('recording finished', r.id, `${durationS}s`);
 }
 
+// The pieces of one quality not handled yet, oldest first: [{ e, mtime }].
+async function unhandled(n) {
+  const dir = path.join(HLS, String(n));
+  const seen = handled.get(n) || new Map();
+  handled.set(n, seen);
+  const entries = parseMedia((await readText(path.join(dir, 'stream.m3u8'))) || '');
+  const listed = new Set(entries.map((e) => e.name));
+  for (const name of seen.keys()) if (!listed.has(name)) seen.delete(name); // gone from the playlist
+  const out = [];
+  for (const e of entries) {
+    const st = await fs.stat(path.join(dir, e.name)).catch(() => null);
+    if (st && seen.get(e.name) !== st.mtimeMs) out.push({ e, mtime: st.mtimeMs, dir, seen });
+  }
+  return out;
+}
+
 async function tick() {
   const master = await readText(path.join(HLS, 'stream.m3u8'));
   const variants = master ? parseMaster(master) : [];
   if (!variants.length) return;
-  const first = parseMedia((await readText(path.join(HLS, String(variants[0].n), 'stream.m3u8'))) || '');
-  const prefix = first.at(-1)?.prefix;
-  if (prefix && prefix !== rec?.prefix && !done.has(prefix)) {
-    if (rec) {
-      const old = rec;
-      rec = null;
-      await finish(old); // OBS reconnected: a new recording
-    }
-    await start(prefix, variants);
+  const firstNew = await unhandled(variants[0].n);
+  if (!rec) {
+    // Between streams: anything older than the first new piece (or from before the recorder started) belongs to an
+    // earlier stream, in every quality, so it's never mixed into the next recording.
+    const fresh = firstNew.filter((x) => x.mtime >= bootMs - 2000);
+    const cutoff = fresh.length ? Math.min(...fresh.map((x) => x.mtime)) - 1500 : Infinity;
+    for (const v of variants)
+      for (const x of v.n === variants[0].n ? firstNew : await unhandled(v.n))
+        if (x.mtime < cutoff) x.seen.set(x.e.name, x.mtime);
+    if (!fresh.length) return;
+    await start(fresh[0].e.prefix, variants);
+  } else if (firstNew.some((x) => x.e.prefix !== rec.prefix)) {
+    const old = rec;
+    rec = null;
+    await finish(old); // OBS reconnected: a new recording
+    await start(firstNew.find((x) => x.e.prefix !== old.prefix).e.prefix, variants);
   }
-  if (!rec) return;
   let added = false;
   for (const q of rec.qualities.values()) {
-    const dir = path.join(HLS, String(q.n));
-    const entries = parseMedia((await readText(path.join(dir, 'stream.m3u8'))) || '').filter(
-      (e) => e.prefix === rec.prefix && e.seq > q.lastSeq,
-    );
-    for (const e of entries) {
-      const bytes = await fs.readFile(path.join(dir, e.name)).catch(() => null);
-      q.lastSeq = e.seq;
+    for (const x of await unhandled(q.n)) {
+      x.seen.set(x.e.name, x.mtime);
+      if (x.e.prefix !== rec.prefix) continue;
+      const bytes = await fs.readFile(path.join(x.dir, x.e.name)).catch(() => null);
       if (!bytes) {
-        log('missed piece', q.n, e.name);
+        log('missed piece', q.n, x.e.name);
         continue;
       }
       q.buf.push(bytes);
-      q.bufDur += e.dur;
+      q.bufDur += x.e.dur;
       added = true;
     }
     if (q.bufDur >= SEGMENT_S) flush(rec, q);

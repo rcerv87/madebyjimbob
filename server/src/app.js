@@ -98,7 +98,10 @@ const textField = (value) => (typeof value === 'string' ? value : '');
 // Returns the video row, or null for unknown or malformed ids.
 async function findVideo(id) {
   if (!isId(id)) return null;
-  const { rows } = await pool.query('SELECT id, title, min_tier, duration_s FROM videos WHERE id = $1', [id]);
+  const { rows } = await pool.query(
+    'SELECT id, title, min_tier, duration_s, live_recording_id FROM videos WHERE id = $1',
+    [id],
+  );
   return rows[0] || null;
 }
 
@@ -606,12 +609,23 @@ app.post(
       Math.max(0, Math.round(Number(req.body.offsetMs) || 0)),
     );
 
-    // Live native chat arrives with Phase 3; until then every native post is replay chat.
+    // Chat on the platform's own stream while it's live (MBJ-310: its video has no length yet) is live chat; the
+    // replay shows it under Live only. Everything else is replay chat.
+    const postedLive = Boolean(video.live_recording_id) && !video.duration_s;
     const { rows } = await pool.query(
       `INSERT INTO chat_messages
          (video_id, source, user_id, author_name, body, mentions, offset_ms, sent_at, posted_live, reply_to_id)
-       VALUES ($1, 'native', $2, $3, $4, $5, $6, now(), false, $7) RETURNING *`,
-      [video.id, user.id, user.username, body, extractMentions(body), offsetMs, target?.id ?? null],
+       VALUES ($1, 'native', $2, $3, $4, $5, $6, now(), $7, $8) RETURNING *`,
+      [
+        video.id,
+        user.id,
+        user.username,
+        body,
+        extractMentions(body),
+        offsetMs,
+        postedLive,
+        target?.id ?? null,
+      ],
     );
     await pool.query('UPDATE users SET xp = xp + 5 WHERE id = $1', [user.id]);
 

@@ -37,7 +37,15 @@ const readView = () => {
 // Chat beside the video. "Live only" shows the stream's original chat exactly as it happened;
 // "Live + replay" adds messages people posted while watching later and timestamped comments,
 // each at its moment in the video.
-export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenThread, session }) {
+export default function ChatPanel({
+  videoId,
+  timeMs,
+  getTimeMs,
+  onSeek,
+  onOpenThread,
+  session,
+  live = false,
+}) {
   const [byId, setById] = useState(() => new Map());
   const [commentsById, setCommentsById] = useState(() => new Map());
   const [view, setView] = useState(readView);
@@ -318,8 +326,10 @@ export default function ChatPanel({ videoId, timeMs, getTimeMs, onSeek, onOpenTh
     <aside className="chat">
       <header className="chat-head">
         <div className="chat-title">
-          <h2>Live chat replay</h2>
-          <span className="muted small">Synced to {formatTime(timeMs / 1000)}</span>
+          <h2>{live ? 'Live chat' : 'Live chat replay'}</h2>
+          <span className="muted small">
+            {live ? 'Saved with the replay' : `Synced to ${formatTime(timeMs / 1000)}`}
+          </span>
         </div>
         <div className="chat-view" role="group" aria-label="Which chat to show">
           <button type="button" aria-pressed={view === 'live'} onClick={() => changeView('live')}>

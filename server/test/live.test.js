@@ -140,6 +140,16 @@ describe('Go Live (owned live, ADR-004)', () => {
       await tickLive();
       const live = (await call('/live')).data;
       assert.equal(live.dvr.url, 'https://pub-test.r2.dev/dvr/rec1/master.m3u8');
+      // The stream's video exists while live; chat sent now is live chat and stays with the replay.
+      assert.ok(live.dvr.videoId);
+      const viewer = await signIn(call, 'live_chatter');
+      const sent = await call(`/videos/${live.dvr.videoId}/chat`, {
+        method: 'POST',
+        token: viewer,
+        body: { text: 'hello from the live stream', offsetMs: 9000 },
+      });
+      assert.equal(sent.status, 200);
+      assert.equal(sent.data.message.postedLive, true);
 
       await call('/studio/live/stop', { method: 'POST', token: admin });
       assert.match(r2.objects['dvr/rec1/0/index.m3u8'], /#EXT-X-ENDLIST\n$/);
@@ -151,10 +161,16 @@ describe('Go Live (owned live, ADR-004)', () => {
         `SELECT id, title, kind, duration_s, hls_url FROM videos WHERE live_recording_id = 'rec1'`,
       );
       assert.equal(rows.length, 1);
+      assert.equal(rows[0].id, String(live.dvr.videoId), 'the same video, now a replay');
       assert.equal(rows[0].kind, 'live');
       assert.equal(rows[0].duration_s, 12);
       assert.match(rows[0].title, /^Live stream · \w{3} \d{1,2}, \d{4}$/);
       const video = (await call(`/videos/${rows[0].id}`)).data.video;
+      const chat = (await call(`/videos/${rows[0].id}/chat?from=0&to=120000`)).data.messages;
+      assert.deepEqual(
+        chat.map((m) => [m.body, m.offsetMs, m.postedLive]),
+        [['hello from the live stream', 9000, true]],
+      );
       assert.equal(video.hls, 'https://pub-test.r2.dev/dvr/rec1/master.m3u8');
 
       // Saved once, even if the job sees the finished recording again.

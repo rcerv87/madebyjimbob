@@ -128,7 +128,14 @@ async function owncastStatus(base) {
 async function withRewind(status) {
   if (!status.online) return status;
   const rec = await currentRecording();
-  return rec?.live ? { ...status, dvr: { url: recordingUrl(rec.id), startedAt: rec.startedAt } } : status;
+  if (!rec?.live) return status;
+  const videoId = await liveVideo(rec).catch((err) =>
+    logger.warn({ err }, 'could not create the live video'),
+  );
+  return {
+    ...status,
+    dvr: { url: recordingUrl(rec.id), startedAt: rec.startedAt, videoId: videoId ?? null },
+  };
 }
 
 export async function liveStatus() {
@@ -264,19 +271,32 @@ const etDate = (iso) =>
     year: 'numeric',
   });
 
-// A finished recording becomes a video on the site (once).
-export async function saveReplay(recording) {
-  if (!recording?.id || recording.live) return null;
+// The video for a recording: made as soon as the stream starts (so live chat has somewhere to live and the stream
+// shows in the library), with no length until it ends. Returns its id.
+export async function liveVideo(recording) {
+  const found = await pool.query('SELECT id FROM videos WHERE live_recording_id = $1', [recording.id]);
+  if (found.rows[0]) return found.rows[0].id;
   const { rows } = await pool.query(
-    `INSERT INTO videos (title, kind, duration_s, published_at, hls_url, live_recording_id)
-     VALUES ($1, 'live', $2, $3, $4, $5) ON CONFLICT (live_recording_id) DO NOTHING RETURNING id`,
+    `INSERT INTO videos (title, kind, published_at, hls_url, live_recording_id)
+     VALUES ($1, 'live', $2, $3, $4)
+     ON CONFLICT (live_recording_id) DO UPDATE SET live_recording_id = EXCLUDED.live_recording_id RETURNING id`,
     [
       `Live stream · ${etDate(recording.startedAt)}`,
-      recording.durationS || null,
       recording.startedAt,
       recordingUrl(recording.id),
       recording.id,
     ],
+  );
+  return rows[0].id;
+}
+
+// A finished recording: its video gets its length and becomes a replay (once). Returns the id, or null if done before.
+export async function saveReplay(recording) {
+  if (!recording?.id || recording.live) return null;
+  await liveVideo(recording);
+  const { rows } = await pool.query(
+    `UPDATE videos SET duration_s = $2 WHERE live_recording_id = $1 AND duration_s IS NULL RETURNING id`,
+    [recording.id, recording.durationS || 1],
   );
   if (rows[0]) logger.info({ videoId: rows[0].id, recording: recording.id }, 'live replay saved');
   return rows[0]?.id ?? null;
