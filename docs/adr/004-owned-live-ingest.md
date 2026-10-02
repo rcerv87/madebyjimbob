@@ -59,3 +59,7 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
   keeps playlists small (6 s segments) and leaves live latency alone. End stream closes the playlists (`#EXT-X-ENDLIST`)
   if the recorder hasn't, and the site saves the recording as a video (`videos.hls_url`, `live_recording_id`).
   MediaMTX remains the plan for browser/WebRTC ingest (option 3).
+- **Reconnects (2026-10-02):** if OBS drops and comes back within 10 minutes, the recorder keeps adding to the same
+  recording with `#EXT-X-DISCONTINUITY` at each join (Owncast's clock and file names restart), so viewers can still rewind
+  to the start and it stays one replay. The site sets the video back to live (no length) and updates its length when
+  the recording ends again. A stream of 5+ hours is ~3,000 playlist entries (~65 KB), fetched only by rewound viewers.

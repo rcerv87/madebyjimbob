@@ -173,6 +173,17 @@ describe('Go Live (owned live, ADR-004)', () => {
       );
       assert.equal(video.hls, 'https://pub-test.r2.dev/dvr/rec1/master.m3u8');
 
+      // OBS back within 10 minutes: the recorder reopens the same recording; the video is live again, then gets its
+      // new length when it ends.
+      const { liveVideo, saveReplay: save } = await import('../src/live.js');
+      await liveVideo({ ...rec, live: true });
+      const reopened = await pool.query('SELECT duration_s FROM videos WHERE id = $1', [rows[0].id]);
+      assert.equal(reopened.rows[0].duration_s, null);
+      assert.equal(await save({ ...rec, durationS: 40 }), rows[0].id);
+      const longer = await pool.query('SELECT duration_s FROM videos WHERE id = $1', [rows[0].id]);
+      assert.equal(longer.rows[0].duration_s, 40);
+      rec.durationS = 40;
+
       // Saved once, even if the job sees the finished recording again.
       const { saveReplay } = await import('../src/live.js');
       assert.equal(await saveReplay(rec), null);

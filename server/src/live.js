@@ -274,8 +274,15 @@ const etDate = (iso) =>
 // The video for a recording: made as soon as the stream starts (so live chat has somewhere to live and the stream
 // shows in the library), with no length until it ends. Returns its id.
 export async function liveVideo(recording) {
-  const found = await pool.query('SELECT id FROM videos WHERE live_recording_id = $1', [recording.id]);
-  if (found.rows[0]) return found.rows[0].id;
+  const found = await pool.query('SELECT id, duration_s FROM videos WHERE live_recording_id = $1', [
+    recording.id,
+  ]);
+  if (found.rows[0]) {
+    // OBS reconnected after the stream seemed over: it's live again until the recording ends for good.
+    if (recording.live && found.rows[0].duration_s)
+      await pool.query('UPDATE videos SET duration_s = NULL WHERE id = $1', [found.rows[0].id]);
+    return found.rows[0].id;
+  }
   const { rows } = await pool.query(
     `INSERT INTO videos (title, kind, published_at, hls_url, live_recording_id)
      VALUES ($1, 'live', $2, $3, $4)
@@ -295,7 +302,7 @@ export async function saveReplay(recording) {
   if (!recording?.id || recording.live) return null;
   await liveVideo(recording);
   const { rows } = await pool.query(
-    `UPDATE videos SET duration_s = $2 WHERE live_recording_id = $1 AND duration_s IS NULL RETURNING id`,
+    `UPDATE videos SET duration_s = $2 WHERE live_recording_id = $1 AND duration_s IS DISTINCT FROM $2 RETURNING id`,
     [recording.id, recording.durationS || 1],
   );
   if (rows[0]) logger.info({ videoId: rows[0].id, recording: recording.id }, 'live replay saved');
