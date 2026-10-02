@@ -12,7 +12,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
 | Quality | 276 automated tests (167 server, 109 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 102 stories; 26 done, 13 in progress |
+| Backlog | 102 stories; 26 done, 14 in progress |
 
 ## Waiting on Ruben
 
@@ -259,9 +259,12 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## What's next (in order)
 
-0. **Beta priority: rewind the live stream and instant replay** (MBJ-310): scrub back seconds or hours while live,
-   Back to LIVE, and every stream becomes a site video with its chat the moment it ends. Needs a recorder keeping all
-   segments in R2 (MediaMTX); comes right after R2 delivery is verified and the 600-viewer test.
+0. **Beta priority: rewind the live stream and instant replay** (MBJ-310). **Built 2026-10-02:** a recorder next to
+   Owncast copies every piece to R2 (6-second segments, growing playlist); /live has −1m / −10s / +10s, a timeline of
+   the whole stream, and Back to LIVE (rewinding switches to the recording, live stays ~5 s behind); End stream (or
+   OBS stopping) closes the recording and it becomes a video (kind live, plays from R2, in the Live filter). Tested
+   end to end locally (rewind, back to live, 146 s replay plays and seeks, phone layout). **Left:** first real test on
+   Hetzner; live chat on /live saved with the replay; a thumbnail; moving replays to B2 (ADR-010).
 1. **Turn on email** once madebyjimbob.app is verified in Resend (Waiting on Ruben #5, #7, #8); then check the first
    real sign-up, confirmation, and password reset.
 2. **Phone apps for Android and iPhone** (MBJ-401 on): decide how to build them (wrap this web app vs a native

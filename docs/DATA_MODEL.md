@@ -321,6 +321,12 @@ Members a member blocked or muted (MBJ-119).
 | status | text | `open \| resolved \| dismissed` |
 | handled_by, handled_at, created_at | | |
 
+### videos: live replays (MBJ-310)
+| column | type | notes |
+|---|---|---|
+| hls_url | text | a live replay plays from its R2 recording (`dvr/<id>/master.m3u8`) instead of Cloudflare Stream |
+| live_recording_id | text unique | the recording it came from; a recording is saved as a video once |
+
 ### live_settings
 One row (id 1) for owned live (ADR-004): what stays the same between streams.
 

@@ -131,7 +131,7 @@ async function requireAdmin(req, res, next) {
 const CHAT_COUNT =
   '(SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count';
 // What a video card needs (not the description, which can be long), plus its chat count.
-const CARD_COLUMNS = `v.id, v.title, v.kind, v.duration_s, v.published_at, v.min_tier, v.views, v.stream_uid,
+const CARD_COLUMNS = `v.id, v.title, v.kind, v.duration_s, v.published_at, v.min_tier, v.views, v.stream_uid, v.hls_url,
     ${CHAT_COUNT}`;
 
 function videoCard(v) {
@@ -442,7 +442,8 @@ app.get(
         description: v.description,
         youtubeId: v.youtube_id,
         locked: !allowed,
-        hls: allowed ? playback(v.stream_uid)?.hls : null,
+        // Live replays (MBJ-310) play from their recording in R2; everything else from Cloudflare Stream.
+        hls: allowed ? v.hls_url || playback(v.stream_uid)?.hls || null : null,
         resumeMs: progress.rows[0]?.position_ms ?? null,
         likes: votes.likes,
         myVote: votes.myVote,

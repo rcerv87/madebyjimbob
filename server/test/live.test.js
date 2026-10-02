@@ -8,6 +8,7 @@ const realFetch = globalThis.fetch;
 const IP = '203.0.113.7';
 let hetzner; // fake Hetzner state
 let owncast; // fake Owncast on the server's IP: null = not up yet
+let r2; // fake R2: objects by key
 
 // Our own server goes through; Hetzner's API and the live server's Owncast are faked.
 function fakeFetch(url, opts = {}) {
@@ -76,6 +77,16 @@ function fakeFetch(url, opts = {}) {
         ),
       );
   }
+  if (u.hostname === 'pub-test.r2.dev') {
+    const body = r2.objects[u.pathname.slice(1)];
+    return Promise.resolve(body === undefined ? new Response('', { status: 404 }) : new Response(body));
+  }
+  if (u.hostname === 'acct.r2.cloudflarestorage.com' && method === 'PUT') {
+    const key = decodeURIComponent(u.pathname.replace('/madebyjimbob-live/', ''));
+    r2.objects[key] = String(opts.body);
+    r2.puts.push(key);
+    return Promise.resolve(new Response('', { status: 200 }));
+  }
   return realFetch(url, opts);
 }
 
@@ -93,12 +104,66 @@ after(async () => {
 beforeEach(async () => {
   hetzner = { calls: [], created: [], servers: [], images: [], snapshots: [], action: 'running' };
   owncast = null;
+  r2 = { objects: {}, puts: [] };
   process.env.HETZNER_API_TOKEN = 'test-token';
   await pool.query('DELETE FROM live_servers');
   await pool.query('DELETE FROM live_settings');
 });
 
 describe('Go Live (owned live, ADR-004)', () => {
+  test('the recorder runs with R2; viewers can rewind; End stream closes the recording and saves the replay (MBJ-310)', async () => {
+    Object.assign(process.env, {
+      R2_ACCOUNT_ID: 'acct',
+      R2_ACCESS_KEY_ID: 'key',
+      R2_SECRET_ACCESS_KEY: 'secret',
+      R2_BUCKET: 'madebyjimbob-live',
+      R2_PUBLIC_URL: 'https://pub-test.r2.dev/',
+    });
+    const list = '#EXTM3U\n#EXT-X-PLAYLIST-TYPE:EVENT\n#EXTINF:6.000,\n0.ts\n#EXTINF:6.000,\n1.ts\n';
+    Object.assign(r2.objects, {
+      'dvr/current.json': JSON.stringify({ id: 'rec1', startedAt: '2026-10-02T16:00:00Z', live: true }),
+      'dvr/rec1/master.m3u8':
+        '#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\n0/index.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=2\n1/index.m3u8\n',
+      'dvr/rec1/0/index.m3u8': list,
+      'dvr/rec1/1/index.m3u8': list,
+    });
+    try {
+      const admin = await signIn(call, 'test_admin');
+      await call('/studio/live/start', { method: 'POST', token: admin });
+      assert.match(hetzner.created[0].user_data, /path: \/opt\/recorder\/recorder\.mjs/);
+      assert.match(hetzner.created[0].user_data, /--name recorder .*node \/app\/recorder\.mjs/);
+      owncast = { online: true, config: [] };
+      await tickLive();
+      const live = (await call('/live')).data;
+      assert.deepEqual(live.dvr, {
+        url: 'https://pub-test.r2.dev/dvr/rec1/master.m3u8',
+        startedAt: '2026-10-02T16:00:00Z',
+      });
+
+      await call('/studio/live/stop', { method: 'POST', token: admin });
+      assert.match(r2.objects['dvr/rec1/0/index.m3u8'], /#EXT-X-ENDLIST\n$/);
+      assert.match(r2.objects['dvr/rec1/1/index.m3u8'], /#EXT-X-ENDLIST\n$/);
+      const rec = JSON.parse(r2.objects['dvr/current.json']);
+      assert.equal(rec.live, false);
+      assert.equal(rec.durationS, 12);
+      const { rows } = await pool.query(
+        `SELECT id, title, kind, duration_s, hls_url FROM videos WHERE live_recording_id = 'rec1'`,
+      );
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].kind, 'live');
+      assert.equal(rows[0].duration_s, 12);
+      assert.equal(rows[0].title, 'Live stream · Oct 2, 2026');
+      const video = (await call(`/videos/${rows[0].id}`)).data.video;
+      assert.equal(video.hls, 'https://pub-test.r2.dev/dvr/rec1/master.m3u8');
+
+      // Saved once, even if the job sees the finished recording again.
+      const { saveReplay } = await import('../src/live.js');
+      assert.equal(await saveReplay(rec), null);
+    } finally {
+      process.env.R2_ACCOUNT_ID = '';
+    }
+  });
+
   test('with R2 set, Owncast uploads there and viewers get each quality from R2', async () => {
     Object.assign(process.env, {
       R2_ACCOUNT_ID: 'acct',
