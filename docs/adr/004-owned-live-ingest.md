@@ -32,3 +32,14 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
   so far this month. The Hetzner API token (Read & Write) goes on Render as `HETZNER_API_TOKEN` and is never put in chat.
 - **Order:** live indicator with a Rumble embed as the free backup player → recorded premieres → this owned live
   feed, sent at the same time as YouTube and Rumble (StreamYard/OBS) → video calls and going live from the app.
+- **OBS from Studio (decided 2026-10-01): build option 2 and plan for option 3.**
+  - Option 1 comes with it: Studio gives a one-click OBS settings file with the server address, stream key, NVENC/x264,
+    CBR 6,000 kbps, 1080p30 and a 2-second keyframe interval, so OBS is set up correctly once.
+  - Option 2: control OBS from Studio and the app (start and stop the stream, switch scenes, see dropped frames and
+    CPU) through OBS's built-in WebSocket (port 4455, password). On JimBob's PC, Studio talks to OBS directly. From a
+    phone or another computer, a small helper on his PC connects out to our server and passes commands along, the same
+    pattern as the import helper. No ports are opened at his house.
+  - Plan for option 3, a browser studio with no OBS: webcam and screen in the browser, guests by link, sent over
+    WebRTC (WHIP). Keep the server side ready for it: the ingest accepts both RTMP (OBS) and WHIP. Owncast takes RTMP,
+    so add MediaMTX in front, or swap to it, when option 3 is built. Go Live and the safety limits stay the same
+    for both. Option 3 pairs with video calls (model D) and the phone app's go-live (model E).
