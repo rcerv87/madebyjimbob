@@ -9,6 +9,7 @@ const IP = '203.0.113.7';
 let hetzner; // fake Hetzner state
 let owncast; // fake Owncast on the server's IP: null = not up yet
 let r2; // fake R2: objects by key
+let b2; // fake B2: objects by key
 
 // Our own server goes through; Hetzner's API and the live server's Owncast are faked.
 function fakeFetch(url, opts = {}) {
@@ -82,11 +83,34 @@ function fakeFetch(url, opts = {}) {
     const body = r2.objects[u.pathname.slice(1)];
     return Promise.resolve(body === undefined ? new Response('', { status: 404 }) : new Response(body));
   }
-  if (u.hostname === 'acct.r2.cloudflarestorage.com' && method === 'PUT') {
-    const key = decodeURIComponent(u.pathname.replace('/madebyjimbob-live/', ''));
-    r2.objects[key] = String(opts.body);
-    r2.puts.push(key);
-    return Promise.resolve(new Response('', { status: 200 }));
+  // R2's and B2's S3 APIs: upload, read, list, delete.
+  const store =
+    u.hostname === 'acct.r2.cloudflarestorage.com'
+      ? { objects: r2.objects, bucket: '/madebyjimbob-live' }
+      : u.hostname === 's3.us-east-005.backblazeb2.com'
+        ? { objects: b2.objects, bucket: '/Jimbob-beta' }
+        : null;
+  if (store) {
+    if (u.pathname === store.bucket && u.searchParams.get('list-type') === '2') {
+      const prefix = u.searchParams.get('prefix') || '';
+      const keys = Object.keys(store.objects).filter((k) => k.startsWith(prefix));
+      const xml = `<ListBucketResult>${keys.map((k) => `<Contents><Key>${k}</Key></Contents>`).join('')}</ListBucketResult>`;
+      return Promise.resolve(new Response(xml));
+    }
+    const key = decodeURIComponent(u.pathname.replace(`${store.bucket}/`, ''));
+    if (method === 'PUT') {
+      store.objects[key] = Buffer.isBuffer(opts.body) ? opts.body.toString() : String(opts.body);
+      if (store.objects === r2.objects) r2.puts.push(key);
+      return Promise.resolve(new Response('', { status: 200 }));
+    }
+    if (method === 'DELETE') {
+      delete store.objects[key];
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
+    if (method === 'GET') {
+      const body = store.objects[key];
+      return Promise.resolve(body === undefined ? new Response('', { status: 404 }) : new Response(body));
+    }
   }
   return realFetch(url, opts);
 }
@@ -106,12 +130,87 @@ beforeEach(async () => {
   hetzner = { calls: [], created: [], servers: [], images: [], snapshots: [], action: 'running' };
   owncast = null;
   r2 = { objects: {}, puts: [] };
+  b2 = { objects: {} };
   process.env.HETZNER_API_TOKEN = 'test-token';
   await pool.query('DELETE FROM live_servers');
   await pool.query('DELETE FROM live_settings');
 });
 
 describe('Go Live (owned live, ADR-004)', () => {
+  test('old replays move from R2 to the B2 archive and play from it with signed links (MBJ-310)', async () => {
+    Object.assign(process.env, {
+      R2_ACCOUNT_ID: 'acct',
+      R2_ACCESS_KEY_ID: 'key',
+      R2_SECRET_ACCESS_KEY: 'secret',
+      R2_BUCKET: 'madebyjimbob-live',
+      R2_PUBLIC_URL: 'https://pub-test.r2.dev/',
+      B2_ENDPOINT: 'https://s3.us-east-005.backblazeb2.com',
+      B2_BUCKET: 'Jimbob-beta',
+      B2_KEY_ID: '005aaaaaaaaaaaaaaaaaaaaaa',
+      B2_APPLICATION_KEY: 'K005bbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    });
+    try {
+      const { rows } = await pool.query(
+        `INSERT INTO videos (title, kind, duration_s, published_at, hls_url, live_recording_id)
+         VALUES ('Live stream · old', 'live', 12, now() - interval '20 days', $1, 'old1') RETURNING id`,
+        ['https://pub-test.r2.dev/dvr/old1/master.m3u8'],
+      );
+      const id = rows[0].id;
+      Object.assign(r2.objects, {
+        'dvr/old1/master.m3u8': '#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\n0/index.m3u8\n',
+        'dvr/old1/0/index.m3u8': '#EXTM3U\n#EXTINF:6.000,\n0.ts\n#EXTINF:6.000,\n1.ts\n#EXT-X-ENDLIST\n',
+        'dvr/old1/0/0.ts': 'video0',
+        'dvr/old1/0/1.ts': 'video1',
+        'dvr/old1/thumb.jpg': 'jpg',
+      });
+      b2.objects['dvr/old1/0/0.ts'] = 'video0'; // the recorder already wrote some of it to B2
+      // A recent replay stays in R2.
+      await pool.query(
+        `INSERT INTO videos (title, kind, duration_s, published_at, hls_url, live_recording_id)
+         VALUES ('Live stream · new', 'live', 12, now(), 'https://pub-test.r2.dev/dvr/new1/master.m3u8', 'new1')`,
+      );
+
+      const { archiveReplays } = await import('../src/live.js');
+      assert.equal(await archiveReplays(), 1);
+      assert.deepEqual(Object.keys(b2.objects).sort(), [
+        'dvr/old1/0/0.ts',
+        'dvr/old1/0/1.ts',
+        'dvr/old1/0/index.m3u8',
+        'dvr/old1/master.m3u8',
+        'dvr/old1/thumb.jpg',
+      ]);
+      assert.deepEqual(
+        Object.keys(r2.objects).filter((k) => k.startsWith('dvr/old1/')),
+        [],
+        'deleted from R2',
+      );
+
+      const video = (await call(`/videos/${id}`)).data.video;
+      assert.equal(video.hls, `/replay/${id}/master.m3u8`);
+      assert.equal(video.thumbnail, `/replay/${id}/thumb.jpg`);
+      const origin = new URL(base).origin;
+      const list = await (await realFetch(`${origin}/replay/${id}/0/index.m3u8`)).text();
+      assert.match(
+        list,
+        /^https:\/\/s3\.us-east-005\.backblazeb2\.com\/Jimbob-beta\/dvr\/old1\/0\/0\.ts\?.*X-Amz-Signature=/m,
+      );
+      assert.match(list, /#EXT-X-ENDLIST/);
+      const master = await (await realFetch(`${origin}/replay/${id}/master.m3u8`)).text();
+      assert.match(
+        master,
+        /^0\/index\.m3u8$/m,
+        'the master stays relative, so qualities come through here too',
+      );
+      const thumb = await realFetch(`${origin}/replay/${id}/thumb.jpg`, { redirect: 'manual' });
+      assert.equal(thumb.status, 302);
+      assert.match(thumb.headers.get('location'), /X-Amz-Signature=/);
+      assert.equal((await realFetch(`${origin}/replay/${id}/../secret`)).status, 404);
+    } finally {
+      process.env.R2_ACCOUNT_ID = '';
+      process.env.B2_ENDPOINT = '';
+    }
+  });
+
   test('the recorder runs with R2; viewers can rewind; End stream closes the recording and saves the replay (MBJ-310)', async () => {
     Object.assign(process.env, {
       R2_ACCOUNT_ID: 'acct',

@@ -5,7 +5,7 @@
 // Viewers get the video through /live/hls on this site for now; R2 delivery replaces that before big audiences.
 import crypto from 'crypto';
 import fs from 'fs';
-import { r2Put } from '../live-recorder/r2put.mjs';
+import { r2Put, s3Request, s3List, presignGet } from '../live-recorder/r2put.mjs';
 import { pool } from './db.js';
 import { logger } from './logger.js';
 import {
@@ -74,6 +74,19 @@ const r2 = () => {
   };
 };
 export const r2Configured = () => Boolean(r2());
+
+// The archive (ADR-010): Backblaze B2, private. Replays move here from R2 after LIVE_R2_RETAIN_DAYS.
+export const b2 = () => {
+  const { B2_ENDPOINT, B2_BUCKET, B2_KEY_ID, B2_APPLICATION_KEY } = process.env;
+  if (!B2_ENDPOINT || !B2_BUCKET || !B2_KEY_ID || !B2_APPLICATION_KEY) return null;
+  return {
+    endpoint: B2_ENDPOINT.replace(/\/+$/, ''),
+    bucket: B2_BUCKET,
+    accessKey: B2_KEY_ID,
+    secret: B2_APPLICATION_KEY,
+  };
+};
+const RETAIN_DAYS = () => Number(process.env.LIVE_R2_RETAIN_DAYS || 14);
 
 const fixedBase = () => (process.env.OWNCAST_URL || '').replace(/\/+$/, '');
 export const liveConfigured = () => Boolean(fixedBase()) || hetznerConfigured();
@@ -225,11 +238,19 @@ function recorderSetup() {
   const files = ['r2put.mjs', 'recorder.mjs']
     .map((f) => `  - path: /opt/recorder/${f}\n    encoding: b64\n    content: ${recorderFile(f)}\n`)
     .join('');
+  const archive = b2();
   const env = {
     R2_ENDPOINT: storage.endpoint,
     R2_ACCESS_KEY_ID: storage.accessKey,
     R2_SECRET_ACCESS_KEY: storage.secret,
     R2_BUCKET: storage.bucket,
+    // The recorder writes the archive copy to B2 as it records.
+    ...(archive && {
+      B2_ENDPOINT: archive.endpoint,
+      B2_BUCKET: archive.bucket,
+      B2_KEY_ID: archive.accessKey,
+      B2_APPLICATION_KEY: archive.secret,
+    }),
   };
   const envArgs = Object.entries(env)
     .map(([k, v]) => `-e ${k}='${v}'`)
@@ -597,4 +618,92 @@ export async function proxyHls(req, res) {
   } catch {
     res.status(502).end();
   }
+}
+
+// ---------- the archive (MBJ-310, ADR-010) ----------
+
+const TYPES = {
+  m3u8: 'application/vnd.apple.mpegurl',
+  ts: 'video/mp2t',
+  jpg: 'image/jpeg',
+  json: 'application/json',
+};
+const typeOf = (key) => TYPES[key.split('.').pop()] || 'application/octet-stream';
+
+// Replays older than LIVE_R2_RETAIN_DAYS: make sure every file is in B2 (copying any the recorder didn't write there,
+// e.g. replays from before B2), switch the video to play from B2, then delete it from R2. Returns how many moved.
+export async function archiveReplays() {
+  const storage = r2();
+  const archive = b2();
+  if (!storage || !archive) return 0;
+  const { rows } = await pool.query(
+    `SELECT id, live_recording_id FROM videos
+      WHERE live_recording_id IS NOT NULL AND duration_s IS NOT NULL AND hls_url LIKE $1
+        AND published_at < now() - make_interval(days => $2)
+      ORDER BY id LIMIT 5`,
+    [`${storage.publicUrl}/%`, RETAIN_DAYS()],
+  );
+  let moved = 0;
+  for (const v of rows) {
+    const prefix = `dvr/${v.live_recording_id}/`;
+    try {
+      const inR2 = await s3List(storage, prefix);
+      const inB2 = new Set(await s3List(archive, prefix));
+      for (const key of inR2.filter((k) => !inB2.has(k))) {
+        const body = Buffer.from(await (await s3Request(storage, 'GET', key)).arrayBuffer());
+        await r2Put(
+          archive,
+          key,
+          body,
+          typeOf(key),
+          key.endsWith('.ts') ? 'public, max-age=31536000, immutable' : 'no-cache',
+        );
+      }
+      const nowInB2 = new Set(await s3List(archive, prefix));
+      const missing = inR2.filter((k) => !nowInB2.has(k));
+      if (missing.length || !nowInB2.has(`${prefix}master.m3u8`)) {
+        logger.warn({ videoId: v.id, missing: missing.length }, 'replay not fully in B2; leaving it in R2');
+        continue;
+      }
+      await pool.query('UPDATE videos SET hls_url = $2 WHERE id = $1', [v.id, `/replay/${v.id}/master.m3u8`]);
+      for (const key of inR2) await s3Request(storage, 'DELETE', key);
+      moved += 1;
+      logger.info({ videoId: v.id, files: inR2.length }, 'replay moved to the archive');
+    } catch (err) {
+      logger.warn({ err, videoId: v.id }, 'archiving a replay failed; will retry');
+    }
+  }
+  return moved;
+}
+
+export function startArchiveJob() {
+  if (!r2() || !b2()) return;
+  const run = () => archiveReplays().catch((err) => logger.error({ err }, 'archive job failed'));
+  setInterval(run, 30 * 60 * 1000).unref();
+  setTimeout(run, 60 * 1000).unref();
+}
+
+// A replay's file from the archive. Playlists come through here with every video piece as a short-lived signed B2
+// link (the bucket is private); other files redirect to a signed link. Returns { status, type?, body?, redirect? }.
+export async function archiveFile(recordingId, rest) {
+  const archive = b2();
+  if (!archive || !/^[\w./-]+$/.test(rest) || rest.includes('..')) return { status: 404 };
+  const key = `dvr/${recordingId}/${rest}`;
+  if (!rest.endsWith('.m3u8')) return { status: 302, redirect: presignGet(archive, key) };
+  let text;
+  try {
+    text = await (await s3Request(archive, 'GET', key)).text();
+  } catch {
+    return { status: 404 };
+  }
+  if (text.includes('#EXTINF')) {
+    const dir = rest.includes('/') ? rest.slice(0, rest.lastIndexOf('/') + 1) : '';
+    text = text
+      .split('\n')
+      .map((line) =>
+        line && !line.startsWith('#') ? presignGet(archive, `dvr/${recordingId}/${dir}${line.trim()}`) : line,
+      )
+      .join('\n');
+  }
+  return { status: 200, type: 'application/vnd.apple.mpegurl', body: text };
 }
