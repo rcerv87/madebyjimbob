@@ -78,6 +78,7 @@ function fakeFetch(url, opts = {}) {
       );
   }
   if (u.hostname === 'pub-test.r2.dev') {
+    if (r2.fail) return Promise.resolve(new Response('', { status: 429 }));
     const body = r2.objects[u.pathname.slice(1)];
     return Promise.resolve(body === undefined ? new Response('', { status: 404 }) : new Response(body));
   }
@@ -140,6 +141,10 @@ describe('Go Live (owned live, ADR-004)', () => {
       await tickLive();
       const live = (await call('/live')).data;
       assert.equal(live.dvr.url, 'https://pub-test.r2.dev/dvr/rec1/master.m3u8');
+      // R2 busy or rate-limited for a moment: the last good recording is still given, so the chat doesn't vanish.
+      r2.fail = true;
+      assert.equal((await call('/live')).data.dvr.url, 'https://pub-test.r2.dev/dvr/rec1/master.m3u8');
+      r2.fail = false;
       // The stream's video exists while live; chat sent now is live chat and stays with the replay.
       assert.ok(live.dvr.videoId);
       const viewer = await signIn(call, 'live_chatter');

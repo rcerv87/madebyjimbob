@@ -253,6 +253,9 @@ ${recorder.run}`;
 // ---------- recordings (MBJ-310) ----------
 
 // The newest recording, from dvr/current.json in R2: { id, startedAt, live, endedAt?, durationS? } or null.
+// A failed read (R2 busy or rate-limited) falls back to the last good answer for up to 2 minutes, so viewers don't
+// lose the chat and rewind controls over one hiccup.
+let lastRecording = { at: 0, value: null };
 export async function currentRecording() {
   const storage = r2();
   if (!storage) return null;
@@ -260,9 +263,13 @@ export async function currentRecording() {
     const res = await fetch(`${storage.publicUrl}/dvr/current.json?t=${Date.now()}`, {
       signal: AbortSignal.timeout(3000),
     });
-    return res.ok ? await res.json() : null;
-  } catch {
-    return null;
+    if (!res.ok) throw new Error(`R2 answered ${res.status}`);
+    const value = await res.json();
+    lastRecording = { at: Date.now(), value };
+    return value;
+  } catch (err) {
+    logger.debug({ err }, 'reading the current recording failed');
+    return Date.now() - lastRecording.at < 120_000 ? lastRecording.value : null;
   }
 }
 
