@@ -12,7 +12,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
 | Quality | 276 automated tests (167 server, 109 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 101 stories; 26 done, 13 in progress |
+| Backlog | 102 stories; 26 done, 13 in progress |
 
 ## Waiting on Ruben
 
@@ -258,6 +258,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## What's next (in order)
 
+0. **Beta priority: rewind the live stream and instant replay** (MBJ-310): scrub back seconds or hours while live,
+   Back to LIVE, and every stream becomes a site video with its chat the moment it ends. Needs a recorder keeping all
+   segments in R2 (MediaMTX); comes right after R2 delivery is verified and the 600-viewer test.
 1. **Turn on email** once madebyjimbob.app is verified in Resend (Waiting on Ruben #5, #7, #8); then check the first
    real sign-up, confirmation, and password reset.
 2. **Phone apps for Android and iPhone** (MBJ-401 on): decide how to build them (wrap this web app vs a native

@@ -32,6 +32,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | Sprint 5 | Shared types + mobile start | MBJ-004, MBJ-401, MBJ-402 |
 | Sprint 6 | Mobile core | MBJ-403, MBJ-404, MBJ-406 |
 | Sprint 7 | Go live | MBJ-301, MBJ-205, MBJ-302, MBJ-303 |
+| Beta | Owned live for the beta | MBJ-310 |
 | Next | Presence and navigation | MBJ-805, MBJ-810, MBJ-809, MBJ-804 |
 | Then | Accounts and money | MBJ-101, MBJ-114, MBJ-108, MBJ-113, MBJ-106, MBJ-116, MBJ-117, MBJ-115, MBJ-118, MBJ-119, MBJ-104, MBJ-109, MBJ-105, MBJ-811, MBJ-807 |
 
@@ -119,6 +120,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-307 | Rumble chat and Rants ingest | Live via YouTube | 3 | Should | M | MBJ-302 |
 | MBJ-308 | Moderation reaches YouTube | Live via YouTube | 3 | Should | M | MBJ-204, MBJ-302 |
 | MBJ-309 | Configurable live source | Live via YouTube | 3 | Should | S | MBJ-301 |
+| MBJ-310 | Rewind the live stream and instant replay (beta priority) | Live via YouTube | 3 | Must | L | MBJ-304 |
 | MBJ-501 | Owned live ingest to R2 | Owned live & audio | 4 | Must | L | MBJ-309 |
 | MBJ-502 | Audio-only renditions | Owned live & audio | 4 | Must | M | MBJ-501 |
 | MBJ-503 | Podcast feeds | Owned live & audio | 4 | Should | M | MBJ-502, MBJ-104 |
@@ -769,6 +771,19 @@ As JimBob, I want to switch live platforms without an app update.
 Acceptance criteria:
 - [ ] Live source per video: youtube | rumble | owned
 - [ ] Clients pick the player from the API response
+
+### MBJ-310 — Rewind the live stream and instant replay (beta priority)
+
+**Status:** To do · **Phase 3 — Live via YouTube** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-304
+
+As a viewer, I want to go back seconds or hours in a live stream and jump back to live; as JimBob, I want every stream on the site as a video the moment it ends.
+
+Acceptance criteria:
+- [ ] Live player scrubs anywhere in today's stream (DVR) with a Back to LIVE button; works in Listen only and on phones
+- [ ] The live server keeps every segment of the stream in R2 (not just the last few seconds) and publishes a growing playlist; Owncast can't, so add a recorder alongside or replace it (MediaMTX, also planned for the browser studio)
+- [ ] When the stream ends it becomes a normal video on the site with its chat and comments, with no import; tier default configurable
+- [ ] Archive copy moves to B2 (ADR-010); R2 copy deleted after a set time. A 4-hour stream ≈ 17 GB (1080p+720p+360p) ≈ $0.25/month while in R2
+- [ ] Ruben, 2026-10-02: wanted as soon as possible; must be in the beta
 
 ## Epic 4xx — Mobile apps
 

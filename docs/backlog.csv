@@ -196,6 +196,11 @@ MBJ-308,Moderation reaches YouTube,Live via YouTube,Phase 3 — Live via YouTube
 - Actions use JimBob's OAuth token and are logged","MBJ-204, MBJ-302"
 MBJ-309,Configurable live source,Live via YouTube,Phase 3 — Live via YouTube,Should,S,To do,"As JimBob, I want to switch live platforms without an app update.","- Live source per video: youtube | rumble | owned
 - Clients pick the player from the API response",MBJ-301
+MBJ-310,Rewind the live stream and instant replay (beta priority),Live via YouTube,Phase 3 — Live via YouTube,Must,L,To do,"As a viewer, I want to go back seconds or hours in a live stream and jump back to live; as JimBob, I want every stream on the site as a video the moment it ends.","- Live player scrubs anywhere in today's stream (DVR) with a Back to LIVE button; works in Listen only and on phones
+- The live server keeps every segment of the stream in R2 (not just the last few seconds) and publishes a growing playlist; Owncast can't, so add a recorder alongside or replace it (MediaMTX, also planned for the browser studio)
+- When the stream ends it becomes a normal video on the site with its chat and comments, with no import; tier default configurable
+- Archive copy moves to B2 (ADR-010); R2 copy deleted after a set time. A 4-hour stream ≈ 17 GB (1080p+720p+360p) ≈ $0.25/month while in R2
+- Ruben, 2026-10-02: wanted as soon as possible; must be in the beta",MBJ-304
 MBJ-401,Expo app scaffold,Mobile apps,Phase 2 — Mobile,Must,L,To do,"As a viewer, I want the platform as a phone app.","- `mobile/` Expo app in the workspace using `packages/shared`
 - Sign-in, Home, Watch, Account screens
 - Runs on iOS simulator and Android emulator","MBJ-004, MBJ-101"

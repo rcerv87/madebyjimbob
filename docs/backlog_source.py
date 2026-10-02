@@ -294,6 +294,13 @@ S = [
 ("309", 3, "Should", "S", "Configurable live source",
  "As JimBob, I want to switch live platforms without an app update.",
  ["Live source per video: youtube | rumble | owned", "Clients pick the player from the API response"], ["301"]),
+("310", 3, "Must", "L", "Rewind the live stream and instant replay (beta priority)",
+ "As a viewer, I want to go back seconds or hours in a live stream and jump back to live; as JimBob, I want every stream on the site as a video the moment it ends.",
+ ["Live player scrubs anywhere in today's stream (DVR) with a Back to LIVE button; works in Listen only and on phones",
+  "The live server keeps every segment of the stream in R2 (not just the last few seconds) and publishes a growing playlist; Owncast can't, so add a recorder alongside or replace it (MediaMTX, also planned for the browser studio)",
+  "When the stream ends it becomes a normal video on the site with its chat and comments, with no import; tier default configurable",
+  "Archive copy moves to B2 (ADR-010); R2 copy deleted after a set time. A 4-hour stream ≈ 17 GB (1080p+720p+360p) ≈ $0.25/month while in R2",
+  "Ruben, 2026-10-02: wanted as soon as possible; must be in the beta"], ["304"]),
 
 # ---------------- 4 Mobile ----------------
 ("401", 2, "Must", "L", "Expo app scaffold",
@@ -571,6 +578,7 @@ SPRINTS = [
     ("Sprint 5", "Shared types + mobile start", ["004", "401", "402"]),
     ("Sprint 6", "Mobile core", ["403", "404", "406"]),
     ("Sprint 7", "Go live", ["301", "205", "302", "303"]),
+    ("Beta", "Owned live for the beta", ["310"]),
     ("Next", "Presence and navigation", ["805", "810", "809", "804"]),
     ("Then", "Accounts and money", ["101", "114", "108", "113", "106", "116", "117", "115", "118", "119", "104", "109", "105", "811", "807"]),
 ]
