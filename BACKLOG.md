@@ -1211,7 +1211,7 @@ Acceptance criteria:
 
 ### MBJ-805 — Live indicator
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S
 
 As a viewer, I want to see at a glance when JimBob is live.
 
