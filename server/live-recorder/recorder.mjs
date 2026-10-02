@@ -9,6 +9,8 @@
 //   dvr/<id>/<n>/index.m3u8      one quality's playlist (EVENT; ENDLIST once finished)
 //   dvr/<id>/<n>/<seq>.ts        the video
 //   dvr/<id>/audio/…             the sound alone (Listen only / podcast mode), cut from the smallest quality
+//   dvr/<id>/thumb.jpg           a frame for the replay's card
+// With B2 settings, the same files also go to B2 (the archive copy).
 //
 // Env: R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, HLS_DIR (Owncast's data/hls, read-only).
 import { spawn, spawnSync } from 'child_process';
@@ -22,6 +24,15 @@ const cfg = {
   secret: process.env.R2_SECRET_ACCESS_KEY,
   bucket: process.env.R2_BUCKET,
 };
+// The archive copy (ADR-010): when B2 settings are given, everything is written to B2 as well, straight from here.
+const b2 = process.env.B2_ENDPOINT
+  ? {
+      endpoint: process.env.B2_ENDPOINT,
+      accessKey: process.env.B2_KEY_ID,
+      secret: process.env.B2_APPLICATION_KEY,
+      bucket: process.env.B2_BUCKET,
+    }
+  : null;
 const HLS = process.env.HLS_DIR || '/hls';
 const SEGMENT_S = 6; // join Owncast's 1-second pieces into segments this long
 const QUIET_S = 12; // no new video this long = the stream ended (for now)
@@ -48,6 +59,32 @@ function audioOf(bytes) {
     ff.stdin.on('error', () => {});
     ff.stdin.end(bytes);
   });
+}
+// One frame as a 640-wide JPEG, for the replay's thumbnail.
+function frameOf(bytes) {
+  return new Promise((resolve, reject) => {
+    const ff = spawn('ffmpeg', [
+      ...['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0', '-frames:v', '1', '-vf', 'scale=640:-2'],
+      ...['-q:v', '4', '-f', 'image2', 'pipe:1'],
+    ]);
+    const out = [];
+    ff.stdout.on('data', (d) => out.push(d));
+    ff.on('error', reject);
+    ff.on('close', (code) =>
+      code === 0 ? resolve(Buffer.concat(out)) : reject(new Error(`ffmpeg ${code}`)),
+    );
+    ff.stdin.on('error', () => {});
+    ff.stdin.end(bytes);
+  });
+}
+
+// Writes one object to R2 (what viewers play) and, if set up, B2 (the archive). A B2 hiccup never stops recording.
+async function store(key, body, contentType, cacheControl = 'no-cache') {
+  await r2Put(cfg, key, body, contentType, cacheControl);
+  if (b2)
+    await r2Put(b2, key, body, contentType, cacheControl).catch((err) =>
+      log('B2 copy failed', key, err.message),
+    );
 }
 const readText = (f) => fs.readFile(f, 'utf8').catch(() => null);
 
@@ -135,7 +172,7 @@ async function start(prefix, variants) {
     ...variants.flatMap((v) => [v.info, `${v.n}/index.m3u8`]),
     '',
   ];
-  await r2Put(cfg, `dvr/${id}/master.m3u8`, master.join('\n'), 'application/vnd.apple.mpegurl');
+  await store(`dvr/${id}/master.m3u8`, master.join('\n'), 'application/vnd.apple.mpegurl');
   await putJson('dvr/current.json', { id, startedAt: rec.startedAt, live: true, gapS: 0 });
   log('recording started', id);
 }
@@ -153,19 +190,22 @@ function flush(r, q, ended = false) {
     .then(async () => {
       if (bytes.length) {
         const file = `${q.seq++}.ts`;
-        await r2Put(
-          cfg,
-          `dvr/${r.id}/${q.n}/${file}`,
-          bytes,
-          'video/mp2t',
-          'public, max-age=31536000, immutable',
-        );
+        await store(`dvr/${r.id}/${q.n}/${file}`, bytes, 'video/mp2t', 'public, max-age=31536000, immutable');
         q.lines.push({ file, dur, disc });
+        // Thumbnail from the first quality: about 20 seconds in, and again at 5 minutes (past any intro screen).
+        const recorded = q.lines.reduce((sum, l) => sum + l.dur, 0);
+        if (HAS_FFMPEG && q === r.qualities.values().next().value) {
+          const due = (!r.thumbAt && recorded >= 20) || (r.thumbAt && r.thumbAt < 300 && recorded >= 300);
+          if (due) {
+            r.thumbAt = recorded;
+            const jpg = await frameOf(bytes).catch((err) => log('thumbnail failed', err.message));
+            if (jpg?.length) await store(`dvr/${r.id}/thumb.jpg`, jpg, 'image/jpeg', 'public, max-age=300');
+          }
+        }
         if (r.audio?.from === q.n) {
           const sound = await audioOf(bytes).catch((err) => log('audio failed', err.message));
           if (sound?.length) {
-            await r2Put(
-              cfg,
+            await store(
               `dvr/${r.id}/audio/${file}`,
               sound,
               'video/mp2t',
@@ -175,10 +215,9 @@ function flush(r, q, ended = false) {
           }
         }
       }
-      await r2Put(cfg, `dvr/${r.id}/${q.n}/index.m3u8`, playlist(q, ended), 'application/vnd.apple.mpegurl');
+      await store(`dvr/${r.id}/${q.n}/index.m3u8`, playlist(q, ended), 'application/vnd.apple.mpegurl');
       if (r.audio?.from === q.n)
-        await r2Put(
-          cfg,
+        await store(
           `dvr/${r.id}/audio/index.m3u8`,
           playlist(r.audio, ended),
           'application/vnd.apple.mpegurl',

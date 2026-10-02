@@ -4,7 +4,7 @@ import { startErasureJob } from './deletion.js';
 import { startLinkCheckJob } from './links.js';
 import { startViewCleanup } from './views.js';
 import { startReplacementJob } from './replacements.js';
-import { startLiveJob } from './live.js';
+import { startLiveJob, startArchiveJob } from './live.js';
 import { logger } from './logger.js';
 
 // Migrations run separately (`npm run migrate`, Render's pre-deploy command), not on boot.
@@ -24,3 +24,5 @@ startViewCleanup();
 startReplacementJob();
 // Finishes starting live servers and deletes idle, over-cap, or stray ones (ADR-004).
 startLiveJob();
+// Moves live replays from R2 to the B2 archive after LIVE_R2_RETAIN_DAYS (MBJ-310).
+startArchiveJob();

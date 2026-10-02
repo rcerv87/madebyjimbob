@@ -8,7 +8,7 @@ import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback, deleteFromStream, createDirectUpload, streamConfigured } from './stream.js';
 import { queueImports, listImports, jobRow, helperStatus, youtubeId } from './imports.js';
 import { checkReplacement } from './replacements.js';
-import { liveConfigured, liveStatus, studioLive, goLive, endLive, proxyHls } from './live.js';
+import { liveConfigured, liveStatus, studioLive, goLive, endLive, proxyHls, archiveFile } from './live.js';
 import { parseChannel, requestListing, channelPage, JIMBOB_CHANNEL } from './channel.js';
 import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
@@ -147,7 +147,10 @@ function videoCard(v) {
     minTier: v.min_tier,
     views: v.views,
     chatCount: Number(v.chat_count || 0),
-    thumbnail: playback(v.stream_uid)?.thumbnail || null,
+    // Live replays (MBJ-310) have a frame saved next to their recording.
+    thumbnail:
+      playback(v.stream_uid)?.thumbnail ||
+      (v.hls_url ? v.hls_url.replace(/master\.m3u8$/, 'thumb.jpg') : null),
   };
 }
 
@@ -232,6 +235,25 @@ app.get(
   }),
 );
 app.get(/^\/live\/hls\/(.+)$/, proxyHls);
+
+// Live replays kept in the archive (B2): /replay/<video id>/<file>, for viewers allowed to watch the video.
+app.get(
+  /^\/replay\/(\d{1,18})\/(.+)$/,
+  wrap(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT id, min_tier, live_recording_id FROM videos WHERE id = $1 AND hls_url LIKE '/replay/%'`,
+      [req.params[0]],
+    );
+    if (!rows[0]) return res.status(404).end();
+    if (!canWatch(await currentUser(req).catch(() => null), rows[0])) return res.status(403).end();
+    const out = await archiveFile(rows[0].live_recording_id, req.params[1]);
+    if (out.redirect) return res.redirect(302, out.redirect);
+    if (out.status !== 200) return res.status(out.status).end();
+    res.set('Content-Type', out.type);
+    res.set('Cache-Control', 'private, max-age=300');
+    res.send(out.body);
+  }),
+);
 
 // ---------- account ----------
 app.get(

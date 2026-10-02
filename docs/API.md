@@ -116,7 +116,7 @@ Chat messages and comments carry `profile` (the site username to open a profile 
 }
 ```
 
-Not under `/api`: `GET /live/hls/*` passes the live server's HLS playlists and segments through (small audiences; R2 later).
+Not under `/api`: `GET /live/hls/*` serves the live quality list (each quality from R2). `GET /replay/:videoId/*` serves a live replay that has moved to the B2 archive, for viewers allowed to watch it: playlists come back with every piece as a 6-hour signed B2 link; other files (thumb.jpg) redirect to a signed link.
 
 ## WebSocket
 

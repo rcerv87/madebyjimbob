@@ -83,7 +83,9 @@ Easiest and least risky first; each step is independent unless noted.
    refuses it. A key ID is 25 characters; the secret starts with `K`.
 2. Copy the bucket: `rclone sync ruben-b2:madebyjimbob-archive jimbob-b2:madebyjimbob-archive --progress`
    (rclone remotes set up with each account's key). B2's free downloads (3× stored per month) usually cover it.
-3. Compare counts and sizes (`rclone size` on both), then replace `B2_*` settings and save.
+3. Compare counts and sizes (`rclone size` on both), then replace `B2_*` settings and save. Copy the bucket's CORS rules
+   (site origins, S3 Compatible API) too, or replays from B2 won't play in browsers. Replays in B2 are served as
+   `/replay/<id>/…` (the database stores no B2 address), so nothing else changes.
 4. Keep Ruben's bucket a week, then delete it.
 
 ### 5. Cloudflare R2 and Stream
