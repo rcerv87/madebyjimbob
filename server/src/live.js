@@ -14,6 +14,9 @@ import {
   createPrimaryIp,
   getPrimaryIp,
   findLivePrimaryIp,
+  findLiveImage,
+  snapshotServer,
+  getAction,
 } from './hetzner.js';
 
 export const SERVER_TYPE = process.env.LIVE_SERVER_TYPE || 'cpx31';
@@ -167,6 +170,7 @@ export async function studioLive() {
           readyAt: s.ready_at,
           type: s.server_type,
           error: s.error,
+          saving: s.status === 'stopping' && Boolean(s.snapshot_action_id),
         }
       : { status: 'off' },
     ...status,
@@ -179,11 +183,14 @@ export async function studioLive() {
 
 // ---------- Go Live ----------
 
-const cloudInit = (settings) => `#cloud-config
-package_update: true
-packages: [docker.io]
-runcmd:
+// From plain Ubuntu: install Docker, then start Owncast. From the saved image, Docker and the Owncast image are already
+// there, so only the old container and its data are cleared (each stream starts fresh).
+const INSTALL_DOCKER = 'package_update: true\npackages: [docker.io]\n';
+const cloudInit = (settings, fromImage) => `#cloud-config
+${fromImage ? '' : INSTALL_DOCKER}runcmd:
   - systemctl enable --now docker
+  - docker rm -f owncast || true
+  - rm -rf /opt/owncast
   - docker run -d --name owncast --restart unless-stopped -p 8080:8080 -p 1935:1935 -v /opt/owncast:/app/data owncast/owncast:latest -adminpassword '${settings.admin_password}'
 `;
 
@@ -218,12 +225,13 @@ export async function goLive(userId) {
   );
   const row = rows[0];
   try {
+    const image = await findLiveImage().catch(() => null);
     const server = await createServer({
       name: `mbj-live-${row.id}`,
       server_type: SERVER_TYPE,
-      image: 'ubuntu-24.04',
+      image: image ? String(image.id) : 'ubuntu-24.04',
       location: LOCATION,
-      user_data: cloudInit(settings),
+      user_data: cloudInit(settings, Boolean(image)),
       public_net: { enable_ipv4: true, enable_ipv6: false, ipv4: ip.id },
     });
     await pool.query('UPDATE live_servers SET hetzner_id = $2 WHERE id = $1', [row.id, server.id]);
@@ -245,6 +253,23 @@ export async function endLive(reason = 'ended') {
     s.id,
     reason,
   ]);
+  // No saved image yet and this server got fully set up: save one first (a couple of minutes); the live job deletes
+  // the server when the snapshot is done. Viewers already see the stream as ended.
+  if (
+    s.hetzner_id &&
+    s.ready_at &&
+    reason !== 'failed' &&
+    !(await findLiveImage().catch(() => ({ id: 0 })))
+  ) {
+    try {
+      const action = await snapshotServer(s.hetzner_id);
+      await pool.query('UPDATE live_servers SET snapshot_action_id = $2 WHERE id = $1', [s.id, action.id]);
+      logger.info({ liveServer: s.id }, 'saving live server image before deleting it');
+      return s;
+    } catch (err) {
+      logger.warn({ err }, 'could not save live server image; deleting anyway');
+    }
+  }
   if (s.hetzner_id) await deleteServer(s.hetzner_id);
   await pool.query(`UPDATE live_servers SET status = 'stopped', ended_at = now() WHERE id = $1`, [s.id]);
   logger.info({ liveServer: s.id, reason }, 'live server deleted');
@@ -323,6 +348,17 @@ export async function tickLive() {
       ]);
       await endLive('failed');
       await pool.query(`UPDATE live_servers SET status = 'failed' WHERE id = $1`, [s.id]);
+    }
+  } else if (s?.status === 'stopping' && s.snapshot_action_id) {
+    // Waiting for the image to save; delete once it's done, failed, or taking far too long.
+    const action = await getAction(s.snapshot_action_id).catch(() => ({ status: 'error' }));
+    if (action.status !== 'running' || hoursBetween(s.ended_at || s.created_at) > 1) {
+      if (s.hetzner_id) await deleteServer(s.hetzner_id);
+      await pool.query(`UPDATE live_servers SET status = 'stopped', ended_at = now() WHERE id = $1`, [s.id]);
+      logger.info(
+        { liveServer: s.id, snapshot: action.status },
+        'live server deleted after saving its image',
+      );
     }
   } else if (s?.status === 'ready') {
     const base = `http://${s.ip}:8080`;

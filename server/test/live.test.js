@@ -34,6 +34,17 @@ function fakeFetch(url, opts = {}) {
       hetzner.servers = hetzner.servers.filter((s) => s.id !== Number(del[1]));
       return json(200, { action: {} });
     }
+    if (method === 'GET' && u.pathname === '/v1/images') {
+      if (!hetzner.imagesFaked) return json(404, { error: { message: 'not faked' } });
+      return json(200, { images: hetzner.images });
+    }
+    const snap = u.pathname.match(/^\/v1\/servers\/(\d+)\/actions\/create_image$/);
+    if (method === 'POST' && snap) {
+      hetzner.snapshots.push(Number(snap[1]));
+      return json(201, { action: { id: 77, status: 'running' } });
+    }
+    if (method === 'GET' && u.pathname === '/v1/actions/77')
+      return json(200, { action: { id: 77, status: hetzner.action } });
     return json(404, { error: { message: 'not faked' } });
   }
   if (u.hostname === IP) {
@@ -80,7 +91,7 @@ after(async () => {
   await stopServer();
 });
 beforeEach(async () => {
-  hetzner = { calls: [], created: [], servers: [] };
+  hetzner = { calls: [], created: [], servers: [], images: [], snapshots: [], action: 'running' };
   owncast = null;
   process.env.HETZNER_API_TOKEN = 'test-token';
   await pool.query('DELETE FROM live_servers');
@@ -170,6 +181,34 @@ describe('Go Live (owned live, ADR-004)', () => {
     assert.ok(owncast.config.includes('video/streamoutputvariants'), 'set again');
     assert.equal(owncast.config.at(-1), 'streamkeys');
     await call('/studio/live/stop', { method: 'POST', token: admin });
+  });
+
+  test('the first End stream saves a faster-start image; later servers start from it', async () => {
+    hetzner.imagesFaked = true;
+    const admin = await signIn(call, 'test_admin');
+    await call('/studio/live/start', { method: 'POST', token: admin });
+    assert.equal(hetzner.created[0].image, 'ubuntu-24.04');
+    assert.match(hetzner.created[0].user_data, /packages: \[docker\.io\]/);
+    owncast = { online: false, config: [] };
+    await tickLive();
+
+    const ended = await call('/studio/live/stop', { method: 'POST', token: admin });
+    assert.equal(ended.data.server.saving, true);
+    assert.equal(hetzner.snapshots.length, 1);
+    assert.equal(hetzner.servers.length, 1, 'kept until the image is saved');
+    await tickLive();
+    assert.equal(hetzner.servers.length, 1);
+    hetzner.action = 'success';
+    hetzner.images.push({ id: 31337, created: '2026-10-02T06:00:00Z' });
+    await tickLive();
+    assert.deepEqual(hetzner.servers, []);
+    assert.equal((await call('/studio/live', { token: admin })).data.server.status, 'off');
+
+    await call('/studio/live/start', { method: 'POST', token: admin });
+    assert.equal(hetzner.created[1].image, '31337');
+    assert.doesNotMatch(hetzner.created[1].user_data, /docker\.io/);
+    await call('/studio/live/stop', { method: 'POST', token: admin });
+    assert.equal(hetzner.snapshots.length, 1, 'only one image is ever saved');
   });
 
   test('a server idle for 30 minutes, past the hour cap, or unknown to the site is deleted', async () => {

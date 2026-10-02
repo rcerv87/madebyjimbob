@@ -343,6 +343,7 @@ One row per server Go Live created.
 | error | text | why it failed |
 | started_by | bigint → users | |
 | stop_reason | text | `ended \| idle \| cap \| failed` |
+| snapshot_action_id | bigint | the first End stream saves a Hetzner snapshot (label `mbj=live-image`) before deleting; later servers start from it |
 | created_at, ready_at, last_online_at, ended_at | timestamptz | hours and cost in Studio come from these |
 
 ## Planned

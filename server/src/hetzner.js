@@ -42,6 +42,27 @@ export async function deleteServer(id) {
 export const findLivePrimaryIp = async () =>
   (await call('GET', `/primary_ips?label_selector=${encodeURIComponent(LIVE_LABEL)}`)).primary_ips[0] || null;
 
+export const IMAGE_LABEL = 'mbj=live-image';
+
+// The saved server image Go Live starts from, if one exists (newest first).
+export async function findLiveImage() {
+  const { images } = await call(
+    'GET',
+    `/images?type=snapshot&label_selector=${encodeURIComponent(IMAGE_LABEL)}`,
+  );
+  return images.sort((a, b) => new Date(b.created) - new Date(a.created))[0] || null;
+}
+
+// Starts saving a snapshot of a server; returns the action to wait on.
+export const snapshotServer = (id) =>
+  call('POST', `/servers/${id}/actions/create_image`, {
+    type: 'snapshot',
+    description: 'MADEbyJIMBOB live server (Docker + Owncast)',
+    labels: { mbj: 'live-image' },
+  }).then((d) => d.action);
+
+export const getAction = (id) => call('GET', `/actions/${id}`).then((d) => d.action);
+
 export const getPrimaryIp = (id) => call('GET', `/primary_ips/${id}`).then((d) => d.primary_ip);
 
 export const createPrimaryIp = (location) =>

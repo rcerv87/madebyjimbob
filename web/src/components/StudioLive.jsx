@@ -110,7 +110,9 @@ export default function StudioLive() {
       {hetzner && (
         <div className="live-server">
           <span className={`small ${state === 'starting' ? 'live-pending' : ''}`}>
-            {SERVER_STATE[state] || state}
+            {live.server?.saving
+              ? 'Saving a faster-start copy of the server, then deleting it (about 2 minutes)…'
+              : SERVER_STATE[state] || state}
           </span>
           {state === 'off' && (
             <button className="primary-btn" disabled={busy} onClick={() => act('start')}>
