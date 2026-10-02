@@ -1,0 +1,139 @@
+# Moving MADEbyJIMBOB to JimBob's accounts
+
+During the beta the platform runs on Ruben's accounts with a small library (about 50 videos). Before launch, everything
+moves to accounts JimBob owns, so the platform, the archive, and the money are his: the cancel-proof idea applied to
+ownership. This guide lists every account, what it holds, the settings that point at it, and how to move it.
+
+Keep it current: when a new service or setting is added, add it here.
+
+## Principles
+
+- **JimBob owns the accounts and pays the bills.** Ruben (or any developer) works through access he grants: team seats
+  or API keys scoped to one bucket or project. Leaving means revoking a key, not moving data.
+- **Every service is reached through settings only** (environment variables on Render, `.env` locally). Moving a service
+  is copying data plus changing settings; no code changes. If a move would need a code change, fix that first.
+- **Move one service at a time**, verify it, then the next. The old account stays untouched until the new one is
+  verified, so going back is changing the settings back.
+- **Secrets are never written in docs or chat.** They live in Render's Environment and the local `.env`.
+
+## What lives where (beta)
+
+| Service | Holds | Owner now | Settings | Effort to move |
+|---|---|---|---|---|
+| **GoDaddy** | Domain `madebyjimbob.app` (registration only) | Ruben | none (nameservers point to Cloudflare) | Easy |
+| **Cloudflare** | DNS for `madebyjimbob.app`; **R2** bucket `madebyjimbob-live` (live streams, recordings, replays); **Stream** (imported videos) | Ruben | `R2_*`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_STREAM_CUSTOMER_CODE` | Medium (data copy) |
+| **Backblaze B2** (planned) | Archive copies (720p, 360p, audio) | Ruben during beta | `B2_*` (planned) | Medium (data copy) |
+| **Render** | The site (web service `madebyjimbob`) and the **Postgres** database `madebyjimbob-db` (accounts, chat, comments, videos, settings) | Ruben | all of the below; `DATABASE_URL` comes from Render | Medium |
+| **Hetzner** | Streaming server, created per stream and deleted after; saved server image; fixed IP | Ruben (project `MadeByJimBob`) | `HETZNER_API_TOKEN` | Easy (nothing stored) |
+| **Resend** | Account email sending for `madebyjimbob.app` | Ruben (shared Pro plan) | `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `RESEND_WEBHOOK_SECRET` | Easy |
+| **GitHub** | The code (`rcerv87/madebyjimbob`, private) | Ruben | none | Easy |
+| **Google Cloud** | YouTube Data API key (channel list) | Ruben | `YOUTUBE_API_KEY` | Easy |
+| **Shopify** | JimBob's store, read publicly | JimBob already | `SHOP_URL` | none |
+| **Payments** (not built) | Memberships, Bob Chats | — | — | Set up in JimBob's name from the start |
+| **Apple / Google developer accounts** | Phone apps | Ruben (by choice) | — | Apps can be transferred between developer accounts later |
+
+## Before moving anything
+
+1. Agree the date and freeze changes for that day (no deploys during the move).
+2. JimBob creates each account below with his own email, two-factor login, and his card.
+3. He invites Ruben as a team member where the service supports it (Cloudflare, Render, GitHub, Backblaze groups) or
+   creates scoped keys and shares them privately (password manager, never chat or email).
+4. Note the current values of every setting (Render → Environment) so you can go back.
+5. Post a short notice on the site if anything will be offline (the database move is the only step that needs one).
+
+## Order
+
+Easiest and least risky first; each step is independent unless noted.
+
+1. Resend (email)
+2. Hetzner (streaming server)
+3. Google Cloud (YouTube key)
+4. B2 (archive), if in use
+5. Cloudflare R2 (live recordings and replays), then Cloudflare Stream (imported videos)
+6. Domain and DNS (Cloudflare zone, GoDaddy registration)
+7. Render (site and database)
+8. GitHub (code)
+
+## Steps
+
+### 1. Resend
+1. JimBob creates a Resend account (free until launch, $20/month at launch volume).
+2. Add domain `madebyjimbob.app` there; Resend shows DKIM/SPF records. Add them in Cloudflare DNS (they can sit next
+   to the old ones for a day).
+3. Create an API key (Sending access) and a webhook (`email.bounced`, `email.complained` →
+   `https://<site>/api/webhooks/resend`), copy its signing secret.
+4. Render → Environment: replace `RESEND_API_KEY` and `RESEND_WEBHOOK_SECRET`. Save.
+5. Verify: Studio → Account email → Send test. Then remove the domain from Ruben's Resend.
+
+### 2. Hetzner
+1. JimBob creates a Hetzner account and a project `MadeByJimBob`; generates an API token (Read & Write).
+2. Make sure no stream is live, then Render → Environment: replace `HETZNER_API_TOKEN`. Save.
+3. The first Go Live creates a new fixed IP in his project, so **OBS's server address changes once**: copy the new
+   one from Studio → Live → OBS settings. The stream key stays the same (it's in the database).
+4. The first End stream saves a new server image in his project (a couple of minutes).
+5. In Ruben's project, delete the old image and the old Primary IP (about $0.60/month).
+
+### 3. Google Cloud (YouTube Data API)
+1. JimBob creates a Google Cloud project, enables YouTube Data API v3, creates an API key restricted to it.
+2. Replace `YOUTUBE_API_KEY` (Render, and the import helper's `.env`). Delete the old key.
+
+### 4. Backblaze B2 (archive)
+1. JimBob creates a Backblaze account and a private bucket (e.g. `madebyjimbob-archive`), and an application key for
+   that bucket only (Read and Write).
+2. Copy the bucket: `rclone sync ruben-b2:madebyjimbob-archive jimbob-b2:madebyjimbob-archive --progress`
+   (rclone remotes set up with each account's key). B2's free downloads (3× stored per month) usually cover it.
+3. Compare counts and sizes (`rclone size` on both), then replace `B2_*` settings and save.
+4. Keep Ruben's bucket a week, then delete it.
+
+### 5. Cloudflare R2 and Stream
+**R2 (live recordings, replays):**
+1. JimBob's Cloudflare account: create bucket `madebyjimbob-live`, the same CORS policy (site origins, GET/HEAD), and
+   an API token with Object Read & Write on that bucket only.
+2. Copy: `rclone sync ruben-r2:madebyjimbob-live jimbob-r2:madebyjimbob-live --progress` (R2 doesn't charge for
+   downloads).
+3. Connect the custom domain to the new bucket. Since the domain moves in step 6, either move the domain first and
+   connect `live.madebyjimbob.app` there, or connect a temporary one.
+4. Replace `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` (and `R2_PUBLIC_URL` if the
+   address changes). Save.
+5. **Replays store their full address** (`videos.hls_url`). If the public address stays `live.madebyjimbob.app`,
+   nothing to do; if it changes, update them:
+   `UPDATE videos SET hls_url = replace(hls_url, '<old address>', '<new address>') WHERE hls_url LIKE '<old address>%';`
+6. Verify: Go Live, rewind, End stream, open the replay, Listen only.
+
+**Stream (imported videos):** Stream can't move files between accounts. Either re-import the beta videos into his
+account (Studio → Add videos re-runs the helper; or `--stream-uid` style re-uploads), or, if the archive has moved to
+B2 by then, skip Stream for the library entirely (ADR-010). Replace `CF_ACCOUNT_ID`, `CF_API_TOKEN`,
+`CF_STREAM_CUSTOMER_CODE`, and update `videos.stream_uid` to the new ids.
+
+### 6. Domain and DNS
+1. **DNS zone:** Cloudflare has a "move domain to another account" flow; otherwise add `madebyjimbob.app` to
+   JimBob's Cloudflare, recreate the records (export a zone file from Ruben's: DNS → Import and Export), and switch the
+   nameservers at GoDaddy to the ones his account shows.
+2. **Registration:** GoDaddy → My Products → the domain → Transfer to another GoDaddy account (his customer number or
+   email). Or transfer it out to the registrar he prefers (unlock, get the auth code; `.app` transfers take ~5 days).
+3. Verify the site, `live.`, email (send a test), and that auto-renew is on in his account.
+
+### 7. Render (site and database)
+Render can transfer services between workspaces: invite JimBob's workspace, transfer `madebyjimbob` and
+`madebyjimbob-db` (no data copy, no downtime). If that's not available, move the database:
+1. JimBob's Render: create the database (same plan or larger) and the web service from this repo's `render.yaml`.
+2. Copy every setting from the old service (Render → Environment). `BETTER_AUTH_SECRET` must be **the same value**,
+   or everyone is signed out (not harmful, just annoying).
+3. Maintenance notice on; stop the old service (or scale it to 0) so nothing writes.
+4. `pg_dump --no-owner --format=custom "$OLD_DATABASE_URL" -f mbj.dump` then
+   `pg_restore --no-owner --dbname "$NEW_DATABASE_URL" mbj.dump`.
+5. Start the new service; check `/api/health`, sign in, a video, chat, Studio.
+6. Point the custom domain at the new service (Render → Settings → Custom Domains; Cloudflare DNS record).
+7. Keep the old database a week (read-only), then delete it.
+
+### 8. GitHub
+GitHub → repository → Settings → Transfer ownership → JimBob's account or organization. Then reconnect Render's
+deploys to the new repository location, and re-add the branch rule and Actions settings.
+
+## After the move
+
+- [ ] Every service in the table shows JimBob as owner; Ruben has team access or scoped keys only.
+- [ ] Render → Environment has no key from Ruben's accounts (compare with the notes from "Before moving anything").
+- [ ] Local `.env` files updated (the import helper's PC especially).
+- [ ] Old buckets, images, IPs, keys, and tokens deleted from Ruben's accounts after a week.
+- [ ] Update this document's "What lives where" table.

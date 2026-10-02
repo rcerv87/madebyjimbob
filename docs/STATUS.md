@@ -16,6 +16,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## Waiting on Ruben
 
+- **Beta on Ruben's accounts, then move to JimBob's** (decided 2026-10-02): Ruben opens his own B2 for the beta
+  (about 50 test videos); JimBob sets up his own accounts before launch. The step-by-step move for every service is in
+  `docs/MIGRATION.md` (keep it current as services are added).
+
 - **madebyjimbob.app (bought at GoDaddy 2026-10-02; nameservers switched to Cloudflare `anahi`/`bruce`, waiting for
   Cloudflare to say Active).** Then:
   1. Cloudflare → R2 → `madebyjimbob-live` → Settings → Custom Domains → connect `live.madebyjimbob.app` (wait for Active).

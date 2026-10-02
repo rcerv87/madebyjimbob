@@ -24,6 +24,7 @@ Rumble, and native messages, tiered memberships (Free / Plus / Premium), and eng
 - Chat system (the core of the product): `docs/CHAT.md`
 - Data model: `docs/DATA_MODEL.md`
 - API + WebSocket contract: `docs/API.md`
+- Moving to JimBob's accounts (every service, its settings, and the steps): `docs/MIGRATION.md`
 - Mobile app: `docs/MOBILE.md`
 - Decisions: `docs/adr/`
 - Work items: `BACKLOG.md` (also `docs/backlog.csv` for Jira/GitHub import)
@@ -72,6 +73,7 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
    - new/changed endpoint or WS message → `docs/API.md`
    - schema change → migration + `docs/DATA_MODEL.md`
    - architectural choice → new ADR in `docs/adr/`
+   - new external service, account, or setting (env var) → `docs/MIGRATION.md` (how it moves to JimBob's accounts)
 6. Mark the story `Done` in the `STATUS` dict in `docs/backlog_source.py`, re-run it (regenerates `BACKLOG.md` and `docs/backlog.csv`), and note anything deferred.
 
 ## Conventions
