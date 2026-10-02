@@ -42,3 +42,7 @@ domain (e.g. `hello@madebyjimbob.com`) with SPF, DKIM, and DMARC records.
   webhook at SNS.
 - JimBob's domain needs three or four DNS records (sending subdomain MX and SPF, DKIM, DMARC). If the domain's
   DNS moves (ADR-011 option A), these records move with it.
+
+## Update 2026-10-01
+
+Ruben bought Resend Pro ($20/month) for his own projects and shares it with MadeByJimBob, so account email adds no cost for now. The sending domain will be madebyjimbob.app during the beta (ADR-011).

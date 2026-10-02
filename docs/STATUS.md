@@ -26,8 +26,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    JimBob chooses the final address: madebyjimbob.com with the store at shop.madebyjimbob.com (recommended), or
    watch.madebyjimbob.com. The switch checklist is in `docs/adr/011-domain-and-store.md` ("Beta address").
 6. **JimBob's OK** on using his avatar, banner art, and store products in the platform before the link goes wide.
-7. **Turn on account email** (MBJ-114, ADR-012; free until launch, then $20/month). About 15 minutes plus DNS time:
-   1. Sign up at https://resend.com with an address you'll keep (ideally one JimBob can also reach).
+7. **Turn on account email** (MBJ-114, ADR-012; Ruben's Resend Pro plan, shared). About 15 minutes plus DNS time:
+   1. Sign in to your Resend Pro account.
    2. Resend → **Domains** → **Add domain** → `madebyjimbob.app` (the beta address; `.com` later, ADR-011). It lists 3–4 DNS records.
    3. Open the DNS settings where madebyjimbob.app was bought. Add each record exactly
       as Resend shows it. If there is no `_dmarc` TXT record yet, also add `_dmarc` → `v=DMARC1; p=none;`.
