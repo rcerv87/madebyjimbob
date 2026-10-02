@@ -319,7 +319,13 @@ export default function Live({ session }) {
     let stop = false;
     const load = () =>
       api('/live')
-        .then((d) => !stop && setLive(d))
+        // Still live but this answer lacks the recording (a hiccup reading it): keep the last one, so the chat and
+        // rewind controls don't vanish.
+        .then(
+          (d) =>
+            !stop &&
+            setLive((prev) => (d.online && !d.dvr && prev?.online && prev.dvr ? { ...d, dvr: prev.dvr } : d)),
+        )
         .catch(() => !stop && setLive({ online: false }));
     load();
     const t = setInterval(load, 10000);
