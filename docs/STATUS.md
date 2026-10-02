@@ -58,19 +58,12 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 12. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
    Google Takeout export of the channel (Studio → Add videos → From files takes the folder; guide: the "JimBob's YouTube Backup" page); tier prices and perks;
    moderators; brand assets and domain.
-13. **Turn on Go Live on the live site** (owned live, ADR-004):
-   1. Render → `madebyjimbob` → **Environment** → add `HETZNER_API_TOKEN` (the same Read & Write token as in `.env`). Save;
-      Render redeploys.
-   2. Then remove (or comment out) `HETZNER_API_TOKEN` in the local `.env`. Both copies of the site clean up servers labeled
-      `mbj=live`, so one would delete the other's server.
-   3. Studio → Live → **Go Live**, wait for "Server ready", and copy the OBS server and stream key into OBS (Settings →
-      Stream → Custom). The live site makes its own stream key; the fixed IP stays 5.161.237.192.
-   - **Tests still to run on the live site:** Go Live → Server ready on Render; OBS streams to it; /live plays on a
-     phone and a desktop with sound (Play button when the browser blocks sound); the home page LIVE strip appears;
-     End stream deletes the server (Hetzner Console shows 0 servers); after you stop OBS, the server deletes itself
-     within ~31 minutes; a viewer on another network sees the video (it passes through Render); and JimBob's own OBS
-     and upload from his house (dropped frames in OBS Stats).
-
+13. **Go Live is on (2026-10-02).** The token is on Render and was removed from the local `.env`. Tested on the live site:
+   Server ready, OBS → Hetzner → Render → viewers, /live on phone (cellular) and desktop, home page LIVE strip, about 5 s
+   behind, End stream deleted the server. **Still to test:** the server deleting itself ~31 minutes after OBS stops
+   without End stream; JimBob's own OBS and upload (dropped frames in OBS Stats). **Before big audiences:** R2
+   delivery (video currently passes through Render; 600 viewers ≈ 1.5 Gbps), then a 600-viewer load test from 3–4
+   temporary Hetzner servers (~$1–2).
 
 ## What's built
 
