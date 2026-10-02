@@ -270,7 +270,10 @@ export async function endLive(reason = 'ended') {
   ) {
     try {
       const action = await snapshotServer(s.hetzner_id);
-      await pool.query('UPDATE live_servers SET snapshot_action_id = $2 WHERE id = $1', [s.id, action.id]);
+      await pool.query('UPDATE live_servers SET snapshot_action_id = $2, ended_at = now() WHERE id = $1', [
+        s.id,
+        action.id,
+      ]);
       logger.info({ liveServer: s.id }, 'saving live server image before deleting it');
       return s;
     } catch (err) {
@@ -357,9 +360,9 @@ export async function tickLive() {
       await pool.query(`UPDATE live_servers SET status = 'failed' WHERE id = $1`, [s.id]);
     }
   } else if (s?.status === 'stopping' && s.snapshot_action_id) {
-    // Waiting for the image to save; delete once it's done, failed, or taking far too long.
+    // Waiting for the image to save; delete once it's done, failed, or 20 minutes after End stream.
     const action = await getAction(s.snapshot_action_id).catch(() => ({ status: 'error' }));
-    if (action.status !== 'running' || hoursBetween(s.ended_at || s.created_at) > 1) {
+    if (action.status !== 'running' || hoursBetween(s.ended_at || s.created_at) * 60 > 20) {
       if (s.hetzner_id) await deleteServer(s.hetzner_id);
       await pool.query(`UPDATE live_servers SET status = 'stopped', ended_at = now() WHERE id = $1`, [s.id]);
       logger.info(
