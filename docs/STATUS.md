@@ -319,7 +319,7 @@ never written here: their values live only in `.env` (git-ignored) or Render's E
 | Cloudflare Stream | Starter bundle ($5/mo) | Customer code `xw9exz2muwhw7zsm` (public); `CF_ACCOUNT_ID`, `CF_API_TOKEN` (Stream: Edit) in `.env`. English auto-captions generated for all 4 videos |
 | Shopify | JimBob's store, madebyjimbob.com | Read via public product JSON (`SHOP_URL`, default https://madebyjimbob.com); no Shopify credentials yet |
 | Resend | Account email (ADR-012) | Not set up yet (Waiting on Ruben #7). Keys go in Render env: `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `RESEND_WEBHOOK_SECRET` |
-| Hetzner | Ruben's account (2026-10-01), for the future live server (Owncast) | No servers yet, so nothing is billed. Plan: CX33 (~$10.59/mo) if in stock, else a US CPX32 switched on only for streams (~$9/mo). Later an API token goes in `.env` (Console → Security → API tokens) |
+| Hetzner | Ruben's account (2026-10-01), for the future live server (Owncast) | No servers yet, so nothing is billed. Estimate: US CPX31 (4 vCPU, 8 GB, $0.118/h) on only during streams, ~110 h/month ≈ $14 + ~$1 IPv4/snapshot ≈ $15/month; confirm with a 1-hour test (~12¢). CX33 ($10.59/mo, EU) if back in stock. Later an API token goes in `.env` (Console → Security → API tokens) |
 | Web Push | VAPID key pair | Generated 2026-09-29; both keys in local `.env` |
 
 ### Content on the site
