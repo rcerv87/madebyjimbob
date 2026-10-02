@@ -16,6 +16,15 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## Waiting on Ruben
 
+- **madebyjimbob.app (bought at GoDaddy 2026-10-02; nameservers switched to Cloudflare `anahi`/`bruce`, waiting for
+  Cloudflare to say Active).** Then:
+  1. Cloudflare → R2 → `madebyjimbob-live` → Settings → Custom Domains → connect `live.madebyjimbob.app` (wait for Active).
+  2. Render → Environment → `R2_PUBLIC_URL` = `https://live.madebyjimbob.app` (and the same line in local `.env`).
+  3. Tell Claude: it checks caching (playlists not cached), then re-runs the video part of the 600-viewer test (needs a
+     new `load-test` Hetzner token in `.env` and a live stream; ~10–20¢), then sets up the Resend email records on
+     madebyjimbob.app.
+  4. Afterward: delete the `load-test` Hetzner token; make sure GoDaddy auto-renew is on.
+
 1. **Turn on phone push on the live site:** Render → `madebyjimbob` → Environment → add `VAPID_PRIVATE_KEY`
    with the value from your local `.env` (same name). Save; Render redeploys. The in-site bell works without it.
 2. **Roll the Cloudflare API token** (it was pasted in chat): Cloudflare → My Profile → API Tokens → ⋯ → Roll,
