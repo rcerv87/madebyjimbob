@@ -13,6 +13,7 @@ import {
   listLiveServers,
   createPrimaryIp,
   getPrimaryIp,
+  findLivePrimaryIp,
 } from './hetzner.js';
 
 export const SERVER_TYPE = process.env.LIVE_SERVER_TYPE || 'cpx31';
@@ -176,7 +177,8 @@ async function ensurePrimaryIp(settings) {
       if (err.status !== 404) throw err;
     }
   }
-  const ip = await createPrimaryIp(LOCATION);
+  // One fixed IP for the project, even if another copy of the site (local testing) made it first.
+  const ip = (await findLivePrimaryIp()) || (await createPrimaryIp(LOCATION));
   await pool.query('UPDATE live_settings SET primary_ip_id = $1, ip = $2, updated_at = now() WHERE id = 1', [
     ip.id,
     ip.ip,

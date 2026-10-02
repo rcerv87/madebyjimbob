@@ -58,6 +58,19 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 12. **JimBob:** written OK to re-host his catalog (and shows with guests, especially behind a paywall);
    Google Takeout export of the channel (Studio → Add videos → From files takes the folder; guide: the "JimBob's YouTube Backup" page); tier prices and perks;
    moderators; brand assets and domain.
+13. **Turn on Go Live on the live site** (owned live, ADR-004):
+   1. Render → `madebyjimbob` → **Environment** → add `HETZNER_API_TOKEN` (the same Read & Write token as in `.env`). Save;
+      Render redeploys.
+   2. Then remove (or comment out) `HETZNER_API_TOKEN` in the local `.env`. Both copies of the site clean up servers labeled
+      `mbj=live`, so one would delete the other's server.
+   3. Studio → Live → **Go Live**, wait for "Server ready", and copy the OBS server and stream key into OBS (Settings →
+      Stream → Custom). The live site makes its own stream key; the fixed IP stays 5.161.237.192.
+   - **Tests still to run on the live site:** Go Live → Server ready on Render; OBS streams to it; /live plays on a
+     phone and a desktop with sound (Play button when the browser blocks sound); the home page LIVE strip appears;
+     End stream deletes the server (Hetzner Console shows 0 servers); after you stop OBS, the server deletes itself
+     within ~31 minutes; a viewer on another network sees the video (it passes through Render); and JimBob's own OBS
+     and upload from his house (dropped frames in OBS Stats).
+
 
 ## What's built
 
@@ -180,6 +193,12 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
     (Takeout's videos.csv, or the channel list's titles) for review, then uploaded straight to Cloudflare. New
     videos get their title, chat, and comments from the helper without downloading; videos already on the site get
     the better file swapped in (finished in the background). Shows how many Stream minutes it adds first.
+  - **Live** (owned live, ADR-004): **Go Live** creates an Owncast server on Hetzner (CPX31 in Ashburn, fixed IP, ready
+    in ~2 minutes) set up as tested (1080p passthrough, 720p, 360p, ~4 s behind); **End stream** deletes it. Studio shows
+    LIVE, viewers, a muted preview, the OBS server and stream key, and this month's hours and cost. A job every minute
+    deletes servers idle 30 minutes, older than 8 hours, or unknown to the site. Viewers watch at **/live** (home page
+    shows a LIVE strip); video passes through this site for now (R2 before big audiences). Hidden until
+    `HETZNER_API_TOKEN` is set. Tested for real on 2026-10-01 from Ruben's PC: about 33% CPU, about 4 s delay, ~12¢.
   - **Import helper**: double-click "MadeByJimBob Import Helper" on Ruben's desktop (restarts itself if it
     crashes; close the window to stop).
   - **Replace video**: upload a better file (e.g. Takeout) straight to Cloudflare; swapped in once processed,

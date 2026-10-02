@@ -18,6 +18,7 @@ function fakeFetch(url, opts = {}) {
     hetzner.calls.push(`${method} ${u.pathname}`);
     if (method === 'POST' && u.pathname === '/v1/primary_ips')
       return json(201, { primary_ip: { id: 55, ip: IP } });
+    if (method === 'GET' && u.pathname === '/v1/primary_ips') return json(200, { primary_ips: [] });
     if (method === 'GET' && u.pathname === '/v1/primary_ips/55')
       return json(200, { primary_ip: { id: 55, ip: IP } });
     if (method === 'POST' && u.pathname === '/v1/servers') {

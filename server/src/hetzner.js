@@ -39,6 +39,9 @@ export async function deleteServer(id) {
   }
 }
 
+export const findLivePrimaryIp = async () =>
+  (await call('GET', `/primary_ips?label_selector=${encodeURIComponent(LIVE_LABEL)}`)).primary_ips[0] || null;
+
 export const getPrimaryIp = (id) => call('GET', `/primary_ips/${id}`).then((d) => d.primary_ip);
 
 export const createPrimaryIp = (location) =>
