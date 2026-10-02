@@ -3664,3 +3664,18 @@ a.text-btn {
 .live-go:disabled {
   cursor: default;
 }
+
+/* Listening on /live (podcast mode) */
+.live-listening {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  padding: 24px;
+  border-radius: 10px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.12));
+  font-size: 1.2rem;
+}

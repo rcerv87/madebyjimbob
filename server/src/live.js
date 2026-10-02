@@ -134,7 +134,12 @@ async function withRewind(status) {
   );
   return {
     ...status,
-    dvr: { url: recordingUrl(rec.id), startedAt: rec.startedAt, videoId: videoId ?? null },
+    dvr: {
+      url: recordingUrl(rec.id),
+      startedAt: rec.startedAt,
+      gapS: rec.gapS || 0,
+      videoId: videoId ?? null,
+    },
   };
 }
 
@@ -231,7 +236,7 @@ function recorderSetup() {
     .join(' ');
   return {
     files: `write_files:\n${files}`,
-    run: `  - docker run -d --name recorder --restart unless-stopped -v /opt/recorder:/app:ro -v /opt/owncast/hls:/hls:ro ${envArgs} node:22-alpine node /app/recorder.mjs\n`,
+    run: `  - docker run -d --name recorder --restart unless-stopped -v /opt/recorder:/app:ro -v /opt/owncast/hls:/hls:ro ${envArgs} node:22-alpine sh -c "apk add --no-cache ffmpeg >/dev/null 2>&1; exec node /app/recorder.mjs"\n`,
   };
 }
 const cloudInit = (settings, fromImage) => {
@@ -327,7 +332,11 @@ export async function finishRecording(server) {
   if (rec.live) {
     const master = await getText(`${storage.publicUrl}/dvr/${rec.id}/master.m3u8`);
     let durationS = 0;
-    for (const [, n] of master.matchAll(/^(\d+)\/index\.m3u8$/gm)) {
+    const lists = [
+      ...[...master.matchAll(/^(\d+)\/index\.m3u8$/gm)].map((m) => m[1]),
+      ...(master.includes('URI="audio/index.m3u8"') ? ['audio'] : []),
+    ];
+    for (const n of lists) {
       const key = `dvr/${rec.id}/${n}/index.m3u8`;
       const list = await getText(`${storage.publicUrl}/${key}?t=${Date.now()}`);
       if (!list) continue;
