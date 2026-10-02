@@ -87,7 +87,7 @@ export default function App() {
             <Route path="/art" element={<Art />} />
             <Route path="/watch/:id" element={null} />
             <Route path="/studio" element={<Studio user={user} />} />
-            <Route path="/live" element={<Live />} />
+            <Route path="/live" element={<Live session={session} />} />
             <Route path="/reset-password" element={<ResetPassword session={session} />} />
             <Route path="/account" element={<Account session={session} onUserChanged={refreshUser} />} />
             {/* /@username profiles (MBJ-116); anything else here is a 404 page. */}
