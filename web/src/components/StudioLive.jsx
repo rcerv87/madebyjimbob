@@ -216,7 +216,7 @@ export default function StudioLive() {
                 </button>
               </span>
             ) : (
-              <button className="text-btn" disabled={busy} onClick={() => setConfirmEnd(true)}>
+              <button className="danger-btn" disabled={busy} onClick={() => setConfirmEnd(true)}>
                 End stream
               </button>
             ))}
