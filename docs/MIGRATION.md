@@ -22,7 +22,7 @@ Keep it current: when a new service or setting is added, add it here.
 |---|---|---|---|---|
 | **GoDaddy** | Domain `madebyjimbob.app` (registration only) | Ruben | none (nameservers point to Cloudflare) | Easy |
 | **Cloudflare** | DNS for `madebyjimbob.app`; **R2** bucket `madebyjimbob-live` (live streams, recordings, replays); **Stream** (imported videos) | Ruben | `R2_*`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_STREAM_CUSTOMER_CODE` | Medium (data copy) |
-| **Backblaze B2** (planned) | Archive copies (720p, 360p, audio) | Ruben during beta | `B2_*` (planned) | Medium (data copy) |
+| **Backblaze B2** | Archive copies (720p, 360p, audio); beta bucket `Jimbob-beta` (US East, `s3.us-east-005.backblazeb2.com`) | Ruben during beta | `B2_ENDPOINT`, `B2_BUCKET`, `B2_KEY_ID`, `B2_APPLICATION_KEY` | Medium (data copy) |
 | **Render** | The site (web service `madebyjimbob`) and the **Postgres** database `madebyjimbob-db` (accounts, chat, comments, videos, settings) | Ruben | all of the below; `DATABASE_URL` comes from Render | Medium |
 | **Hetzner** | Streaming server, created per stream and deleted after; saved server image; fixed IP | Ruben (project `MadeByJimBob`) | `HETZNER_API_TOKEN` | Easy (nothing stored) |
 | **Resend** | Account email sending for `madebyjimbob.app` | Ruben (shared Pro plan) | `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `RESEND_WEBHOOK_SECRET` | Easy |
@@ -78,8 +78,9 @@ Easiest and least risky first; each step is independent unless noted.
 2. Replace `YOUTUBE_API_KEY` (Render, and the import helper's `.env`). Delete the old key.
 
 ### 4. Backblaze B2 (archive)
-1. JimBob creates a Backblaze account and a private bucket (e.g. `madebyjimbob-archive`), and an application key for
-   that bucket only (Read and Write).
+1. JimBob creates a Backblaze account and a private bucket (e.g. `madebyjimbob-archive`, lifecycle "Keep only the last
+   version"), and a regular application key for that bucket only (Read and Write). Not the master key: B2's S3 API
+   refuses it. A key ID is 25 characters; the secret starts with `K`.
 2. Copy the bucket: `rclone sync ruben-b2:madebyjimbob-archive jimbob-b2:madebyjimbob-archive --progress`
    (rclone remotes set up with each account's key). B2's free downloads (3× stored per month) usually cover it.
 3. Compare counts and sizes (`rclone size` on both), then replace `B2_*` settings and save.
