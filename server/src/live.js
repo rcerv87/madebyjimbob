@@ -405,8 +405,8 @@ export async function goLive(userId) {
   const settings = await liveSettings();
   const ip = await ensurePrimaryIp(settings);
   const { rows } = await pool.query(
-    `INSERT INTO live_servers (server_type, ip, started_by) VALUES ($1, $2, $3) RETURNING *`,
-    [SERVER_TYPE, ip.ip, userId],
+    `INSERT INTO live_servers (server_type, ip, started_by, admin_password) VALUES ($1, $2, $3, $4) RETURNING *`,
+    [SERVER_TYPE, ip.ip, userId, crypto.randomBytes(18).toString('base64url')],
   );
   const row = rows[0];
   try {
@@ -416,7 +416,7 @@ export async function goLive(userId) {
       server_type: SERVER_TYPE,
       image: image ? String(image.id) : 'ubuntu-24.04',
       location: LOCATION,
-      user_data: cloudInit(settings, Boolean(image)),
+      user_data: cloudInit(forServer(settings, row), Boolean(image)),
       public_net: { enable_ipv4: true, enable_ipv6: false, ipv4: ip.id },
     });
     await pool.query('UPDATE live_servers SET hetzner_id = $2 WHERE id = $1', [row.id, server.id]);
@@ -470,6 +470,12 @@ const adminAuth = (settings) => `Basic ${Buffer.from(`admin:${settings.admin_pas
 
 // Owncast came up: set the tested quality ladder, lowest delay, and R2. The real stream key goes last, so OBS can't
 // connect (and start a stream that the later settings would restart) until everything is in place.
+// The settings for one server: its own Owncast admin password (older rows fall back to the shared one).
+const forServer = (settings, server) => ({
+  ...settings,
+  admin_password: server?.admin_password || settings.admin_password,
+});
+
 async function configureOwncast(base, settings) {
   const auth = adminAuth(settings);
   const post = (path, value) =>
@@ -522,7 +528,7 @@ export async function tickLive() {
     const status = await owncastStatus(base);
     if (!status.error) {
       try {
-        const settings = await liveSettings();
+        const settings = forServer(await liveSettings(), s);
         await configureOwncast(base, settings);
         // Ready only once the settings read back correctly; otherwise the next check sets them again.
         if (await owncastConfigOk(base, settings))
@@ -552,7 +558,7 @@ export async function tickLive() {
     }
   } else if (s?.status === 'ready') {
     const base = `http://${s.ip}:8080`;
-    const settings = await liveSettings();
+    const settings = forServer(await liveSettings(), s);
     if (!(await owncastConfigOk(base, settings))) {
       logger.warn({ liveServer: s.id }, 'owncast settings drifted; setting them again');
       await configureOwncast(base, settings).catch((err) => logger.warn({ err }, 'owncast setup failed'));
