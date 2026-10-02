@@ -184,7 +184,7 @@ package_update: true
 packages: [docker.io]
 runcmd:
   - systemctl enable --now docker
-  - docker run -d --name owncast --restart unless-stopped -p 8080:8080 -p 1935:1935 -v /opt/owncast:/app/data owncast/owncast:latest -adminpassword '${settings.admin_password}' -streamkey '${settings.stream_key}'
+  - docker run -d --name owncast --restart unless-stopped -p 8080:8080 -p 1935:1935 -v /opt/owncast:/app/data owncast/owncast:latest -adminpassword '${settings.admin_password}'
 `;
 
 async function ensurePrimaryIp(settings) {
@@ -251,9 +251,12 @@ export async function endLive(reason = 'ended') {
   return s;
 }
 
-// Owncast came up: set the tested quality ladder and lowest delay.
+const adminAuth = (settings) => `Basic ${Buffer.from(`admin:${settings.admin_password}`).toString('base64')}`;
+
+// Owncast came up: set the tested quality ladder, lowest delay, and R2. The real stream key goes last, so OBS can't
+// connect (and start a stream that the later settings would restart) until everything is in place.
 async function configureOwncast(base, settings) {
-  const auth = `Basic ${Buffer.from(`admin:${settings.admin_password}`).toString('base64')}`;
+  const auth = adminAuth(settings);
   const post = (path, value) =>
     fetch(`${base}/api/admin/config/${path}`, {
       method: 'POST',
@@ -271,9 +274,31 @@ async function configureOwncast(base, settings) {
     const { publicUrl, ...config } = storage;
     await post('s3', { ...config, servingEndpoint: publicUrl });
   }
+  await post('streamkeys', [{ key: settings.stream_key, comment: 'MADEbyJIMBOB' }]);
 }
 
-// Every minute: finish starting servers, delete idle or over-cap ones, and remove any stray live server.
+// Did the settings stick? Owncast still starting up can write its defaults over them.
+async function owncastConfigOk(base, settings) {
+  try {
+    const res = await fetch(`${base}/api/admin/serverconfig`, {
+      headers: { Authorization: adminAuth(settings) },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return false;
+    const c = await res.json();
+    return (
+      c.videoSettings?.videoQualityVariants?.length === VARIANTS.length &&
+      c.videoSettings?.latencyLevel === 0 &&
+      (!r2() || c.s3?.enabled === true) &&
+      (c.streamKeys || []).some((k) => k.key === settings.stream_key)
+    );
+  } catch {
+    return false;
+  }
+}
+
+// Every 15 seconds: finish starting servers, keep their settings right, delete idle or over-cap ones, and remove any
+// stray live server.
 export async function tickLive() {
   if (!hetznerConfigured()) return;
   const s = await activeServer();
@@ -282,8 +307,13 @@ export async function tickLive() {
     const status = await owncastStatus(base);
     if (!status.error) {
       try {
-        await configureOwncast(base, await liveSettings());
-        await pool.query(`UPDATE live_servers SET status = 'ready', ready_at = now() WHERE id = $1`, [s.id]);
+        const settings = await liveSettings();
+        await configureOwncast(base, settings);
+        // Ready only once the settings read back correctly; otherwise the next check sets them again.
+        if (await owncastConfigOk(base, settings))
+          await pool.query(`UPDATE live_servers SET status = 'ready', ready_at = now() WHERE id = $1`, [
+            s.id,
+          ]);
       } catch (err) {
         logger.warn({ err }, 'owncast setup failed; retrying');
       }
@@ -295,7 +325,13 @@ export async function tickLive() {
       await pool.query(`UPDATE live_servers SET status = 'failed' WHERE id = $1`, [s.id]);
     }
   } else if (s?.status === 'ready') {
-    const status = await owncastStatus(`http://${s.ip}:8080`);
+    const base = `http://${s.ip}:8080`;
+    const settings = await liveSettings();
+    if (!(await owncastConfigOk(base, settings))) {
+      logger.warn({ liveServer: s.id }, 'owncast settings drifted; setting them again');
+      await configureOwncast(base, settings).catch((err) => logger.warn({ err }, 'owncast setup failed'));
+    }
+    const status = await owncastStatus(base);
     if (status.online)
       await pool.query('UPDATE live_servers SET last_online_at = now() WHERE id = $1', [s.id]);
     const quietSince = status.online ? null : s.last_online_at || s.ready_at;
@@ -315,8 +351,14 @@ export async function tickLive() {
 
 export function startLiveJob() {
   if (!hetznerConfigured()) return;
-  const run = () => tickLive().catch((err) => logger.error({ err }, 'live job failed'));
-  setInterval(run, 60 * 1000).unref();
+  let busy = false;
+  const run = async () => {
+    if (busy) return;
+    busy = true;
+    await tickLive().catch((err) => logger.error({ err }, 'live job failed'));
+    busy = false;
+  };
+  setInterval(run, 15 * 1000).unref();
   run();
 }
 
@@ -331,11 +373,10 @@ export async function proxyHls(req, res) {
   try {
     const up = await fetch(`${base}/hls/${rest}`, { signal: AbortSignal.timeout(10000) });
     // With R2, only this small list of qualities comes from here; each quality's playlist and video come from R2.
-    if (storage && rest === 'stream.m3u8' && up.ok) {
-      const list = (await up.text()).replace(
-        /^\S*?(\d+)\/stream\.m3u8$/gm,
-        `${storage.publicUrl}/hls/$1/stream.m3u8`,
-      );
+    const text = storage && rest === 'stream.m3u8' && up.ok ? await up.text() : null;
+    // Only when Owncast is really uploading there; otherwise R2 could still hold an old, finished stream.
+    if (text && text.includes('/hls/0/stream.m3u8') && /^https?:\/\//m.test(text)) {
+      const list = text.replace(/^\S*?(\d+)\/stream\.m3u8$/gm, `${storage.publicUrl}/hls/$1/stream.m3u8`);
       res.set('Content-Type', 'application/vnd.apple.mpegurl');
       res.set('Cache-Control', 'no-cache');
       return res.send(list);
@@ -343,7 +384,7 @@ export async function proxyHls(req, res) {
     res.status(up.status);
     res.set('Content-Type', up.headers.get('content-type') || 'application/octet-stream');
     res.set('Cache-Control', rest.endsWith('.m3u8') ? 'no-cache' : 'public, max-age=60');
-    res.send(Buffer.from(await up.arrayBuffer()));
+    res.send(text ?? Buffer.from(await up.arrayBuffer()));
   } catch {
     res.status(502).end();
   }

@@ -41,8 +41,21 @@ function fakeFetch(url, opts = {}) {
     if (u.pathname === '/api/status')
       return json(200, { online: owncast.online, lastConnectTime: '2026-10-01T12:00:00Z' });
     if (u.pathname.startsWith('/api/admin/config/')) {
-      owncast.config.push(u.pathname.replace('/api/admin/config/', ''));
+      const key = u.pathname.replace('/api/admin/config/', '');
+      owncast.config.push(key);
+      (owncast.values ||= {})[key] = JSON.parse(opts.body).value;
       return json(200, { success: true });
+    }
+    if (u.pathname === '/api/admin/serverconfig') {
+      const v = owncast.values || {};
+      return json(200, {
+        videoSettings: {
+          videoQualityVariants: v['video/streamoutputvariants'] || [{}],
+          latencyLevel: v['video/streamlatencylevel'] ?? 2,
+        },
+        s3: v.s3 || { enabled: false },
+        streamKeys: v.streamkeys || [{ key: 'abc123' }],
+      });
     }
     if (u.pathname === '/hls/stream.m3u8')
       return Promise.resolve(
@@ -118,7 +131,7 @@ describe('Go Live (owned live, ADR-004)', () => {
     const spec = hetzner.created[0];
     assert.equal(spec.server_type, 'cpx31');
     assert.equal(spec.public_net.ipv4, 55);
-    assert.match(spec.user_data, new RegExp(`-streamkey '${started.data.obs.streamKey}'`));
+    assert.doesNotMatch(spec.user_data, /-streamkey/, 'the real key is set only after the settings');
 
     // A second tap doesn't make a second server.
     await call('/studio/live/start', { method: 'POST', token: admin });
@@ -127,7 +140,12 @@ describe('Go Live (owned live, ADR-004)', () => {
     // Owncast comes up: the next check sets the tested ladder and delay, and the server is ready.
     owncast = { online: false, config: [] };
     await tickLive();
-    assert.deepEqual(owncast.config, ['video/streamoutputvariants', 'video/streamlatencylevel', 'name']);
+    assert.deepEqual(owncast.config, [
+      'video/streamoutputvariants',
+      'video/streamlatencylevel',
+      'name',
+      'streamkeys',
+    ]);
     owncast.online = true;
     const live = (await call('/live')).data;
     assert.equal(live.online, true);
@@ -138,6 +156,20 @@ describe('Go Live (owned live, ADR-004)', () => {
     assert.equal(ended.data.server.status, 'off');
     assert.deepEqual(hetzner.servers, []);
     assert.equal((await call('/live')).data.online, false);
+  });
+
+  test('settings that Owncast loses while starting are put back, and OBS’s key waits for them', async () => {
+    const admin = await signIn(call, 'test_admin');
+    await call('/studio/live/start', { method: 'POST', token: admin });
+    owncast = { online: false, config: [] };
+    await tickLive();
+    assert.equal((await call('/studio/live', { token: admin })).data.server.status, 'ready');
+    owncast.values = {}; // Owncast wrote its defaults over everything
+    owncast.config = [];
+    await tickLive();
+    assert.ok(owncast.config.includes('video/streamoutputvariants'), 'set again');
+    assert.equal(owncast.config.at(-1), 'streamkeys');
+    await call('/studio/live/stop', { method: 'POST', token: admin });
   });
 
   test('a server idle for 30 minutes, past the hour cap, or unknown to the site is deleted', async () => {
