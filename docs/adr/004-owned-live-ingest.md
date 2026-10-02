@@ -43,3 +43,12 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
     WebRTC (WHIP). Keep the server side ready for it: the ingest accepts both RTMP (OBS) and WHIP. Owncast takes RTMP,
     so add MediaMTX in front, or swap to it, when option 3 is built. Go Live and the safety limits stay the same
     for both. Option 3 pairs with video calls (model D) and the phone app's go-live (model E).
+- **Local test (2026-10-01):** Owncast 0.3.0 in Docker on Ruben's PC (i7-8700), capped at 4 CPUs and 8 GB. OBS sent
+  1080p30 at 6,000 kbps CBR (QuickSync, keyframe 1 s, B-frames 0). Owncast made three qualities: 1080p passthrough,
+  720p at 2,500 kbps and 360p at 800 kbps.
+  - At Owncast's default CPU level, the CPU ran about 70% of 4 cores. At the lowest CPU level (`cpuUsageLevel` 1) it ran
+    about 55–60%, the picture still looked great, and memory stayed about 370 MB. So a CPX31 (4 vCPU) fits with some
+    headroom; confirm with a 12¢ test on Hetzner's shared vCPUs.
+  - Delay: about 15 s with Owncast's defaults; about **4 s** with latency level 0 (1-second segments), a 1-second OBS
+    keyframe interval, and a player kept 2 segments behind (hls.js `liveSyncDurationCount: 2`,
+    `liveMaxLatencyDurationCount: 4`). These are the settings to ship.
