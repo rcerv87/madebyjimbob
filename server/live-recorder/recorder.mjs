@@ -149,7 +149,9 @@ function parseMedia(text) {
   for (const line of text.split('\n')) {
     if (line.startsWith('#EXTINF:')) dur = Math.min(parseFloat(line.slice(8)), target * 2);
     const m = line.trim().match(/^stream-(\w+)-(\d+)\.ts$/);
-    if (m) out.push({ name: line.trim(), prefix: m[1], seq: Number(m[2]), dur });
+    // Owncast's "offline" clip (stream-offline-N.ts, shown while nobody streams) is never recorded: it made 8-second
+    // replays at every server start.
+    if (m && m[1] !== 'offline') out.push({ name: line.trim(), prefix: m[1], seq: Number(m[2]), dur });
   }
   return out;
 }
