@@ -73,3 +73,9 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
   `dvr-test`), and the recorder tags `current.json` with its `LIVE_SERVER_ID`; /live and the replay job only use the running
   server's recording. A local test writing `dvr/current.json` once sent live viewers into a test recording. The reconnect
   window is 2 minutes (was 10): separate streams on one server stay separate recordings.
+- **Saved image v2 (2026-10-03):** images from before kept the previous Owncast and recorder with `--restart
+  unless-stopped`, so for the first seconds of every boot the old Owncast ran with the same stream key and OBS could
+  connect to it (default settings, one 480p quality), then the fresh one took over. Containers now use `--restart
+  on-failure` (nothing starts at boot), images are labeled `mbj=live-image-v2`, and the site deletes v1 images. The
+  recorder starts a new recording if Owncast's qualities change, and only treats a renumbered piece as a rewrite if its
+  timestamp falls within the last minute already recorded.

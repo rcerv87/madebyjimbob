@@ -17,6 +17,7 @@ import {
   getPrimaryIp,
   findLivePrimaryIp,
   findLiveImage,
+  deleteOldImages,
   snapshotServer,
   getAction,
 } from './hetzner.js';
@@ -261,7 +262,7 @@ function recorderSetup(serverId) {
     .join(' ');
   return {
     files: `write_files:\n${files}`,
-    run: `  - docker run -d --name recorder --restart unless-stopped -v /opt/recorder:/app:ro -v /opt/owncast/hls:/hls:ro ${envArgs} node:22-alpine sh -c "apk add --no-cache ffmpeg >/dev/null 2>&1; exec node /app/recorder.mjs"\n`,
+    run: `  - docker run -d --name recorder --restart on-failure -v /opt/recorder:/app:ro -v /opt/owncast/hls:/hls:ro ${envArgs} node:22-alpine sh -c "apk add --no-cache ffmpeg >/dev/null 2>&1; exec node /app/recorder.mjs"\n`,
   };
 }
 const cloudInit = (settings, fromImage, serverId) => {
@@ -271,7 +272,7 @@ ${fromImage ? '' : INSTALL_DOCKER}${recorder.files}runcmd:
   - systemctl enable --now docker
   - docker rm -f owncast recorder || true
   - rm -rf /opt/owncast
-  - docker run -d --name owncast --restart unless-stopped -p 8080:8080 -p 1935:1935 -v /opt/owncast:/app/data owncast/owncast:latest -adminpassword '${settings.admin_password}'
+  - docker run -d --name owncast --restart on-failure -p 8080:8080 -p 1935:1935 -v /opt/owncast:/app/data owncast/owncast:latest -adminpassword '${settings.admin_password}'
 ${recorder.run}`;
 };
 
@@ -526,6 +527,8 @@ async function owncastConfigOk(base, settings) {
 
 // Every 15 seconds: finish starting servers, keep their settings right, delete idle or over-cap ones, and remove any
 // stray live server.
+let oldImagesGone = false;
+
 export async function tickLive() {
   if (!hetznerConfigured()) return;
   const s = await activeServer();
@@ -580,6 +583,11 @@ export async function tickLive() {
     if (hoursBetween(s.created_at) >= CAP_HOURS) await endLive('cap');
     else if (quietSince && hoursBetween(quietSince) * 60 >= IDLE_MINUTES) await endLive('idle');
   }
+  // Saved images from before v2 are deleted once (they'd start old programs at boot).
+  if (!oldImagesGone)
+    oldImagesGone = await deleteOldImages()
+      .then(() => true)
+      .catch(() => false);
   // Anything labeled as a live server that the site doesn't know about gets deleted.
   const current = await activeServer();
   if (current && !current.hetzner_id) return; // Go Live is creating it right now

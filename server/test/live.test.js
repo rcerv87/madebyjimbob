@@ -406,6 +406,11 @@ describe('Go Live (owned live, ADR-004)', () => {
     assert.equal(spec.server_type, 'cpx31');
     assert.equal(spec.public_net.ipv4, 55);
     assert.doesNotMatch(spec.user_data, /-streamkey/, 'the real key is set only after the settings');
+    assert.doesNotMatch(
+      spec.user_data,
+      /unless-stopped/,
+      'nothing restarts by itself when a saved image boots',
+    );
     // Its own Owncast password, so the previous Owncast in a saved image can't be mistaken for this one.
     const shared = (await pool.query('SELECT admin_password FROM live_settings')).rows[0].admin_password;
     const own = (await pool.query('SELECT admin_password FROM live_servers ORDER BY id DESC LIMIT 1')).rows[0]

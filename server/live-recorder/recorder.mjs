@@ -332,6 +332,15 @@ async function tick() {
   const master = await readText(path.join(HLS, 'stream.m3u8'));
   const variants = master ? parseMaster(master) : [];
   if (!variants.length) return;
+  // Owncast's qualities changed (e.g. it started on defaults and then got its settings): the old recording's layout no
+  // longer fits, so it's closed and a clean one starts.
+  if (rec && variants.map((v) => v.n).join() !== [...rec.qualities.keys()].join()) {
+    log('qualities changed; starting a new recording');
+    const old = rec;
+    rec = null;
+    await finish(old);
+    last = null;
+  }
   const firstNew = await unhandled(variants[0].n);
   if (!rec) {
     // Between streams: anything older than the first new piece (or from before the recorder started) belongs to an
@@ -359,11 +368,13 @@ async function tick() {
       // Owncast sometimes rewrites pieces it already made, under the same names and with no pause (right after OBS
       // connects, and again later, e.g. when its settings change). Their video is earlier than what's already recorded,
       // so they're skipped; recording them again put duplicate seconds in the replay.
+      // A full restart (timestamps back near the start) is a new run, handled below, not a copy.
       const rewrite =
         pts !== null &&
         q.lastPts !== null &&
         q.lastPts !== undefined &&
         pts < q.lastPts + 0.5 &&
+        pts > q.lastPts - 60 &&
         quietMs < 3000;
       if (rewrite) {
         if (DEBUG) log('skip rewrite', q.n, x.e.name, 'pts', pts, 'last', q.lastPts);
