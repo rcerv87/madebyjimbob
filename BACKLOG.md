@@ -117,6 +117,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-407 | Store release | Mobile apps | 2 | Must | M | MBJ-403, MBJ-406 |
 | MBJ-808 | Art section | Library & community | 2 | Should | S | MBJ-807 |
 | MBJ-205 | Redis pub/sub and rate limits | Chat & moderation | 3 | Should | M | MBJ-001 |
+| MBJ-223 | Pop-out chat and "show on stream" overlay for OBS | Chat & moderation | 3 | Should | M | MBJ-310, MBJ-109 |
 | MBJ-301 | Live video model and live page | Live via YouTube | 3 | Must | M | MBJ-003 |
 | MBJ-302 | YouTube live chat ingest worker | Live via YouTube | 3 | Must | L | MBJ-301, MBJ-205, MBJ-006 |
 | MBJ-303 | Live chat mode in the UI | Live via YouTube | 3 | Must | M | MBJ-302 |
@@ -692,7 +693,7 @@ Acceptance criteria:
 
 ### MBJ-218 — Search and filter comments and chat
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-217
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-217
 
 As a viewer, I want to find what someone said, or every mention of a word, without scrolling.
 
@@ -716,9 +717,24 @@ Acceptance criteria:
 - [x] Show only their messages: a bar above the chat with Show everyone
 - [x] Ruben, 2026-10-03
 
+### MBJ-223 — Pop-out chat and "show on stream" overlay for OBS
+
+**Status:** To do · **Phase 3 — Live via YouTube** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-310, MBJ-109
+
+As JimBob, I want to pick chat messages (and super chats) during a stream and put them on screen, like I do today with YouTube's chat.
+
+Acceptance criteria:
+- [ ] Pop-out chat: /live/chat opens just the chat (for a second monitor or an OBS dock), with the site's merged chat (site, and YouTube/Rumble once merged)
+- [ ] JimBob and moderators get "Show on stream" on each message (and super chat); one tap puts it on screen, tap again (or a timer) takes it off; a queue for super chats
+- [ ] Overlay page for OBS: a Browser Source URL with a private key (Studio → Live) showing the chosen message as a lower third (picture, name, message, super chat amount), transparent background, his teal style; updates instantly over the WebSocket
+- [ ] Works the same through Restream: the overlay is part of the OBS scene, so it goes to YouTube, Rumble and the site alike (Restream's own chat overlay only sees platforms connected to Restream, not our chat)
+- [ ] Native super chats (Stripe, MBJ-109) can show automatically as alerts (sound and amount), optional per amount
+- [ ] Options compared: our own overlay page (recommended: works with OBS and Restream, shows site chat and native super chats); Restream's chat overlay (YouTube/Rumble only); StreamElements/Streamlabs widgets (need their accounts, can't read our chat without a custom integration)
+- [ ] Ruben, 2026-10-03: JimBob highlights chats today and overlays them on his stream
+
 ### MBJ-222 — Conversation tracker in chat
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-219, MBJ-218
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-219, MBJ-218
 
 As a viewer, I want to follow one conversation in a busy chat: everything that grew out of one message, even when it branches.
 

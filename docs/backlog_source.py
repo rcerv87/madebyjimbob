@@ -278,6 +278,15 @@ S = [
   "Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)",
   "Show only their messages: a bar above the chat with Show everyone",
   "Ruben, 2026-10-03"], ["116"]),
+("223", 3, "Should", "M", "Pop-out chat and \"show on stream\" overlay for OBS",
+ "As JimBob, I want to pick chat messages (and super chats) during a stream and put them on screen, like I do today with YouTube's chat.",
+ ["Pop-out chat: /live/chat opens just the chat (for a second monitor or an OBS dock), with the site's merged chat (site, and YouTube/Rumble once merged)",
+  "JimBob and moderators get \"Show on stream\" on each message (and super chat); one tap puts it on screen, tap again (or a timer) takes it off; a queue for super chats",
+  "Overlay page for OBS: a Browser Source URL with a private key (Studio → Live) showing the chosen message as a lower third (picture, name, message, super chat amount), transparent background, his teal style; updates instantly over the WebSocket",
+  "Works the same through Restream: the overlay is part of the OBS scene, so it goes to YouTube, Rumble and the site alike (Restream's own chat overlay only sees platforms connected to Restream, not our chat)",
+  "Native super chats (Stripe, MBJ-109) can show automatically as alerts (sound and amount), optional per amount",
+  "Options compared: our own overlay page (recommended: works with OBS and Restream, shows site chat and native super chats); Restream's chat overlay (YouTube/Rumble only); StreamElements/Streamlabs widgets (need their accounts, can't read our chat without a custom integration)",
+  "Ruben, 2026-10-03: JimBob highlights chats today and overlays them on his stream"], ["310", "109"]),
 ("222", 1, "Should", "M", "Conversation tracker in chat",
  "As a viewer, I want to follow one conversation in a busy chat: everything that grew out of one message, even when it branches.",
  ["Detect conversations from replies: a message and every reply to it, replies to those replies, and so on, form one conversation tree (e.g. user 1 says something; user 2 replies; user 1 replies to user 2; user 3 replies to user 2; user 4 replies to user 1's first message: all one conversation started by user 1)",
@@ -654,7 +663,7 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress", "312": "Done"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress", "312": "Done", "218": "In progress", "222": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.

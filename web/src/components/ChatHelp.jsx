@@ -31,7 +31,12 @@ export default function ChatHelp({ live, onClose }) {
           <dt>Reply</dt>
           <dd>Quotes their message above yours. Tap a quote to jump to the original.</dd>
           <dt>Show only their messages</dt>
-          <dd>Hides everyone else until you tap Show everyone.</dd>
+          <dd>Everything they said in this video, until you tap Show everyone.</dd>
+          <dt>Show this conversation</dt>
+          <dd>
+            The message it started with and every reply that grew out of it, even when people reply to the
+            replies.
+          </dd>
           <dt>Highlight</dt>
           <dd>
             Colors their messages so you can spot them. 5 colors, one person each, for this chat only. A new
@@ -55,6 +60,12 @@ export default function ChatHelp({ live, onClose }) {
 
         <h3>Messages</h3>
         <dl>
+          <dt>⌕ Search</dt>
+          <dd>
+            Words from anywhere in this video’s chat (they’re highlighted), <b>@name</b> for what someone
+            said, and filters: favorites, super chats, JimBob and mods, YouTube, or the site. Tap a message’s
+            time to jump there.
+          </dd>
           <dt>Type @</dt>
           <dd>Suggests names from this chat.</dd>
           <dt>Time on a message</dt>

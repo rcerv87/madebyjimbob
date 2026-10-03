@@ -3996,3 +3996,48 @@ a.text-btn {
 .live-player:fullscreen .live-controls .text-btn {
   color: #fff;
 }
+
+/* Chat search (MBJ-218): a search box and chips under the chat header; matches highlighted in results. */
+.chat-search {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.chat-search input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.chat-search-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chat-search-chips button {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.chat-search-chips button[aria-pressed='true'] {
+  background: var(--accent-text);
+  border-color: var(--accent-text);
+  color: var(--bg);
+}
+.chat-msg mark {
+  background: rgba(245, 197, 24, 0.35);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}

@@ -81,8 +81,13 @@ export default function ChatPanel({
   useEffect(() => () => clearTimeout(touchTimer.current), []);
   const [text, setText] = useState('');
   const [replyTarget, setReplyTarget] = useState(null);
-  // From a person's menu: show only their messages, and highlight people in a color (kept on this device).
-  const [onlyFrom, setOnlyFrom] = useState(null); // { who, name }
+  // Filtering (MBJ-218, 222): one person's messages or one conversation (from a person's menu), or a search (words,
+  // @names, and one kind), all across the whole video on the server. Highlights are kept on this device.
+  const [focus, setFocus] = useState(null); // { type: 'person', who, name } | { type: 'conversation', id }
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [searchOnly, setSearchOnly] = useState(''); // '' | favorites | paid | staff | youtube | site
+  const [results, setResults] = useState(null); // { messages, more, loading, error }
   const [help, setHelp] = useState(false);
   const closeHelp = useCallback(() => setHelp(false), []);
   // Up to 5 people, one color each: { color: { who, name } }.
@@ -97,7 +102,10 @@ export default function ChatPanel({
   );
   useEffect(() => {
     setHighlights(loadHighlights(videoId));
-    setOnlyFrom(null);
+    setFocus(null);
+    setSearchOpen(false);
+    setSearchText('');
+    setSearchOnly('');
   }, [videoId]);
   const [flashId, setFlashId] = useState(null);
   const [suggest, setSuggest] = useState({ items: [], index: 0 });
@@ -210,18 +218,16 @@ export default function ChatPanel({
     const hidden = [];
     for (const m of byId.values()) {
       if (m.profile && muted.has(m.profile.toLowerCase())) continue;
-      if (onlyFrom && whoOf(m) !== onlyFrom.who) continue;
       if (view === 'live' && m.postedLive === false) hidden.push(m.offsetMs);
       else shown.push({ type: 'chat', key: `m${m.id}`, at: m.offsetMs, order: Number(m.id), m });
     }
     for (const c of commentsById.values()) {
       if (c.profile && muted.has(c.profile.toLowerCase())) continue;
-      if (onlyFrom && whoOf(c) !== onlyFrom.who) continue;
       if (view === 'live') hidden.push(c.offsetMs);
       else shown.push({ type: 'comment', key: `c${c.id}`, at: c.offsetMs, order: Number(c.id), c });
     }
     return { items: shown.sort(inVideoOrder), hiddenAt: hidden.sort((a, b) => a - b) };
-  }, [byId, commentsById, view, muted, onlyFrom]);
+  }, [byId, commentsById, view, muted]);
 
   // Everything up to the playhead. Following playback is a binary search, and the list only changes
   // (and re-renders) when a message reaches the playhead.
@@ -271,9 +277,15 @@ export default function ChatPanel({
   );
 
   const showOnly = useCallback((m) => {
-    setOnlyFrom((cur) =>
-      cur?.who === whoOf(m) ? null : { who: whoOf(m), name: m.profile || handle(m.author) },
+    setFocus((cur) =>
+      cur?.type === 'person' && cur.who === whoOf(m)
+        ? null
+        : { type: 'person', who: whoOf(m), name: m.profile || handle(m.author) },
     );
+    pinned.current = true;
+  }, []);
+  const showConversation = useCallback((m) => {
+    setFocus({ type: 'conversation', id: m.id });
     pinned.current = true;
   }, []);
   // A color someone else has moves to this person (so at most 5 people are highlighted).
@@ -425,6 +437,86 @@ export default function ChatPanel({
     [session.user, refreshUser],
   );
 
+  // What the filter asks the server for: null = the normal chat.
+  const favorites = moderation?.favorites;
+  const query = useMemo(() => {
+    if (focus?.type === 'conversation') return { url: `/videos/${videoId}/chat/conversation/${focus.id}` };
+    const params = new URLSearchParams();
+    let mark = '';
+    if (focus?.type === 'person') params.set('from', focus.name);
+    else if (searchOpen) {
+      const words = searchText.trim().split(/\s+/).filter(Boolean);
+      const names = words.filter((w) => w.startsWith('@') && w.length > 1).map((w) => w.slice(1));
+      mark = words.filter((w) => !w.startsWith('@')).join(' ');
+      if (searchOnly === 'favorites') names.push(...(favorites ? [...favorites.keys()] : []));
+      else if (searchOnly) params.set('only', searchOnly);
+      if (mark) params.set('q', mark);
+      if (names.length) params.set('from', names.join(','));
+      if (searchOnly === 'favorites' && !names.length) return { empty: true };
+      if (![...params.keys()].length) return null;
+    } else return null;
+    if (view === 'live') params.set('live', '1');
+    return { url: `/videos/${videoId}/chat/search?${params}`, mark };
+  }, [focus, searchOpen, searchText, searchOnly, favorites, view, videoId]);
+
+  useEffect(() => {
+    if (!query) return setResults(null);
+    if (query.empty) return setResults({ messages: [], more: false });
+    let cancelled = false;
+    setResults((cur) => ({ ...(cur || { messages: [] }), loading: true }));
+    const load = () =>
+      api(query.url)
+        .then((d) => !cancelled && setResults({ messages: d.messages, more: d.more }))
+        .catch((e) => !cancelled && setResults({ messages: [], error: e.message }));
+    // Typing: wait for a pause. While live, look again every 10 s for new matches.
+    const first = setTimeout(load, 300);
+    const again = live ? setInterval(load, 10_000) : null;
+    return () => {
+      cancelled = true;
+      clearTimeout(first);
+      clearInterval(again);
+    };
+  }, [query, live]);
+
+  const filtering = Boolean(query);
+  const shown = useMemo(
+    () => (results?.messages || []).filter((m) => !(m.profile && muted.has(m.profile.toLowerCase()))),
+    [results, muted],
+  );
+  useEffect(() => {
+    const el = listRef.current;
+    if (el && filtering && pinned.current) el.scrollTop = el.scrollHeight;
+  }, [shown, filtering]);
+  const filterLabel =
+    focus?.type === 'person' ? (
+      <>
+        Only <b>{focus.name}</b>’s messages
+      </>
+    ) : focus?.type === 'conversation' ? (
+      <>
+        Conversation{shown[0] ? ` started by ${shown[0].profile || handle(shown[0].author)}` : ''} ·{' '}
+        {shown.length} message{shown.length === 1 ? '' : 's'}
+      </>
+    ) : (
+      <>
+        {results?.loading && !shown.length
+          ? 'Searching…'
+          : `${shown.length}${results?.more ? '+' : ''} found`}
+      </>
+    );
+  const clearFilter = () => {
+    setFocus(null);
+    setSearchText('');
+    setSearchOnly('');
+  };
+  const SEARCH_CHIPS = [
+    ...(favorites?.size ? [['favorites', '★ Favorites']] : []),
+    ['paid', 'Super chats'],
+    ['staff', 'JimBob & mods'],
+    ['youtube', 'YouTube'],
+    ['site', 'Site'],
+  ];
+
   return (
     <aside className="chat">
       <header className="chat-head">
@@ -439,6 +531,21 @@ export default function ChatPanel({
               onClick={() => setHelp(true)}
             >
               ?
+            </button>
+            <button
+              type="button"
+              className="chat-help-btn"
+              aria-label="Search the chat"
+              title="Search the chat"
+              aria-expanded={searchOpen}
+              onClick={() => {
+                setSearchOpen((o) => !o);
+                setSearchText('');
+                setSearchOnly('');
+                setFocus(null);
+              }}
+            >
+              ⌕
             </button>
             <ChatOptions session={session} highlights={highlights} onClearHighlight={clearHighlight} />
           </h2>
@@ -456,13 +563,37 @@ export default function ChatPanel({
         </div>
       </header>
 
-      {onlyFrom && (
+      {searchOpen && !focus && (
+        <div className="chat-search">
+          <input
+            id="chat-search"
+            type="search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Search words, or @name"
+            aria-label="Search the chat"
+            autoComplete="off"
+            autoFocus
+          />
+          <div className="chat-search-chips" role="group" aria-label="Show only">
+            {SEARCH_CHIPS.map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={searchOnly === key}
+                onClick={() => setSearchOnly((cur) => (cur === key ? '' : key))}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {filtering && (
         <div className="chat-filter">
-          <span>
-            Only <b>{onlyFrom.name}</b>’s messages
-          </span>
-          <button type="button" className="text-btn" onClick={() => setOnlyFrom(null)}>
-            Show everyone
+          <span>{filterLabel}</span>
+          <button type="button" className="text-btn" onClick={clearFilter}>
+            {focus ? 'Show everyone' : 'Clear'}
           </button>
         </div>
       )}
@@ -480,45 +611,70 @@ export default function ChatPanel({
         }}
       >
         <ol className="chat-list" ref={listRef} onScroll={onScroll} aria-live="polite">
-          {visible.length === 0 && (
-            <li className="chat-empty muted">
-              {onlyFrom
-                ? `${onlyFrom.name} hasn’t chatted yet at this point.`
-                : 'Chat appears here as the video plays.'}
-            </li>
+          {filtering && !results?.loading && shown.length === 0 && (
+            <li className="chat-empty muted">{results?.error || 'Nothing found.'}</li>
           )}
-          {visible.map((item) =>
-            item.type === 'chat' ? (
+          {filtering &&
+            shown.map((m) => (
               <ChatMessage
-                key={item.key}
-                m={item.m}
+                key={`r${m.id}`}
+                m={m}
                 me={me}
                 moderation={moderation}
-                flash={flashId === item.m.id}
+                mark={query?.mark}
                 onSeek={onSeek}
                 onReply={startReply}
                 onMention={mention}
-                only={onlyFrom?.who === whoOf(item.m)}
+                only={focus?.type === 'person' && focus.who === whoOf(m)}
                 onShowOnly={showOnly}
-                // This chat's highlight wins over a favorite's everyday color.
-                chatColor={colorOf[whoOf(item.m)]}
-                color={colorOf[whoOf(item.m)] || (item.m.profile && moderation?.favorites.get(whoOf(item.m)))}
+                onConversation={showConversation}
+                chatColor={colorOf[whoOf(m)]}
+                color={colorOf[whoOf(m)] || (m.profile && moderation?.favorites.get(whoOf(m)))}
                 takenBy={takenBy}
                 onHighlight={highlight}
                 onMenu={onMenu}
                 onQuote={showOriginal}
               />
-            ) : (
-              <CommentBubble key={item.key} c={item.c} onSeek={onSeek} onOpenThread={onOpenThread} />
-            ),
+            ))}
+          {!filtering && visible.length === 0 && (
+            <li className="chat-empty muted">Chat appears here as the video plays.</li>
           )}
+          {!filtering &&
+            visible.map((item) =>
+              item.type === 'chat' ? (
+                <ChatMessage
+                  key={item.key}
+                  m={item.m}
+                  me={me}
+                  moderation={moderation}
+                  flash={flashId === item.m.id}
+                  onSeek={onSeek}
+                  onReply={startReply}
+                  onMention={mention}
+                  only={false}
+                  onShowOnly={showOnly}
+                  onConversation={showConversation}
+                  // This chat's highlight wins over a favorite's everyday color.
+                  chatColor={colorOf[whoOf(item.m)]}
+                  color={
+                    colorOf[whoOf(item.m)] || (item.m.profile && moderation?.favorites.get(whoOf(item.m)))
+                  }
+                  takenBy={takenBy}
+                  onHighlight={highlight}
+                  onMenu={onMenu}
+                  onQuote={showOriginal}
+                />
+              ) : (
+                <CommentBubble key={item.key} c={item.c} onSeek={onSeek} onOpenThread={onOpenThread} />
+              ),
+            )}
         </ol>
-        {view === 'live' && hiddenCount > 0 && (
+        {!filtering && view === 'live' && hiddenCount > 0 && (
           <button type="button" className="later-viewers" onClick={() => changeView('all')}>
             +{hiddenCount} from later viewers
           </button>
         )}
-        {(showJump || waiting > 0) && (
+        {!filtering && (showJump || waiting > 0) && (
           <button type="button" className="jump-latest" onClick={jumpToLatest}>
             {waiting > 0 ? `↓ ${waiting} new message${waiting === 1 ? '' : 's'}` : 'Jump to latest'}
           </button>
@@ -580,6 +736,13 @@ export default function ChatPanel({
   );
 }
 
+// Text with what was searched for highlighted (any case).
+function Marked({ text, mark }) {
+  if (!mark) return text;
+  const parts = text.split(new RegExp(`(${mark.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+  return parts.map((part, i) => (i % 2 ? <mark key={i}>{part}</mark> : part));
+}
+
 function Stamp({ at, onSeek }) {
   return (
     <button
@@ -614,6 +777,8 @@ const ChatMessage = memo(function ChatMessage({
   onQuote,
   only,
   onShowOnly,
+  onConversation,
+  mark,
   color,
   chatColor,
   takenBy,
@@ -628,7 +793,7 @@ const ChatMessage = memo(function ChatMessage({
         {p}
       </span>
     ) : (
-      p
+      <Marked key={i} text={p} mark={mark} />
     ),
   );
   // A linked account shows the member's site name; the platform name is in the tooltip (MBJ-215). Tapping a name
@@ -662,6 +827,7 @@ const ChatMessage = memo(function ChatMessage({
       actions={[
         { label: 'Reply', onClick: () => onReply(m) },
         { label: only ? 'Show everyone' : 'Show only their messages', onClick: () => onShowOnly(m) },
+        { label: 'Show this conversation', onClick: () => onConversation(m) },
       ]}
       highlight={{ color: chatColor, takenBy, onPick: (c) => onHighlight(m, c) }}
       onOpenChange={onMenu}
