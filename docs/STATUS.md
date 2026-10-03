@@ -25,9 +25,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 - **madebyjimbob.app: Active on Cloudflare (2026-10-03).** `live.madebyjimbob.app` is the R2 bucket's custom domain and
   `R2_PUBLIC_URL` points at it (Render and `.env`); the 1,000-viewer load test passed on it. Left:
-  1. **Cache Rule not taking effect yet:** "Live video pieces" (hostname `live.madebyjimbob.app`, file extension `ts`,
-     Eligible for cache) was created, but pieces still answer `cf-cache-status: DYNAMIC`. Send Claude a screenshot
-     of the rule (Caching → Cache Rules). Don't activate Cache Reserve (paid, not needed).
+  1. **Cache Rule on (2026-10-03):** "Live video pieces" (hostname `live.madebyjimbob.app`, file extension `ts`,
+     Eligible for cache): pieces answer `MISS` then `HIT` (check with a GET; HEAD requests always say `DYNAMIC`).
+     Playlists stay uncached (`DYNAMIC`); caching them for ~1 s is MBJ-311. Cache Reserve is not needed (paid).
   2. Delete the `load-test` Hetzner token (Hetzner → Security → API tokens); turn on GoDaddy auto-renew.
   3. Resend email records on madebyjimbob.app (item 7).
   4. Bot accounts `loadbot_1`–`5` and `chat_tester` exist on the live site for chat tests: keep or delete?
