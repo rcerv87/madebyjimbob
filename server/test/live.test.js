@@ -335,6 +335,11 @@ describe('Go Live (owned live, ADR-004)', () => {
       await call('/studio/live/start', { method: 'POST', token: admin });
       assert.match(hetzner.created[0].user_data, /-e LIVE_SERVER_ID='\d+'/);
       assert.match(hetzner.created[0].user_data, /-e DVR_PREFIX='dvr'/);
+      assert.doesNotMatch(
+        hetzner.created[0].user_data,
+        /LIVE_EDGE_PLAYLISTS/,
+        'copies off unless switched on',
+      );
       owncast = { online: true, config: [] };
       await tickLive();
       const serverId = (await pool.query('SELECT id FROM live_servers ORDER BY id DESC LIMIT 1')).rows[0].id;

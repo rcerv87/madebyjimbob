@@ -470,13 +470,15 @@ async function edgeTick() {
       });
   }
 }
+// Only when the site turns them on (LIVE_EDGE_PLAYLISTS=on): on 2026-10-03 their checks slowed the recorder's uploads.
 let edgeBusy = false;
-setInterval(async () => {
-  if (edgeBusy) return;
-  edgeBusy = true;
-  await edgeTick().catch((err) => log('live playlist failed', err.message));
-  edgeBusy = false;
-}, 250);
+if (process.env.LIVE_EDGE_PLAYLISTS === 'on')
+  setInterval(async () => {
+    if (edgeBusy) return;
+    edgeBusy = true;
+    await edgeTick().catch((err) => log('live playlist failed', err.message));
+    edgeBusy = false;
+  }, 250);
 
 let busy = false;
 setInterval(async () => {
