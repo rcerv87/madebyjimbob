@@ -173,7 +173,7 @@ MBJ-217,Member notes on videos (annotations),Chat & moderation,Phase 1 — VOD p
 - Notes are public by default, can be private (just for me), and follow the same moderation, block/mute, and report rules as comments
 - Works on replays and on live rewind (the moment is a position in the recording)
 - Ruben, 2026-10-03",MBJ-119
-MBJ-218,Search and filter comments and chat,Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a viewer, I want to find what someone said, or every mention of a word, without scrolling.","- Search box above comments and chat: words or phrases, matched on the server across the whole video
+MBJ-218,Search and filter comments and chat,Chat & moderation,Phase 1 — VOD platform,Should,M,In progress,"As a viewer, I want to find what someone said, or every mention of a word, without scrolling.","- Search box above comments and chat: words or phrases, matched on the server across the whole video
 - Filters: by member (name or @handle), favorites only, JimBob and mods, super chats/Bob Chats, has a timestamp, YouTube vs site
 - Results show the moment and jump to it; the matching words are highlighted
 - Member filter also from a name card: ""Show this person's comments and chat""
@@ -183,7 +183,14 @@ MBJ-219,"Chat: tap a name to mention, tap a picture for a menu, highlight colors
 - Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)
 - Show only their messages: a bar above the chat with Show everyone
 - Ruben, 2026-10-03",MBJ-116
-MBJ-222,Conversation tracker in chat,Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a viewer, I want to follow one conversation in a busy chat: everything that grew out of one message, even when it branches.","- Detect conversations from replies: a message and every reply to it, replies to those replies, and so on, form one conversation tree (e.g. user 1 says something; user 2 replies; user 1 replies to user 2; user 3 replies to user 2; user 4 replies to user 1's first message: all one conversation started by user 1)
+MBJ-223,"Pop-out chat and ""show on stream"" overlay for OBS",Chat & moderation,Phase 3 — Live via YouTube,Should,M,To do,"As JimBob, I want to pick chat messages (and super chats) during a stream and put them on screen, like I do today with YouTube's chat.","- Pop-out chat: /live/chat opens just the chat (for a second monitor or an OBS dock), with the site's merged chat (site, and YouTube/Rumble once merged)
+- JimBob and moderators get ""Show on stream"" on each message (and super chat); one tap puts it on screen, tap again (or a timer) takes it off; a queue for super chats
+- Overlay page for OBS: a Browser Source URL with a private key (Studio → Live) showing the chosen message as a lower third (picture, name, message, super chat amount), transparent background, his teal style; updates instantly over the WebSocket
+- Works the same through Restream: the overlay is part of the OBS scene, so it goes to YouTube, Rumble and the site alike (Restream's own chat overlay only sees platforms connected to Restream, not our chat)
+- Native super chats (Stripe, MBJ-109) can show automatically as alerts (sound and amount), optional per amount
+- Options compared: our own overlay page (recommended: works with OBS and Restream, shows site chat and native super chats); Restream's chat overlay (YouTube/Rumble only); StreamElements/Streamlabs widgets (need their accounts, can't read our chat without a custom integration)
+- Ruben, 2026-10-03: JimBob highlights chats today and overlays them on his stream","MBJ-310, MBJ-109"
+MBJ-222,Conversation tracker in chat,Chat & moderation,Phase 1 — VOD platform,Should,M,In progress,"As a viewer, I want to follow one conversation in a busy chat: everything that grew out of one message, even when it branches.","- Detect conversations from replies: a message and every reply to it, replies to those replies, and so on, form one conversation tree (e.g. user 1 says something; user 2 replies; user 1 replies to user 2; user 3 replies to user 2; user 4 replies to user 1's first message: all one conversation started by user 1)
 - Optionally also link @mentions between the people already in it, within a short time, as part of the same conversation
 - Show only this conversation: from any message's menu or a quote, the chat filters to that conversation (with a bar and Show everyone), in time order, with each reply's quote showing what it answers
 - A conversations list for the stream (most active first: who's in it, how many messages, when it started), each opening its filter; works live and on the replay

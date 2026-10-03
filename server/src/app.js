@@ -592,6 +592,85 @@ app.get(
   }),
 );
 
+// Search the whole video's chat (MBJ-218): words or a phrase (q), who said it (from: names or @handles, comma
+// separated; site names and linked YouTube/Rumble names both count), and one kind (only: paid, youtube, site,
+// staff = JimBob and moderators). live=1 keeps to what was said during the stream. In video order.
+const CHAT_SEARCH_MAX = 300;
+app.get(
+  '/api/videos/:id/chat/search',
+  wrap(async (req, res) => {
+    const video = await watchableVideo(req, res, await currentUser(req));
+    if (!video) return;
+    const q = String(req.query.q || '')
+      .trim()
+      .slice(0, 100);
+    const from = String(req.query.from || '')
+      .split(',')
+      .map((s) => s.trim().replace(/^@/, '').toLowerCase())
+      .filter(Boolean)
+      .slice(0, 100);
+    const only = String(req.query.only || '');
+    if (only && !['paid', 'youtube', 'site', 'staff'].includes(only))
+      return res.status(400).json({ error: 'Unknown filter.' });
+    if (!q && !from.length && !only) return res.status(400).json({ error: 'Type something to search for.' });
+    const params = [video.id];
+    const where = ['m.video_id = $1', 'NOT m.hidden'];
+    if (q) {
+      params.push(likePattern(q));
+      where.push(`m.body ILIKE $${params.length}`);
+    }
+    if (from.length) {
+      params.push(from);
+      where.push(
+        `(lower(ltrim(m.author_name, '@')) = ANY($${params.length}) OR lower(lu.username) = ANY($${params.length}))`,
+      );
+    }
+    if (only === 'paid') where.push(`m.kind = 'paid'`);
+    if (only === 'youtube') where.push(`m.source = 'youtube'`);
+    if (only === 'site') where.push(`m.source = 'native'`);
+    if (only === 'staff') {
+      params.push([...ADMIN_EMAILS]);
+      where.push(`m.user_id IN (SELECT id FROM users WHERE role IN ('admin', 'mod')
+        OR (email_verified AND lower(email) = ANY($${params.length})))`);
+    }
+    if (req.query.live === '1') where.push('m.posted_live');
+    const { rows } = await pool.query(
+      `${CHAT_SELECT} WHERE ${where.join(' AND ')} ORDER BY m.offset_ms, m.id LIMIT ${CHAT_SEARCH_MAX + 1}`,
+      params,
+    );
+    res.json({ messages: rows.slice(0, CHAT_SEARCH_MAX).map(chatRow), more: rows.length > CHAT_SEARCH_MAX });
+  }),
+);
+
+// One conversation (MBJ-222): from any message, up its replies to where it started, then everything that grew out
+// of that first message (replies, replies to replies, every branch). In video order.
+app.get(
+  '/api/videos/:id/chat/conversation/:messageId',
+  wrap(async (req, res) => {
+    const video = await watchableVideo(req, res, await currentUser(req));
+    if (!video) return;
+    if (!isId(req.params.messageId)) return res.status(400).json({ error: 'Not a message.' });
+    const { rows } = await pool.query(
+      `WITH RECURSIVE up AS (
+         SELECT id, reply_to_id, 0 AS depth FROM chat_messages WHERE id = $2 AND video_id = $1
+         UNION ALL
+         SELECT c.id, c.reply_to_id, up.depth + 1 FROM chat_messages c JOIN up ON c.id = up.reply_to_id
+          WHERE up.depth < 500),
+       root AS (SELECT id FROM up ORDER BY depth DESC LIMIT 1),
+       down AS (
+         SELECT id, 0 AS depth FROM root
+         UNION ALL
+         SELECT c.id, down.depth + 1 FROM chat_messages c JOIN down ON c.reply_to_id = down.id
+          WHERE down.depth < 500)
+       ${CHAT_SELECT} WHERE m.id IN (SELECT id FROM down) AND NOT m.hidden
+       ORDER BY m.offset_ms, m.id LIMIT 1000`,
+      [video.id, req.params.messageId],
+    );
+    if (!rows.length) return res.status(404).json({ error: 'No such message.' });
+    res.json({ messages: rows.map(chatRow) });
+  }),
+);
+
 // Post a chat at the viewer's current position in the video
 const lastPost = new Map();
 app.post(

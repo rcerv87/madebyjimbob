@@ -138,15 +138,21 @@ describe('chat: replies', () => {
       msg(2, 2000, 'other one', { author: '@BigSue' }),
       msg(3, 3000, 'again'),
     ];
-    mockApi({ '/videos/7/chat': { messages }, '/videos/8/chat': { messages } });
+    mockApi({
+      '/videos/7/chat': { messages },
+      '/videos/8/chat': { messages },
+      // One person's messages come from the server, across the whole video.
+      '/videos/7/chat/search': { messages: [messages[0], messages[2]], more: false },
+    });
     const { unmount } = panel();
     await screen.findByText('other one');
     fireEvent.click(screen.getAllByRole('button', { name: 'Options for Viewer' })[0]);
     fireEvent.click(screen.getByRole('button', { name: 'Show only their messages' }));
+    expect(await screen.findByText('first')).toBeTruthy();
     expect(screen.queryByText('other one')).toBeNull();
-    expect(screen.getByText('first')).toBeTruthy();
+    expect(fetch.mock.calls.some(([u]) => String(u).includes('/chat/search?from=Viewer'))).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Show everyone' }));
-    expect(screen.getByText('other one')).toBeTruthy();
+    expect(await screen.findByText('other one')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Options for BigSue' }));
     fireEvent.click(screen.getByRole('button', { name: 'Highlight purple' }));

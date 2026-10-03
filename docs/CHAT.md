@@ -72,6 +72,10 @@ Hidden messages are never deleted from the database — `hidden = true` keeps th
   profile, highlight color (5 colors, one person each, per chat), Favorite (Premium, 10 colors, every chat and
   comment section, saved to the account; MBJ-220), Mute/Block/Report (MBJ-219). The **?** in the chat header
   explains all of it; **⋯** lists muted/blocked people (Unmute / Unblock), this chat's highlights, and favorites.
+- **Search and conversations (MBJ-218, 222):** ⌕ in the chat header searches the whole video's chat on the
+  server: words (highlighted in results), `@name`, and chips (favorites, super chats, JimBob & mods, YouTube, site);
+  live streams look again every 10 s. "Show only their messages" and "Show this conversation" (a message, up to
+  where it started and every reply below, all branches) come from a person's menu. Results open each moment.
 - **Holds still while you use it** (Twitch-style): mouse over the chat, a finger on it (and 3 s after), a menu open,
   or scrolled up; new messages wait behind "↓ N new messages".
   Notifications (bell, unread count, in-player bubble) are the next step (MBJ-202).

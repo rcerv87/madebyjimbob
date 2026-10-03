@@ -199,6 +199,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - **Chat names and pictures** (MBJ-219): tapping a name in chat puts @name in the message box; tapping their
   picture opens a menu: Reply, Show only their messages, View profile, a highlight color, and Mute/Block/Report.
   Highlights: 5 colors, one person each, for that chat only (a new stream starts clean; kept on this device).
+  **⌕ Search** (MBJ-218): words, @names and chips (favorites, super chats, JimBob & mods, YouTube, site) across the
+  whole video, matches highlighted; **Show this conversation** (MBJ-222) from a person's menu shows the reply tree
+  a message belongs to, every branch. Still to do: a conversations list, comment search.
   A **?** in the chat header explains every chat feature; **⋯** lists who you muted or blocked (Unmute / Unblock),
   who you highlighted (Clear), and your favorites. The chat holds still while you use it: mouse over it, a finger on
   it (and 3 s after), a menu open, or scrolled up; new messages wait behind "↓ N new messages".
