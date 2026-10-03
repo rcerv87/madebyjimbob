@@ -280,7 +280,7 @@ async function reopen(r, prefix) {
   rec = r;
   r.gapS += Math.max(0, (Date.now() - r.lastPieceAt) / 1000);
   for (const q of r.qualities.values())
-    Object.assign(q, { prefix, lastSeq: -1, disc: true, runStart: Date.now() });
+    Object.assign(q, { prefix, lastSeq: -1, lastPts: null, disc: true, runStart: Date.now() });
   quiet.since = Date.now();
   await putJson(`${PREFIX}/current.json`, {
     server: SERVER_ID,
@@ -349,20 +349,28 @@ async function tick() {
   for (const q of rec.qualities.values()) {
     for (const x of await unhandled(q.n)) {
       x.seen.set(x.e.name, x.mtime);
-      // In the first seconds after OBS connects, Owncast rewrites its first pieces under the same names with no pause:
-      // those are copies of what's already recorded, so they're skipped.
+      const bytes = await fs.readFile(path.join(x.dir, x.e.name)).catch(() => null);
+      if (!bytes) {
+        log('missed piece', q.n, x.e.name);
+        continue;
+      }
+      const pts = firstPts(bytes);
+      const quietMs = Date.now() - quiet.since;
+      // Owncast sometimes rewrites pieces it already made, under the same names and with no pause (right after OBS
+      // connects, and again later, e.g. when its settings change). Their video is earlier than what's already recorded,
+      // so they're skipped; recording them again put duplicate seconds in the replay.
       const rewrite =
-        x.e.prefix === q.prefix &&
-        x.e.seq <= q.lastSeq &&
-        Date.now() - quiet.since < 3000 &&
-        Date.now() - q.runStart < 20000;
+        pts !== null &&
+        q.lastPts !== null &&
+        q.lastPts !== undefined &&
+        pts < q.lastPts + 0.5 &&
+        quietMs < 3000;
       if (rewrite) {
-        if (DEBUG)
-          log('skip rewrite', q.n, x.e.name, 'last', q.lastSeq, 'quiet ms', Date.now() - quiet.since);
+        if (DEBUG) log('skip rewrite', q.n, x.e.name, 'pts', pts, 'last', q.lastPts);
         continue;
       }
       if (DEBUG && (x.e.prefix !== q.prefix || x.e.seq <= q.lastSeq))
-        log('join', q.n, x.e.name, 'last', q.lastSeq, 'quiet ms', Date.now() - quiet.since);
+        log('join', q.n, x.e.name, 'last', q.lastSeq, 'quiet ms', quietMs);
       // OBS reconnected mid-stream (after a pause; new names, or numbering starting over): close the segment and mark
       // the join.
       if (x.e.prefix !== q.prefix || x.e.seq <= q.lastSeq) {
@@ -370,7 +378,7 @@ async function tick() {
         Object.assign(q, { prefix: x.e.prefix, disc: q.disc || q.lastSeq >= 0, runStart: Date.now() });
         // Count the time OBS was away once (from the first quality) and tell players.
         if (q === rec.qualities.values().next().value && q.lastSeq >= 0) {
-          rec.gapS += Math.max(0, (Date.now() - quiet.since) / 1000 - 1);
+          rec.gapS += Math.max(0, quietMs / 1000 - 1);
           putJson(`${PREFIX}/current.json`, {
             server: SERVER_ID,
             id: rec.id,
@@ -381,11 +389,7 @@ async function tick() {
         }
       }
       q.lastSeq = x.e.seq;
-      const bytes = await fs.readFile(path.join(x.dir, x.e.name)).catch(() => null);
-      if (!bytes) {
-        log('missed piece', q.n, x.e.name);
-        continue;
-      }
+      if (pts !== null) q.lastPts = pts;
       q.buf.push(bytes);
       q.bufDur += x.e.dur;
       added = true;
