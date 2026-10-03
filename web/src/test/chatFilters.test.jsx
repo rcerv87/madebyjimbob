@@ -58,7 +58,7 @@ describe('chat search (MBJ-218)', () => {
       target: { value: 'free @User1' },
     });
     expect(await screen.findByText('1 found')).toBeTruthy();
-    expect(asked().some((u) => u.includes('/chat/search?q=free&from=User1&live=1'))).toBe(true);
+    expect(asked().some((u) => u.includes('/chat/search?q=free&who=User1&live=1'))).toBe(true);
     expect(screen.queryByText('pizza time')).toBeNull();
     expect(document.querySelector('.chat-msg mark').textContent).toBe('free');
 
