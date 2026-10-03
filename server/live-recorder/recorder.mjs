@@ -10,13 +10,15 @@
 //   dvr/<id>/<n>/<seq>.ts        the video
 //   dvr/<id>/audio/…             the sound alone (Listen only / podcast mode), cut from the smallest quality
 //   dvr/<id>/thumb.jpg           a frame for the replay's card
+//   dvr/live/<n>.m3u8            what live viewers play: Owncast's playlists, cached 1 s, uploaded pieces only (edge.mjs)
 // With B2 settings, the same files also go to B2 (the archive copy).
 //
 // Env: R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, HLS_DIR (Owncast's data/hls, read-only).
 import { spawn, spawnSync } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
-import { r2Put } from './r2put.mjs';
+import { r2Put, s3Request } from './r2put.mjs';
+import { edgePlaylist } from './edge.mjs';
 
 const cfg = {
   endpoint: process.env.R2_ENDPOINT,
@@ -206,6 +208,7 @@ async function start(prefix, variants) {
     id,
     startedAt: rec.startedAt,
     live: true,
+    edge: edgeReady, // live viewers play dvr/live/<n>.m3u8 once it's published
     gapS: 0,
   });
   log('recording started', id);
@@ -292,6 +295,7 @@ async function reopen(r, prefix) {
     id: r.id,
     startedAt: r.startedAt,
     live: true,
+    edge: edgeReady, // live viewers play dvr/live/<n>.m3u8 once it's published
     gapS: r.gapS,
   });
   log('recording continued', r.id);
@@ -401,6 +405,7 @@ async function tick() {
             id: rec.id,
             startedAt: rec.startedAt,
             live: true,
+            edge: edgeReady, // live viewers play dvr/live/<n>.m3u8 once it's published
             gapS: rec.gapS,
           }).catch(() => {});
         }
@@ -420,6 +425,58 @@ async function tick() {
     await finish(old);
   }
 }
+
+// Live viewers' playlists (MBJ-311): Owncast's, re-published with a 1-second cache and only uploaded pieces.
+const EDGE = `${PREFIX}/live`;
+const UP = '../'.repeat(EDGE.split('/').length);
+const uploaded = new Set();
+const published = new Map();
+// The site sends viewers to these only once every quality has one (current.json `edge`), so a problem here can never
+// leave viewers without a playlist.
+let edgeReady = false;
+async function isUploaded(key) {
+  if (uploaded.has(key)) return true;
+  const ok = await s3Request(cfg, 'HEAD', key).then(
+    () => true,
+    () => false,
+  );
+  if (ok) {
+    if (uploaded.size > 20000) uploaded.clear();
+    uploaded.add(key);
+  }
+  return ok;
+}
+async function edgeTick() {
+  const master = await readText(path.join(HLS, 'stream.m3u8'));
+  const variants = master ? parseMaster(master) : [];
+  for (const v of variants) {
+    const text = await readText(path.join(HLS, String(v.n), 'stream.m3u8'));
+    const out = text && (await edgePlaylist(text, v.n, { isUploaded, up: UP }));
+    if (!out || out === published.get(v.n)) continue;
+    await r2Put(cfg, `${EDGE}/${v.n}.m3u8`, out, 'application/vnd.apple.mpegurl', 'public, max-age=1');
+    published.set(v.n, out);
+  }
+  if (!edgeReady && variants.length && variants.every((v) => published.has(v.n))) {
+    edgeReady = true;
+    log('live playlists published');
+    if (rec)
+      await putJson(`${PREFIX}/current.json`, {
+        server: SERVER_ID,
+        id: rec.id,
+        startedAt: rec.startedAt,
+        live: true,
+        gapS: rec.gapS,
+        edge: true,
+      });
+  }
+}
+let edgeBusy = false;
+setInterval(async () => {
+  if (edgeBusy) return;
+  edgeBusy = true;
+  await edgeTick().catch((err) => log('live playlist failed', err.message));
+  edgeBusy = false;
+}, 250);
 
 let busy = false;
 setInterval(async () => {

@@ -27,7 +27,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   `R2_PUBLIC_URL` points at it (Render and `.env`); the 1,000-viewer load test passed on it. Left:
   1. **Cache Rule on (2026-10-03):** "Live video pieces" (hostname `live.madebyjimbob.app`, file extension `ts`,
      Eligible for cache): pieces answer `MISS` then `HIT` (check with a GET; HEAD requests always say `DYNAMIC`).
-     Playlists stay uncached (`DYNAMIC`); caching them for ~1 s is MBJ-311. Cache Reserve is not needed (paid).
+     Cache Reserve is not needed (paid). **Next: add `m3u8` to that rule** (Edit expression →
+     `(http.host eq "live.madebyjimbob.app" and (http.request.uri.path.extension eq "ts" or http.request.uri.path.extension eq "m3u8"))`)
+     so live playlists (`dvr/live/<n>.m3u8`, 1-second cache, MBJ-311) are held by Cloudflare. Owncast's and recordings'
+     playlists say `no-cache`, so they stay fresh. Then a Go Live to check (Claude watches `cf-cache-status`).
   2. Delete the `load-test` Hetzner token (Hetzner → Security → API tokens); turn on GoDaddy auto-renew.
   3. Resend email records on madebyjimbob.app (item 7).
   4. Bot accounts `loadbot_1`–`5` and `chat_tester` exist on the live site for chat tests: keep or delete?

@@ -155,6 +155,8 @@ async function withRewind(status, server = null) {
       startedAt: rec.startedAt,
       gapS: rec.gapS || 0,
       videoId: videoId ?? null,
+      // The recorder publishes cacheable live playlists (MBJ-311).
+      edge: Boolean(rec.edge),
     },
   };
 }
@@ -255,7 +257,7 @@ const recorderFile = (name) =>
 function recorderSetup(serverId) {
   const storage = r2();
   if (!storage) return { files: '', run: '' };
-  const files = ['r2put.mjs', 'recorder.mjs']
+  const files = ['r2put.mjs', 'edge.mjs', 'recorder.mjs']
     .map((f) => `  - path: /opt/recorder/${f}\n    encoding: b64\n    content: ${recorderFile(f)}\n`)
     .join('');
   const archive = b2();
@@ -643,7 +645,11 @@ export async function proxyHls(req, res) {
     const text = storage && rest === 'stream.m3u8' && up.ok ? await up.text() : null;
     // Only when Owncast is really uploading there; otherwise R2 could still hold an old, finished stream.
     if (text && text.includes('/hls/0/stream.m3u8') && /^https?:\/\//m.test(text)) {
-      const list = text.replace(/^\S*?(\d+)\/stream\.m3u8$/gm, `${storage.publicUrl}/hls/$1/stream.m3u8`);
+      // With a recorder that publishes them, each quality plays from its cacheable copy (MBJ-311); else Owncast's own.
+      const edge = (await liveStatus().catch(() => null))?.dvr?.edge;
+      const list = text.replace(/^\S*?(\d+)\/stream\.m3u8$/gm, (_, n) =>
+        edge ? `${storage.publicUrl}/${DVR()}/live/${n}.m3u8` : `${storage.publicUrl}/hls/${n}/stream.m3u8`,
+      );
       res.set('Content-Type', 'application/vnd.apple.mpegurl');
       res.set('Cache-Control', 'no-cache');
       return res.send(list);

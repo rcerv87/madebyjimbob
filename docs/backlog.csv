@@ -224,7 +224,7 @@ MBJ-310,Rewind the live stream and instant replay (beta priority),Live via YouTu
 - When the stream ends it becomes a normal video on the site with its chat and comments, with no import; tier default configurable
 - Archive copy moves to B2 (ADR-010); R2 copy deleted after a set time. A 4-hour stream ≈ 17 GB (1080p+720p+360p) ≈ $0.25/month while in R2
 - Ruben, 2026-10-02: wanted as soon as possible; must be in the beta",MBJ-304
-MBJ-311,Flat cost for watching live (cache pieces and playlists),Live via YouTube,Phase 3 — Live via YouTube,Should,S,To do,"As JimBob, I want a big live audience to cost the same as a small one.","- Video pieces (`.ts`) on `live.madebyjimbob.app` come from Cloudflare's cache (`cf-cache-status: HIT`), not R2 (Cache Rule on 2026-10-03)
+MBJ-311,Flat cost for watching live (cache pieces and playlists),Live via YouTube,Phase 3 — Live via YouTube,Should,S,In progress,"As JimBob, I want a big live audience to cost the same as a small one.","- Video pieces (`.ts`) on `live.madebyjimbob.app` come from Cloudflare's cache (`cf-cache-status: HIT`), not R2 (Cache Rule on 2026-10-03)
 - Live playlists are cacheable for about a second, so R2 sees roughly one read per quality per second per Cloudflare location, however many watch
 - Load test again: R2 read count stays roughly flat from 100 to 1,000 viewers; live delay unchanged (~4-5 s)
 - With pieces cached, each viewer still costs ~$1.30 per 1,000 viewer-hours in playlist reads past the free tier (2026-10-03 estimate)",MBJ-310

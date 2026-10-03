@@ -848,7 +848,7 @@ Acceptance criteria:
 
 ### MBJ-311 — Flat cost for watching live (cache pieces and playlists)
 
-**Status:** To do · **Phase 3 — Live via YouTube** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-310
+**Status:** In progress · **Phase 3 — Live via YouTube** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-310
 
 As JimBob, I want a big live audience to cost the same as a small one.
 

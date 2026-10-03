@@ -351,6 +351,20 @@ describe('Go Live (owned live, ADR-004)', () => {
         server: String(serverId),
       });
       assert.equal((await call('/live')).data.dvr.url, 'https://pub-test.r2.dev/dvr/mine/master.m3u8');
+      // Owncast's own playlists until the recorder says it publishes cacheable ones (MBJ-311); then those.
+      const master = async () => (await realFetch(`${new URL(base).origin}/live/hls/stream.m3u8`)).text();
+      assert.match(await master(), /^https:\/\/pub-test\.r2\.dev\/hls\/0\/stream\.m3u8$/m);
+      r2.objects['dvr/current.json'] = JSON.stringify({
+        id: 'mine',
+        startedAt: at,
+        live: true,
+        edge: true,
+        server: String(serverId),
+      });
+      const list = await master();
+      assert.match(list, /^https:\/\/pub-test\.r2\.dev\/dvr\/live\/0\.m3u8$/m);
+      assert.match(list, /^https:\/\/pub-test\.r2\.dev\/dvr\/live\/1\.m3u8$/m);
+      assert.match(hetzner.created.at(-1).user_data, /path: \/opt\/recorder\/edge\.mjs/);
       await call('/studio/live/stop', { method: 'POST', token: admin });
     } finally {
       process.env.R2_ACCOUNT_ID = '';
