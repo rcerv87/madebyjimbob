@@ -84,6 +84,9 @@ describe('/live', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('button', { name: 'Back 1 minute' });
+    // Nobody has rewound yet: the live feed plays, not the recording.
+    expect(players.live).toEqual(['/live/hls/stream.m3u8']);
+    expect(players.recording).toEqual([]);
     const livesBefore = players.live.length;
     fireEvent.click(screen.getByRole('button', { name: 'Back 1 minute' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Back 1 minute' }));
