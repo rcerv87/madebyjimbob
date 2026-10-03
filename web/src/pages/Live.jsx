@@ -55,6 +55,12 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
   const [listening, setListening] = useState(false);
   // While dragging the timeline: where the thumb is (seconds), so it follows the finger and seeks once on release.
   const [drag, setDrag] = useState(null);
+  // Mute (both players), e.g. when watching on the computer that's streaming, where OBS would capture the sound.
+  const [muted, setMuted] = useState(false);
+  useEffect(() => {
+    if (ref.current) ref.current.muted = muted;
+    if (audioRef.current) audioRef.current.muted = muted;
+  }, [muted, listening, rewindTo, attachKey]);
   const listeningRef = useRef(false);
   const [, tick] = useState(0);
   // The recording skips the time OBS was away (gapS), so live on the recording is the clock minus that.
@@ -241,10 +247,22 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
         controls={!dvr}
         aria-label="JimBob live"
         onPause={onVideoPause}
+        // Only one player ever makes sound: playing the video stops the listening player, and the other way round.
+        onPlay={() => {
+          if (listeningRef.current) ref.current?.pause();
+          else audioRef.current?.pause();
+        }}
         onWaiting={onVideoWaiting}
         hidden={listening}
       />
-      <audio ref={audioRef} hidden />
+      <audio
+        ref={audioRef}
+        hidden
+        onPlay={() => {
+          if (!listeningRef.current) audioRef.current?.pause();
+          else ref.current?.pause();
+        }}
+      />
       {listening && (
         <div className="live-listening">
           <strong>🎧 Listening</strong>
@@ -342,6 +360,14 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
             {atLive ? 'LIVE' : 'Back to LIVE'}
           </button>
         )}
+        <button
+          className="text-btn"
+          onClick={() => setMuted((m) => !m)}
+          aria-pressed={muted}
+          aria-label={muted ? 'Unmute' : 'Mute'}
+        >
+          {muted ? '🔇 Muted' : '🔊'}
+        </button>
         {!listening && (
           <button
             className="text-btn"
