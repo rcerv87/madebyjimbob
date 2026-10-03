@@ -52,7 +52,10 @@ function fakeFetch(url, opts = {}) {
   if (u.hostname === IP) {
     if (!owncast) return Promise.reject(new Error('connect ECONNREFUSED'));
     if (u.pathname === '/api/status')
-      return json(200, { online: owncast.online, lastConnectTime: '2026-10-01T12:00:00Z' });
+      return json(200, {
+        online: owncast.online,
+        lastConnectTime: owncast.connectedAt || '2026-10-01T12:00:00Z',
+      });
     if (u.pathname.startsWith('/api/admin/config/')) {
       const key = u.pathname.replace('/api/admin/config/', '');
       owncast.config.push(key);
@@ -353,6 +356,13 @@ describe('Go Live (owned live, ADR-004)', () => {
       assert.equal((await call('/live')).data.dvr.url, 'https://pub-test.r2.dev/dvr/mine/master.m3u8');
       // Owncast's own playlists until the recorder says it publishes cacheable ones (MBJ-311); then those.
       const master = async () => (await realFetch(`${new URL(base).origin}/live/hls/stream.m3u8`)).text();
+      // In a stream's first 30 seconds, players wait for those instead of starting on Owncast's (they retry).
+      owncast.connectedAt = new Date().toISOString();
+      const early = await realFetch(`${new URL(base).origin}/live/hls/stream.m3u8`);
+      assert.equal(early.status, 503);
+      assert.equal(early.headers.get('retry-after'), '2');
+      // Later in the stream, Owncast's own, so a stream always plays.
+      owncast.connectedAt = new Date(Date.now() - 60_000).toISOString();
       assert.match(await master(), /^https:\/\/pub-test\.r2\.dev\/hls\/0\/stream\.m3u8$/m);
       r2.objects['dvr/current.json'] = JSON.stringify({
         id: 'mine',

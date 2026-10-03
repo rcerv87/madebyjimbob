@@ -31,6 +31,11 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   `R2_PUBLIC_URL` points at it (Render and `.env`); the 1,000-viewer load test passed on it. Left:
   1. **Cache Rule on (2026-10-03):** "Live video pieces" (hostname `live.madebyjimbob.app`, file extension `ts`,
      Eligible for cache): pieces answer `MISS` then `HIT` (check with a GET; HEAD requests always say `DYNAMIC`).
+     **Also set (2026-10-03):** in that rule, Edge TTL → "Use cache-control header if present, bypass cache if not"
+     (R2's 404s have no header, so a piece asked for too early is never remembered), and Caching → Configuration →
+     Browser Cache TTL → "Respect Existing Headers" (the 4-hour default was stamped on 404s too). The site also holds
+     players for up to 30 s at a stream's start until the live playlists are published (a player that started on
+     Owncast's kept them all stream and hit 404s).
      Cache Reserve is not needed (paid). **Next: add `m3u8` to that rule** (Edit expression →
      `(http.host eq "live.madebyjimbob.app" and (http.request.uri.path.extension eq "ts" or http.request.uri.path.extension eq "m3u8"))`)
      so live playlists (`dvr/live/<n>.m3u8`, 1-second cache, MBJ-311) are held by Cloudflare. Owncast's and recordings'
