@@ -53,6 +53,8 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
   const [rewindTo, setRewindTo] = useState(null); // seconds from the start, or null = live
   const [attachKey, setAttachKey] = useState(0);
   const [listening, setListening] = useState(false);
+  // While dragging the timeline: where the thumb is (seconds), so it follows the finger and seeks once on release.
+  const [drag, setDrag] = useState(null);
   const listeningRef = useRef(false);
   const [, tick] = useState(0);
   // The recording skips the time OBS was away (gapS), so live on the recording is the clock minus that.
@@ -270,8 +272,17 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
               className="live-scrub"
               min={0}
               max={Math.max(1, Math.round(elapsed()))}
-              value={Math.round(Math.min(now, elapsed()))}
-              onChange={(e) => seek(Number(e.target.value))}
+              value={Math.round(drag ?? Math.min(now, elapsed()))}
+              onChange={(e) => setDrag(Number(e.target.value))}
+              onPointerUp={(e) => {
+                seek(Number(e.currentTarget.value));
+                setDrag(null);
+              }}
+              onKeyUp={(e) => {
+                seek(Number(e.currentTarget.value));
+                setDrag(null);
+              }}
+              onBlur={() => setDrag(null)}
               aria-label="Rewind the stream"
             />
             {!atLive && (
@@ -280,7 +291,11 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
               </button>
             )}
             <span className="small muted live-time">
-              {atLive ? hms(elapsed()) : `${hms(now)} · ${hms(Math.max(0, liveAt() - now))} behind`}
+              {drag !== null
+                ? `Go to ${hms(drag)} · ${hms(Math.max(0, liveAt() - drag))} behind`
+                : atLive
+                  ? hms(elapsed())
+                  : `${hms(now)} · ${hms(Math.max(0, liveAt() - now))} behind`}
             </span>
           </>
         )}
