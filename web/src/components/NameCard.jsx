@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
@@ -6,7 +6,9 @@ import MemberBadge from './MemberBadge.jsx';
 
 // A member's name in chat or comments (MBJ-116). Tapping it opens a small card: who they are, View profile, and
 // whatever actions the place offers (Reply, Mention), plus Mute, Block, and Report for signed-in viewers
-// (MBJ-119; `moderation` = { me, onChanged }). Names without a site account stay plain (or just reply).
+// (MBJ-119; `moderation` = { me, onChanged }). Names without a site account stay plain (or just reply), unless
+// `menu` is set: then the card opens for them too, without View profile and moderation. `children` replaces the name
+// as what's tapped (chat uses the member's picture).
 export default function NameCard({
   name,
   profile,
@@ -18,11 +20,40 @@ export default function NameCard({
   onPlainClick,
   moderation,
   about = {}, // { chatMessageId } or { commentId }: what a report is about
+  menu = false,
+  children,
+  highlight, // { color, takenBy: { color: name }, onPick(color | null) }: chat's highlight colors
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [note, setNote] = useState('');
   const ref = useRef(null);
+  const cardRef = useRef(null);
+  const [pos, setPos] = useState(null);
+
+  // The card floats over everything (fixed), so a scrolling chat list can't cut it off: below the name, or above it
+  // when there's no room below, kept inside the screen. It follows the name when the list scrolls.
+  useLayoutEffect(() => {
+    if (!open) return undefined;
+    const place = () => {
+      const btn = ref.current?.firstElementChild?.getBoundingClientRect();
+      const card = cardRef.current?.getBoundingClientRect();
+      if (!btn || !card) return;
+      const left = Math.max(8, Math.min(btn.left, window.innerWidth - card.width - 8));
+      const below = btn.bottom + 6;
+      const above = btn.top - 6 - card.height;
+      const top = below + card.height > window.innerHeight - 8 && above >= 8 ? above : below;
+      setPos({ left, top });
+    };
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', place);
+      setPos(null);
+    };
+  }, [open, note]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -36,7 +67,7 @@ export default function NameCard({
     };
   }, [open]);
 
-  if (!profile) {
+  if (!profile && !menu) {
     return onPlainClick ? (
       <button type="button" className={className} onClick={onPlainClick} title={title}>
         {name}
@@ -48,7 +79,8 @@ export default function NameCard({
     );
   }
 
-  const canModerate = moderation?.me && moderation.me.toLowerCase() !== profile.toLowerCase();
+  const canModerate = profile && moderation?.me && moderation.me.toLowerCase() !== profile.toLowerCase();
+  const who = profile || name.replace(/^@/, '');
   const hide = async (kind) => {
     try {
       await api(`/account/blocks/${encodeURIComponent(profile)}`, { method: 'PUT', body: { kind } });
@@ -76,30 +108,39 @@ export default function NameCard({
         className={className}
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-label={children ? title : undefined}
         title={title}
         onClick={() => {
           setNote('');
           setOpen((o) => !o);
         }}
       >
-        {name}
+        {children ?? name}
       </button>
       {open && (
-        <span className="name-card" role="dialog" aria-label={`${profile}’s card`}>
+        <span
+          className="name-card"
+          role="dialog"
+          aria-label={`${who}’s card`}
+          ref={cardRef}
+          style={pos ? { position: 'fixed', left: pos.left, top: pos.top } : undefined}
+        >
           <span className="name-card-who">
             <span className="avatar" aria-hidden="true">
-              {profile[0].toUpperCase()}
+              {who[0]?.toUpperCase()}
             </span>
             <span>
-              <strong>{profile}</strong>
+              <strong>{who}</strong>
               <MemberBadge tier={tier} />
               {platformName && <span className="muted small">{platformName} on YouTube</span>}
             </span>
           </span>
           <span className="name-card-actions">
-            <Link to={`/@${profile}`} onClick={() => setOpen(false)}>
-              View profile
-            </Link>
+            {profile && (
+              <Link to={`/@${profile}`} onClick={() => setOpen(false)}>
+                View profile
+              </Link>
+            )}
             {all.map((a) => (
               <button
                 key={a.label}
@@ -114,6 +155,41 @@ export default function NameCard({
               </button>
             ))}
           </span>
+          {highlight && (
+            <span className="name-card-colors" role="group" aria-label="Highlight their messages">
+              <span className="muted small">Highlight</span>
+              {HIGHLIGHT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`swatch hl-${c}`}
+                  aria-label={`Highlight ${c}`}
+                  title={
+                    highlight.takenBy?.[c] && highlight.color !== c
+                      ? `${highlight.takenBy[c]} has ${c}. Tap to move it here.`
+                      : `Highlight ${c}`
+                  }
+                  aria-pressed={highlight.color === c}
+                  onClick={() => {
+                    setOpen(false);
+                    highlight.onPick(highlight.color === c ? null : c);
+                  }}
+                />
+              ))}
+              {highlight.color && (
+                <button
+                  type="button"
+                  className="text-btn"
+                  onClick={() => {
+                    setOpen(false);
+                    highlight.onPick(null);
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </span>
+          )}
           {note && <span className="small">{note}</span>}
         </span>
       )}
@@ -125,6 +201,8 @@ export default function NameCard({
     </span>
   );
 }
+
+export const HIGHLIGHT_COLORS = ['red', 'yellow', 'blue', 'purple', 'green'];
 
 const REASONS = [
   ['spam', 'Spam or scams'],

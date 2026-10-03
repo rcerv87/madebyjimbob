@@ -3734,3 +3734,72 @@ a.text-btn {
   left: 50%;
   transform: translateX(-50%);
 }
+
+/* Chat: a member's picture opens their menu; "only their messages" filter; highlight colors (stripe + tint). */
+.chat-msg .avatar-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  line-height: 0;
+}
+.chat-msg .avatar-btn:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+.chat-msg > .name-card-wrap,
+.paid-head > .name-card-wrap {
+  display: inline-block;
+  flex: none;
+}
+.chat-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+}
+.name-card-colors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  background: var(--hl);
+}
+.swatch[aria-pressed='true'] {
+  border-color: var(--text);
+}
+.hl-red {
+  --hl: #e5484d;
+  --hl-bg: rgba(229, 72, 77, 0.16);
+}
+.hl-yellow {
+  --hl: #f5c518;
+  --hl-bg: rgba(245, 197, 24, 0.16);
+}
+.hl-blue {
+  --hl: #3e8ef7;
+  --hl-bg: rgba(62, 142, 247, 0.16);
+}
+.hl-purple {
+  --hl: #9b6cf2;
+  --hl-bg: rgba(155, 108, 242, 0.18);
+}
+.hl-green {
+  --hl: #30a46c;
+  --hl-bg: rgba(48, 164, 108, 0.16);
+}
+.chat-msg.hl {
+  background: var(--hl-bg);
+  box-shadow: inset 3px 0 0 var(--hl);
+}
