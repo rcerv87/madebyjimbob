@@ -11,6 +11,18 @@ const VIEW_KEY = 'mbjb_chat_view';
 const MENTION_SPLIT = /((?<![A-Za-z0-9_])@[A-Za-z0-9_][A-Za-z0-9_.-]{1,30}[A-Za-z0-9_])/g;
 
 const handle = (author) => author.replace(/^@/, '');
+// Who wrote a message, for filtering and highlighting: the site account, or the YouTube name.
+const whoOf = (m) => (m.profile || handle(m.author)).toLowerCase();
+// Highlights belong to one chat (a new stream starts clean) and survive a page refresh: { videoId, byColor }.
+const HIGHLIGHT_KEY = 'mbj.chatHighlights';
+const loadHighlights = (videoId) => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(HIGHLIGHT_KEY));
+    return saved?.videoId === String(videoId) ? saved.byColor || {} : {};
+  } catch {
+    return {};
+  }
+};
 
 // How many entries of a list sorted by time are at or before `at` (binary search).
 function countUpTo(sorted, at, timeOf = (x) => x) {
@@ -59,6 +71,22 @@ export default function ChatPanel({
   const [showJump, setShowJump] = useState(false);
   const [text, setText] = useState('');
   const [replyTarget, setReplyTarget] = useState(null);
+  // From a person's menu: show only their messages, and highlight people in a color (kept on this device).
+  const [onlyFrom, setOnlyFrom] = useState(null); // { who, name }
+  // Up to 5 people, one color each: { color: { who, name } }.
+  const [highlights, setHighlights] = useState(() => loadHighlights(videoId));
+  const colorOf = useMemo(
+    () => Object.fromEntries(Object.entries(highlights).map(([color, p]) => [p.who, color])),
+    [highlights],
+  );
+  const takenBy = useMemo(
+    () => Object.fromEntries(Object.entries(highlights).map(([color, p]) => [color, p.name])),
+    [highlights],
+  );
+  useEffect(() => {
+    setHighlights(loadHighlights(videoId));
+    setOnlyFrom(null);
+  }, [videoId]);
   const [flashId, setFlashId] = useState(null);
   const [suggest, setSuggest] = useState({ items: [], index: 0 });
   const [error, setError] = useState('');
@@ -170,16 +198,18 @@ export default function ChatPanel({
     const hidden = [];
     for (const m of byId.values()) {
       if (m.profile && muted.has(m.profile.toLowerCase())) continue;
+      if (onlyFrom && whoOf(m) !== onlyFrom.who) continue;
       if (view === 'live' && m.postedLive === false) hidden.push(m.offsetMs);
       else shown.push({ type: 'chat', key: `m${m.id}`, at: m.offsetMs, order: Number(m.id), m });
     }
     for (const c of commentsById.values()) {
       if (c.profile && muted.has(c.profile.toLowerCase())) continue;
+      if (onlyFrom && whoOf(c) !== onlyFrom.who) continue;
       if (view === 'live') hidden.push(c.offsetMs);
       else shown.push({ type: 'comment', key: `c${c.id}`, at: c.offsetMs, order: Number(c.id), c });
     }
     return { items: shown.sort(inVideoOrder), hiddenAt: hidden.sort((a, b) => a - b) };
-  }, [byId, commentsById, view, muted]);
+  }, [byId, commentsById, view, muted, onlyFrom]);
 
   // Everything up to the playhead. Following playback is a binary search, and the list only changes
   // (and re-renders) when a message reaches the playhead.
@@ -219,7 +249,31 @@ export default function ChatPanel({
     [session],
   );
 
-  // "Mention" on a name card: @name at the end of what you're typing.
+  const showOnly = useCallback((m) => {
+    setOnlyFrom((cur) =>
+      cur?.who === whoOf(m) ? null : { who: whoOf(m), name: m.profile || handle(m.author) },
+    );
+    pinned.current = true;
+  }, []);
+  // A color someone else has moves to this person (so at most 5 people are highlighted).
+  const highlight = useCallback(
+    (m, color) => {
+      setHighlights((cur) => {
+        const who = whoOf(m);
+        const next = Object.fromEntries(Object.entries(cur).filter(([c, p]) => p.who !== who && c !== color));
+        if (color) next[color] = { who, name: m.profile || handle(m.author) };
+        try {
+          localStorage.setItem(HIGHLIGHT_KEY, JSON.stringify({ videoId: String(videoId), byColor: next }));
+        } catch {
+          // private window: highlights last until the page closes
+        }
+        return next;
+      });
+    },
+    [videoId],
+  );
+
+  // Tapping a name: @name at the end of what you're typing.
   const mention = useCallback(
     (name) => {
       if (!session.user) return session.requireSignIn();
@@ -346,10 +400,24 @@ export default function ChatPanel({
         </div>
       </header>
 
+      {onlyFrom && (
+        <div className="chat-filter">
+          <span>
+            Only <b>{onlyFrom.name}</b>’s messages
+          </span>
+          <button type="button" className="text-btn" onClick={() => setOnlyFrom(null)}>
+            Show everyone
+          </button>
+        </div>
+      )}
       <div className="chat-body">
         <ol className="chat-list" ref={listRef} onScroll={onScroll} aria-live="polite">
           {visible.length === 0 && (
-            <li className="chat-empty muted">Chat appears here as the video plays.</li>
+            <li className="chat-empty muted">
+              {onlyFrom
+                ? `${onlyFrom.name} hasn’t chatted yet at this point.`
+                : 'Chat appears here as the video plays.'}
+            </li>
           )}
           {visible.map((item) =>
             item.type === 'chat' ? (
@@ -362,6 +430,11 @@ export default function ChatPanel({
                 onSeek={onSeek}
                 onReply={startReply}
                 onMention={mention}
+                only={onlyFrom?.who === whoOf(item.m)}
+                onShowOnly={showOnly}
+                color={colorOf[whoOf(item.m)]}
+                takenBy={takenBy}
+                onHighlight={highlight}
                 onQuote={showOriginal}
               />
             ) : (
@@ -467,6 +540,11 @@ const ChatMessage = memo(function ChatMessage({
   onReply,
   onMention,
   onQuote,
+  only,
+  onShowOnly,
+  color,
+  takenBy,
+  onHighlight,
 }) {
   const mentionsMe = me && m.mentions?.some((n) => me.split(',').includes(n));
   const replay = m.postedLive === false;
@@ -479,35 +557,52 @@ const ChatMessage = memo(function ChatMessage({
       p
     ),
   );
-  // A linked account shows the member's site name; the platform name is in the tooltip (MBJ-215). Members' names
-  // open their card (MBJ-116); other names reply straight away.
+  // A linked account shows the member's site name; the platform name is in the tooltip (MBJ-215). Tapping a name
+  // mentions them (@name in the box); tapping their picture opens their menu (MBJ-116): Reply, Show only their
+  // messages, View profile, a highlight color, and Mute/Block/Report.
+  const name = m.profile || handle(m.author);
   const author = (
     <>
-      <NameCard
-        name={m.author}
-        profile={m.profile}
-        tier={m.memberTier}
-        platformName={m.platformName}
-        title={
-          m.platformName ? `${m.platformName} on YouTube` : m.profile ? undefined : `Reply to ${m.author}`
-        }
-        onPlainClick={() => onReply(m)}
-        moderation={moderation}
-        about={{ chatMessageId: m.id }}
-        actions={[
-          { label: 'Reply', onClick: () => onReply(m) },
-          { label: 'Mention', onClick: () => onMention(m.profile) },
-        ]}
-      />
+      <button
+        type="button"
+        className="author"
+        title={m.platformName ? `${m.platformName} on YouTube · tap to mention` : `Mention ${name}`}
+        onClick={() => onMention(name)}
+      >
+        {m.author}
+      </button>
       <MemberBadge tier={m.memberTier} />
     </>
+  );
+  const avatar = (
+    <NameCard
+      name={m.author}
+      profile={m.profile}
+      tier={m.memberTier}
+      platformName={m.platformName}
+      className="avatar-btn"
+      title={`Options for ${name}`}
+      menu
+      moderation={moderation}
+      about={{ chatMessageId: m.id }}
+      actions={[
+        { label: 'Reply', onClick: () => onReply(m) },
+        { label: only ? 'Show everyone' : 'Show only their messages', onClick: () => onShowOnly(m) },
+      ]}
+      highlight={{ color, takenBy, onPick: (c) => onHighlight(m, c) }}
+    >
+      <Avatar m={m} />
+    </NameCard>
   );
 
   if (m.kind === 'paid') {
     return (
-      <li className={`chat-msg paid ${flash ? 'flash' : ''}`} data-msg={m.id}>
+      <li
+        className={`chat-msg paid ${flash ? 'flash' : ''} ${color ? `hl hl-${color}` : ''}`}
+        data-msg={m.id}
+      >
         <div className="paid-head">
-          <Avatar m={m} />
+          {avatar}
           {author}
           <strong className="amount">{m.amount}</strong>
         </div>
@@ -526,11 +621,12 @@ const ChatMessage = memo(function ChatMessage({
         mentionsMe && 'mentions-me',
         replay && 'replay',
         flash && 'flash',
+        color && `hl hl-${color}`,
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      <Avatar m={m} />
+      {avatar}
       <div className="chat-main">
         {m.replyTo && <Quote q={m.replyTo} onQuote={onQuote} />}
         <p>

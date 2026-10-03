@@ -93,11 +93,16 @@ describe('chat: live only vs live + replay', () => {
 });
 
 describe('chat: replies', () => {
-  test('tapping a name starts a reply that quotes the message and sends replyToId', async () => {
+  test('tapping a name mentions them; Reply in their picture menu quotes the message and sends replyToId', async () => {
     mockApi({ '/videos/7/chat': { messages: [msg(1, 1000, 'hot take')] } });
     panel();
     fireEvent.click(await screen.findByRole('button', { name: '@Viewer' }));
     const input = screen.getByLabelText('Chat message');
+    expect(input.value).toBe('@Viewer ');
+    expect(screen.queryByText(/Replying to/)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Options for Viewer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reply' }));
     expect(input.value).toBe('@Viewer ');
     expect(screen.getByText(/Replying to/).textContent).toContain('hot take');
 
@@ -124,6 +129,53 @@ describe('chat: replies', () => {
     );
     expect(screen.getByRole('button', { name: 'Live + replay' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByTitle('Show the original message').textContent).toContain('hot take');
+  });
+
+  test('a picture menu shows only that person, and highlights them in a color for this chat', async () => {
+    localStorage.removeItem('mbj.chatHighlights');
+    const messages = [
+      msg(1, 1000, 'first'),
+      msg(2, 2000, 'other one', { author: '@BigSue' }),
+      msg(3, 3000, 'again'),
+    ];
+    mockApi({ '/videos/7/chat': { messages }, '/videos/8/chat': { messages } });
+    const { unmount } = panel();
+    await screen.findByText('other one');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Options for Viewer' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Show only their messages' }));
+    expect(screen.queryByText('other one')).toBeNull();
+    expect(screen.getByText('first')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Show everyone' }));
+    expect(screen.getByText('other one')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Options for BigSue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Highlight purple' }));
+    const row = (text) => screen.getByText(text).closest('.chat-msg');
+    expect(row('other one').classList.contains('hl-purple')).toBe(true);
+    expect(row('first').classList.contains('hl')).toBe(false);
+    // One person per color: purple moves to Viewer.
+    fireEvent.click(screen.getAllByRole('button', { name: 'Options for Viewer' })[0]);
+    expect(screen.getByRole('button', { name: 'Highlight purple' }).title).toContain('BigSue has purple');
+    fireEvent.click(screen.getByRole('button', { name: 'Highlight purple' }));
+    expect(row('first').classList.contains('hl-purple')).toBe(true);
+    expect(row('other one').classList.contains('hl')).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Options for BigSue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Highlight green' }));
+    unmount();
+
+    // Kept after a refresh of the same chat; a different video's chat starts clean.
+    const second = panel();
+    await screen.findByText('other one');
+    expect(row('other one').classList.contains('hl-green')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Options for BigSue' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(row('other one').classList.contains('hl')).toBe(false);
+    expect(row('first').classList.contains('hl-purple')).toBe(true);
+    second.unmount();
+
+    panel({ videoId: '8' });
+    await screen.findByText('other one');
+    expect(row('first').classList.contains('hl')).toBe(false);
   });
 
   test('@ suggests names from the chat', async () => {

@@ -271,6 +271,20 @@ S = [
   "Results show the moment and jump to it; the matching words are highlighted",
   "Member filter also from a name card: \"Show this person's comments and chat\"",
   "Ruben, 2026-10-03"], ["217"]),
+("219", 1, "Should", "S", "Chat: tap a name to mention, tap a picture for a menu, highlight colors",
+ "As a viewer in a busy live chat, I want to @ someone in one tap, follow one person's messages, and spot the people I'm talking with.",
+ ["Tapping a name puts @name in the message box; tapping their picture opens a menu: Reply, Show only their messages, View profile (site members), a highlight color, and Mute/Block/Report",
+  "Highlight: 5 colors (red, yellow, blue, purple, green), one person per color, so at most 5 people; picking a color someone has moves it",
+  "Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)",
+  "Show only their messages: a bar above the chat with Show everyone",
+  "Ruben, 2026-10-03"], ["116"]),
+("220", 1, "Should", "M", "Favorite members (highlighted in every chat)",
+ "As a viewer, I want the people I always chat with highlighted by default, in my colors, on any device.",
+ ["Favorite a member from their chat menu, name card, or profile; favorites are saved to my account (all devices)",
+  "Each favorite has a color, highlighted automatically in every chat and comment section; more colors than the 5 quick highlights",
+  "Favorites don't count toward the 5 per-chat highlights; a per-chat highlight overrides a favorite's color for that chat",
+  "A Favorites list in Account settings to recolor or remove; feeds the favorites filters in MBJ-217 and MBJ-218",
+  "Ruben, 2026-10-03"], ["219"]),
 # ---------------- 3 Live via YouTube ----------------
 ("301", 3, "Must", "M", "Live video model and live page",
  "As a viewer, I want to watch JimBob live without leaving the platform.",
@@ -602,7 +616,7 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.
