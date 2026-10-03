@@ -730,9 +730,11 @@ Acceptance criteria:
 - [ ] Messages that weren't replies or @mentions join a conversation when the signs point to it: the same people talking within seconds, a short answer right after a question, words carried over; uncertain ones are only suggested, never forced
 - [ ] Fix it after the fact: on your own message, "Add to conversation…" (pick one of yours, or a message to attach it to); moderators can do it for anyone; others see the link
 - [ ] A notice when a conversation you're in starts ("Conversation started with @user2 and @user3"), shown in the chat, not as a notification
-- [ ] Tabs above the chat: Live chat, then one per conversation you're in (names of who's in it, unread count); switch freely; replying from a tab keeps the message in that conversation automatically
+- [ ] The chat's view buttons become one row that grows: (Live) (Replay) (Convo 1) (Convo 2)…, where Live and Replay are today's Live only / Live + replay, and each conversation you're in adds a button (named by who's in it on hover or long-press)
+- [ ] A conversation's button shows when something new is said there ("Convo 1 +", or a count) and clears when you open it; switch back and forth freely; the row scrolls sideways on phones
+- [ ] Sending from a conversation's view keeps the message in that conversation automatically (no reply or @ needed)
 - [ ] Conversations end on their own after a quiet spell; they stay findable from the conversations list (MBJ-222) and in the replay
-- [ ] Ruben, 2026-10-03
+- [ ] Ruben, 2026-10-03: the view buttons become (Live) (Replay) (Convo 1) (Convo 2)…, with "Convo 1 +" when there's something new
 
 ### MBJ-224 — Member history: everything someone said, searchable, with links to the source
 
