@@ -67,7 +67,16 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
     const el = ref.current;
     if (!el || listening) return undefined;
     const play = () => el.play().catch(() => setNeedsTap(true));
-    if (rewindTo !== null && dvr) return attachRecording(el, dvr.url, rewindTo, play);
+    if (rewindTo !== null && dvr)
+      return attachRecording(el, dvr.url, rewindTo, play, (at) => {
+        // Reached the end of what was recorded when it loaded: carry on from here, or go live if it's close.
+        posRef.current = at;
+        if (liveAt() - at < 30) setRewindTo(null);
+        else {
+          setRewindTo(at);
+          setAttachKey((k) => k + 1);
+        }
+      });
     if (!src) return undefined;
     return attachLive(el, src, play);
     // Re-attach when the mode flips or after listening, not on every seek inside the recording.
@@ -118,10 +127,17 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
     video?.pause();
     audioCleanup.current?.();
     const play = () => audio.play().catch(() => {});
-    // The sound alone if the recorder makes it; otherwise the recording, or the live feed, played as sound.
-    audioCleanup.current = dvr
-      ? attachRecording(audio, audioUrl.current || dvr.url, at, play)
-      : attachLive(audio, src, play);
+    // The sound alone if the recorder makes it; otherwise the recording, or the live feed, played as sound. At the end of
+    // what was recorded when it loaded, it reloads from there, so listening keeps going.
+    const listenFrom = (from) => {
+      audioCleanup.current?.();
+      audioCleanup.current = attachRecording(audio, audioUrl.current || dvr.url, from, play, (end) => {
+        posRef.current = end;
+        listenFrom(end);
+      });
+    };
+    if (dvr) listenFrom(at);
+    else audioCleanup.current = attachLive(audio, src, play);
     listeningRef.current = true;
     setListening(true);
   }
@@ -248,6 +264,28 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
           ▶ Play live
         </button>
       )}
+      {dvr && (
+        <div className="live-timeline">
+          <input
+            type="range"
+            className="live-scrub"
+            min={0}
+            max={Math.max(1, Math.round(elapsed()))}
+            value={Math.round(drag ?? Math.min(now, elapsed()))}
+            onChange={(e) => setDrag(Number(e.target.value))}
+            onPointerUp={(e) => {
+              seek(Number(e.currentTarget.value));
+              setDrag(null);
+            }}
+            onKeyUp={(e) => {
+              seek(Number(e.currentTarget.value));
+              setDrag(null);
+            }}
+            onBlur={() => setDrag(null)}
+            aria-label="Rewind the stream"
+          />
+        </div>
+      )}
       <div className="live-controls">
         {dvr && (
           <>
@@ -267,24 +305,6 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
             <button className="text-btn" onClick={() => seek(now - 10)} aria-label="Back 10 seconds">
               −10s
             </button>
-            <input
-              type="range"
-              className="live-scrub"
-              min={0}
-              max={Math.max(1, Math.round(elapsed()))}
-              value={Math.round(drag ?? Math.min(now, elapsed()))}
-              onChange={(e) => setDrag(Number(e.target.value))}
-              onPointerUp={(e) => {
-                seek(Number(e.currentTarget.value));
-                setDrag(null);
-              }}
-              onKeyUp={(e) => {
-                seek(Number(e.currentTarget.value));
-                setDrag(null);
-              }}
-              onBlur={() => setDrag(null)}
-              aria-label="Rewind the stream"
-            />
             {!atLive && (
               <button className="text-btn" onClick={() => seek(now + 10)} aria-label="Forward 10 seconds">
                 +10s

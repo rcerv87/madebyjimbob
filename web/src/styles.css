@@ -3679,3 +3679,17 @@ a.text-btn {
   background: var(--surface-2, rgba(127, 127, 127, 0.12));
   font-size: 1.2rem;
 }
+
+/* The timeline gets its own row, so nothing beside it changes its size mid-drag. */
+.live-timeline {
+  margin-top: 8px;
+}
+.live-timeline .live-scrub {
+  display: block;
+  width: 100%;
+  margin: 0;
+  height: 28px;
+}
+.live-controls .live-time {
+  min-width: 13ch;
+}
