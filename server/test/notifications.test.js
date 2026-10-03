@@ -18,7 +18,10 @@ after(async () => {
 
 const inbox = async (token) => (await call('/notifications', { token })).data;
 
-test('a chat reply notifies the person replied to, with where and when', async () => {
+const comment = (token, id, text, replyToId) =>
+  call(`/videos/${id}/comments`, { method: 'POST', token, body: { text, ...(replyToId && { replyToId }) } });
+
+test('chat never notifies: not replies, not @mentions (2026-10-03)', async () => {
   const id = await seedVideo();
   const alice = await signIn(call, 'n_alice');
   const bob = await signIn(call, 'n_bob');
@@ -32,50 +35,43 @@ test('a chat reply notifies the person replied to, with where and when', async (
   await call(`/videos/${id}/chat`, {
     method: 'POST',
     token: bob,
-    body: { text: 'no way', offsetMs: 35_000, replyToId: original.id },
+    body: { text: '@n_alice no way', offsetMs: 35_000, replyToId: original.id },
   });
-  await sleep(150);
-  const a = await inbox(alice);
-  assert.equal(a.unread, 1);
-  assert.deepEqual(
-    { type: a.notifications[0].type, where: a.notifications[0].where, actor: a.notifications[0].actor },
-    { type: 'reply', where: 'chat', actor: 'n_bob' },
-  );
-  assert.equal(a.notifications[0].offsetMs, 35_000);
-  assert.equal(a.notifications[0].excerpt, 'no way');
-  assert.equal((await inbox(bob)).unread, 0, 'no notification for your own post');
+  await sleep(200);
+  assert.equal((await inbox(alice)).unread, 0);
 });
 
-test('@mentions notify mentioned users once, never yourself, reply wins over mention', async () => {
+test('a comment reply notifies the person replied to, with where; @mentions in comments do not', async () => {
   const id = await seedVideo();
   const carol = await signIn(call, 'n_carol');
   const dave = await signIn(call, 'n_dave');
   const erin = await signIn(call, 'n_erin');
-  const c = (
-    await call(`/videos/${id}/comments`, { method: 'POST', token: carol, body: { text: 'thoughts?' } })
-  ).data.comment;
-  await call(`/videos/${id}/comments`, {
-    method: 'POST',
-    token: dave,
-    body: { text: '@n_carol @N_CAROL @n_erin @n_dave @nobody_here agreed', replyToId: c.id },
-  });
+  const c = (await comment(carol, id, 'thoughts?')).data.comment;
+  await comment(dave, id, '@n_carol @n_erin @n_dave agreed', c.id);
   await sleep(150);
   const carolBox = await inbox(carol);
-  assert.equal(carolBox.notifications.length, 1, 'reply + mention = one notification');
-  assert.equal(carolBox.notifications[0].type, 'reply');
-  assert.equal(carolBox.notifications[0].where, 'comment');
-  const erinBox = await inbox(erin);
-  assert.equal(erinBox.notifications[0].type, 'mention');
-  assert.equal((await inbox(dave)).unread, 0, 'mentioning yourself does nothing');
+  assert.equal(carolBox.notifications.length, 1);
+  assert.deepEqual(
+    {
+      type: carolBox.notifications[0].type,
+      where: carolBox.notifications[0].where,
+      actor: carolBox.notifications[0].actor,
+    },
+    { type: 'reply', where: 'comment', actor: 'n_dave' },
+  );
+  assert.equal(carolBox.notifications[0].excerpt, '@n_carol @n_erin @n_dave agreed');
+  assert.equal((await inbox(erin)).unread, 0, 'a mention alone notifies nobody');
+  assert.equal((await inbox(dave)).unread, 0, 'never yourself');
 });
 
 test('mark one or all as read', async () => {
   const id = await seedVideo();
   const fay = await signIn(call, 'n_fay');
   const gus = await signIn(call, 'n_gus');
-  await call(`/videos/${id}/chat`, { method: 'POST', token: gus, body: { text: 'hi @n_fay' } });
-  await sleep(1600);
-  await call(`/videos/${id}/chat`, { method: 'POST', token: gus, body: { text: 'again @n_fay' } });
+  const gil = await signIn(call, 'n_gil');
+  const c = (await comment(fay, id, 'my take')).data.comment;
+  await comment(gus, id, 'hmm', c.id);
+  await comment(gil, id, 'nah', c.id);
   await sleep(150);
   const box = await inbox(fay);
   assert.equal(box.unread, 2);
@@ -92,6 +88,7 @@ test('open tabs get notifications instantly over the WebSocket', async () => {
   const id = await seedVideo();
   const hal = await signIn(call, 'n_hal');
   const ivy = await signIn(call, 'n_ivy');
+  const c = (await comment(hal, id, 'question for all')).data.comment;
   const ws = new WebSocket(wsUrl);
   sockets.push(ws);
   const got = [];
@@ -99,16 +96,11 @@ test('open tabs get notifications instantly over the WebSocket', async () => {
   await new Promise((r) => ws.once('open', r));
   ws.send(JSON.stringify({ type: 'auth', token: hal }));
   await sleep(150);
-  await call(`/videos/${id}/chat`, {
-    method: 'POST',
-    token: ivy,
-    body: { text: 'yo @n_hal', offsetMs: 12_000 },
-  });
+  await comment(ivy, id, 'answer', c.id);
   await sleep(200);
   const n = got.find((m) => m.type === 'notify');
   assert.equal(n?.notification.actor, 'n_ivy');
   assert.equal(n.notification.videoTitle.startsWith('Video'), true);
-  assert.equal(n.notification.offsetMs, 12_000);
 });
 
 test('push setup reports when keys are not configured', async () => {

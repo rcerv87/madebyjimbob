@@ -104,7 +104,7 @@ describe('account settings page', () => {
       'PUT /account/notifications': [200, { prefs: { ...prefs, reply: { site: true, push: false } } }],
     });
     renderAccount();
-    const box = await screen.findByLabelText('Someone replies to you: push');
+    const box = await screen.findByLabelText('Someone replies to your comment: push');
     fireEvent.click(box);
     await waitFor(() =>
       expect(sent('PUT', '/account/notifications')).toEqual([{ prefs: { reply: { push: false } } }]),

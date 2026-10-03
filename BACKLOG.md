@@ -86,6 +86,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-218 | Search and filter comments and chat | Chat & moderation | 1 | Should | M | MBJ-217 |
 | MBJ-219 | Chat: tap a name to mention, tap a picture for a menu, highlight colors | Chat & moderation | 1 | Should | S | MBJ-116 |
 | MBJ-220 | Favorite members (highlighted in every chat) — Premium | Chat & moderation | 1 | Should | M | MBJ-219, MBJ-104 |
+| MBJ-221 | Direct messages | Chat & moderation | 1 | Should | M | MBJ-119, MBJ-202 |
+| MBJ-222 | Conversation tracker in chat | Chat & moderation | 1 | Should | M | MBJ-219, MBJ-218 |
 | MBJ-701 | Video management in Studio | Studio & analytics | 1 | Must | L | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
@@ -713,6 +715,33 @@ Acceptance criteria:
 - [x] Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)
 - [x] Show only their messages: a bar above the chat with Show everyone
 - [x] Ruben, 2026-10-03
+
+### MBJ-222 — Conversation tracker in chat
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-219, MBJ-218
+
+As a viewer, I want to follow one conversation in a busy chat: everything that grew out of one message, even when it branches.
+
+Acceptance criteria:
+- [ ] Detect conversations from replies: a message and every reply to it, replies to those replies, and so on, form one conversation tree (e.g. user 1 says something; user 2 replies; user 1 replies to user 2; user 3 replies to user 2; user 4 replies to user 1's first message: all one conversation started by user 1)
+- [ ] Optionally also link @mentions between the people already in it, within a short time, as part of the same conversation
+- [ ] Show only this conversation: from any message's menu or a quote, the chat filters to that conversation (with a bar and Show everyone), in time order, with each reply's quote showing what it answers
+- [ ] A conversations list for the stream (most active first: who's in it, how many messages, when it started), each opening its filter; works live and on the replay
+- [ ] Highlights and favorites still apply inside the filtered view
+- [ ] Ruben, 2026-10-03
+
+### MBJ-221 — Direct messages
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-119, MBJ-202
+
+As a member, I want to message someone privately, and know when someone messages me.
+
+Acceptance criteria:
+- [ ] Message a member from their chat menu, name card, or profile; a Messages page lists conversations with unread counts
+- [ ] A new direct message notifies (bell and push, per Account settings); with replies to comments, the only things that notify (chat and @mentions don't, since 2026-10-03)
+- [ ] Block and mute apply (no messages from them); report a message; moderators can review reported ones
+- [ ] Who can message you: everyone, favorites only, or nobody (Account settings); limits against spam for new accounts
+- [ ] Ruben, 2026-10-03
 
 ### MBJ-220 — Favorite members (highlighted in every chat) — Premium
 
