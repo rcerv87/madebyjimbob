@@ -9,8 +9,8 @@ import ChatPanel from '../components/ChatPanel.jsx';
 
 // How far behind live the live feed itself runs (seconds); jumps closer than this to live just play live.
 const LIVE_EDGE_S = 8;
-// Rewinds up to this far use the live feed's own buffer (the recording runs ~10–15 s behind live).
-const SHORT_REWIND_S = 25;
+// Rewinds up to this far use the live feed's own buffer; further back, the recording (it runs ~3–5 s behind live).
+const SHORT_REWIND_S = 10;
 const SPEEDS = [1, 1.25, 1.5, 2];
 // About how far the live feed runs behind the stream (seconds), for stamping live chat.
 const LIVE_DELAY_S = 5;
@@ -111,7 +111,7 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
       return attachRecording(el, dvr.url, rewindTo, play, (at) => {
         // Reached the end of what was recorded when it loaded: carry on from here, or go live if it's close.
         posRef.current = at;
-        if (liveAt() - at < 30) setRewindTo(null);
+        if (liveAt() - at < SHORT_REWIND_S) setRewindTo(null);
         else {
           setRewindTo(at);
           setAttachKey((k) => k + 1);
@@ -319,10 +319,15 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
       setRewindTo(null);
       return;
     }
-    // Further back: the recording.
+    // Further back: the recording. Inside what's loaded, just move; past it (the recording has grown since it loaded),
+    // load it again from there, or the player stops at the old end.
     setLiveBehind(0);
-    if (rewindTo !== null && ref.current) ref.current.currentTime = target;
-    else setRewindTo(target);
+    const video = ref.current;
+    if (rewindTo !== null && video && target < (video.duration || 0) - 1) video.currentTime = target;
+    else {
+      if (rewindTo !== null) setAttachKey((k) => k + 1);
+      setRewindTo(target);
+    }
   }
 
   // ---------- touch and mouse gestures on the video ----------
