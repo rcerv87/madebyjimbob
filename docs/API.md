@@ -32,6 +32,9 @@ they get `isAdmin: true` and see every tier.
 | GET | `/account/blocks` | session | `{ hidden: [{ username, kind: block\|mute, since }] }` (MBJ-119; also on `/me` as `user.hidden`) |
 | PUT | `/account/blocks/:username` | session | `{ kind: block\|mute }`: hides their chat, comments, and mentions for you (the web app filters by each row's `profile`); block also stops them replying to you (403) and neither notifies you. 400 for yourself, moderators, and JimBob |
 | DELETE | `/account/blocks/:username` | session | Unblock / unmute |
+| GET | `/account/favorites` | session | `{ favorites: [{ username, color, since }], active, colors }` (MBJ-220). `active` = Premium (favorites highlight); the list comes back either way so it can be managed. On `/me` as `user.favorites` only while Premium (else `[]`) |
+| PUT | `/account/favorites/:username` | session, Premium | `{ color }` from `red orange yellow lime green teal blue indigo purple pink`: add or recolor. 403 `{ upgrade: 'premium' }` below Premium; 400 for yourself, a bad color, or over 100 favorites; 404 no such member |
+| DELETE | `/account/favorites/:username` | session | Remove a favorite (any tier) |
 | POST | `/reports` | session | `{ username?, chatMessageId?, commentId?, reason: spam\|harassment\|hate\|sexual\|violence\|impersonation\|other, details? }` → `{ ok, id }`. 10 an hour |
 | GET / PUT | `/account/profile` | session | `{ showChat, indexable }`: what the public profile shares (chat messages) and whether search engines may list it |
 | GET | `/account/links` | session | `{ youtube, rumble }`, each null or `{ id, status: pending\|verified, handle, verifiedBy, verifiedAt }` (MBJ-215) |

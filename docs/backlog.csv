@@ -183,7 +183,7 @@ MBJ-219,"Chat: tap a name to mention, tap a picture for a menu, highlight colors
 - Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)
 - Show only their messages: a bar above the chat with Show everyone
 - Ruben, 2026-10-03",MBJ-116
-MBJ-220,Favorite members (highlighted in every chat) — Premium,Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a Premium member, I want the people I always chat with highlighted by default, in my colors, on any device.","- Premium only: Free and Plus members see Favorite in the menu with an upgrade prompt; the 5 per-chat highlights (MBJ-219) stay free for everyone
+MBJ-220,Favorite members (highlighted in every chat) — Premium,Chat & moderation,Phase 1 — VOD platform,Should,M,Done,"As a Premium member, I want the people I always chat with highlighted by default, in my colors, on any device.","- Premium only: Free and Plus members see Favorite in the menu with an upgrade prompt; the 5 per-chat highlights (MBJ-219) stay free for everyone
 - Favorite a member from their chat menu, name card, or profile; favorites are saved to my account (all devices)
 - Each favorite has a color, highlighted automatically in every chat and comment section; more colors than the 5 quick highlights
 - Favorites don't count toward the 5 per-chat highlights; a per-chat highlight overrides a favorite's color for that chat

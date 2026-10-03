@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import MemberBadge from './MemberBadge.jsx';
 import NameCard from './NameCard.jsx';
+import { favoriteMap } from '../favorites.js';
 import { api, compact, count, formatTime, splitTimestamps, timeAgo } from '../api.js';
 
 // YouTube-style comments under the video: imported YouTube comments and native ones, one level of
@@ -140,7 +141,14 @@ function CommentThread({ c, videoId, session, getTimeMs, onSeek, onReply, startO
     });
   };
 
-  const moderation = session.user ? { me: session.user.username, onChanged: session.refreshUser } : null;
+  const moderation = session.user
+    ? {
+        me: session.user.username,
+        onChanged: session.refreshUser,
+        premium: session.user.tier === 'premium',
+        favorites: favoriteMap(session.user),
+      }
+    : null;
   const common = { onSeek, onQuote: showOriginal, moderation };
   const muted = new Set((session.user?.hidden || []).map((h) => h.username.toLowerCase()));
 
@@ -215,8 +223,10 @@ function Body({ text, onSeek }) {
 }
 
 function Comment({ c, quote, flash, onReplyClick, onSeek, onQuote, moderation }) {
+  // Favorite members (MBJ-220) are highlighted in their color.
+  const fav = c.profile && moderation?.favorites?.get(c.profile.toLowerCase());
   return (
-    <article className={`comment ${flash ? 'flash' : ''}`}>
+    <article className={`comment ${flash ? 'flash' : ''} ${fav ? `hl hl-${fav}` : ''}`}>
       {c.authorPhoto ? (
         <img
           className="comment-avatar"

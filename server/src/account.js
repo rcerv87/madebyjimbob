@@ -11,6 +11,14 @@ import { maskEmail } from './emailTemplates.js';
 import { logSecurityEvent, requestOrigin } from './security.js';
 import { exportData, requestDeletion } from './deletion.js';
 import { setBlock, removeBlock, hiddenBy } from './blocks.js';
+import {
+  setFavorite,
+  removeFavorite,
+  favoritesOf,
+  canFavorite,
+  FAVORITE_COLORS,
+  MAX_FAVORITES,
+} from './favorites.js';
 import { linksFor, requestLink, PLATFORMS } from './links.js';
 
 export const NOTIFICATION_TYPES = ['mention', 'reply'];
@@ -340,6 +348,58 @@ router.delete(
   wrap(async (req, res) => {
     await removeBlock(req.user.id, req.params.username);
     res.json({ hidden: await hiddenBy(req.user.id) });
+  }),
+);
+
+// Favorite members (MBJ-220, Premium). The list always comes back (to manage it); `active` says whether they
+// highlight (Premium). Adding or recoloring needs Premium; removing never does.
+router.get(
+  '/favorites',
+  requireUser,
+  wrap(async (req, res) =>
+    res.json({
+      favorites: await favoritesOf(req.user.id),
+      active: canFavorite(req.user),
+      colors: FAVORITE_COLORS,
+    }),
+  ),
+);
+
+// { color }
+router.put(
+  '/favorites/:username',
+  requireUser,
+  wrap(async (req, res) => {
+    if (!canFavorite(req.user)) {
+      return res.status(403).json({ error: 'Favorites are a Premium feature.', upgrade: 'premium' });
+    }
+    const color = req.body?.color;
+    if (!FAVORITE_COLORS.includes(color)) return res.status(400).json({ error: 'Pick one of the colors.' });
+    try {
+      await setFavorite(req.user.id, req.params.username, color);
+    } catch (err) {
+      const why = {
+        'not-found': [404, 'No member with that name.'],
+        self: [400, 'You can’t favorite yourself.'],
+        full: [400, `You can have up to ${MAX_FAVORITES} favorites. Remove one in Account settings first.`],
+      }[err.message];
+      if (why) return res.status(why[0]).json({ error: why[1] });
+      throw err;
+    }
+    res.json({ favorites: await favoritesOf(req.user.id), active: true, colors: FAVORITE_COLORS });
+  }),
+);
+
+router.delete(
+  '/favorites/:username',
+  requireUser,
+  wrap(async (req, res) => {
+    await removeFavorite(req.user.id, req.params.username);
+    res.json({
+      favorites: await favoritesOf(req.user.id),
+      active: canFavorite(req.user),
+      colors: FAVORITE_COLORS,
+    });
   }),
 );
 

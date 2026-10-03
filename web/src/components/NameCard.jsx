@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import MemberBadge from './MemberBadge.jsx';
+import { HIGHLIGHT_COLORS, FAVORITE_COLORS } from '../favorites.js';
 
 // A member's name in chat or comments (MBJ-116). Tapping it opens a small card: who they are, View profile, and
 // whatever actions the place offers (Reply, Mention), plus Mute, Block, and Report for signed-in viewers
-// (MBJ-119; `moderation` = { me, onChanged }). Names without a site account stay plain (or just reply), unless
+// (MBJ-119; `moderation` = { me, onChanged, premium, favorites }), and Favorite (MBJ-220). Names without a site account stay plain (or just reply), unless
 // `menu` is set: then the card opens for them too, without View profile and moderation. `children` replaces the name
 // as what's tapped (chat uses the member's picture).
 export default function NameCard({
@@ -190,6 +191,17 @@ export default function NameCard({
               )}
             </span>
           )}
+          {canModerate && (
+            <FavoritePicker
+              username={profile}
+              color={moderation.favorites?.get(profile.toLowerCase())}
+              premium={moderation.premium}
+              onChanged={() => {
+                setOpen(false);
+                moderation.onChanged?.();
+              }}
+            />
+          )}
           {note && <span className="small">{note}</span>}
         </span>
       )}
@@ -202,7 +214,63 @@ export default function NameCard({
   );
 }
 
-export const HIGHLIGHT_COLORS = ['red', 'yellow', 'blue', 'purple', 'green'];
+// Favorite a member in a color (MBJ-220, Premium): highlighted in every chat and comment section, on every device.
+// Free and Plus members see what it does instead.
+export function FavoritePicker({ username, color, premium, onChanged }) {
+  const [explain, setExplain] = useState(false);
+  const [error, setError] = useState('');
+  const save = async (next) => {
+    setError('');
+    try {
+      const path = `/account/favorites/${encodeURIComponent(username)}`;
+      await (next ? api(path, { method: 'PUT', body: { color: next } }) : api(path, { method: 'DELETE' }));
+      onChanged?.(next);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  if (!premium) {
+    return (
+      <span className="favorite-picker">
+        <button type="button" className="text-btn" onClick={() => setExplain((e) => !e)}>
+          ★ Favorite <span className="tier-pill tier-premium">Premium</span>
+        </button>
+        {explain && (
+          <span className="small muted">
+            Premium members pick favorites who are highlighted in their color in every chat and comment
+            section, on all their devices.
+          </span>
+        )}
+      </span>
+    );
+  }
+  return (
+    <span className="favorite-picker" role="group" aria-label={`Favorite ${username}`}>
+      <span className="muted small">
+        {color ? '★ Favorite (every chat)' : '★ Favorite: highlight in every chat'}
+      </span>
+      <span className="name-card-colors">
+        {FAVORITE_COLORS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            className={`swatch small hl-${c}`}
+            aria-label={`Favorite ${c}`}
+            title={`Favorite ${c}`}
+            aria-pressed={color === c}
+            onClick={() => save(c)}
+          />
+        ))}
+        {color && (
+          <button type="button" className="text-btn" onClick={() => save(null)}>
+            Remove
+          </button>
+        )}
+      </span>
+      {error && <span className="error small">{error}</span>}
+    </span>
+  );
+}
 
 const REASONS = [
   ['spam', 'Spam or scams'],

@@ -713,18 +713,18 @@ Acceptance criteria:
 
 ### MBJ-220 — Favorite members (highlighted in every chat) — Premium
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-219, MBJ-104
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-219, MBJ-104
 
 As a Premium member, I want the people I always chat with highlighted by default, in my colors, on any device.
 
 Acceptance criteria:
-- [ ] Premium only: Free and Plus members see Favorite in the menu with an upgrade prompt; the 5 per-chat highlights (MBJ-219) stay free for everyone
-- [ ] Favorite a member from their chat menu, name card, or profile; favorites are saved to my account (all devices)
-- [ ] Each favorite has a color, highlighted automatically in every chat and comment section; more colors than the 5 quick highlights
-- [ ] Favorites don't count toward the 5 per-chat highlights; a per-chat highlight overrides a favorite's color for that chat
-- [ ] A Favorites list in Account settings to recolor or remove; feeds the favorites filters in MBJ-217 and MBJ-218
-- [ ] If Premium lapses, favorites are kept but stop highlighting until they resubscribe; the server enforces the tier
-- [ ] Ruben, 2026-10-03
+- [x] Premium only: Free and Plus members see Favorite in the menu with an upgrade prompt; the 5 per-chat highlights (MBJ-219) stay free for everyone
+- [x] Favorite a member from their chat menu, name card, or profile; favorites are saved to my account (all devices)
+- [x] Each favorite has a color, highlighted automatically in every chat and comment section; more colors than the 5 quick highlights
+- [x] Favorites don't count toward the 5 per-chat highlights; a per-chat highlight overrides a favorite's color for that chat
+- [x] A Favorites list in Account settings to recolor or remove; feeds the favorites filters in MBJ-217 and MBJ-218
+- [x] If Premium lapses, favorites are kept but stop highlighting until they resubscribe; the server enforces the tier
+- [x] Ruben, 2026-10-03
 
 ## Epic 3xx — Live via YouTube
 

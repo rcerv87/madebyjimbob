@@ -4,6 +4,7 @@ import { api, timeAgo, TIER_LABEL } from '../api.js';
 import { PushPrompt } from '../notifications.jsx';
 import { usePush } from '../push.js';
 import useTitle from '../useTitle.js';
+import { FAVORITE_COLORS } from '../favorites.js';
 
 // Account settings (MBJ-106): profile, sign-in and security, notifications, membership, privacy.
 export default function Account({ session, onUserChanged }) {
@@ -528,6 +529,7 @@ const PERKS = [
   ['Member podcast feed', false, true, true],
   ['Chat badge', false, 'Plus', 'Premium'],
   ['Call in to live shows', false, false, true],
+  ['Favorite members, highlighted in every chat', false, false, true],
 ];
 
 function MembershipSection({ user }) {
@@ -591,6 +593,7 @@ function PrivacySection({ onUserChanged }) {
   return (
     <section className="panel settings-section" id="privacy">
       <h2>Privacy and data</h2>
+      <Favorites onUserChanged={onUserChanged} />
       <HiddenMembers onUserChanged={onUserChanged} />
       <div className="setting">
         <div className="setting-head">
@@ -839,6 +842,74 @@ function ProfileSharing({ username }) {
           </label>
         </>
       )}
+      {error && <p className="error small">{error}</p>}
+    </div>
+  );
+}
+
+// Favorite members (MBJ-220, Premium): recolor or remove. Kept if Premium lapses; they highlight again on resubscribe.
+function Favorites({ onUserChanged }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api('/account/favorites')
+      .then(setData)
+      .catch((e) => setError(e.message));
+  }, []);
+  const change = async (username, color) => {
+    setError('');
+    try {
+      const path = `/account/favorites/${encodeURIComponent(username)}`;
+      setData(
+        await (color ? api(path, { method: 'PUT', body: { color } }) : api(path, { method: 'DELETE' })),
+      );
+      onUserChanged();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  if (!data) return error ? <p className="error small">{error}</p> : null;
+  return (
+    <div className="setting">
+      <h3>
+        Favorites <span className="tier-pill tier-premium">Premium</span>
+      </h3>
+      <p className="muted small">
+        {data.active
+          ? 'Highlighted in their color in every chat and comment section, on all your devices. Add someone from their picture in chat, their name, or their profile.'
+          : data.favorites.length
+            ? 'Saved, but they only highlight while you’re on Premium.'
+            : 'With Premium, pick favorites who are highlighted in their color in every chat and comment section.'}
+      </p>
+      {data.active && data.favorites.length === 0 && <p className="muted small">Nobody yet.</p>}
+      <ul className="device-list favorite-list">
+        {data.favorites.map((f) => (
+          <li key={f.username}>
+            <div>
+              <span className={`swatch hl-${f.color}`} aria-hidden="true" />
+              <Link to={`/@${f.username}`}>{f.username}</Link>
+            </div>
+            <div>
+              {data.active && (
+                <select
+                  aria-label={`Color for ${f.username}`}
+                  value={f.color}
+                  onChange={(e) => change(f.username, e.target.value)}
+                >
+                  {FAVORITE_COLORS.map((c) => (
+                    <option key={c} value={c}>
+                      {c[0].toUpperCase() + c.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button className="text-btn" onClick={() => change(f.username, null)}>
+                Remove
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
       {error && <p className="error small">{error}</p>}
     </div>
   );

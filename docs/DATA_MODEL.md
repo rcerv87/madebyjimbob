@@ -309,6 +309,15 @@ Members a member blocked or muted (MBJ-119).
 | kind | text | `block` (also can't reply to you) or `mute` (they can't tell) |
 | created_at | timestamptz | |
 
+### user_favorites
+Favorite members (MBJ-220, Premium): highlighted in the member's color in every chat and comment section. Kept if
+Premium lapses (they just aren't sent to the web app until the member is Premium again).
+| column | type | notes |
+|---|---|---|
+| user_id, favorite_id | bigint → users | primary key; cascade; not yourself |
+| color | text | `red orange yellow lime green teal blue indigo purple pink` |
+| created_at | timestamptz | |
+
 ### reports
 | column | type | notes |
 |---|---|---|
