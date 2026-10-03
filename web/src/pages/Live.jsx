@@ -116,17 +116,19 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
     const el = ref.current;
     if (!el || listening) return undefined;
     const play = () => el.play().catch(() => setNeedsTap(true));
-    if (rewindTo !== null && dvr) dbg('attach recording at', Math.round(rewindTo));
-    return attachRecording(el, dvr.url, rewindTo, play, (at) => {
-      dbg('recording ended at', Math.round(at), 'live at', Math.round(liveAt()));
-      // Reached the end of what was recorded when it loaded: carry on from here, or go live if it's close.
-      posRef.current = at;
-      if (liveAt() - at < SHORT_REWIND_S) setRewindTo(null);
-      else {
-        setRewindTo(at);
-        setAttachKey((k) => k + 1);
-      }
-    });
+    if (rewindTo !== null && dvr) {
+      dbg('attach recording at', Math.round(rewindTo));
+      return attachRecording(el, dvr.url, rewindTo, play, (at) => {
+        dbg('recording ended at', Math.round(at), 'live at', Math.round(liveAt()));
+        // Reached the end of what was recorded when it loaded: carry on from here, or go live if it's close.
+        posRef.current = at;
+        if (liveAt() - at < SHORT_REWIND_S) setRewindTo(null);
+        else {
+          setRewindTo(at);
+          setAttachKey((k) => k + 1);
+        }
+      });
+    }
     if (!src) return undefined;
     liveBehindRef.current = 0;
     setLiveBehindState(0);
