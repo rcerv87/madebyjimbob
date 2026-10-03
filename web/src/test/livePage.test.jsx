@@ -54,6 +54,16 @@ describe('/live', () => {
     expect(screen.getByLabelText('Rewind the stream')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Back 1 minute' })).toBeTruthy();
     expect(await screen.findByText('Live chat')).toBeTruthy();
+
+    // Full screen takes the whole player (picture, timeline, controls), not just the video.
+    const asked = [];
+    HTMLElement.prototype.requestFullscreen = function () {
+      asked.push(this.className);
+      return Promise.resolve();
+    };
+    fireEvent.click(screen.getByRole('button', { name: 'Full screen' }));
+    expect(asked).toEqual(['live-player']);
+    delete HTMLElement.prototype.requestFullscreen;
   });
 
   test('jumping forward in the recording lands where you asked, not back at live', async () => {
