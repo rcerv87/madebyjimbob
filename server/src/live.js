@@ -285,12 +285,14 @@ function recorderSetup(serverId) {
       B2_APPLICATION_KEY: archive.secret,
     }),
   };
+  // The recorder gets Owncast's whole data folder, not just hls/: Owncast deletes and recreates hls/ when a stream
+  // restarts, and a mount of the old folder stays empty (2026-10-03: no recording after a restart).
   const envArgs = Object.entries(env)
     .map(([k, v]) => `-e ${k}='${v}'`)
     .join(' ');
   return {
     files: `write_files:\n${files}`,
-    run: `  - docker run -d --name recorder --restart on-failure -v /opt/recorder:/app:ro -v /opt/owncast/hls:/hls:ro ${envArgs} node:22-alpine sh -c "apk add --no-cache ffmpeg >/dev/null 2>&1; exec node /app/recorder.mjs"\n`,
+    run: `  - docker run -d --name recorder --restart on-failure -v /opt/recorder:/app:ro -v /opt/owncast:/owncast:ro -e HLS_DIR=/owncast/hls ${envArgs} node:22-alpine sh -c "apk add --no-cache ffmpeg >/dev/null 2>&1; exec node /app/recorder.mjs"\n`,
   };
 }
 const cloudInit = (settings, fromImage, serverId) => {
