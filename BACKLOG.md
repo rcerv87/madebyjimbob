@@ -82,6 +82,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-214 | Push notifications (web) | Chat & moderation | 1 | Must | M | MBJ-202, MBJ-213 |
 | MBJ-215 | Link YouTube and Rumble names to a profile | Chat & moderation | 1 | Should | M | MBJ-202 |
 | MBJ-216 | Count one view per viewer | Chat & moderation | 1 | Should | S | — |
+| MBJ-217 | Member notes on videos (annotations) | Chat & moderation | 1 | Should | M | MBJ-119 |
+| MBJ-218 | Search and filter comments and chat | Chat & moderation | 1 | Should | M | MBJ-217 |
 | MBJ-701 | Video management in Studio | Studio & analytics | 1 | Must | L | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
@@ -666,6 +668,33 @@ As JimBob, I want view counts I can trust.
 Acceptance criteria:
 - [x] A view counts once per viewer per video per day (account, or browser for signed-out)
 - [x] Refreshes and resumed sessions don't add views
+
+### MBJ-217 — Member notes on videos (annotations)
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-119
+
+As a member, I want to pin a note to a moment in a video (e.g. "this is where JimBob really goes off, 5:06") so others can jump to it; as a viewer, I want to see the notes of people I follow first.
+
+Acceptance criteria:
+- [ ] Add a note at the current moment (or a stretch from-to) with a short text; it shows as a marker on the timeline and in a Notes list beside the video
+- [ ] Tap a note or marker to jump there; notes from favorited members are highlighted and listed first, with a Favorites only switch
+- [ ] Favorite (follow) a member from their name card or profile; a member's profile lists their notes across videos
+- [ ] Notes are public by default, can be private (just for me), and follow the same moderation, block/mute, and report rules as comments
+- [ ] Works on replays and on live rewind (the moment is a position in the recording)
+- [ ] Ruben, 2026-10-03
+
+### MBJ-218 — Search and filter comments and chat
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-217
+
+As a viewer, I want to find what someone said, or every mention of a word, without scrolling.
+
+Acceptance criteria:
+- [ ] Search box above comments and chat: words or phrases, matched on the server across the whole video
+- [ ] Filters: by member (name or @handle), favorites only, JimBob and mods, super chats/Bob Chats, has a timestamp, YouTube vs site
+- [ ] Results show the moment and jump to it; the matching words are highlighted
+- [ ] Member filter also from a name card: "Show this person's comments and chat"
+- [ ] Ruben, 2026-10-03
 
 ## Epic 3xx — Live via YouTube
 

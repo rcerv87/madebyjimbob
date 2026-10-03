@@ -12,7 +12,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
 | Quality | 276 automated tests (167 server, 109 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 102 stories; 26 done, 14 in progress |
+| Backlog | 104 stories; 26 done, 14 in progress |
 
 ## Waiting on Ruben
 
