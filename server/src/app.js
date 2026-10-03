@@ -19,6 +19,7 @@ import accountRouter from './account.js';
 import { viewerKey, recordView } from './views.js';
 import { findProfile, profileFor } from './profiles.js';
 import { hasBlocked, hiddenBy, fileReport, listReports } from './blocks.js';
+import { favoritesOf, canFavorite } from './favorites.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
   addUserSocket,
@@ -271,6 +272,8 @@ app.get(
       user.linkedHandles = await linkedHandles(user.id);
       // Members this viewer blocked or muted: the web app hides their chat and comments (MBJ-119).
       user.hidden = await hiddenBy(user.id);
+      // Favorites highlight only while the member is Premium (MBJ-220); kept, but not sent, otherwise.
+      user.favorites = canFavorite(user) ? await favoritesOf(user.id) : [];
     }
     res.json({ user });
   }),

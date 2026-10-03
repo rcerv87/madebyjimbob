@@ -68,7 +68,9 @@ Hidden messages are never deleted from the database — `hidden = true` keeps th
 - **Mentions vs replies:** a mention is `@name` anywhere in a message and notifies that person; a reply quotes one
   message (tap the quote to jump to it) and notifies its author. Tap a name to mention them; typing `@` suggests
   names from the video's chat and comments. Tap a picture for the menu: Reply, Show only their messages, View
-  profile, highlight color (5 colors, one person each, per chat), Mute/Block/Report (MBJ-219).
+  profile, highlight color (5 colors, one person each, per chat), Favorite (Premium, 10 colors, every chat and
+  comment section, saved to the account; MBJ-220), Mute/Block/Report (MBJ-219). The **?** in the chat header
+  explains all of it.
   Notifications (bell, unread count, in-player bubble) are the next step (MBJ-202).
 
 ## Tipped messages

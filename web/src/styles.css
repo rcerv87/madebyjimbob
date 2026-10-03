@@ -3799,7 +3799,116 @@ a.text-btn {
   --hl: #30a46c;
   --hl-bg: rgba(48, 164, 108, 0.16);
 }
+.hl-orange {
+  --hl: #f76b15;
+  --hl-bg: rgba(247, 107, 21, 0.16);
+}
+.hl-lime {
+  --hl: #a3d13a;
+  --hl-bg: rgba(163, 209, 58, 0.16);
+}
+.hl-teal {
+  --hl: #12a594;
+  --hl-bg: rgba(18, 165, 148, 0.16);
+}
+.hl-indigo {
+  --hl: #5b5bd6;
+  --hl-bg: rgba(91, 91, 214, 0.2);
+}
+.hl-pink {
+  --hl: #e93d82;
+  --hl-bg: rgba(233, 61, 130, 0.16);
+}
 .chat-msg.hl {
   background: var(--hl-bg);
   box-shadow: inset 3px 0 0 var(--hl);
+}
+
+/* Favorites (MBJ-220): the picker in a name card, and favorite members' comments. */
+.favorite-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.favorite-picker .name-card-colors {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.swatch.small {
+  width: 20px;
+  height: 20px;
+}
+.comment.hl {
+  background: var(--hl-bg);
+  box-shadow: inset 3px 0 0 var(--hl);
+  border-radius: 8px;
+  padding: 8px 8px 8px 12px;
+}
+.favorite-list .swatch {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.profile-actions .favorite-picker {
+  flex-basis: 100%;
+  margin-top: 6px;
+}
+
+/* Chat help (the ? in the chat header). */
+.chat-help-btn {
+  margin-left: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.chat-help-btn:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+.chat-help {
+  max-width: 520px;
+  max-height: min(85vh, 760px);
+  overflow-y: auto;
+}
+.chat-help h3 {
+  margin: 16px 0 6px;
+  font-size: 0.95rem;
+}
+.chat-help dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 11em) 1fr;
+  gap: 8px 14px;
+  font-size: 0.9rem;
+}
+.chat-help dt {
+  font-weight: 600;
+}
+.chat-help dd {
+  margin: 0;
+  color: var(--muted);
+}
+@media (max-width: 520px) {
+  .chat-help dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .chat-help dd {
+    margin-bottom: 8px;
+  }
+}
+.favorite-list select {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 8px;
 }

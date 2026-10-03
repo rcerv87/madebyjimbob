@@ -137,29 +137,42 @@ export function startErasureJob() {
 // Everything we hold about the member, as one JSON document (no password hashes or session tokens).
 export async function exportData(userId) {
   const q = (sql) => pool.query(sql, [userId]).then((r) => r.rows);
-  const [profile, comments, chat, likes, progress, notifications, devices, security, emails, links] =
-    await Promise.all([
-      q(`SELECT id, username, display_name, email, email_verified, image, tier, xp, notification_prefs, created_at,
+  const [
+    profile,
+    comments,
+    chat,
+    likes,
+    progress,
+    notifications,
+    devices,
+    security,
+    emails,
+    links,
+    favorites,
+  ] = await Promise.all([
+    q(`SELECT id, username, display_name, email, email_verified, image, tier, xp, notification_prefs, created_at,
          deletion_requested_at FROM users WHERE id = $1`),
-      q(`SELECT c.id, c.video_id, v.title AS video_title, c.parent_id, c.reply_to_id, c.body, c.offset_ms,
+    q(`SELECT c.id, c.video_id, v.title AS video_title, c.parent_id, c.reply_to_id, c.body, c.offset_ms,
          c.like_count, c.hidden, c.posted_at FROM comments c JOIN videos v ON v.id = c.video_id
        WHERE c.user_id = $1 ORDER BY c.posted_at`),
-      q(`SELECT m.id, m.video_id, v.title AS video_title, m.reply_to_id, m.body, m.offset_ms, m.hidden, m.created_at
+    q(`SELECT m.id, m.video_id, v.title AS video_title, m.reply_to_id, m.body, m.offset_ms, m.hidden, m.created_at
        FROM chat_messages m JOIN videos v ON v.id = m.video_id WHERE m.user_id = $1 ORDER BY m.created_at`),
-      q(`SELECT vv.video_id, v.title AS video_title, CASE WHEN vv.value = 1 THEN 'like' ELSE 'dislike' END AS vote,
+    q(`SELECT vv.video_id, v.title AS video_title, CASE WHEN vv.value = 1 THEN 'like' ELSE 'dislike' END AS vote,
          vv.updated_at FROM video_votes vv JOIN videos v ON v.id = vv.video_id WHERE vv.user_id = $1`),
-      q(`SELECT wp.video_id, v.title AS video_title, wp.position_ms, wp.updated_at
+    q(`SELECT wp.video_id, v.title AS video_title, wp.position_ms, wp.updated_at
        FROM watch_progress wp JOIN videos v ON v.id = wp.video_id WHERE wp.user_id = $1`),
-      q(`SELECT type, video_id, actor_name, excerpt, offset_ms, read_at, created_at FROM notifications
+    q(`SELECT type, video_id, actor_name, excerpt, offset_ms, read_at, created_at FROM notifications
        WHERE user_id = $1 ORDER BY created_at`),
-      q(`SELECT user_agent, ip_address, created_at, expires_at FROM sessions WHERE user_id = $1`),
-      q(`SELECT type, ip_address, user_agent, detail, created_at FROM security_events WHERE user_id = $1
+    q(`SELECT user_agent, ip_address, created_at, expires_at FROM sessions WHERE user_id = $1`),
+    q(`SELECT type, ip_address, user_agent, detail, created_at FROM security_events WHERE user_id = $1
        ORDER BY created_at`),
-      q(`SELECT e.template, e.status, e.created_at FROM emails e JOIN users u ON u.id = $1
+    q(`SELECT e.template, e.status, e.created_at FROM emails e JOIN users u ON u.id = $1
        WHERE e.user_id = u.id OR e.to_email = u.email ORDER BY e.created_at`),
-      q(`SELECT platform, status, handle, external_id, verified_by, verified_at, created_at FROM linked_accounts
+    q(`SELECT platform, status, handle, external_id, verified_by, verified_at, created_at FROM linked_accounts
          WHERE user_id = $1`),
-    ]);
+    q(`SELECT u.username, f.color, f.created_at FROM user_favorites f JOIN users u ON u.id = f.favorite_id
+         WHERE f.user_id = $1`),
+  ]);
   return {
     exportedAt: new Date().toISOString(),
     site: 'MADEbyJIMBOB',
@@ -173,6 +186,7 @@ export async function exportData(userId) {
     securityHistory: security,
     emailsSent: emails,
     linkedAccounts: links,
+    favorites,
     // Paid memberships, tips, and receipts appear here once payments exist (MBJ-104, 109).
     payments: [],
   };

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, formatTime, timeAgo } from '../api.js';
 import MemberBadge from '../components/MemberBadge.jsx';
-import { ReportDialog } from '../components/NameCard.jsx';
+import { ReportDialog, FavoritePicker } from '../components/NameCard.jsx';
+import { favoriteMap } from '../favorites.js';
 import NotFound from './NotFound.jsx';
 import useTitle from '../useTitle.js';
 
@@ -113,6 +114,15 @@ export default function Profile({ session }) {
             Report…
           </button>
           {note && <span className="small">{note}</span>}
+          <FavoritePicker
+            username={profile.username}
+            color={favoriteMap(viewer).get(profile.username.toLowerCase())}
+            premium={viewer.tier === 'premium'}
+            onChanged={(c) => {
+              setNote(c ? 'Added to favorites.' : 'Removed from favorites.');
+              session.refreshUser?.();
+            }}
+          />
         </div>
       )}
       {reporting && <ReportDialog username={profile.username} onClose={() => setReporting(false)} />}

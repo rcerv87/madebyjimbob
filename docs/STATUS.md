@@ -182,7 +182,12 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - **Chat names and pictures** (MBJ-219): tapping a name in chat puts @name in the message box; tapping their
   picture opens a menu: Reply, Show only their messages, View profile, a highlight color, and Mute/Block/Report.
   Highlights: 5 colors, one person each, for that chat only (a new stream starts clean; kept on this device).
-  Favorites that stay highlighted everywhere (a Premium feature) are MBJ-220.
+  A **?** in the chat header explains every chat feature.
+- **Favorite members** (MBJ-220, Premium): from a chat picture menu, a name card in comments, or a profile, pick
+  one of 10 colors; their chat and comments are highlighted in it everywhere, on every device (saved to the
+  account). This chat's 5 quick highlights win over a favorite's color. Account settings list favorites to recolor
+  or remove. Free and Plus see what it does (no checkout until MBJ-104); if Premium lapses they're kept but
+  paused. Included in Download your data.
 - **Block, mute, and report** (MBJ-119): from a member's name card or profile. Blocked and muted members' chat and
   comments disappear for you and don't notify you; blocked ones can't reply to you; moderators and JimBob can't be
   blocked. Reports (with a reason) land in Studio → Reports with the quoted message and a link to the moment; mods

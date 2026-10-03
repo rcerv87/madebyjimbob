@@ -1,6 +1,8 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MemberBadge from './MemberBadge.jsx';
 import NameCard from './NameCard.jsx';
+import ChatHelp from './ChatHelp.jsx';
+import { favoriteMap } from '../favorites.js';
 import { useSearchParams } from 'react-router-dom';
 import { api, formatTime } from '../api.js';
 
@@ -73,6 +75,8 @@ export default function ChatPanel({
   const [replyTarget, setReplyTarget] = useState(null);
   // From a person's menu: show only their messages, and highlight people in a color (kept on this device).
   const [onlyFrom, setOnlyFrom] = useState(null); // { who, name }
+  const [help, setHelp] = useState(false);
+  const closeHelp = useCallback(() => setHelp(false), []);
   // Up to 5 people, one color each: { color: { who, name } }.
   const [highlights, setHighlights] = useState(() => loadHighlights(videoId));
   const colorOf = useMemo(
@@ -377,7 +381,15 @@ export default function ChatPanel({
   // Mute / Block / Report on name cards (MBJ-119), for signed-in viewers.
   const refreshUser = session.refreshUser;
   const moderation = useMemo(
-    () => (session.user ? { me: session.user.username, onChanged: refreshUser } : null),
+    () =>
+      session.user
+        ? {
+            me: session.user.username,
+            onChanged: refreshUser,
+            premium: session.user.tier === 'premium',
+            favorites: favoriteMap(session.user),
+          }
+        : null,
     [session.user, refreshUser],
   );
 
@@ -385,7 +397,18 @@ export default function ChatPanel({
     <aside className="chat">
       <header className="chat-head">
         <div className="chat-title">
-          <h2>{live ? 'Live chat' : 'Live chat replay'}</h2>
+          <h2>
+            {live ? 'Live chat' : 'Live chat replay'}
+            <button
+              type="button"
+              className="chat-help-btn"
+              aria-label="How the chat works"
+              title="How the chat works"
+              onClick={() => setHelp(true)}
+            >
+              ?
+            </button>
+          </h2>
           <span className="muted small">
             {live ? 'Saved with the replay' : `Synced to ${formatTime(timeMs / 1000)}`}
           </span>
@@ -432,7 +455,9 @@ export default function ChatPanel({
                 onMention={mention}
                 only={onlyFrom?.who === whoOf(item.m)}
                 onShowOnly={showOnly}
-                color={colorOf[whoOf(item.m)]}
+                // This chat's highlight wins over a favorite's everyday color.
+                chatColor={colorOf[whoOf(item.m)]}
+                color={colorOf[whoOf(item.m)] || (item.m.profile && moderation?.favorites.get(whoOf(item.m)))}
                 takenBy={takenBy}
                 onHighlight={highlight}
                 onQuote={showOriginal}
@@ -454,6 +479,7 @@ export default function ChatPanel({
         )}
       </div>
 
+      {help && <ChatHelp live={live} onClose={closeHelp} />}
       <form className="chat-compose" onSubmit={send}>
         {replyTarget && (
           <div className="reply-chip">
@@ -543,6 +569,7 @@ const ChatMessage = memo(function ChatMessage({
   only,
   onShowOnly,
   color,
+  chatColor,
   takenBy,
   onHighlight,
 }) {
@@ -589,7 +616,7 @@ const ChatMessage = memo(function ChatMessage({
         { label: 'Reply', onClick: () => onReply(m) },
         { label: only ? 'Show everyone' : 'Show only their messages', onClick: () => onShowOnly(m) },
       ]}
-      highlight={{ color, takenBy, onPick: (c) => onHighlight(m, c) }}
+      highlight={{ color: chatColor, takenBy, onPick: (c) => onHighlight(m, c) }}
     >
       <Avatar m={m} />
     </NameCard>
