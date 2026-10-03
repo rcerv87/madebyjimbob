@@ -183,6 +183,13 @@ MBJ-219,"Chat: tap a name to mention, tap a picture for a menu, highlight colors
 - Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)
 - Show only their messages: a bar above the chat with Show everyone
 - Ruben, 2026-10-03",MBJ-116
+MBJ-224,"Member history: everything someone said, searchable, with links to the source",Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a viewer (or JimBob), when someone says ""we never talked about that"", I want to open their history, search it, and show exactly what they said, when, and where.","- ""History"" in a person's menu (chat, comments, profile) opens a panel: everything they said across all videos (chat messages and comments, live and replay, site and linked YouTube/Rumble names), newest first
+- Each item shows the video, the date and the moment (e.g. ""Aug 3 · Alex Malpass Is Challenged · 1:04:32""), the text, and opens the video at that moment (or the comment in its thread)
+- Search within it: words or a phrase (highlighted), date range, chat or comments; results count (""said 'xyz' 14 times""); a copyable link to any one item to share as proof
+- Likes history (what they liked or disliked) only for the member themselves and moderators: votes are private today
+- Decide with JimBob: who sees others' history (everyone, members, or moderators only), and whether the existing ""show my chat on my profile"" setting (MBJ-116) also hides it here; YouTube-imported chat is already public on the replays
+- Respects block, mute, deleted accounts (shown as ""Deleted user"", or hidden if they asked) and hidden messages; fast on a 2,000-hour archive (search on the server, paged)
+- Ruben, 2026-10-03","MBJ-116, MBJ-218"
 MBJ-223,"Pop-out chat and ""show on stream"" overlay for OBS",Chat & moderation,Phase 3 — Live via YouTube,Should,M,To do,"As JimBob, I want to pick chat messages (and super chats) during a stream and put them on screen, like I do today with YouTube's chat.","- Pop-out chat: /live/chat opens just the chat (for a second monitor or an OBS dock), with the site's merged chat (site, and YouTube/Rumble once merged)
 - JimBob and moderators get ""Show on stream"" on each message (and super chat); one tap puts it on screen, tap again (or a timer) takes it off; a queue for super chats
 - Overlay page for OBS: a Browser Source URL with a private key (Studio → Live) showing the chosen message as a lower third (picture, name, message, super chat amount), transparent background, his teal style; updates instantly over the WebSocket

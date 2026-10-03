@@ -88,6 +88,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-220 | Favorite members (highlighted in every chat) — Premium | Chat & moderation | 1 | Should | M | MBJ-219, MBJ-104 |
 | MBJ-221 | Direct messages | Chat & moderation | 1 | Should | M | MBJ-119, MBJ-202 |
 | MBJ-222 | Conversation tracker in chat | Chat & moderation | 1 | Should | M | MBJ-219, MBJ-218 |
+| MBJ-224 | Member history: everything someone said, searchable, with links to the source | Chat & moderation | 1 | Should | M | MBJ-116, MBJ-218 |
 | MBJ-701 | Video management in Studio | Studio & analytics | 1 | Must | L | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
@@ -716,6 +717,21 @@ Acceptance criteria:
 - [x] Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)
 - [x] Show only their messages: a bar above the chat with Show everyone
 - [x] Ruben, 2026-10-03
+
+### MBJ-224 — Member history: everything someone said, searchable, with links to the source
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-116, MBJ-218
+
+As a viewer (or JimBob), when someone says "we never talked about that", I want to open their history, search it, and show exactly what they said, when, and where.
+
+Acceptance criteria:
+- [ ] "History" in a person's menu (chat, comments, profile) opens a panel: everything they said across all videos (chat messages and comments, live and replay, site and linked YouTube/Rumble names), newest first
+- [ ] Each item shows the video, the date and the moment (e.g. "Aug 3 · Alex Malpass Is Challenged · 1:04:32"), the text, and opens the video at that moment (or the comment in its thread)
+- [ ] Search within it: words or a phrase (highlighted), date range, chat or comments; results count ("said 'xyz' 14 times"); a copyable link to any one item to share as proof
+- [ ] Likes history (what they liked or disliked) only for the member themselves and moderators: votes are private today
+- [ ] Decide with JimBob: who sees others' history (everyone, members, or moderators only), and whether the existing "show my chat on my profile" setting (MBJ-116) also hides it here; YouTube-imported chat is already public on the replays
+- [ ] Respects block, mute, deleted accounts (shown as "Deleted user", or hidden if they asked) and hidden messages; fast on a 2,000-hour archive (search on the server, paged)
+- [ ] Ruben, 2026-10-03
 
 ### MBJ-223 — Pop-out chat and "show on stream" overlay for OBS
 
