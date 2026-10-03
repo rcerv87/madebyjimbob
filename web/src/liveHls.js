@@ -40,9 +40,30 @@ export function attachLive(el, src, onReady) {
   };
 }
 
+// Loads playlists with an end marker added, so a recording still in progress plays as a finished video.
+class SnapshotLoader extends Hls.DefaultConfig.loader {
+  load(context, config, callbacks) {
+    const onSuccess = callbacks.onSuccess;
+    super.load(context, config, {
+      ...callbacks,
+      onSuccess: (response, stats, ctx, networkDetails) => {
+        if (
+          typeof response.data === 'string' &&
+          response.data.includes('#EXTINF') &&
+          !response.data.includes('#EXT-X-ENDLIST')
+        )
+          response.data = `${response.data.trimEnd()}
+#EXT-X-ENDLIST
+`;
+        onSuccess(response, stats, ctx, networkDetails);
+      },
+    });
+  }
+}
+
 // Plays the whole stream so far from the recording (MBJ-310), starting at `startAt` seconds from the beginning. The
 // recording's playlist grows while live, so hls.js treats it as live, but nothing pulls the viewer to the live edge.
-export function attachRecording(el, url, startAt, onReady) {
+export function attachRecording(el, url, startAt, onReady, onEnd) {
   if (native(el)) {
     el.src = url;
     const seek = () => {
@@ -55,13 +76,21 @@ export function attachRecording(el, url, startAt, onReady) {
       el.removeAttribute('src');
     };
   }
-  const hls = new Hls({ startPosition: startAt });
+  // Played as a finished video (what's recorded so far): a growing playlist makes hls.js treat it as live and line it
+  // up by guesswork, which put playback ~45 s away from where the timeline said. With an end added, every position
+  // maps exactly. onEnd fires when playback reaches the end of that snapshot, so the caller can reload or go live.
+  const hls = new Hls({ startPosition: startAt, pLoader: SnapshotLoader });
   hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+  const ended = () => onEnd?.(el.currentTime);
+  el.addEventListener('ended', ended);
   hls.on(Hls.Events.ERROR, (_e, data) => {
     if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
     else if (data.fatal) hls.startLoad();
   });
   hls.loadSource(url);
   hls.attachMedia(el);
-  return () => hls.destroy();
+  return () => {
+    el.removeEventListener('ended', ended);
+    hls.destroy();
+  };
 }

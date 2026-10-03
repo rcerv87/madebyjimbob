@@ -90,6 +90,26 @@ async function store(key, body, contentType, cacheControl = 'no-cache') {
       log('B2 copy failed', key, err.message),
     );
 }
+// The first video timestamp in an MPEG-TS chunk, in seconds (or null). Segment lengths come from these: Owncast's own
+// listed lengths are rounded, and on the passed-through quality they drift, which put qualities out of step.
+export function firstPts(buf) {
+  for (let i = 0; i + 188 <= buf.length; i += 188) {
+    if (buf[i] !== 0x47 || !(buf[i + 1] & 0x40)) continue; // sync byte; start of a PES packet
+    const adaptation = (buf[i + 3] >> 4) & 3;
+    if (adaptation === 2) continue;
+    let p = i + 4;
+    if (adaptation === 3) p += 1 + buf[p];
+    if (buf[p] !== 0 || buf[p + 1] !== 0 || buf[p + 2] !== 1) continue;
+    const stream = buf[p + 3];
+    if (stream < 0xe0 || stream > 0xef || !(buf[p + 7] & 0x80)) continue; // video, with a PTS
+    const b = buf.subarray(p + 9, p + 14);
+    return (
+      (((b[0] >> 1) & 7) * 2 ** 30 + (b[1] << 22) + ((b[2] >> 1) << 15) + (b[3] << 7) + (b[4] >> 1)) / 90000
+    );
+  }
+  return null;
+}
+
 const readText = (f) => fs.readFile(f, 'utf8').catch(() => null);
 
 // Owncast's master playlist → [{ n, info }] (info = the #EXT-X-STREAM-INF line).
@@ -206,6 +226,18 @@ function flush(r, q, ended = false) {
           'video/mp2t',
           'public, max-age=31536000, immutable',
         );
+        // The previous segment's true length is from its start to this one's (not across an OBS reconnect).
+        const start = firstPts(bytes);
+        const prev = q.lines.at(-1);
+        if (prev && !disc && start !== null && q.lastStart !== null && q.lastStart !== undefined) {
+          const real = start - q.lastStart;
+          if (real > 0 && real < 60) {
+            prev.dur = real;
+            const prevSound = r.audio?.from === q.n ? r.audio.lines.at(-1) : null;
+            if (prevSound) prevSound.dur = real;
+          }
+        }
+        q.lastStart = start;
         q.lines.push({ file, dur, disc });
         // Thumbnail from the first quality: about 20 seconds in, and again at 5 minutes (past any intro screen).
         const recorded = q.lines.reduce((sum, l) => sum + l.dur, 0);
