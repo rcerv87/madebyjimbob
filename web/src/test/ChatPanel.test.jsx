@@ -25,6 +25,32 @@ function renderPanel({ timeMs = 0, user = null, requireSignIn = () => {} } = {})
 }
 
 describe('ChatPanel', () => {
+  test('live: someone joining 20 minutes in gets the last 10 minutes of chat, not just from now on', async () => {
+    mockApi({
+      '/videos/7/chat': {
+        messages: [msg(1, 600_000, 'said ten minutes ago'), msg(2, 1_195_000, 'just now')],
+      },
+    });
+    render(
+      <MemoryRouter>
+        <ChatPanel
+          videoId="7"
+          timeMs={1_200_000}
+          getTimeMs={() => 1_200_000}
+          session={{ user: null, requireSignIn: () => {} }}
+          live
+        />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('said ten minutes ago')).toBeTruthy();
+    expect(screen.getByText('just now')).toBeTruthy();
+    const froms = globalThis.fetch.mock.calls.map(([u]) =>
+      Number(new URL(String(u), 'http://x').searchParams.get('from')),
+    );
+    expect(Math.min(...froms)).toBe(600_000); // 10 minutes back from 20:00, through the next 2-minute window
+    expect(Math.max(...froms)).toBe(1_320_000);
+  });
+
   test('shows only messages at or before the playhead', async () => {
     mockApi({ '/videos/7/chat': { messages: [msg(1, 1000, 'first'), msg(2, 50_000, 'later')] } });
     const { rerender } = renderPanel({ timeMs: 10_000 });

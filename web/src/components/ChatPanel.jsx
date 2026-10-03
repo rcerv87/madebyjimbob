@@ -103,10 +103,15 @@ export default function ChatPanel({
     setReplyTarget(null);
   }, [videoId]);
 
-  // Load the current and next 2-minute windows as playback moves
+  // Load the 2-minute windows around playback as it moves: the next one, and the ones before it so the conversation
+  // so far is there. Live, that's the last 10 minutes (someone joining late sees what was said); replays, the window
+  // before.
   const windowIdx = Math.floor(timeMs / WINDOW_MS);
   useEffect(() => {
-    for (const idx of [windowIdx, windowIdx + 1]) {
+    const back = live ? 5 : 1;
+    const windows = [];
+    for (let idx = windowIdx + 1; idx >= Math.max(0, windowIdx - back); idx -= 1) windows.push(idx);
+    for (const idx of windows) {
       if (loaded.current.has(idx)) continue;
       loaded.current.add(idx);
       api(`/videos/${videoId}/chat?from=${idx * WINDOW_MS}&to=${(idx + 1) * WINDOW_MS}`)
@@ -116,7 +121,7 @@ export default function ChatPanel({
         })
         .catch(() => loaded.current.delete(idx));
     }
-  }, [videoId, windowIdx]);
+  }, [videoId, windowIdx, live]);
 
   // Realtime: messages and timestamped comments other viewers post while watching
   useEffect(() => {
