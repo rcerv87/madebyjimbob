@@ -656,7 +656,9 @@ export async function proxyHls(req, res) {
     if (text && text.includes('/hls/0/stream.m3u8') && /^https?:\/\//m.test(text)) {
       // With a recorder that publishes them, each quality plays from its cacheable copy (MBJ-311); else Owncast's own.
       const status = await liveStatus().catch(() => null);
-      const edge = status?.dvr?.edge;
+      // Off unless LIVE_EDGE_PLAYLISTS=on: on 2026-10-03 the recorder's checks slowed its uploads and the copies fell
+      // behind, stalling players (MBJ-311 is being reworked).
+      const edge = process.env.LIVE_EDGE_PLAYLISTS === 'on' && status?.dvr?.edge;
       // The first seconds of a stream, before the recorder has published its copies: players wait (they retry every
       // few seconds) instead of starting on Owncast's playlists, which list pieces before they're uploaded and which a
       // player keeps for the whole stream. Past START_WAIT_MS without them, Owncast's own, so a stream always plays.
