@@ -11,6 +11,8 @@ import ChatPanel from '../components/ChatPanel.jsx';
 const LIVE_EDGE_S = 8;
 // Rewinds up to this far use the live feed's own buffer; further back, the recording (it runs ~3–5 s behind live).
 const SHORT_REWIND_S = 10;
+// The recording ends about this far behind live (2-second segments, uploaded as they're made).
+const RECORDING_LAG_S = 6;
 const SPEEDS = [1, 1.25, 1.5, 2];
 // About how far the live feed runs behind the stream (seconds), for stamping live chat.
 const LIVE_DELAY_S = 5;
@@ -75,7 +77,6 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
     setLiveBehindState(v);
   };
   const liveCtl = useRef(null);
-  const pendingBehind = useRef(0);
   // While dragging the timeline: where the thumb is (seconds), so it follows the finger and seeks once on release.
   const [drag, setDrag] = useState(null);
   // Mute (both players), e.g. when watching on the computer that's streaming, where OBS would capture the sound.
@@ -132,17 +133,8 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
     if (!src) return undefined;
     liveBehindRef.current = 0;
     setLiveBehindState(0);
-    dbg('attach live feed', 'pending behind', pendingBehind.current);
-    const cleanup = attachLive(el, src, () => {
-      play();
-      // Came from the recording to a spot a few seconds behind live: step back once the live feed has some buffer.
-      const behind = pendingBehind.current;
-      pendingBehind.current = 0;
-      if (behind)
-        setTimeout(() => {
-          if (cleanup.control?.seekBy(behind)) setLiveBehind(behind);
-        }, 1500);
-    });
+    dbg('attach live feed');
+    const cleanup = attachLive(el, src, play);
     liveCtl.current = cleanup.control || null;
     return cleanup;
     // Re-attach when the mode flips or after listening, not on every seek inside the recording.
@@ -320,13 +312,15 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
       }
       return;
     }
-    // A few seconds back ("what did he say?"): the live feed's own buffer, which the recording can't reach yet.
-    if (behind <= SHORT_REWIND_S) {
-      if (rewindTo === null) {
-        if (liveCtl.current?.seekBy(behind - liveBehindRef.current)) setLiveBehind(behind);
-        return;
-      }
-      pendingBehind.current = behind;
+    // A few seconds back while on the live feed ("what did he say?"): its own buffer.
+    if (behind <= SHORT_REWIND_S && rewindTo === null) {
+      if (liveCtl.current?.seekBy(behind - liveBehindRef.current)) setLiveBehind(behind);
+      return;
+    }
+    // From the recording to the last seconds: the recording reaches to ~RECORDING_LAG_S behind live, so it plays
+    // anything older; closer than that is live. (Switching to a fresh live feed and stepping back in it failed: it
+    // hasn't loaded those seconds yet, and the video stalled or landed at live.)
+    if (behind < RECORDING_LAG_S) {
       setRewindTo(null);
       return;
     }
