@@ -876,14 +876,14 @@ Acceptance criteria:
 
 ### MBJ-312 — Archive keeps 1080p only for recent streams
 
-**Status:** To do · **Phase 3 — Live via YouTube** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-310
+**Status:** Done · **Phase 3 — Live via YouTube** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-310
 
 As JimBob, I want the archive to stay cheap as years of streams pile up.
 
 Acceptance criteria:
-- [ ] Live streams are kept in R2 with 1080p, 720p, 360p and audio (~4.7 GB per streamed hour, ~+$8/month each month at ~110 hours)
-- [ ] After a set time (e.g. 30 days, a setting) the 1080p copy is deleted from R2 and the replay's playlist drops it; 720p, 360p and audio stay (~1.6 GB per hour, ~+$2.60/month each month)
-- [ ] Decide with JimBob (strategy meeting): how long full quality is kept, or whether he keeps 1080p originals on his own drive
+- [x] Live streams are kept in R2 with 1080p, 720p, 360p and audio (~4.7 GB per streamed hour, ~+$8/month each month at ~110 hours)
+- [x] After a set time (e.g. 30 days, a setting) the 1080p copy is deleted from R2 and the replay's playlist drops it; 720p, 360p and audio stay (~1.6 GB per hour, ~+$2.60/month each month)
+- [x] Decided 2026-10-03 (JimBob): older streams keep 720p and below; full HD kept for LIVE_HD_DAYS (default 30), a setting
 
 ## Epic 4xx — Mobile apps
 

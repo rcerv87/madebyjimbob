@@ -351,7 +351,7 @@ S = [
  "As JimBob, I want the archive to stay cheap as years of streams pile up.",
  ["Live streams are kept in R2 with 1080p, 720p, 360p and audio (~4.7 GB per streamed hour, ~+$8/month each month at ~110 hours)",
   "After a set time (e.g. 30 days, a setting) the 1080p copy is deleted from R2 and the replay's playlist drops it; 720p, 360p and audio stay (~1.6 GB per hour, ~+$2.60/month each month)",
-  "Decide with JimBob (strategy meeting): how long full quality is kept, or whether he keeps 1080p originals on his own drive"], ["310"]),
+  "Decided 2026-10-03 (JimBob): older streams keep 720p and below; full HD kept for LIVE_HD_DAYS (default 30), a setting"], ["310"]),
 
 # ---------------- 4 Mobile ----------------
 ("401", 2, "Must", "L", "Expo app scaffold",
@@ -638,7 +638,7 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress", "312": "Done"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.

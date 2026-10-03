@@ -89,6 +89,8 @@ export const b2 = () => {
   };
 };
 const RETAIN_DAYS = () => Number(process.env.LIVE_R2_RETAIN_DAYS || 14);
+// Replays older than this keep 720p and below (MBJ-312).
+const HD_DAYS = () => Number(process.env.LIVE_HD_DAYS || 30);
 // Recordings' folder in the buckets: 'dvr' for the live site; local testing sets DVR_PREFIX so it never touches it.
 const DVR = () => process.env.DVR_PREFIX || 'dvr';
 
@@ -724,9 +726,68 @@ export async function archiveReplays() {
   return moved;
 }
 
+// A replay's list of qualities without the ones above 720p: { list, removed: [quality numbers] }. Never removes the
+// last quality (a stream sent only in full HD keeps it).
+export function withoutHd(master) {
+  const lines = master.split('\n');
+  const out = [];
+  const removed = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const height = Number(lines[i].match(/^#EXT-X-STREAM-INF:.*RESOLUTION=\d+x(\d+)/)?.[1]);
+    const n = lines[i + 1]?.match(/^(\d+)\/index\.m3u8$/)?.[1];
+    if (height > 720 && n !== undefined) {
+      removed.push(n);
+      i += 1;
+    } else out.push(lines[i]);
+  }
+  const list = out.join('\n');
+  return list.includes('#EXT-X-STREAM-INF') ? { list, removed } : { list: master, removed: [] };
+}
+
+// Replays older than LIVE_HD_DAYS keep 720p and below (JimBob, 2026-10-03; MBJ-312): the full-HD quality leaves the
+// replay's list first, then its files are deleted from R2. ~4.7 GB per streamed hour becomes ~1.6 GB.
+export async function trimReplays() {
+  const storage = r2();
+  if (!storage) return 0;
+  const { rows } = await pool.query(
+    `SELECT id, live_recording_id FROM videos
+      WHERE live_recording_id IS NOT NULL AND duration_s IS NOT NULL AND hd_removed_at IS NULL AND hls_url LIKE $1
+        AND published_at < now() - make_interval(days => $2)
+      ORDER BY id LIMIT 5`,
+    [`${storage.publicUrl}/%`, HD_DAYS()],
+  );
+  let trimmed = 0;
+  for (const v of rows) {
+    const prefix = `${DVR()}/${v.live_recording_id}/`;
+    try {
+      const master = await (await s3Request(storage, 'GET', `${prefix}master.m3u8`)).text();
+      const { list, removed } = withoutHd(master);
+      let files = 0;
+      if (removed.length) {
+        await r2Put(storage, `${prefix}master.m3u8`, list, typeOf('master.m3u8'));
+        for (const n of removed)
+          for (const key of await s3List(storage, `${prefix}${n}/`)) {
+            await s3Request(storage, 'DELETE', key);
+            files += 1;
+          }
+        trimmed += 1;
+      }
+      await pool.query('UPDATE videos SET hd_removed_at = now() WHERE id = $1', [v.id]);
+      logger.info({ videoId: v.id, qualities: removed, files }, 'replay kept at 720p and below');
+    } catch (err) {
+      logger.warn({ err, videoId: v.id }, 'trimming a replay failed; will retry');
+    }
+  }
+  return trimmed;
+}
+
+// Every 30 minutes: older replays drop full HD (MBJ-312); with B2 set up (development), replays also move there.
 export function startArchiveJob() {
-  if (!r2() || !b2()) return;
-  const run = () => archiveReplays().catch((err) => logger.error({ err }, 'archive job failed'));
+  if (!r2()) return;
+  const run = async () => {
+    await trimReplays().catch((err) => logger.error({ err }, 'replay trim failed'));
+    if (b2()) await archiveReplays().catch((err) => logger.error({ err }, 'archive job failed'));
+  };
   setInterval(run, 30 * 60 * 1000).unref();
   setTimeout(run, 60 * 1000).unref();
 }
