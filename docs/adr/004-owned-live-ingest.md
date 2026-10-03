@@ -99,7 +99,11 @@ bills (Cloudflare → R2 → Metrics shows the operation counts).
 
 Two changes keep this flat (MBJ-311, MBJ-312):
 - **Watching:** video pieces are cached at Cloudflare (a free Cache Rule on `live.madebyjimbob.app`, `.ts` files; on
-  since 2026-10-03, `MISS` then `HIT`). Left: serve playlists so Cloudflare can hold them for a second. Then reads stop
-  growing with viewers: a 5-hour show at 1,000 viewers drops from ~$6.50 to cents.
+  since 2026-10-03, `MISS` then `HIT`). Playlists: the recorder re-publishes Owncast's as `dvr/live/<n>.m3u8` with
+  `Cache-Control: public, max-age=1`, listing only pieces confirmed in R2 (a HEAD per new piece), and the site points
+  live viewers at them once every quality is published (`current.json` `edge`). That also ends the ~7% of piece 404s
+  seen in the load test (Owncast lists a piece before its upload finishes), which Cloudflare would otherwise cache.
+  Costs ~1.3 million extra R2 writes a month (~$6) and adds ~0.5–1 s of delay; with `m3u8` added to the Cache Rule,
+  reads stop growing with viewers: a 5-hour show at 1,000 viewers drops from ~$6.50 to cents.
 - **Archive:** keep 1080p only for recent streams (e.g. 30 days) and 720p + 360p + audio after that (~1.6 GB per hour):
   the archive then grows ~$1/month per month instead of ~$3.
