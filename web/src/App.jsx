@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { api, setSignedIn } from './api.js';
 import TopBar from './components/TopBar.jsx';
@@ -7,20 +7,22 @@ import SignInDialog from './components/SignInDialog.jsx';
 import AccountNotice from './components/AccountNotice.jsx';
 import Home from './pages/Home.jsx';
 import NotFound from './pages/NotFound.jsx';
+import lazyPage from './lazyPage.js';
 
 // Each page's code loads when it's opened (the watch page brings the video player library),
 // so the first visit downloads only the shell and the Videos page.
-const Watch = lazy(() => import('./pages/Watch.jsx'));
-const Studio = lazy(() => import('./pages/Studio.jsx'));
-const Live = lazy(() => import('./pages/Live.jsx'));
-const Playlists = lazy(() => import('./pages/Playlists.jsx'));
-const Playlist = lazy(() => import('./pages/Playlist.jsx'));
-const Posts = lazy(() => import('./pages/Posts.jsx'));
-const Shop = lazy(() => import('./pages/Shop.jsx'));
-const Art = lazy(() => import('./pages/Art.jsx'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
-const Account = lazy(() => import('./pages/Account.jsx'));
-const Profile = lazy(() => import('./pages/Profile.jsx'));
+
+const Watch = lazyPage(() => import('./pages/Watch.jsx'));
+const Studio = lazyPage(() => import('./pages/Studio.jsx'));
+const Live = lazyPage(() => import('./pages/Live.jsx'));
+const Playlists = lazyPage(() => import('./pages/Playlists.jsx'));
+const Playlist = lazyPage(() => import('./pages/Playlist.jsx'));
+const Posts = lazyPage(() => import('./pages/Posts.jsx'));
+const Shop = lazyPage(() => import('./pages/Shop.jsx'));
+const Art = lazyPage(() => import('./pages/Art.jsx'));
+const ResetPassword = lazyPage(() => import('./pages/ResetPassword.jsx'));
+const Account = lazyPage(() => import('./pages/Account.jsx'));
+const Profile = lazyPage(() => import('./pages/Profile.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 import { useKeepPlaying } from './keepPlaying.js';
