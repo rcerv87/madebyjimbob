@@ -446,13 +446,15 @@ export default function ChatPanel({
     if (focus?.type === 'person') params.set('from', focus.name);
     else if (searchOpen) {
       const words = searchText.trim().split(/\s+/).filter(Boolean);
-      const names = words.filter((w) => w.startsWith('@') && w.length > 1).map((w) => w.slice(1));
+      // Typed @names match part of a name (who); favorites are exact names (from).
+      const typed = words.filter((w) => w.startsWith('@') && w.length > 1).map((w) => w.slice(1));
+      const favs = searchOnly === 'favorites' && favorites ? [...favorites.keys()] : [];
       mark = words.filter((w) => !w.startsWith('@')).join(' ');
-      if (searchOnly === 'favorites') names.push(...(favorites ? [...favorites.keys()] : []));
-      else if (searchOnly) params.set('only', searchOnly);
+      if (searchOnly === 'favorites' && !favs.length) return { empty: true };
+      if (searchOnly && searchOnly !== 'favorites') params.set('only', searchOnly);
       if (mark) params.set('q', mark);
-      if (names.length) params.set('from', names.join(','));
-      if (searchOnly === 'favorites' && !names.length) return { empty: true };
+      if (typed.length) params.set('who', typed.join(','));
+      if (favs.length) params.set('from', favs.join(','));
       if (![...params.keys()].length) return null;
     } else return null;
     if (view === 'live') params.set('live', '1');

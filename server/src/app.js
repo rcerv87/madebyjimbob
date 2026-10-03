@@ -609,10 +609,17 @@ app.get(
       .map((s) => s.trim().replace(/^@/, '').toLowerCase())
       .filter(Boolean)
       .slice(0, 100);
+    // who: part of a name, from the search box's @name (from is exact, for one person's messages).
+    const who = String(req.query.who || '')
+      .split(',')
+      .map((s) => s.trim().replace(/^@/, '').toLowerCase())
+      .filter(Boolean)
+      .slice(0, 10);
     const only = String(req.query.only || '');
     if (only && !['paid', 'youtube', 'site', 'staff'].includes(only))
       return res.status(400).json({ error: 'Unknown filter.' });
-    if (!q && !from.length && !only) return res.status(400).json({ error: 'Type something to search for.' });
+    if (!q && !from.length && !who.length && !only)
+      return res.status(400).json({ error: 'Type something to search for.' });
     const params = [video.id];
     const where = ['m.video_id = $1', 'NOT m.hidden'];
     if (q) {
@@ -623,6 +630,12 @@ app.get(
       params.push(from);
       where.push(
         `(lower(ltrim(m.author_name, '@')) = ANY($${params.length}) OR lower(lu.username) = ANY($${params.length}))`,
+      );
+    }
+    if (who.length) {
+      params.push(who.map(likePattern));
+      where.push(
+        `(lower(ltrim(m.author_name, '@')) LIKE ANY($${params.length}) OR lower(lu.username) LIKE ANY($${params.length}))`,
       );
     }
     if (only === 'paid') where.push(`m.kind = 'paid'`);

@@ -68,6 +68,13 @@ describe('chat search (MBJ-218)', () => {
     assert.deepEqual(bodies(await search({ from: 'user1', q: 'kind' })), ['The libertarian kind']);
   });
 
+  test('part of a name finds that person (the search box @name), any case', async () => {
+    assert.deepEqual(bodies(await search({ who: 'ser3' })), ['Compatibilism FTW']);
+    assert.deepEqual(bodies(await search({ who: '@USER1', q: 'kind' })), ['The libertarian kind']);
+    assert.deepEqual(bodies(await search({ who: 'mod' })), ['keep it civil']);
+    assert.equal((await search({ who: 'nobody_like_this' })).messages.length, 0);
+  });
+
   test('kinds: super chats, YouTube, site, JimBob and mods', async () => {
     assert.deepEqual(bodies(await search({ only: 'paid' })), ['great stream']);
     assert.deepEqual(bodies(await search({ only: 'site' })), ['keep it civil']);
