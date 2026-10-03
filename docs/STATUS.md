@@ -81,8 +81,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    moderators; brand assets and domain.
 13. **Go Live is on (2026-10-02).** The token is on Render and was removed from the local `.env`. Tested on the live site:
    Server ready, OBS → Hetzner → Render → viewers, /live on phone (cellular) and desktop, home page LIVE strip, about 5 s
-   behind, End stream deleted the server. **Still to test:** the server deleting itself ~31 minutes after OBS stops
-   without End stream; JimBob's own OBS and upload (dropped frames in OBS Stats). **R2 delivery verified 2026-10-02** (R2_* on Render;
+   behind, End stream deleted the server. **Automatic delete verified 2026-10-03:** last streaming 00:31:53 UTC, deleted 01:02:08 (30 min idle).
+   **Still to test:** JimBob's own OBS and upload (dropped frames in OBS Stats). **R2 delivery verified 2026-10-02** (R2_* on Render;
    video goes R2 → viewers, Render serves only the quality list; still ~5 s behind). **Before big audiences:** a custom
    domain for the bucket (r2.dev is rate-limited), then a 600-viewer load test from 3–4
    temporary Hetzner servers (~$1–2).
