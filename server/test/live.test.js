@@ -319,6 +319,44 @@ describe('Go Live (owned live, ADR-004)', () => {
     }
   });
 
+  test('rewind only uses the running server’s recording, never another one in the bucket', async () => {
+    Object.assign(process.env, {
+      R2_ACCOUNT_ID: 'acct',
+      R2_ACCESS_KEY_ID: 'key',
+      R2_SECRET_ACCESS_KEY: 'secret',
+      R2_BUCKET: 'madebyjimbob-live',
+      R2_PUBLIC_URL: 'https://pub-test.r2.dev/',
+    });
+    try {
+      const admin = await signIn(call, 'test_admin');
+      await call('/studio/live/start', { method: 'POST', token: admin });
+      assert.match(hetzner.created[0].user_data, /-e LIVE_SERVER_ID='\d+'/);
+      assert.match(hetzner.created[0].user_data, /-e DVR_PREFIX='dvr'/);
+      owncast = { online: true, config: [] };
+      await tickLive();
+      const serverId = (await pool.query('SELECT id FROM live_servers ORDER BY id DESC LIMIT 1')).rows[0].id;
+      const at = new Date(Date.now() + 1000).toISOString();
+      // Another server's (or a test's) recording, even a newer one: ignored.
+      r2.objects['dvr/current.json'] = JSON.stringify({
+        id: 'other',
+        startedAt: at,
+        live: true,
+        server: '999999',
+      });
+      assert.equal((await call('/live')).data.dvr, undefined);
+      r2.objects['dvr/current.json'] = JSON.stringify({
+        id: 'mine',
+        startedAt: at,
+        live: true,
+        server: String(serverId),
+      });
+      assert.equal((await call('/live')).data.dvr.url, 'https://pub-test.r2.dev/dvr/mine/master.m3u8');
+      await call('/studio/live/stop', { method: 'POST', token: admin });
+    } finally {
+      process.env.R2_ACCOUNT_ID = '';
+    }
+  });
+
   test('a finished recording left in the bucket from before this server is not saved as a video', async () => {
     Object.assign(process.env, {
       R2_ACCOUNT_ID: 'acct',

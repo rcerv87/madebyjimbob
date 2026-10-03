@@ -34,9 +34,13 @@ const b2 = process.env.B2_ENDPOINT
     }
   : null;
 const HLS = process.env.HLS_DIR || '/hls';
+// Where recordings go in the bucket ('dvr' for the live site; tests use their own) and which live server this is, so
+// the site only trusts the current server's recording.
+const PREFIX = process.env.DVR_PREFIX || 'dvr';
+const SERVER_ID = process.env.LIVE_SERVER_ID || '';
 const SEGMENT_S = 6; // join Owncast's 1-second pieces into segments this long
 const QUIET_S = 12; // no new video this long = the stream ended (for now)
-const REJOIN_S = 600; // OBS back within this long after that: the same recording continues
+const REJOIN_S = 120; // OBS back within this long after that (an internet blip): the same recording continues
 
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 // ffmpeg copies the sound out of each segment (no re-encoding). Without it there's simply no audio-only copy.
@@ -172,8 +176,14 @@ async function start(prefix, variants) {
     ...variants.flatMap((v) => [v.info, `${v.n}/index.m3u8`]),
     '',
   ];
-  await store(`dvr/${id}/master.m3u8`, master.join('\n'), 'application/vnd.apple.mpegurl');
-  await putJson('dvr/current.json', { id, startedAt: rec.startedAt, live: true, gapS: 0 });
+  await store(`${PREFIX}/${id}/master.m3u8`, master.join('\n'), 'application/vnd.apple.mpegurl');
+  await putJson(`${PREFIX}/current.json`, {
+    server: SERVER_ID,
+    id,
+    startedAt: rec.startedAt,
+    live: true,
+    gapS: 0,
+  });
   log('recording started', id);
 }
 
@@ -190,7 +200,12 @@ function flush(r, q, ended = false) {
     .then(async () => {
       if (bytes.length) {
         const file = `${q.seq++}.ts`;
-        await store(`dvr/${r.id}/${q.n}/${file}`, bytes, 'video/mp2t', 'public, max-age=31536000, immutable');
+        await store(
+          `${PREFIX}/${r.id}/${q.n}/${file}`,
+          bytes,
+          'video/mp2t',
+          'public, max-age=31536000, immutable',
+        );
         q.lines.push({ file, dur, disc });
         // Thumbnail from the first quality: about 20 seconds in, and again at 5 minutes (past any intro screen).
         const recorded = q.lines.reduce((sum, l) => sum + l.dur, 0);
@@ -199,14 +214,15 @@ function flush(r, q, ended = false) {
           if (due) {
             r.thumbAt = recorded;
             const jpg = await frameOf(bytes).catch((err) => log('thumbnail failed', err.message));
-            if (jpg?.length) await store(`dvr/${r.id}/thumb.jpg`, jpg, 'image/jpeg', 'public, max-age=300');
+            if (jpg?.length)
+              await store(`${PREFIX}/${r.id}/thumb.jpg`, jpg, 'image/jpeg', 'public, max-age=300');
           }
         }
         if (r.audio?.from === q.n) {
           const sound = await audioOf(bytes).catch((err) => log('audio failed', err.message));
           if (sound?.length) {
             await store(
-              `dvr/${r.id}/audio/${file}`,
+              `${PREFIX}/${r.id}/audio/${file}`,
               sound,
               'video/mp2t',
               'public, max-age=31536000, immutable',
@@ -215,10 +231,10 @@ function flush(r, q, ended = false) {
           }
         }
       }
-      await store(`dvr/${r.id}/${q.n}/index.m3u8`, playlist(q, ended), 'application/vnd.apple.mpegurl');
+      await store(`${PREFIX}/${r.id}/${q.n}/index.m3u8`, playlist(q, ended), 'application/vnd.apple.mpegurl');
       if (r.audio?.from === q.n)
         await store(
-          `dvr/${r.id}/audio/index.m3u8`,
+          `${PREFIX}/${r.id}/audio/index.m3u8`,
           playlist(r.audio, ended),
           'application/vnd.apple.mpegurl',
         );
@@ -234,7 +250,13 @@ async function reopen(r, prefix) {
   for (const q of r.qualities.values())
     Object.assign(q, { prefix, lastSeq: -1, disc: true, runStart: Date.now() });
   quiet.since = Date.now();
-  await putJson('dvr/current.json', { id: r.id, startedAt: r.startedAt, live: true, gapS: r.gapS });
+  await putJson(`${PREFIX}/current.json`, {
+    server: SERVER_ID,
+    id: r.id,
+    startedAt: r.startedAt,
+    live: true,
+    gapS: r.gapS,
+  });
   log('recording continued', r.id);
 }
 
@@ -246,7 +268,8 @@ async function finish(r) {
   const durationS = Math.round(
     Math.max(0, ...[...r.qualities.values()].map((q) => q.lines.reduce((s, l) => s + l.dur, 0))),
   );
-  await putJson('dvr/current.json', {
+  await putJson(`${PREFIX}/current.json`, {
+    server: SERVER_ID,
     id: r.id,
     startedAt: r.startedAt,
     live: false,
@@ -316,7 +339,8 @@ async function tick() {
         // Count the time OBS was away once (from the first quality) and tell players.
         if (q === rec.qualities.values().next().value && q.lastSeq >= 0) {
           rec.gapS += Math.max(0, (Date.now() - quiet.since) / 1000 - 1);
-          putJson('dvr/current.json', {
+          putJson(`${PREFIX}/current.json`, {
+            server: SERVER_ID,
             id: rec.id,
             startedAt: rec.startedAt,
             live: true,
