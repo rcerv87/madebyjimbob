@@ -733,6 +733,7 @@ Acceptance criteria:
 - [ ] The chat's view buttons become one row that grows: (Live) (Replay) (Convo 1) (Convo 2)…, where Live and Replay are today's Live only / Live + replay, and each conversation you're in adds a button (named by who's in it on hover or long-press)
 - [ ] A conversation's button shows when something new is said there ("Convo 1 +", or a count) and clears when you open it; switch back and forth freely; the row scrolls sideways on phones
 - [ ] Sending from a conversation's view keeps the message in that conversation automatically (no reply or @ needed)
+- [ ] Leave or mute a conversation from its button (long-press or ⋯): Mute keeps the button but stops the "+" alert; Leave removes the button and stops adding you to it, until you reply in it again or rejoin from the conversations list; its messages stay in the general chat
 - [ ] Conversations end on their own after a quiet spell; they stay findable from the conversations list (MBJ-222) and in the replay
 - [ ] Ruben, 2026-10-03: the view buttons become (Live) (Replay) (Convo 1) (Convo 2)…, with "Convo 1 +" when there's something new
 
