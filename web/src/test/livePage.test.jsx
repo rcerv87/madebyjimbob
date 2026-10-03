@@ -100,12 +100,29 @@ describe('/live', () => {
     expect(players.recording.at(-1) - back).toBeLessThanOrEqual(11);
     expect(players.live.length).toBe(livesBefore);
 
+    // From the recording to 8 s behind live: the recording plays it (it reaches to ~6 s behind), no switch to live.
+    const slider = screen.getByLabelText('Rewind the stream');
+    const jump = (behind) => {
+      fireEvent.change(slider, { target: { value: String(Number(slider.max) - behind) } });
+      fireEvent.pointerUp(slider);
+    };
+    jump(8);
+    await act(async () => {});
+    expect(Number(slider.max) - players.recording.at(-1)).toBeGreaterThanOrEqual(7);
+    expect(Number(slider.max) - players.recording.at(-1)).toBeLessThanOrEqual(9);
+    expect(players.live.length).toBe(livesBefore);
+
     // A short load pause near live (every jump causes one) keeps playing the recording; it used to switch to live.
     const video = document.querySelector('video');
     Object.defineProperty(video, 'currentTime', { value: 590, configurable: true });
     fireEvent.waiting(video);
     await act(async () => {});
     expect(players.live.length).toBe(livesBefore);
+
+    // Closer than the recording reaches (3 s behind): live.
+    jump(3);
+    await act(async () => {});
+    expect(players.live.length).toBe(livesBefore + 1);
   });
 
   test('when not live, says so', async () => {
