@@ -89,6 +89,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-221 | Direct messages | Chat & moderation | 1 | Should | M | MBJ-119, MBJ-202 |
 | MBJ-222 | Conversation tracker in chat | Chat & moderation | 1 | Should | M | MBJ-219, MBJ-218 |
 | MBJ-224 | Member history: everything someone said, searchable, with links to the source | Chat & moderation | 1 | Should | M | MBJ-116, MBJ-218 |
+| MBJ-225 | Live conversations: join several at once and switch between them | Chat & moderation | 1 | Should | L | MBJ-222 |
 | MBJ-701 | Video management in Studio | Studio & analytics | 1 | Must | L | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
@@ -717,6 +718,21 @@ Acceptance criteria:
 - [x] Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)
 - [x] Show only their messages: a bar above the chat with Show everyone
 - [x] Ruben, 2026-10-03
+
+### MBJ-225 — Live conversations: join several at once and switch between them
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-222
+
+As a chatter in a busy live chat, I want each conversation I'm in kept together, even when I forget to reply or @ someone, and to switch between them and the general chat.
+
+Acceptance criteria:
+- [ ] Detect conversations as they happen: replies (MBJ-222) plus people @mentioning each other back and forth within a few minutes (e.g. users 1, 2 and 3 in one; users 1, 5 and 6 in another)
+- [ ] Messages that weren't replies or @mentions join a conversation when the signs point to it: the same people talking within seconds, a short answer right after a question, words carried over; uncertain ones are only suggested, never forced
+- [ ] Fix it after the fact: on your own message, "Add to conversation…" (pick one of yours, or a message to attach it to); moderators can do it for anyone; others see the link
+- [ ] A notice when a conversation you're in starts ("Conversation started with @user2 and @user3"), shown in the chat, not as a notification
+- [ ] Tabs above the chat: Live chat, then one per conversation you're in (names of who's in it, unread count); switch freely; replying from a tab keeps the message in that conversation automatically
+- [ ] Conversations end on their own after a quiet spell; they stay findable from the conversations list (MBJ-222) and in the replay
+- [ ] Ruben, 2026-10-03
 
 ### MBJ-224 — Member history: everything someone said, searchable, with links to the source
 

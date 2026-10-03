@@ -183,6 +183,13 @@ MBJ-219,"Chat: tap a name to mention, tap a picture for a menu, highlight colors
 - Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)
 - Show only their messages: a bar above the chat with Show everyone
 - Ruben, 2026-10-03",MBJ-116
+MBJ-225,Live conversations: join several at once and switch between them,Chat & moderation,Phase 1 — VOD platform,Should,L,To do,"As a chatter in a busy live chat, I want each conversation I'm in kept together, even when I forget to reply or @ someone, and to switch between them and the general chat.","- Detect conversations as they happen: replies (MBJ-222) plus people @mentioning each other back and forth within a few minutes (e.g. users 1, 2 and 3 in one; users 1, 5 and 6 in another)
+- Messages that weren't replies or @mentions join a conversation when the signs point to it: the same people talking within seconds, a short answer right after a question, words carried over; uncertain ones are only suggested, never forced
+- Fix it after the fact: on your own message, ""Add to conversation…"" (pick one of yours, or a message to attach it to); moderators can do it for anyone; others see the link
+- A notice when a conversation you're in starts (""Conversation started with @user2 and @user3""), shown in the chat, not as a notification
+- Tabs above the chat: Live chat, then one per conversation you're in (names of who's in it, unread count); switch freely; replying from a tab keeps the message in that conversation automatically
+- Conversations end on their own after a quiet spell; they stay findable from the conversations list (MBJ-222) and in the replay
+- Ruben, 2026-10-03",MBJ-222
 MBJ-224,"Member history: everything someone said, searchable, with links to the source",Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a viewer (or JimBob), when someone says ""we never talked about that"", I want to open their history, search it, and show exactly what they said, when, and where.","- ""History"" in a person's menu (chat, comments, profile) opens a panel: everything they said across all videos (chat messages and comments, live and replay, site and linked YouTube/Rumble names), newest first
 - Each item shows the video, the date and the moment (e.g. ""Aug 3 · Alex Malpass Is Challenged · 1:04:32""), the text, and opens the video at that moment (or the comment in its thread)
 - Search within it: words or a phrase (highlighted), date range, chat or comments; results count (""said 'xyz' 14 times""); a copyable link to any one item to share as proof
