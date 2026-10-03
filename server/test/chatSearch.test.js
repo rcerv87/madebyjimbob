@@ -38,6 +38,7 @@ before(async () => {
   await add('u3', { author: '@User3', body: 'Compatibilism FTW', at: 16_000, replyTo: 'u2' });
   await add('u4', { author: '@User4', body: 'No, 100% determined', at: 20_000, replyTo: 'u1' });
   await add('other', { author: '@Elsewhere', body: 'unrelated FREE pizza', at: 18_000 });
+  await add('mention3', { author: '@Fan', body: 'great point @User3', at: 25_000 });
   await add('paid', { author: '@BigTipper', body: 'great stream', at: 30_000, kind: 'paid' });
   await add('site', { author: 'cs_mod', body: 'keep it civil', at: 40_000, source: 'native', userId: modId });
   await add('later', { author: '@Late', body: 'free will is fake', at: 50_000, postedLive: false });
@@ -64,12 +65,14 @@ describe('chat search (MBJ-218)', () => {
 
   test('who said it: names or @handles, several at once', async () => {
     assert.deepEqual(bodies(await search({ from: 'user1' })), ['Is free will real?', 'The libertarian kind']);
+    // One person's messages (from): only what they said, not mentions of them.
     assert.deepEqual(bodies(await search({ from: '@User3,cs_mod' })), ['Compatibilism FTW', 'keep it civil']);
     assert.deepEqual(bodies(await search({ from: 'user1', q: 'kind' })), ['The libertarian kind']);
   });
 
   test('part of a name finds that person (the search box @name), any case', async () => {
-    assert.deepEqual(bodies(await search({ who: 'ser3' })), ['Compatibilism FTW']);
+    // Their messages and messages mentioning them.
+    assert.deepEqual(bodies(await search({ who: 'ser3' })), ['Compatibilism FTW', 'great point @User3']);
     assert.deepEqual(bodies(await search({ who: '@USER1', q: 'kind' })), ['The libertarian kind']);
     assert.deepEqual(bodies(await search({ who: 'mod' })), ['keep it civil']);
     assert.equal((await search({ who: 'nobody_like_this' })).messages.length, 0);
@@ -79,7 +82,7 @@ describe('chat search (MBJ-218)', () => {
     assert.deepEqual(bodies(await search({ only: 'paid' })), ['great stream']);
     assert.deepEqual(bodies(await search({ only: 'site' })), ['keep it civil']);
     assert.deepEqual(bodies(await search({ only: 'staff' })), ['keep it civil']);
-    assert.equal((await search({ only: 'youtube' })).messages.length, 8);
+    assert.equal((await search({ only: 'youtube' })).messages.length, 9);
     assert.equal((await call(`/videos/${videoId}/chat/search?only=nope`)).status, 400);
     assert.equal((await call(`/videos/${videoId}/chat/search`)).status, 400, 'something to search for');
   });
