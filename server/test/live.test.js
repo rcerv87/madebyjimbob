@@ -355,6 +355,7 @@ describe('Go Live (owned live, ADR-004)', () => {
       });
       assert.equal((await call('/live')).data.dvr.url, 'https://pub-test.r2.dev/dvr/mine/master.m3u8');
       // Owncast's own playlists until the recorder says it publishes cacheable ones (MBJ-311); then those.
+      process.env.LIVE_EDGE_PLAYLISTS = 'on';
       const master = async () => (await realFetch(`${new URL(base).origin}/live/hls/stream.m3u8`)).text();
       // In a stream's first 30 seconds, players wait for those instead of starting on Owncast's (they retry).
       owncast.connectedAt = new Date().toISOString();
@@ -386,6 +387,7 @@ describe('Go Live (owned live, ADR-004)', () => {
       await call('/studio/live/stop', { method: 'POST', token: admin });
     } finally {
       process.env.R2_ACCOUNT_ID = '';
+      delete process.env.LIVE_EDGE_PLAYLISTS;
     }
   });
 
