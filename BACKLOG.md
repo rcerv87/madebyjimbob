@@ -853,10 +853,10 @@ Acceptance criteria:
 As JimBob, I want a big live audience to cost the same as a small one.
 
 Acceptance criteria:
-- [ ] Video pieces (`.ts`) on `live.madebyjimbob.app` come from Cloudflare's cache (`cf-cache-status: HIT`), not R2
+- [ ] Video pieces (`.ts`) on `live.madebyjimbob.app` come from Cloudflare's cache (`cf-cache-status: HIT`), not R2 (Cache Rule on 2026-10-03)
 - [ ] Live playlists are cacheable for about a second, so R2 sees roughly one read per quality per second per Cloudflare location, however many watch
 - [ ] Load test again: R2 read count stays roughly flat from 100 to 1,000 viewers; live delay unchanged (~4-5 s)
-- [ ] Today each viewer costs ~$1.30-2.60 per 1,000 viewer-hours in R2 reads past the free tier (2026-10-03 estimate)
+- [ ] With pieces cached, each viewer still costs ~$1.30 per 1,000 viewer-hours in playlist reads past the free tier (2026-10-03 estimate)
 
 ### MBJ-312 — Archive keeps 1080p only for recent streams
 
