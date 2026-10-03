@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ChatPanel from '../components/ChatPanel.jsx';
 
@@ -66,6 +66,35 @@ describe('chat search (MBJ-218)', () => {
     await waitFor(() => expect(asked().some((u) => u.includes('only=paid'))).toBe(true));
     fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(await screen.findByText('pizza time')).toBeTruthy();
+  });
+});
+
+describe('search box names', () => {
+  test('typing @ pops up names from the whole video; picking one fills it in', async () => {
+    setup({
+      '/videos/7/chat': { messages: chat },
+      '/videos/7/chat/names': { names: ['User1', 'UserFromEarlier'] },
+      '/videos/7/chat/search': { messages: [], more: false },
+    });
+    await screen.findByText('pizza time');
+    fireEvent.click(screen.getByRole('button', { name: 'Search the chat' }));
+    const box = screen.getByRole('searchbox', { name: 'Search the chat' });
+    fireEvent.change(box, { target: { value: 'free @us', selectionStart: 8 } });
+    const list = await screen.findByRole('listbox', { name: 'People in this video’s chat' });
+    expect(await within(list).findByRole('button', { name: '@UserFromEarlier' })).toBeTruthy();
+    fireEvent.mouseDown(within(list).getByRole('button', { name: '@User1' }));
+    expect(box.value).toBe('free @User1 ');
+  });
+
+  test('tapping a name in the chat while the search box is open puts it in the search', async () => {
+    setup({
+      '/videos/7/chat': { messages: chat },
+      '/videos/7/chat/search': { messages: [], more: false },
+    });
+    await screen.findByText('pizza time');
+    fireEvent.click(screen.getByRole('button', { name: 'Search the chat' }));
+    fireEvent.click(screen.getByRole('button', { name: '@Other' }));
+    expect(screen.getByRole('searchbox', { name: 'Search the chat' }).value).toBe('@Other ');
   });
 });
 

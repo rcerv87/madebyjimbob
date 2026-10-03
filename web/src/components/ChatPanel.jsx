@@ -88,6 +88,9 @@ export default function ChatPanel({
   const [searchText, setSearchText] = useState('');
   const [searchOnly, setSearchOnly] = useState(''); // '' | favorites | paid | staff | youtube | site
   const [results, setResults] = useState(null); // { messages, more, loading, error }
+  const searchRef = useRef(null);
+  const [nameSuggest, setNameSuggest] = useState({ items: [], index: 0 });
+  const nameTimer = useRef(0);
   const [help, setHelp] = useState(false);
   const closeHelp = useCallback(() => setHelp(false), []);
   // Up to 5 people, one color each: { color: { who, name } }.
@@ -321,11 +324,19 @@ export default function ChatPanel({
     [videoId],
   );
 
-  // Tapping a name: @name at the end of what you're typing.
+  // Tapping a name: @name at the end of what you're typing; into the search box while it's open.
+  const searching = useRef(false);
+  searching.current = searchOpen && !focus;
   const mention = useCallback(
     (name) => {
+      const add = (t) => `${t}${t && !t.endsWith(' ') ? ' ' : ''}@${name} `;
+      if (searching.current) {
+        setSearchText(add);
+        requestAnimationFrame(() => searchRef.current?.focus());
+        return;
+      }
       if (!session.user) return session.requireSignIn();
-      setText((t) => `${t}${t && !t.endsWith(' ') ? ' ' : ''}@${name} `);
+      setText(add);
       requestAnimationFrame(() => inputRef.current?.focus());
     },
     [session],
@@ -376,6 +387,52 @@ export default function ChatPanel({
       el?.focus();
       el?.setSelectionRange(before.length, before.length);
     });
+  };
+
+  // The search box's @ suggestions: names from the loaded chat right away, then anyone in the whole video (server).
+  const updateNameSuggest = (value, caret) => {
+    clearTimeout(nameTimer.current);
+    const match = value.slice(0, caret).match(/(?:^|\s)@([A-Za-z0-9_.-]{1,30})$/);
+    if (!match) return setNameSuggest({ items: [], index: 0 });
+    const typed = match[1].toLowerCase();
+    const local = names
+      .filter((n) => n.toLowerCase().includes(typed) && n.toLowerCase() !== typed)
+      .slice(0, 8);
+    setNameSuggest({ items: local, index: 0 });
+    nameTimer.current = setTimeout(() => {
+      api(`/videos/${videoId}/chat/names?q=${encodeURIComponent(typed)}`)
+        .then((d) => {
+          const all = [...new Map([...local, ...d.names].map((n) => [n.toLowerCase(), n])).values()];
+          setNameSuggest((cur) => ({
+            ...cur,
+            items: all.filter((n) => n.toLowerCase() !== typed).slice(0, 8),
+          }));
+        })
+        .catch(() => {});
+    }, 150);
+  };
+  useEffect(() => () => clearTimeout(nameTimer.current), []);
+  const pickName = (name) => {
+    const el = searchRef.current;
+    const caret = el?.selectionStart ?? searchText.length;
+    const before = searchText.slice(0, caret).replace(/@([A-Za-z0-9_.-]{0,30})$/, `@${name} `);
+    setSearchText(before + searchText.slice(caret));
+    setNameSuggest({ items: [], index: 0 });
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(before.length, before.length);
+    });
+  };
+  const onSearchKeyDown = (e) => {
+    if (!nameSuggest.items.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      setNameSuggest((s) => ({ ...s, index: (s.index + step + s.items.length) % s.items.length }));
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      pickName(nameSuggest.items[nameSuggest.index]);
+    } else if (e.key === 'Escape') setNameSuggest({ items: [], index: 0 });
   };
 
   const onKeyDown = (e) => {
@@ -567,16 +624,45 @@ export default function ChatPanel({
 
       {searchOpen && !focus && (
         <div className="chat-search">
-          <input
-            id="chat-search"
-            type="search"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Search words, or @name"
-            aria-label="Search the chat"
-            autoComplete="off"
-            autoFocus
-          />
+          <div className="chat-search-box">
+            <input
+              id="chat-search"
+              ref={searchRef}
+              type="search"
+              value={searchText}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                updateNameSuggest(e.target.value, e.target.selectionStart);
+              }}
+              onKeyDown={onSearchKeyDown}
+              onBlur={() => setNameSuggest({ items: [], index: 0 })}
+              placeholder="Search words, or @name"
+              aria-label="Search the chat"
+              autoComplete="off"
+              autoFocus
+            />
+            {nameSuggest.items.length > 0 && (
+              <ul
+                className="mention-suggest search-suggest"
+                role="listbox"
+                aria-label="People in this video’s chat"
+              >
+                {nameSuggest.items.map((n, i) => (
+                  <li key={n} role="option" aria-selected={i === nameSuggest.index}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        pickName(n);
+                      }}
+                    >
+                      @{n}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <div className="chat-search-chips" role="group" aria-label="Show only">
             {SEARCH_CHIPS.map(([key, label]) => (
               <button
