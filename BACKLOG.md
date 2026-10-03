@@ -85,7 +85,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-217 | Member notes on videos (annotations) | Chat & moderation | 1 | Should | M | MBJ-119 |
 | MBJ-218 | Search and filter comments and chat | Chat & moderation | 1 | Should | M | MBJ-217 |
 | MBJ-219 | Chat: tap a name to mention, tap a picture for a menu, highlight colors | Chat & moderation | 1 | Should | S | MBJ-116 |
-| MBJ-220 | Favorite members (highlighted in every chat) | Chat & moderation | 1 | Should | M | MBJ-219 |
+| MBJ-220 | Favorite members (highlighted in every chat) — Premium | Chat & moderation | 1 | Should | M | MBJ-219, MBJ-104 |
 | MBJ-701 | Video management in Studio | Studio & analytics | 1 | Must | L | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
@@ -711,17 +711,19 @@ Acceptance criteria:
 - [x] Show only their messages: a bar above the chat with Show everyone
 - [x] Ruben, 2026-10-03
 
-### MBJ-220 — Favorite members (highlighted in every chat)
+### MBJ-220 — Favorite members (highlighted in every chat) — Premium
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-219
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-219, MBJ-104
 
-As a viewer, I want the people I always chat with highlighted by default, in my colors, on any device.
+As a Premium member, I want the people I always chat with highlighted by default, in my colors, on any device.
 
 Acceptance criteria:
+- [ ] Premium only: Free and Plus members see Favorite in the menu with an upgrade prompt; the 5 per-chat highlights (MBJ-219) stay free for everyone
 - [ ] Favorite a member from their chat menu, name card, or profile; favorites are saved to my account (all devices)
 - [ ] Each favorite has a color, highlighted automatically in every chat and comment section; more colors than the 5 quick highlights
 - [ ] Favorites don't count toward the 5 per-chat highlights; a per-chat highlight overrides a favorite's color for that chat
 - [ ] A Favorites list in Account settings to recolor or remove; feeds the favorites filters in MBJ-217 and MBJ-218
+- [ ] If Premium lapses, favorites are kept but stop highlighting until they resubscribe; the server enforces the tier
 - [ ] Ruben, 2026-10-03
 
 ## Epic 3xx — Live via YouTube
