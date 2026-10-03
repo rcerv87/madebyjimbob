@@ -99,6 +99,13 @@ describe('/live', () => {
     expect(players.recording.at(-1) - back).toBeGreaterThanOrEqual(9);
     expect(players.recording.at(-1) - back).toBeLessThanOrEqual(11);
     expect(players.live.length).toBe(livesBefore);
+
+    // A short load pause near live (every jump causes one) keeps playing the recording; it used to switch to live.
+    const video = document.querySelector('video');
+    Object.defineProperty(video, 'currentTime', { value: 590, configurable: true });
+    fireEvent.waiting(video);
+    await act(async () => {});
+    expect(players.live.length).toBe(livesBefore);
   });
 
   test('when not live, says so', async () => {
