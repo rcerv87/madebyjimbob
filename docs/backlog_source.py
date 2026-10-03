@@ -330,7 +330,7 @@ S = [
  ["Live player scrubs anywhere in today's stream (DVR) with a Back to LIVE button; works in Listen only and on phones",
   "The live server keeps every segment of the stream in R2 (not just the last few seconds) and publishes a growing playlist; Owncast can't, so add a recorder alongside or replace it (MediaMTX, also planned for the browser studio)",
   "When the stream ends it becomes a normal video on the site with its chat and comments, with no import; tier default configurable",
-  "Archive copy moves to B2 (ADR-010); R2 copy deleted after a set time. A 4-hour stream ≈ 17 GB (1080p+720p+360p) ≈ $0.25/month while in R2",
+  "Recordings stay in R2 for good (decided 2026-10-03; B2 only for development). A 4-hour stream ≈ 19 GB (1080p+720p+360p+audio) ≈ $0.28/month",
   "Ruben, 2026-10-02: wanted as soon as possible; must be in the beta"], ["304"]),
 ("311", 3, "Should", "S", "Flat cost for watching live (cache pieces and playlists)",
  "As JimBob, I want a big live audience to cost the same as a small one.",
@@ -349,8 +349,8 @@ S = [
   "Ruben, 2026-10-03: Normal is what we have now; Low latency later"], ["311"]),
 ("312", 3, "Should", "S", "Archive keeps 1080p only for recent streams",
  "As JimBob, I want the archive to stay cheap as years of streams pile up.",
- ["Live streams are archived in B2 with 1080p, 720p, 360p and audio (~4.7 GB per streamed hour, ~+$3/month each month)",
-  "After a set time (e.g. 30 days, a setting) the 1080p copy is deleted from B2 and the replay's playlist drops it; 720p, 360p and audio stay (~1.6 GB per hour)",
+ ["Live streams are kept in R2 with 1080p, 720p, 360p and audio (~4.7 GB per streamed hour, ~+$8/month each month at ~110 hours)",
+  "After a set time (e.g. 30 days, a setting) the 1080p copy is deleted from R2 and the replay's playlist drops it; 720p, 360p and audio stay (~1.6 GB per hour, ~+$2.60/month each month)",
   "Decide with JimBob (strategy meeting): how long full quality is kept, or whether he keeps 1080p originals on his own drive"], ["310"]),
 
 # ---------------- 4 Mobile ----------------

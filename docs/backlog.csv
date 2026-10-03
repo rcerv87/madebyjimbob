@@ -222,7 +222,7 @@ MBJ-309,Configurable live source,Live via YouTube,Phase 3 — Live via YouTube,S
 MBJ-310,Rewind the live stream and instant replay (beta priority),Live via YouTube,Phase 3 — Live via YouTube,Must,L,In progress,"As a viewer, I want to go back seconds or hours in a live stream and jump back to live; as JimBob, I want every stream on the site as a video the moment it ends.","- Live player scrubs anywhere in today's stream (DVR) with a Back to LIVE button; works in Listen only and on phones
 - The live server keeps every segment of the stream in R2 (not just the last few seconds) and publishes a growing playlist; Owncast can't, so add a recorder alongside or replace it (MediaMTX, also planned for the browser studio)
 - When the stream ends it becomes a normal video on the site with its chat and comments, with no import; tier default configurable
-- Archive copy moves to B2 (ADR-010); R2 copy deleted after a set time. A 4-hour stream ≈ 17 GB (1080p+720p+360p) ≈ $0.25/month while in R2
+- Recordings stay in R2 for good (decided 2026-10-03; B2 only for development). A 4-hour stream ≈ 19 GB (1080p+720p+360p+audio) ≈ $0.28/month
 - Ruben, 2026-10-02: wanted as soon as possible; must be in the beta",MBJ-304
 MBJ-311,Flat cost for watching live (cache pieces and playlists),Live via YouTube,Phase 3 — Live via YouTube,Should,S,In progress,"As JimBob, I want a big live audience to cost the same as a small one.","- Video pieces (`.ts`) on `live.madebyjimbob.app` come from Cloudflare's cache (`cf-cache-status: HIT`), not R2 (Cache Rule on 2026-10-03)
 - Live playlists are cacheable for about a second, so R2 sees roughly one read per quality per second per Cloudflare location, however many watch
@@ -235,8 +235,8 @@ MBJ-313,Stream latency modes: Normal and Low latency,Live via YouTube,Phase 3 �
 - Measure both on a real stream (OBS → viewer, desktop and phone on cellular) and note the cost difference (extra uploads, a few dollars a month)
 - For comparison (2026-10-03): YouTube Normal ~15–30 s, Low ~5–10 s, Ultra-low ~2–5 s; Instagram Live ~3–5 s. Under ~2 s would need a different delivery (WebRTC), a separate decision
 - Ruben, 2026-10-03: Normal is what we have now; Low latency later",MBJ-311
-MBJ-312,Archive keeps 1080p only for recent streams,Live via YouTube,Phase 3 — Live via YouTube,Should,S,To do,"As JimBob, I want the archive to stay cheap as years of streams pile up.","- Live streams are archived in B2 with 1080p, 720p, 360p and audio (~4.7 GB per streamed hour, ~+$3/month each month)
-- After a set time (e.g. 30 days, a setting) the 1080p copy is deleted from B2 and the replay's playlist drops it; 720p, 360p and audio stay (~1.6 GB per hour)
+MBJ-312,Archive keeps 1080p only for recent streams,Live via YouTube,Phase 3 — Live via YouTube,Should,S,To do,"As JimBob, I want the archive to stay cheap as years of streams pile up.","- Live streams are kept in R2 with 1080p, 720p, 360p and audio (~4.7 GB per streamed hour, ~+$8/month each month at ~110 hours)
+- After a set time (e.g. 30 days, a setting) the 1080p copy is deleted from R2 and the replay's playlist drops it; 720p, 360p and audio stay (~1.6 GB per hour, ~+$2.60/month each month)
 - Decide with JimBob (strategy meeting): how long full quality is kept, or whether he keeps 1080p originals on his own drive",MBJ-310
 MBJ-401,Expo app scaffold,Mobile apps,Phase 2 — Mobile,Must,L,To do,"As a viewer, I want the platform as a phone app.","- `mobile/` Expo app in the workspace using `packages/shared`
 - Sign-in, Home, Watch, Account screens
