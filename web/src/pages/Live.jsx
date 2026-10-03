@@ -73,6 +73,11 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
   const [muted, setMuted] = useState(false);
   // Catch-up speed while behind live (rewound or listening); at live it's always 1×.
   const [speed, setSpeed] = useState(1);
+  const [goingLive, setGoingLive] = useState(false);
+  const atLiveRef = useRef(true);
+  const holdFastRef = useRef(false);
+  const speedRef = useRef(1);
+  const nowRef = useRef(0);
   useEffect(() => {
     if (ref.current) ref.current.muted = muted;
     if (audioRef.current) audioRef.current.muted = muted;
@@ -320,18 +325,172 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
     else setRewindTo(target);
   }
 
+  // ---------- touch and mouse gestures on the video ----------
+  // Double-tap left/right: -10 s/+10 s (middle: reset zoom). Tap: play/pause. Hold right: 2× while behind live. Hold
+  // left: rewind at 2× (a counter while held, one jump on release; video can't play backwards smoothly). Pinch: zoom
+  // up to 3×, drag to look around while zoomed.
+  const gesture = useRef({
+    pointers: new Map(),
+    last: 0,
+    timer: 0,
+    press: 0,
+    holding: null,
+    back: 0,
+    backTimer: 0,
+  });
+  const [hint, setHint] = useState(null); // { text, side }
+  const [zoom, setZoom] = useState({ scale: 1, x: 0, y: 0 });
+  const showHint = (text, side = 'center', ms = 700) => {
+    setHint({ text, side, at: Date.now() });
+    clearTimeout(gesture.current.hintTimer);
+    if (ms) gesture.current.hintTimer = setTimeout(() => setHint(null), ms);
+  };
+  const activeEl = () => (listeningRef.current ? audioRef.current : ref.current);
+  const togglePlay = () => {
+    const el = activeEl();
+    if (!el) return;
+    if (el.paused) el.play().catch(() => {});
+    else el.pause();
+  };
+  const sideOf = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    return x < 0.4 ? 'left' : x > 0.6 ? 'right' : 'center';
+  };
+  const endHold = () => {
+    const g = gesture.current;
+    if (g.holding === 'right') {
+      holdFastRef.current = false;
+      rateRef.current = Math.max(1, Math.min(2, atLiveRef.current ? 1 : speedRef.current));
+      setHint(null);
+    } else if (g.holding === 'left') {
+      clearInterval(g.backTimer);
+      if (g.back > 0) seek(nowRef.current - g.back);
+      setHint(null);
+    }
+    g.holding = null;
+    g.back = 0;
+  };
+  const onGestureDown = (e) => {
+    const g = gesture.current;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    g.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY });
+    if (g.pointers.size === 2) {
+      // Pinch starts: no taps or holds.
+      clearTimeout(g.press);
+      const [a, b] = [...g.pointers.values()];
+      g.pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y), scale: zoom.scale };
+      return;
+    }
+    const side = sideOf(e);
+    g.moved = false;
+    g.press = setTimeout(() => {
+      if (g.moved || g.pointers.size !== 1) return;
+      if (side === 'right') {
+        if (atLiveRef.current) return showHint('At live: nothing ahead yet', 'right', 1200);
+        g.holding = 'right';
+        holdFastRef.current = true;
+        rateRef.current = 2;
+        showHint('⏩ 2×', 'right', 0);
+      } else if (side === 'left') {
+        g.holding = 'left';
+        g.back = 0;
+        showHint('⏪ 2×', 'left', 0);
+        // Rewinding at 2×: 2 s further back for every second held; the counter is exactly where it will land.
+        g.backTimer = setInterval(() => {
+          g.back += 2;
+          showHint(`⏪ −${g.back}s`, 'left', 0);
+        }, 1000);
+      }
+    }, 450);
+  };
+  const onGestureMove = (e) => {
+    const g = gesture.current;
+    const p = g.pointers.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x;
+    const dy = e.clientY - p.y;
+    p.x = e.clientX;
+    p.y = e.clientY;
+    if (Math.hypot(p.x - p.startX, p.y - p.startY) > 12) g.moved = true;
+    if (g.pointers.size === 2 && g.pinch) {
+      const [a, b] = [...g.pointers.values()];
+      const scale = Math.max(
+        1,
+        Math.min(3, (g.pinch.scale * Math.hypot(a.x - b.x, a.y - b.y)) / g.pinch.dist),
+      );
+      setZoom((z) => (scale === 1 ? { scale: 1, x: 0, y: 0 } : { ...z, scale }));
+    } else if (g.pointers.size === 1 && zoom.scale > 1 && g.moved && !g.holding) {
+      // Zoomed in: drag to look around (kept inside the picture).
+      const rect = e.currentTarget.getBoundingClientRect();
+      const maxX = ((zoom.scale - 1) * rect.width) / 2;
+      const maxY = ((zoom.scale - 1) * rect.height) / 2;
+      setZoom((z) => ({
+        ...z,
+        x: Math.max(-maxX, Math.min(maxX, z.x + dx)),
+        y: Math.max(-maxY, Math.min(maxY, z.y + dy)),
+      }));
+    }
+  };
+  const onGestureUp = (e) => {
+    const g = gesture.current;
+    const wasPinch = g.pointers.size === 2 || g.pinch;
+    g.pointers.delete(e.pointerId);
+    clearTimeout(g.press);
+    if (g.pointers.size === 0) g.pinch = null;
+    if (wasPinch) return;
+    if (g.holding) return endHold();
+    if (g.moved) return;
+    const side = sideOf(e);
+    const now = Date.now();
+    if (now - g.last < 280) {
+      clearTimeout(g.timer);
+      g.last = 0;
+      if (side === 'left') {
+        seek(nowRef.current - 10);
+        showHint('−10s', 'left');
+      } else if (side === 'right') {
+        if (atLiveRef.current) showHint('At live', 'right');
+        else {
+          seek(nowRef.current + 10);
+          showHint('+10s', 'right');
+        }
+      } else setZoom({ scale: 1, x: 0, y: 0 });
+      return;
+    }
+    g.last = now;
+    g.timer = setTimeout(togglePlay, 280);
+  };
+  const onGestureCancel = (e) => {
+    const g = gesture.current;
+    g.pointers.delete(e.pointerId);
+    clearTimeout(g.press);
+    if (g.holding) endHold();
+  };
+
   if (seekRef) seekRef.current = seek;
-  rateRef.current = Math.max(1, Math.min(2, !listening && rewindTo === null && liveBehind < 1.5 ? 1 : speed));
   const onLiveFeed = !listening && rewindTo === null;
-  const atLive = onLiveFeed && liveBehind < 1.5;
+  // Listening counts as live once it's within a few seconds of it (following the recording's end).
+  const listeningLive = listening && liveAt() - posRef.current < 8;
+  const atLive = (onLiveFeed && liveBehind < 1.5) || listeningLive || goingLive;
+  // Faster speeds only while behind; caught up (watching or listening) it's 1×.
   const rate = atLive ? 1 : speed;
+  atLiveRef.current = atLive;
+  speedRef.current = speed;
+  rateRef.current = holdFastRef.current ? 2 : Math.max(1, Math.min(2, rate));
   const now = onLiveFeed ? liveAt() - liveBehind : posRef.current;
+  nowRef.current = now;
   return (
     <div className="live-player">
       <video
         ref={ref}
         playsInline
         controls={!dvr}
+        style={
+          zoom.scale > 1
+            ? { transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})` }
+            : undefined
+        }
         aria-label="JimBob live"
         onPause={onVideoPause}
         // Only one player ever makes sound: playing the video stops the listening player, and the other way round.
@@ -350,6 +509,18 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
           else ref.current?.pause();
         }}
       />
+      {dvr && !listening && (
+        <div
+          className="live-gestures"
+          onPointerDown={onGestureDown}
+          onPointerMove={onGestureMove}
+          onPointerUp={onGestureUp}
+          onPointerCancel={onGestureCancel}
+          onContextMenu={(e) => e.preventDefault()}
+          aria-hidden="true"
+        />
+      )}
+      {hint && <div className={`live-hint ${hint.side}`}>{hint.text}</div>}
       {listening && (
         <div className="live-listening">
           <strong>🎧 Listening</strong>
@@ -435,6 +606,11 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
           <button
             className={atLive ? 'live-badge live-go' : 'primary-btn live-go'}
             onClick={() => {
+              if (goingLive) return;
+              // Instant feedback: the switch can take a second or two (the listening player reloads at the live end).
+              setGoingLive(true);
+              setTimeout(() => setGoingLive(false), 2500);
+              posRef.current = liveAt();
               if (listeningRef.current) {
                 listenFromRef.current?.(liveAt());
                 return;
@@ -447,7 +623,7 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
             }}
             disabled={atLive}
           >
-            {atLive ? 'LIVE' : 'Back to LIVE'}
+            {goingLive ? 'Going live…' : atLive ? 'LIVE' : 'Back to LIVE'}
           </button>
         )}
         {dvr && (
