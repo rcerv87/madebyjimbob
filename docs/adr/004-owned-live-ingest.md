@@ -94,12 +94,12 @@ bills (Cloudflare → R2 → Metrics shows the operation counts).
 | Streaming server (Hetzner CPX31, $0.118/h, on only while streaming + 30 min) | ~$15/month incl. fixed IP and saved image | streamed hours |
 | R2 storage (recordings kept 14 days, ~4.7 GB per streamed hour) | ~$3–4/month | streamed hours |
 | R2 writes (Owncast 1-second pieces + playlists, recorder 2-second segments + playlists: ~4–5 million a month; 1 million free, then $4.50/million) | ~$15/month | streamed hours |
-| R2 reads while watching live (each viewer reads the playlist every second, and each 1-second piece unless Cloudflare caches it; 10 million a month free, then $0.36/million) | ~$1.30–2.60 per 1,000 viewer-hours past the free ~1,400–2,800 viewer-hours | viewers × hours |
+| R2 reads while watching live (each viewer reads the playlist every second; pieces come from Cloudflare's cache since 2026-10-03; 10 million a month free, then $0.36/million) | ~$1.30 per 1,000 viewer-hours past the free ~2,800 viewer-hours (~$40/month at 300 viewers per stream) | viewers × hours |
 | B2 archive (all three qualities + audio, ~4.7 GB per streamed hour, $6/TB-month) | starts ~$3, then +~$3/month for every month of streaming | streamed hours, forever |
 
 Two changes keep this flat (MBJ-311, MBJ-312):
-- **Watching:** cache video pieces at Cloudflare (a free Cache Rule on `live.madebyjimbob.app`, `.ts` files; set up
-  2026-10-03 but not yet taking effect) and serve playlists so Cloudflare can hold them for a second. Then reads stop
-  growing with viewers: a 5-hour show at 1,000 viewers drops from ~$7–13 to cents.
+- **Watching:** video pieces are cached at Cloudflare (a free Cache Rule on `live.madebyjimbob.app`, `.ts` files; on
+  since 2026-10-03, `MISS` then `HIT`). Left: serve playlists so Cloudflare can hold them for a second. Then reads stop
+  growing with viewers: a 5-hour show at 1,000 viewers drops from ~$6.50 to cents.
 - **Archive:** keep 1080p only for recent streams (e.g. 30 days) and 720p + 360p + audio after that (~1.6 GB per hour):
   the archive then grows ~$1/month per month instead of ~$3.
