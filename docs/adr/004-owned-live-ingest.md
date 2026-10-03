@@ -95,7 +95,7 @@ bills (Cloudflare → R2 → Metrics shows the operation counts).
 | R2 storage (recordings kept 14 days, ~4.7 GB per streamed hour) | ~$3–4/month | streamed hours |
 | R2 writes (Owncast 1-second pieces + playlists, recorder 2-second segments + playlists: ~4–5 million a month; 1 million free, then $4.50/million) | ~$15/month | streamed hours |
 | R2 reads while watching live (each viewer reads the playlist every second; pieces come from Cloudflare's cache since 2026-10-03; 10 million a month free, then $0.36/million) | ~$1.30 per 1,000 viewer-hours past the free ~2,800 viewer-hours (~$40/month at 300 viewers per stream) | viewers × hours |
-| B2 archive (all three qualities + audio, ~4.7 GB per streamed hour, $6/TB-month) | starts ~$3, then +~$3/month for every month of streaming | streamed hours, forever |
+| Archive (all three qualities + audio, ~4.7 GB per streamed hour; on R2 at $15/TB-month since 2026-10-03, was B2 at $6) | +~$8/month for every month of streaming (+~$2.60 with MBJ-312) | streamed hours, forever |
 
 Two changes keep this flat (MBJ-311, MBJ-312):
 - **Watching:** video pieces are cached at Cloudflare (a free Cache Rule on `live.madebyjimbob.app`, `.ts` files; on

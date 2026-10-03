@@ -21,8 +21,8 @@ Keep it current: when a new service or setting is added, add it here.
 | Service | Holds | Owner now | Settings | Effort to move |
 |---|---|---|---|---|
 | **GoDaddy** | Domain `madebyjimbob.app` (registration only) | Ruben | none (nameservers point to Cloudflare) | Easy |
-| **Cloudflare** | DNS for `madebyjimbob.app` (zone on the free plan), including `live.madebyjimbob.app` (the R2 bucket's custom domain) and the Cache Rule "Live video pieces" (`.ts` on `live.`); recordings under `DVR_PREFIX` (`dvr`); **R2** bucket `madebyjimbob-live` (live streams, recordings for 14 days, replays); **Stream** (imported videos) | Ruben | `R2_*`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_STREAM_CUSTOMER_CODE` | Medium (data copy) |
-| **Backblaze B2** | Archive of every live stream (1080p, 720p, 360p, audio; ~4.7 GB per streamed hour, so ~0.5 TB more each month at ~110 hours) and later the library; beta bucket `Jimbob-beta` (US East, `s3.us-east-005.backblazeb2.com`) | Ruben during beta | `B2_ENDPOINT`, `B2_BUCKET`, `B2_KEY_ID`, `B2_APPLICATION_KEY` | Medium (data copy) |
+| **Cloudflare** | DNS for `madebyjimbob.app` (zone on the free plan), including `live.madebyjimbob.app` (the R2 bucket's custom domain) and the Cache Rule "Live video pieces" (`.ts` and `.m3u8` on `live.`); recordings under `DVR_PREFIX` (`dvr`); **R2** bucket `madebyjimbob-live` (live streams, every recording and replay kept, and the library once imported: ~0.5 TB more each month of streaming); **Stream** (imported videos) | Ruben | `R2_*`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_STREAM_CUSTOMER_CODE` | Medium (data copy) |
+| **Backblaze B2** | Development only since 2026-10-03 (production keeps everything on R2); Ruben's bucket `Jimbob-beta` (US East, `s3.us-east-005.backblazeb2.com`) | Ruben (stays his) | `B2_ENDPOINT`, `B2_BUCKET`, `B2_KEY_ID`, `B2_APPLICATION_KEY` | Medium (data copy) |
 | **Render** | The site (web service `madebyjimbob`) and the **Postgres** database `madebyjimbob-db` (accounts, chat, comments, videos, settings) | Ruben | all of the below; `DATABASE_URL` comes from Render | Medium |
 | **Hetzner** | Streaming server, created per stream and deleted after; saved server image; fixed IP | Ruben (project `MadeByJimBob`) | `HETZNER_API_TOKEN` | Easy (nothing stored) |
 | **Resend** | Account email sending for `madebyjimbob.app` | Ruben (shared Pro plan) | `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `RESEND_WEBHOOK_SECRET` | Easy |
@@ -78,8 +78,8 @@ Easiest and least risky first; each step is independent unless noted.
 2. Replace `YOUTUBE_API_KEY` (Render, and the import helper's `.env`). Delete the old key.
 
 ### 4. Backblaze B2 (archive)
-**Move it early:** the archive grows about half a terabyte a month while JimBob streams on the site, so the copy
-gets longer (and B2's free download allowance tighter) the longer it waits.
+**Not needed (2026-10-03):** production keeps everything on R2, and B2 stays Ruben's for development. The steps below
+are kept in case a second copy is ever wanted.
 1. JimBob creates a Backblaze account and a private bucket (e.g. `madebyjimbob-archive`, lifecycle "Keep only the last
    version"), and a regular application key for that bucket only (Read and Write). Not the master key: B2's S3 API
    refuses it. A key ID is 25 characters; the secret starts with `K`.
@@ -91,7 +91,8 @@ gets longer (and B2's free download allowance tighter) the longer it waits.
 4. Keep Ruben's bucket a week, then delete it.
 
 ### 5. Cloudflare R2 and Stream
-**R2 (live recordings, replays):**
+**R2 (live recordings, replays, the library):** move it early. It grows about half a terabyte every month JimBob
+streams on the site, so the copy takes longer the longer it waits (R2 doesn't charge for the downloads).
 1. JimBob's Cloudflare account: create bucket `madebyjimbob-live`, the same CORS policy (site origins, GET/HEAD), and
    an API token with Object Read & Write on that bucket only.
 2. Copy: `rclone sync ruben-r2:madebyjimbob-live jimbob-r2:madebyjimbob-live --progress` (R2 doesn't charge for

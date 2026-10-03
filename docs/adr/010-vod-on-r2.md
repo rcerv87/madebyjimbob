@@ -67,3 +67,17 @@ Prices are estimates as of this date; check current Cloudflare pricing before de
   ~300 members. Make listening the easy choice: a Listen button, switching to audio automatically when the screen
   locks or the app is in the background, and audio downloads.
 - **Price check (2026-10-01):** B2 is $6.95/TB/month (pay as you go), so ~2.2 TB ≈ $15/month. B2 Overdrive (unlimited free egress) needs a multi-petabyte commitment, so it doesn't apply.
+
+## Update 2026-10-03: decided, everything on R2
+
+Ruben and JimBob agreed to start everything on Cloudflare R2: live recordings, replays, and the imported library. One
+storage that is free to watch, served through our own address (`live.madebyjimbob.app`, cached by Cloudflare), and no
+move between providers later. Backblaze B2 stays in Ruben's account for development only; production has no B2
+settings, so the recorder writes R2 only and replays never move (the archive code remains, unused in production).
+
+Costs on R2 ($15 per TB-month; reads past 10 million a month $0.36 per million; data out free):
+- **Library:** ~2.2 TB at 720p + 360p + audio ≈ **$33/month**.
+- **Live archive:** every stream adds ~4.7 GB per streamed hour (1080p, 720p, 360p, audio). At ~110 hours a month that is
+  ~0.5 TB, **about +$8/month for every month of streaming** (~$93/month after a year). Keeping 1080p only for recent
+  streams (MBJ-312) cuts it to ~1.6 GB per hour, about +$2.60/month per month (~$32/month after a year).
+- Backups: JimBob's originals on a home drive, plus YouTube's own copy.
