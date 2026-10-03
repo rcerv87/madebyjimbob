@@ -79,3 +79,7 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
   on-failure` (nothing starts at boot), images are labeled `mbj=live-image-v2`, and the site deletes v1 images. The
   recorder starts a new recording if Owncast's qualities change, and only treats a renumbered piece as a rewrite if its
   timestamp falls within the last minute already recorded.
+
+## Update 2026-10-03: 1,000-viewer load test
+
+1,000 simulated viewers on /live for ~10 minutes, all watching video through `live.madebyjimbob.app` (a third at 720p, the rest 360p), with 5 bot accounts (`loadbot_1`–`5`) plus `chat_tester` chatting ~2 messages a second. 1,000/1,000 chat sockets, none dropped; 925 chat messages each reached every connected viewer within ~0.2 s; the bots' 744 posts all went through. Video: ~1.2 Gbps delivered by R2/Cloudflare, ~601,000 one-second pieces, typical piece ~0.25–0.44 s (p95), only 0.1% slower than real time (no buffering). About 7% of piece requests got 404 (a piece listed before it had finished uploading); players retry, but it's worth a look. Status checks (`/api/live`, every viewer every 10 s): 60,317, 1 timeout, but p95 rose from ~0.4 s to ~2.7 s, so `/api/live` now shares one answer for 2 s. Video pieces aren't cached by Cloudflare yet (`DYNAMIC`); a cache rule for `.ts` would take that load off R2. Hetzner's account limits (shared cores, Primary IPs) allowed only 4 load machines next to the stream server.

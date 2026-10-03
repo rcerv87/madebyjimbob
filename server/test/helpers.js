@@ -24,6 +24,7 @@ process.env.ADMIN_EMAILS = 'test_admin@test.example,jimbob@test.example';
 process.env.BETTER_AUTH_SECRET = 'test-secret-that-is-at-least-32-characters-long';
 process.env.PASSWORD_LEAK_CHECK = 'off'; // no calls to Have I Been Pwned from tests
 process.env.AUTH_RATE_LIMIT = 'off';
+process.env.LIVE_STATUS_TTL_MS = '0'; // tests change the stream's state between asks
 process.env.BANNED_WORDS = 'badword';
 process.env.LOG_LEVEL = process.env.LOG_LEVEL_TEST || 'silent';
 // Push off in tests (no real pushes), whatever the local .env has.

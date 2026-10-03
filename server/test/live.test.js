@@ -510,3 +510,14 @@ describe('Go Live (owned live, ADR-004)', () => {
     assert.deepEqual(hetzner.servers, [], 'stray live server removed');
   });
 });
+
+describe('live status under load', () => {
+  test('one lookup is shared by everyone asking within 2 seconds', async () => {
+    process.env.LIVE_STATUS_TTL_MS = '2000';
+    const { liveStatus } = await import(`../src/live.js?shared=${Date.now()}`);
+    process.env.LIVE_STATUS_TTL_MS = '0';
+    const [a, b] = [liveStatus(), liveStatus()];
+    assert.equal(a, b, 'the same answer, not two lookups');
+    await a.catch(() => {});
+  });
+});

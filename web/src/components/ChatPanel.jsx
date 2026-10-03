@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MemberBadge from './MemberBadge.jsx';
 import NameCard from './NameCard.jsx';
 import ChatHelp from './ChatHelp.jsx';
+import ChatOptions from './ChatOptions.jsx';
 import { favoriteMap } from '../favorites.js';
 import { useSearchParams } from 'react-router-dom';
 import { api, formatTime } from '../api.js';
@@ -71,6 +72,13 @@ export default function ChatPanel({
   const pinned = useRef(true);
   const lastId = useRef(0);
   const [showJump, setShowJump] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const [touching, setTouching] = useState(false);
+  const touchTimer = useRef(0);
+  const [menus, setMenus] = useState(0);
+  const onMenu = useCallback((open) => setMenus((n) => Math.max(0, n + (open ? 1 : -1))), []);
+  const frozenUpTo = useRef(null);
+  useEffect(() => () => clearTimeout(touchTimer.current), []);
   const [text, setText] = useState('');
   const [replyTarget, setReplyTarget] = useState(null);
   // From a person's menu: show only their messages, and highlight people in a color (kept on this device).
@@ -217,7 +225,14 @@ export default function ChatPanel({
 
   // Everything up to the playhead. Following playback is a binary search, and the list only changes
   // (and re-renders) when a message reaches the playhead.
-  const upTo = countUpTo(items, timeMs, itemTime);
+  // The chat holds still while you're using it (Twitch-style): mouse over it, a finger on it (and 3 s after), a
+  // person's menu open, or scrolled up. New messages wait behind "N new messages".
+  const liveUpTo = countUpTo(items, timeMs, itemTime);
+  const paused = hovering || touching || menus > 0 || showJump;
+  if (!paused) frozenUpTo.current = null;
+  else if (frozenUpTo.current === null || liveUpTo < frozenUpTo.current) frozenUpTo.current = liveUpTo;
+  const upTo = paused ? frozenUpTo.current : liveUpTo;
+  const waiting = liveUpTo - upTo;
   const hiddenCount = countUpTo(hiddenAt, timeMs);
   const visible = useMemo(() => items.slice(Math.max(0, upTo - VISIBLE), upTo), [items, upTo]);
 
@@ -236,6 +251,8 @@ export default function ChatPanel({
     const el = listRef.current;
     pinned.current = true;
     setShowJump(false);
+    setHovering(false);
+    setTouching(false);
     if (el) el.scrollTop = el.scrollHeight;
   };
 
@@ -274,6 +291,21 @@ export default function ChatPanel({
         return next;
       });
     },
+    [videoId],
+  );
+
+  const clearHighlight = useCallback(
+    (color) =>
+      setHighlights((cur) => {
+        const next = { ...cur };
+        delete next[color];
+        try {
+          localStorage.setItem(HIGHLIGHT_KEY, JSON.stringify({ videoId: String(videoId), byColor: next }));
+        } catch {
+          // private window
+        }
+        return next;
+      }),
     [videoId],
   );
 
@@ -408,6 +440,7 @@ export default function ChatPanel({
             >
               ?
             </button>
+            <ChatOptions session={session} highlights={highlights} onClearHighlight={clearHighlight} />
           </h2>
           <span className="muted small">
             {live ? 'Saved with the replay' : `Synced to ${formatTime(timeMs / 1000)}`}
@@ -433,7 +466,19 @@ export default function ChatPanel({
           </button>
         </div>
       )}
-      <div className="chat-body">
+      <div
+        className="chat-body"
+        onPointerEnter={(e) => e.pointerType === 'mouse' && setHovering(true)}
+        onPointerLeave={(e) => e.pointerType === 'mouse' && setHovering(false)}
+        onTouchStart={() => {
+          clearTimeout(touchTimer.current);
+          setTouching(true);
+        }}
+        onTouchEnd={() => {
+          clearTimeout(touchTimer.current);
+          touchTimer.current = setTimeout(() => setTouching(false), 3000);
+        }}
+      >
         <ol className="chat-list" ref={listRef} onScroll={onScroll} aria-live="polite">
           {visible.length === 0 && (
             <li className="chat-empty muted">
@@ -460,6 +505,7 @@ export default function ChatPanel({
                 color={colorOf[whoOf(item.m)] || (item.m.profile && moderation?.favorites.get(whoOf(item.m)))}
                 takenBy={takenBy}
                 onHighlight={highlight}
+                onMenu={onMenu}
                 onQuote={showOriginal}
               />
             ) : (
@@ -472,9 +518,9 @@ export default function ChatPanel({
             +{hiddenCount} from later viewers
           </button>
         )}
-        {showJump && (
+        {(showJump || waiting > 0) && (
           <button type="button" className="jump-latest" onClick={jumpToLatest}>
-            Jump to latest
+            {waiting > 0 ? `↓ ${waiting} new message${waiting === 1 ? '' : 's'}` : 'Jump to latest'}
           </button>
         )}
       </div>
@@ -572,6 +618,7 @@ const ChatMessage = memo(function ChatMessage({
   chatColor,
   takenBy,
   onHighlight,
+  onMenu,
 }) {
   const mentionsMe = me && m.mentions?.some((n) => me.split(',').includes(n));
   const replay = m.postedLive === false;
@@ -617,6 +664,7 @@ const ChatMessage = memo(function ChatMessage({
         { label: only ? 'Show everyone' : 'Show only their messages', onClick: () => onShowOnly(m) },
       ]}
       highlight={{ color: chatColor, takenBy, onPick: (c) => onHighlight(m, c) }}
+      onOpenChange={onMenu}
     >
       <Avatar m={m} />
     </NameCard>

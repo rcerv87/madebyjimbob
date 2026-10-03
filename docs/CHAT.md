@@ -70,7 +70,9 @@ Hidden messages are never deleted from the database — `hidden = true` keeps th
   names from the video's chat and comments. Tap a picture for the menu: Reply, Show only their messages, View
   profile, highlight color (5 colors, one person each, per chat), Favorite (Premium, 10 colors, every chat and
   comment section, saved to the account; MBJ-220), Mute/Block/Report (MBJ-219). The **?** in the chat header
-  explains all of it.
+  explains all of it; **⋯** lists muted/blocked people (Unmute / Unblock), this chat's highlights, and favorites.
+- **Holds still while you use it** (Twitch-style): mouse over the chat, a finger on it (and 3 s after), a menu open,
+  or scrolled up; new messages wait behind "↓ N new messages".
   Notifications (bell, unread count, in-player bubble) are the next step (MBJ-202).
 
 ## Tipped messages

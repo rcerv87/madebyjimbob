@@ -159,10 +159,27 @@ async function withRewind(status, server = null) {
   };
 }
 
-export async function liveStatus() {
+// Every viewer asks every 10 s, so the answer is shared for 2 s (one lookup for everyone, not one each). At 1,000
+// viewers that's ~100 requests a second; the 2026-10-03 load test saw p95 climb to 2.7 s without this.
+const STATUS_TTL_MS = Number(process.env.LIVE_STATUS_TTL_MS ?? 2000); // 0 in tests
+let shared = null; // { at, promise }
+
+async function freshLiveStatus() {
   const base = await owncastBase();
   if (!base) return { online: false };
   return withRewind(await owncastStatus(base), fixedBase() ? null : await activeServer());
+}
+
+export function liveStatus() {
+  if (!STATUS_TTL_MS) return freshLiveStatus();
+  if (shared && Date.now() - shared.at < STATUS_TTL_MS) return shared.promise;
+  const promise = freshLiveStatus();
+  shared = { at: Date.now(), promise };
+  // A failed lookup isn't shared.
+  promise.catch(() => {
+    if (shared?.promise === promise) shared = null;
+  });
+  return promise;
 }
 
 const hoursBetween = (a, b) => (new Date(b || Date.now()) - new Date(a)) / 3_600_000;

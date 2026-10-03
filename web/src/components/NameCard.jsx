@@ -24,6 +24,7 @@ export default function NameCard({
   menu = false,
   children,
   highlight, // { color, takenBy: { color: name }, onPick(color | null) }: chat's highlight colors
+  onOpenChange, // told when the card opens and closes (chat holds still meanwhile)
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -55,6 +56,12 @@ export default function NameCard({
       setPos(null);
     };
   }, [open, note]);
+
+  useEffect(() => {
+    if (!open || !onOpenChange) return undefined;
+    onOpenChange(true);
+    return () => onOpenChange(false);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     if (!open) return undefined;
