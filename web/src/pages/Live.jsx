@@ -56,6 +56,23 @@ const dbg = (...a) => {
 
 function LivePlayer({ src, dvr, clock, seekRef }) {
   const ref = useRef(null);
+  // Full screen is the whole player (picture, timeline, controls), so rewinding works there too; the video alone
+  // showed the browser's own controls, which only reach the live feed's last minutes.
+  const playerRef = useRef(null);
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    const onChange = () =>
+      setFull(Boolean(playerRef.current) && document.fullscreenElement === playerRef.current);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+  const toggleFull = () => {
+    if (document.fullscreenElement) return document.exitFullscreen?.();
+    const box = playerRef.current;
+    if (box?.requestFullscreen) return box.requestFullscreen().catch(() => {});
+    // iPhone: only the video itself can go full screen (with Safari's own controls).
+    ref.current?.webkitEnterFullscreen?.();
+  };
   const audioRef = useRef(null);
   const audioUrl = useRef(null);
   const audioCleanup = useRef(null);
@@ -491,7 +508,7 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
   const now = onLiveFeed ? liveAt() - liveBehind : posRef.current;
   nowRef.current = now;
   return (
-    <div className="live-player">
+    <div className="live-player" ref={playerRef}>
       <video
         ref={ref}
         playsInline
@@ -657,10 +674,10 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
         {!listening && (
           <button
             className="text-btn"
-            onClick={() => ref.current?.requestFullscreen?.()}
-            aria-label="Full screen"
+            onClick={toggleFull}
+            aria-label={full ? 'Exit full screen' : 'Full screen'}
           >
-            ⛶
+            {full ? '✕' : '⛶'}
           </button>
         )}
       </div>

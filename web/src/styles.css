@@ -3965,3 +3965,34 @@ a.text-btn {
   display: inline-block;
   vertical-align: middle;
 }
+
+/* /live full screen: the whole player (picture, timeline, controls), the picture filling what the controls leave. */
+.live-player:fullscreen {
+  margin: 0;
+  padding: 0 16px 12px;
+  background: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+.live-player:fullscreen video {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: calc(100% - 120px);
+  width: calc(100% + 32px);
+  margin: 0 -16px;
+  aspect-ratio: auto;
+  object-fit: contain;
+  border-radius: 0;
+}
+.live-player:fullscreen .live-gestures {
+  aspect-ratio: auto;
+  height: calc(100% - 120px);
+}
+.live-player:fullscreen .live-timeline,
+.live-player:fullscreen .live-controls {
+  flex: none;
+}
+.live-player:fullscreen .live-controls .text-btn {
+  color: #fff;
+}
