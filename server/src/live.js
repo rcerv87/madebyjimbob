@@ -640,6 +640,8 @@ export function startLiveJob() {
 
 // Passes Owncast's video playlists and segments through (/live/hls/...). Fine for small audiences; viewers get
 // these from R2 before launch.
+const START_WAIT_MS = 30_000;
+
 export async function proxyHls(req, res) {
   const base = await owncastBase();
   if (!base) return res.status(404).end();
@@ -653,7 +655,15 @@ export async function proxyHls(req, res) {
     // Only when Owncast is really uploading there; otherwise R2 could still hold an old, finished stream.
     if (text && text.includes('/hls/0/stream.m3u8') && /^https?:\/\//m.test(text)) {
       // With a recorder that publishes them, each quality plays from its cacheable copy (MBJ-311); else Owncast's own.
-      const edge = (await liveStatus().catch(() => null))?.dvr?.edge;
+      const status = await liveStatus().catch(() => null);
+      const edge = status?.dvr?.edge;
+      // The first seconds of a stream, before the recorder has published its copies: players wait (they retry every
+      // few seconds) instead of starting on Owncast's playlists, which list pieces before they're uploaded and which a
+      // player keeps for the whole stream. Past START_WAIT_MS without them, Owncast's own, so a stream always plays.
+      if (!edge && Date.now() - Date.parse(status?.startedAt || 0) < START_WAIT_MS) {
+        res.set('Retry-After', '2');
+        return res.status(503).end();
+      }
       const list = text.replace(/^\S*?(\d+)\/stream\.m3u8$/gm, (_, n) =>
         edge ? `${storage.publicUrl}/${DVR()}/live/${n}.m3u8` : `${storage.publicUrl}/hls/${n}/stream.m3u8`,
       );
