@@ -5,6 +5,7 @@
 // Viewers get the video through /live/hls on this site for now; R2 delivery replaces that before big audiences.
 import crypto from 'crypto';
 import fs from 'fs';
+import zlib from 'zlib';
 import { r2Put, s3Request, s3List, presignGet } from '../live-recorder/r2put.mjs';
 import { pool } from './db.js';
 import { logger } from './logger.js';
@@ -252,13 +253,17 @@ export async function studioLive() {
 // there, so only the old containers and data are cleared (each stream starts fresh). With R2, the recorder (MBJ-310)
 // runs next to Owncast and copies every piece of the stream to R2.
 const INSTALL_DOCKER = 'package_update: true\npackages: [docker.io]\n';
+// Compressed: Hetzner refuses setups over 32 KB, and the recorder's files alone are more than that (cloud-init
+// unpacks gz+b64 itself).
 const recorderFile = (name) =>
-  fs.readFileSync(new URL(`../live-recorder/${name}`, import.meta.url)).toString('base64');
+  zlib
+    .gzipSync(fs.readFileSync(new URL(`../live-recorder/${name}`, import.meta.url)), { level: 9 })
+    .toString('base64');
 function recorderSetup(serverId) {
   const storage = r2();
   if (!storage) return { files: '', run: '' };
   const files = ['r2put.mjs', 'edge.mjs', 'recorder.mjs']
-    .map((f) => `  - path: /opt/recorder/${f}\n    encoding: b64\n    content: ${recorderFile(f)}\n`)
+    .map((f) => `  - path: /opt/recorder/${f}\n    encoding: gz+b64\n    content: ${recorderFile(f)}\n`)
     .join('');
   const archive = b2();
   const env = {

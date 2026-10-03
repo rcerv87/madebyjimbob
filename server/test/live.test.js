@@ -365,6 +365,14 @@ describe('Go Live (owned live, ADR-004)', () => {
       assert.match(list, /^https:\/\/pub-test\.r2\.dev\/dvr\/live\/0\.m3u8$/m);
       assert.match(list, /^https:\/\/pub-test\.r2\.dev\/dvr\/live\/1\.m3u8$/m);
       assert.match(hetzner.created.at(-1).user_data, /path: \/opt\/recorder\/edge\.mjs/);
+      // Hetzner refuses setups over 32 KB: the recorder's files go compressed, and unpack to the real files.
+      const setup = hetzner.created.at(-1).user_data;
+      assert.ok(Buffer.byteLength(setup) < 32 * 1024, `setup is ${Buffer.byteLength(setup)} bytes`);
+      const packed = setup.match(
+        /path: \/opt\/recorder\/recorder\.mjs\n {4}encoding: gz\+b64\n {4}content: (\S+)/,
+      )[1];
+      const { gunzipSync } = await import('zlib');
+      assert.match(gunzipSync(Buffer.from(packed, 'base64')).toString(), /The live recorder/);
       await call('/studio/live/stop', { method: 'POST', token: admin });
     } finally {
       process.env.R2_ACCOUNT_ID = '';
