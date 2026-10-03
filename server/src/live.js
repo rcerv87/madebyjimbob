@@ -275,6 +275,8 @@ function recorderSetup(serverId) {
     R2_BUCKET: storage.bucket,
     DVR_PREFIX: DVR(),
     LIVE_SERVER_ID: String(serverId ?? ''),
+    // Live playlist copies (MBJ-311) only when switched on; otherwise the recorder doesn't spend uploads on them.
+    ...(process.env.LIVE_EDGE_PLAYLISTS === 'on' && { LIVE_EDGE_PLAYLISTS: 'on' }),
     // The recorder writes the archive copy to B2 as it records.
     ...(archive && {
       B2_ENDPOINT: archive.endpoint,

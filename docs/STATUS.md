@@ -31,6 +31,11 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   `R2_PUBLIC_URL` points at it (Render and `.env`); the 1,000-viewer load test passed on it. Left:
   1. **Cache Rule on (2026-10-03):** "Live video pieces" (hostname `live.madebyjimbob.app`, file extension `ts`,
      Eligible for cache): pieces answer `MISS` then `HIT` (check with a GET; HEAD requests always say `DYNAMIC`).
+     **Live playlist copies are OFF (2026-10-03 evening):** in the first real stream the recorder's upload checks (up to
+     ~36 a second) slowed its own uploads, the copies fell behind and players stalled; and Cloudflare's 4-hour Browser
+     Cache TTL had turned their 1-second cache into 4 hours. Players use Owncast's playlists again (verified: smooth,
+     no errors), and the recorder only builds copies with `LIVE_EDGE_PLAYLISTS=on` (Render). Before turning them back
+     on (MBJ-311): one check per new piece, short timeouts, and a real stream through a local Owncast first.
      **Also set (2026-10-03):** in that rule, Edge TTL → "Use cache-control header if present, bypass cache if not"
      (R2's 404s have no header, so a piece asked for too early is never remembered), and Caching → Configuration →
      Browser Cache TTL → "Respect Existing Headers" (the 4-hour default was stamped on 404s too). The site also holds

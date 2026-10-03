@@ -858,6 +858,7 @@ Acceptance criteria:
 - [ ] Live playlists are cacheable for about a second, so R2 sees roughly one read per quality per second per Cloudflare location, however many watch
 - [ ] Load test again: R2 read count stays roughly flat from 100 to 1,000 viewers; live delay unchanged (~4-5 s)
 - [ ] With pieces cached, each viewer still costs ~$1.30 per 1,000 viewer-hours in playlist reads past the free tier (2026-10-03 estimate)
+- [ ] First try (2026-10-03) switched off after it stalled a real stream: limit the recorder to one check per new piece with short timeouts, and test with a real stream through a local Owncast before LIVE_EDGE_PLAYLISTS=on
 
 ### MBJ-313 — Stream latency modes: Normal and Low latency
 
