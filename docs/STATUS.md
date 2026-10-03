@@ -36,6 +36,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
      Cache TTL had turned their 1-second cache into 4 hours. Players use Owncast's playlists again (verified: smooth,
      no errors), and the recorder only builds copies with `LIVE_EDGE_PLAYLISTS=on` (Render). Before turning them back
      on (MBJ-311): one check per new piece, short timeouts, and a real stream through a local Owncast first.
+     **Recorder blind after an Owncast restart (fixed 2026-10-03):** the recorder had only `/opt/owncast/hls` mounted;
+     Owncast deletes and recreates that folder when a stream restarts, and the mount kept showing the old, empty one
+     (8 s recorded, then nothing; no rewind controls on /live). It now mounts `/opt/owncast` with
+     `HLS_DIR=/owncast/hls`, and saves its log to `dvr/logs/<server>.log` every 30 s.
      **Also set (2026-10-03):** in that rule, Edge TTL → "Use cache-control header if present, bypass cache if not"
      (R2's 404s have no header, so a piece asked for too early is never remembered), and Caching → Configuration →
      Browser Cache TTL → "Respect Existing Headers" (the 4-hour default was stamped on 404s too). The site also holds

@@ -335,6 +335,8 @@ describe('Go Live (owned live, ADR-004)', () => {
       await call('/studio/live/start', { method: 'POST', token: admin });
       assert.match(hetzner.created[0].user_data, /-e LIVE_SERVER_ID='\d+'/);
       assert.match(hetzner.created[0].user_data, /-e DVR_PREFIX='dvr'/);
+      // The recorder sees Owncast's data folder, so a recreated hls/ is picked up.
+      assert.match(hetzner.created[0].user_data, /-v \/opt\/owncast:\/owncast:ro -e HLS_DIR=\/owncast\/hls/);
       assert.doesNotMatch(
         hetzner.created[0].user_data,
         /LIVE_EDGE_PLAYLISTS/,
