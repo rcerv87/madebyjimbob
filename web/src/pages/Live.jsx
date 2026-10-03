@@ -9,6 +9,9 @@ import ChatPanel from '../components/ChatPanel.jsx';
 
 // How far behind live the live feed itself runs (seconds); jumps closer than this to live just play live.
 const LIVE_EDGE_S = 8;
+// Rewinds up to this far use the live feed's own buffer (the recording runs ~10–15 s behind live).
+const SHORT_REWIND_S = 25;
+const SPEEDS = [1, 1.25, 1.5, 2];
 // About how far the live feed runs behind the stream (seconds), for stamping live chat.
 const LIVE_DELAY_S = 5;
 
@@ -45,6 +48,8 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
   const audioRef = useRef(null);
   const audioUrl = useRef(null);
   const audioCleanup = useRef(null);
+  const listenFromRef = useRef(null);
+  const listenMode = useRef('snapshot');
   const posRef = useRef(0); // where this viewer is in the stream, seconds from the start
   const lockListen = useRef(false);
   const hiddenAt = useRef(0);
@@ -53,14 +58,38 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
   const [rewindTo, setRewindTo] = useState(null); // seconds from the start, or null = live
   const [attachKey, setAttachKey] = useState(0);
   const [listening, setListening] = useState(false);
+  // Seconds behind live while rewound a little on the live feed itself (0 = live).
+  const [liveBehind, setLiveBehindState] = useState(0);
+  const liveBehindRef = useRef(0);
+  const setLiveBehind = (v) => {
+    liveBehindRef.current = v;
+    setLiveBehindState(v);
+  };
+  const liveCtl = useRef(null);
+  const pendingBehind = useRef(0);
   // While dragging the timeline: where the thumb is (seconds), so it follows the finger and seeks once on release.
   const [drag, setDrag] = useState(null);
   // Mute (both players), e.g. when watching on the computer that's streaming, where OBS would capture the sound.
   const [muted, setMuted] = useState(false);
+  // Catch-up speed while behind live (rewound or listening); at live it's always 1×.
+  const [speed, setSpeed] = useState(1);
   useEffect(() => {
     if (ref.current) ref.current.muted = muted;
     if (audioRef.current) audioRef.current.muted = muted;
   }, [muted, listening, rewindTo, attachKey]);
+  // Applied on every switch (a new source resets it), and every second so reaching live drops it to 1×.
+  const rateRef = useRef(1);
+  useEffect(() => {
+    const t = setInterval(() => {
+      for (const el of [ref.current, audioRef.current]) {
+        if (el && el.playbackRate !== rateRef.current) {
+          el.defaultPlaybackRate = rateRef.current;
+          el.playbackRate = rateRef.current;
+        }
+      }
+    }, 500);
+    return () => clearInterval(t);
+  }, []);
   const listeningRef = useRef(false);
   const [, tick] = useState(0);
   // The recording skips the time OBS was away (gapS), so live on the recording is the clock minus that.
@@ -84,7 +113,20 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
         }
       });
     if (!src) return undefined;
-    return attachLive(el, src, play);
+    liveBehindRef.current = 0;
+    setLiveBehindState(0);
+    const cleanup = attachLive(el, src, () => {
+      play();
+      // Came from the recording to a spot a few seconds behind live: step back once the live feed has some buffer.
+      const behind = pendingBehind.current;
+      pendingBehind.current = 0;
+      if (behind)
+        setTimeout(() => {
+          if (cleanup.control?.seekBy(behind)) setLiveBehind(behind);
+        }, 1500);
+    });
+    liveCtl.current = cleanup.control || null;
+    return cleanup;
     // Re-attach when the mode flips or after listening, not on every seek inside the recording.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, dvr?.url, rewindTo === null, attachKey, listening]);
@@ -105,8 +147,16 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
       const video = ref.current;
       if (listeningRef.current) {
         if (audio && !audio.paused && dvr) posRef.current = audio.currentTime;
+      } else if (video && rewindTo === null && liveBehindRef.current > 0) {
+        // A little behind on the live feed: pausing falls further behind, faster speeds catch up; caught up = live.
+        const next = liveBehindRef.current + (video.paused ? 0.25 : (1 - video.playbackRate) * 0.25);
+        if (next < 1.5) {
+          liveCtl.current?.toLive();
+          setLiveBehind(0);
+        } else setLiveBehind(next);
+        posRef.current = liveAt() - liveBehindRef.current;
       } else if (video && !video.paused) {
-        posRef.current = rewindTo === null ? liveAt() : video.currentTime;
+        posRef.current = rewindTo === null ? liveAt() - liveBehindRef.current : video.currentTime;
       }
       clock?.set(Math.max(0, Math.round((posRef.current * 1000) / 250) * 250));
     }, 250);
@@ -135,13 +185,25 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
     const play = () => audio.play().catch(() => {});
     // The sound alone if the recorder makes it; otherwise the recording, or the live feed, played as sound. At the end of
     // what was recorded when it loaded, it reloads from there, so listening keeps going.
+    // Within a few seconds of live it follows the recording's growing end; further back it plays a snapshot from that
+    // spot, which hands over to following when it reaches the end.
     const listenFrom = (from) => {
       audioCleanup.current?.();
-      audioCleanup.current = attachRecording(audio, audioUrl.current || dvr.url, from, play, (end) => {
-        posRef.current = end;
-        listenFrom(end);
-      });
+      const follow = liveAt() - from < 6;
+      audioCleanup.current = attachRecording(
+        audio,
+        audioUrl.current || dvr.url,
+        from,
+        play,
+        (end) => {
+          posRef.current = end;
+          listenFrom(end);
+        },
+        { follow },
+      );
+      listenMode.current = follow ? 'follow' : 'snapshot';
     };
+    listenFromRef.current = listenFrom;
     if (dvr) listenFrom(at);
     else audioCleanup.current = attachLive(audio, src, play);
     listeningRef.current = true;
@@ -221,24 +283,49 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
 
   function seek(t) {
     if (!dvr) return;
-    const target = Math.max(0, Math.min(t, elapsed()));
+    const live = liveAt();
+    const target = Math.max(0, Math.min(t, live));
     posRef.current = target;
     if (listeningRef.current) {
       const audio = audioRef.current;
-      if (audio) audio.currentTime = target;
+      // Inside what's loaded (snapshot): just move. Otherwise (past the loaded end, or near live): reload from there.
+      const loaded = listenMode.current === 'snapshot' && audio && target < (audio.duration || 0) - 2;
+      if (loaded && live - target >= 6) audio.currentTime = target;
+      else listenFromRef.current?.(target);
       return;
     }
-    if (elapsed() - target < LIVE_EDGE_S) {
+    const behind = live - target;
+    // At live: back to the live edge.
+    if (behind < 1.5) {
       if (rewindTo !== null) setRewindTo(null);
+      else if (liveBehindRef.current) {
+        liveCtl.current?.toLive();
+        setLiveBehind(0);
+      }
       return;
     }
+    // A few seconds back ("what did he say?"): the live feed's own buffer, which the recording can't reach yet.
+    if (behind <= SHORT_REWIND_S) {
+      if (rewindTo === null) {
+        if (liveCtl.current?.seekBy(behind - liveBehindRef.current)) setLiveBehind(behind);
+        return;
+      }
+      pendingBehind.current = behind;
+      setRewindTo(null);
+      return;
+    }
+    // Further back: the recording.
+    setLiveBehind(0);
     if (rewindTo !== null && ref.current) ref.current.currentTime = target;
     else setRewindTo(target);
   }
 
   if (seekRef) seekRef.current = seek;
-  const atLive = !listening && rewindTo === null;
-  const now = atLive ? elapsed() : posRef.current;
+  rateRef.current = Math.max(1, Math.min(2, !listening && rewindTo === null && liveBehind < 1.5 ? 1 : speed));
+  const onLiveFeed = !listening && rewindTo === null;
+  const atLive = onLiveFeed && liveBehind < 1.5;
+  const rate = atLive ? 1 : speed;
+  const now = onLiveFeed ? liveAt() - liveBehind : posRef.current;
   return (
     <div className="live-player">
       <video
@@ -288,8 +375,8 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
             type="range"
             className="live-scrub"
             min={0}
-            max={Math.max(1, Math.round(elapsed()))}
-            value={Math.round(drag ?? Math.min(now, elapsed()))}
+            max={Math.max(1, Math.round(liveAt()))}
+            value={Math.round(drag ?? Math.min(now, liveAt()))}
             onChange={(e) => setDrag(Number(e.target.value))}
             onPointerUp={(e) => {
               seek(Number(e.currentTarget.value));
@@ -332,7 +419,7 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
               {drag !== null
                 ? `Go to ${hms(drag)} · ${hms(Math.max(0, liveAt() - drag))} behind`
                 : atLive
-                  ? hms(elapsed())
+                  ? hms(liveAt())
                   : `${hms(now)} · ${hms(Math.max(0, liveAt() - now))} behind`}
             </span>
           </>
@@ -349,15 +436,28 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
             className={atLive ? 'live-badge live-go' : 'primary-btn live-go'}
             onClick={() => {
               if (listeningRef.current) {
-                const audio = audioRef.current;
-                if (audio) audio.currentTime = Math.max(0, elapsed());
+                listenFromRef.current?.(liveAt());
                 return;
               }
-              setRewindTo(null);
+              if (rewindTo !== null) setRewindTo(null);
+              else {
+                liveCtl.current?.toLive();
+                setLiveBehind(0);
+              }
             }}
             disabled={atLive}
           >
             {atLive ? 'LIVE' : 'Back to LIVE'}
+          </button>
+        )}
+        {dvr && (
+          <button
+            className="text-btn"
+            onClick={() => setSpeed((v) => SPEEDS[(SPEEDS.indexOf(v) + 1) % SPEEDS.length])}
+            aria-label={`Playback speed ${speed}×`}
+            title={atLive ? 'Speed applies when you’re behind live' : 'Playback speed'}
+          >
+            {rate}×
           </button>
         )}
         <button

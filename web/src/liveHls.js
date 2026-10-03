@@ -33,11 +33,32 @@ export function attachLive(el, src, onReady) {
     hls.attachMedia(el);
   };
   start();
-  return () => {
+  const cleanup = () => {
     stopped = true;
     clearTimeout(timer);
     hls?.destroy();
   };
+  // Short rewinds stay on the live feed, inside what's already downloaded: step back `seconds` from where it's playing
+  // (false if that isn't buffered), with catching up to live switched off until toLive().
+  cleanup.control = {
+    seekBy(seconds) {
+      const to = el.currentTime - seconds;
+      const b = el.buffered;
+      const sk = el.seekable;
+      const earliest = Math.min(b.length ? b.start(0) : Infinity, sk.length ? sk.start(0) : Infinity);
+      if (!Number.isFinite(earliest) || to < earliest || to > el.currentTime) return false;
+      if (hls)
+        Object.assign(hls.config, { liveMaxLatencyDurationCount: Infinity, maxLiveSyncPlaybackRate: 1 });
+      el.currentTime = to;
+      return true;
+    },
+    toLive() {
+      if (!hls) return;
+      Object.assign(hls.config, { liveMaxLatencyDurationCount: 4, maxLiveSyncPlaybackRate: 1.1 });
+      if (hls.liveSyncPosition) el.currentTime = hls.liveSyncPosition;
+    },
+  };
+  return cleanup;
 }
 
 // Loads playlists with an end marker added, so a recording still in progress plays as a finished video.
@@ -63,7 +84,19 @@ class SnapshotLoader extends Hls.DefaultConfig.loader {
 
 // Plays the whole stream so far from the recording (MBJ-310), starting at `startAt` seconds from the beginning. The
 // recording's playlist grows while live, so hls.js treats it as live, but nothing pulls the viewer to the live edge.
-export function attachRecording(el, url, startAt, onReady, onEnd) {
+export function attachRecording(el, url, startAt, onReady, onEnd, { follow = false } = {}) {
+  // Near live: follow the recording's growing end like a live stream (no snapshot, no start position).
+  if (follow && !native(el)) {
+    const live = new Hls({ liveSyncDurationCount: 2 });
+    live.on(Hls.Events.MANIFEST_PARSED, onReady);
+    live.on(Hls.Events.ERROR, (_e, data) => {
+      if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) live.recoverMediaError();
+      else if (data.fatal) live.startLoad();
+    });
+    live.loadSource(url);
+    live.attachMedia(el);
+    return () => live.destroy();
+  }
   if (native(el)) {
     el.src = url;
     const seek = () => {
