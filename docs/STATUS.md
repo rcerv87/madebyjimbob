@@ -16,26 +16,21 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## Waiting on Ruben
 
-- **Turn on the replay archive (B2):**
-  1. Backblaze → Buckets → `Jimbob-beta` → **CORS Rules** → "Share everything in this bucket with specific origins":
-     `https://madebyjimbob.onrender.com`, `http://localhost:3000` (add `https://madebyjimbob.app` later); apply to the
-     **S3 Compatible API**; save. (Without it browsers block replay video from B2; thumbnails still work.)
-  2. Lifecycle Settings → "Keep only the last version of the file".
-  3. Render → Environment: add `B2_ENDPOINT`, `B2_BUCKET`, `B2_KEY_ID`, `B2_APPLICATION_KEY` (same as `.env`). From the
-     next Go Live the recorder writes to B2 too; replays older than 14 days move to B2 and leave R2.
+- **Replay archive (B2): on** (2026-10-02/03). Recorder writes to Ruben's `Jimbob-beta`; CORS allows the site;
+  confirm Lifecycle Settings → "Keep only the last version of the file".
 
 - **Beta on Ruben's accounts, then move to JimBob's** (decided 2026-10-02): Ruben opens his own B2 for the beta
   (about 50 test videos); JimBob sets up his own accounts before launch. The step-by-step move for every service is in
   `docs/MIGRATION.md` (keep it current as services are added).
 
-- **madebyjimbob.app (bought at GoDaddy 2026-10-02; nameservers switched to Cloudflare `anahi`/`bruce`, waiting for
-  Cloudflare to say Active).** Then:
-  1. Cloudflare → R2 → `madebyjimbob-live` → Settings → Custom Domains → connect `live.madebyjimbob.app` (wait for Active).
-  2. Render → Environment → `R2_PUBLIC_URL` = `https://live.madebyjimbob.app` (and the same line in local `.env`).
-  3. Tell Claude: it checks caching (playlists not cached), then re-runs the video part of the 600-viewer test (needs a
-     new `load-test` Hetzner token in `.env` and a live stream; ~10–20¢), then sets up the Resend email records on
-     madebyjimbob.app.
-  4. Afterward: delete the `load-test` Hetzner token; make sure GoDaddy auto-renew is on.
+- **madebyjimbob.app: Active on Cloudflare (2026-10-03).** `live.madebyjimbob.app` is the R2 bucket's custom domain and
+  `R2_PUBLIC_URL` points at it (Render and `.env`); the 1,000-viewer load test passed on it. Left:
+  1. **Cache Rule not taking effect yet:** "Live video pieces" (hostname `live.madebyjimbob.app`, file extension `ts`,
+     Eligible for cache) was created, but pieces still answer `cf-cache-status: DYNAMIC`. Send Claude a screenshot
+     of the rule (Caching → Cache Rules). Don't activate Cache Reserve (paid, not needed).
+  2. Delete the `load-test` Hetzner token (Hetzner → Security → API tokens); turn on GoDaddy auto-renew.
+  3. Resend email records on madebyjimbob.app (item 7).
+  4. Bot accounts `loadbot_1`–`5` and `chat_tester` exist on the live site for chat tests: keep or delete?
 
 1. **Turn on phone push on the live site:** Render → `madebyjimbob` → Environment → add `VAPID_PRIVATE_KEY`
    with the value from your local `.env` (same name). Save; Render redeploys. The in-site bell works without it.
@@ -83,9 +78,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    Server ready, OBS → Hetzner → Render → viewers, /live on phone (cellular) and desktop, home page LIVE strip, about 5 s
    behind, End stream deleted the server. **Automatic delete verified 2026-10-03:** last streaming 00:31:53 UTC, deleted 01:02:08 (30 min idle).
    **Still to test:** JimBob's own OBS and upload (dropped frames in OBS Stats). **R2 delivery verified 2026-10-02** (R2_* on Render;
-   video goes R2 → viewers, Render serves only the quality list; still ~5 s behind). **Before big audiences:** a custom
-   domain for the bucket (r2.dev is rate-limited), then a 600-viewer load test from 3–4
-   temporary Hetzner servers (~$1–2).
+   video goes R2 → viewers, Render serves only the quality list; still ~5 s behind). **Big audiences: 1,000-viewer load test passed 2026-10-03** on `live.madebyjimbob.app` (see What's
+   built → live). Running costs and what grows with viewers: ADR-004 "running costs"; MBJ-311 (flat watching cost) and
+   MBJ-312 (archive quality) keep them flat.
 
 ## What's built
 
