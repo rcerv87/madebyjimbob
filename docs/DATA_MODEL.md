@@ -335,6 +335,7 @@ Premium lapses (they just aren't sent to the web app until the member is Premium
 |---|---|---|
 | hls_url | text | a live replay plays from its R2 recording (`dvr/<id>/master.m3u8`) instead of Cloudflare Stream |
 | live_recording_id | text unique | the recording it came from; a recording is saved as a video once |
+| hd_removed_at | timestamptz | when the replay's full-HD quality was removed (older replays keep 720p and below, MBJ-312) |
 
 ### live_settings
 One row (id 1) for owned live (ADR-004): what stays the same between streams.

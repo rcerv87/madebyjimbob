@@ -79,5 +79,6 @@ Costs on R2 ($15 per TB-month; reads past 10 million a month $0.36 per million; 
 - **Library:** ~2.2 TB at 720p + 360p + audio ≈ **$33/month**.
 - **Live archive:** every stream adds ~4.7 GB per streamed hour (1080p, 720p, 360p, audio). At ~110 hours a month that is
   ~0.5 TB, **about +$8/month for every month of streaming** (~$93/month after a year). Keeping 1080p only for recent
-  streams (MBJ-312) cuts it to ~1.6 GB per hour, about +$2.60/month per month (~$32/month after a year).
+  streams (MBJ-312) cuts it to ~1.6 GB per hour, about +$2.60/month per month (~$32/month after a year). **JimBob agreed
+  (2026-10-03): older streams keep 720p and below.** Built: replays older than `LIVE_HD_DAYS` (default 30) lose 1080p.
 - Backups: JimBob's originals on a home drive, plus YouTube's own copy.

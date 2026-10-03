@@ -24,5 +24,5 @@ startViewCleanup();
 startReplacementJob();
 // Finishes starting live servers and deletes idle, over-cap, or stray ones (ADR-004).
 startLiveJob();
-// Moves live replays from R2 to the B2 archive after LIVE_R2_RETAIN_DAYS (MBJ-310).
+// Older live replays keep 720p and below (LIVE_HD_DAYS, MBJ-312); with B2 (development), replays also move there.
 startArchiveJob();

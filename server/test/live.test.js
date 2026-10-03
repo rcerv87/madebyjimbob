@@ -543,3 +543,73 @@ describe('live status under load', () => {
     await a.catch(() => {});
   });
 });
+
+describe('older replays keep 720p and below (MBJ-312)', () => {
+  const master = [
+    '#EXTM3U',
+    '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="listen",NAME="Listen only",DEFAULT=NO,AUTOSELECT=NO,URI="audio/index.m3u8"',
+    '#EXT-X-STREAM-INF:PROGRAM-ID=0,BANDWIDTH=6938624,RESOLUTION=1920x1080',
+    '0/index.m3u8',
+    '#EXT-X-STREAM-INF:PROGRAM-ID=0,BANDWIDTH=2719024,RESOLUTION=1280x720',
+    '1/index.m3u8',
+    '#EXT-X-STREAM-INF:PROGRAM-ID=0,BANDWIDTH=849024,RESOLUTION=640x360',
+    '2/index.m3u8',
+    '',
+  ].join('\n');
+
+  test('after 30 days the 1080p files go and the replay lists 720p, 360p and audio', async () => {
+    Object.assign(process.env, {
+      R2_ACCOUNT_ID: 'acct',
+      R2_ACCESS_KEY_ID: 'key',
+      R2_SECRET_ACCESS_KEY: 'secret',
+      R2_BUCKET: 'madebyjimbob-live',
+      R2_PUBLIC_URL: 'https://pub-test.r2.dev/',
+    });
+    try {
+      const add = async (rec, days) =>
+        (
+          await pool.query(
+            `INSERT INTO videos (title, kind, duration_s, published_at, hls_url, live_recording_id)
+             VALUES ('Live stream', 'live', 12, now() - make_interval(days => $2), $1, $3) RETURNING id`,
+            [`https://pub-test.r2.dev/dvr/${rec}/master.m3u8`, days, rec],
+          )
+        ).rows[0].id;
+      const files = (rec, list = master) => ({
+        [`dvr/${rec}/master.m3u8`]: list,
+        [`dvr/${rec}/0/index.m3u8`]: 'hd list',
+        [`dvr/${rec}/0/0.ts`]: 'hd',
+        [`dvr/${rec}/1/0.ts`]: '720',
+        [`dvr/${rec}/2/0.ts`]: '360',
+        [`dvr/${rec}/audio/0.ts`]: 'sound',
+      });
+      const old = await add('trim-old', 40);
+      await add('trim-new', 5);
+      // A stream that only ever had full HD keeps it.
+      const only = '#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1,RESOLUTION=1920x1080\n0/index.m3u8\n';
+      await add('trim-only', 40);
+      Object.assign(r2.objects, files('trim-old'), files('trim-new'), files('trim-only', only));
+
+      const { trimReplays } = await import('../src/live.js');
+      assert.equal(await trimReplays(), 1);
+      const left = Object.keys(r2.objects).filter((k) => k.startsWith('dvr/trim-old/'));
+      assert.deepEqual(left.sort(), [
+        'dvr/trim-old/1/0.ts',
+        'dvr/trim-old/2/0.ts',
+        'dvr/trim-old/audio/0.ts',
+        'dvr/trim-old/master.m3u8',
+      ]);
+      const list = r2.objects['dvr/trim-old/master.m3u8'];
+      assert.doesNotMatch(list, /1920x1080|^0\/index/m);
+      assert.match(list, /RESOLUTION=1280x720\n1\/index\.m3u8/);
+      assert.match(list, /URI="audio\/index\.m3u8"/);
+      assert.ok(r2.objects['dvr/trim-new/0/0.ts'], 'recent replays keep full HD');
+      assert.ok(r2.objects['dvr/trim-only/0/0.ts'], 'the only quality is never removed');
+      const { rows } = await pool.query('SELECT hd_removed_at FROM videos WHERE id = $1', [old]);
+      assert.ok(rows[0].hd_removed_at);
+      assert.equal(await trimReplays(), 0, 'done once');
+    } finally {
+      process.env.R2_ACCOUNT_ID = '';
+      await pool.query(`DELETE FROM videos WHERE live_recording_id LIKE 'trim-%'`);
+    }
+  });
+});
