@@ -83,3 +83,23 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
 ## Update 2026-10-03: 1,000-viewer load test
 
 1,000 simulated viewers on /live for ~10 minutes, all watching video through `live.madebyjimbob.app` (a third at 720p, the rest 360p), with 5 bot accounts (`loadbot_1`–`5`) plus `chat_tester` chatting ~2 messages a second. 1,000/1,000 chat sockets, none dropped; 925 chat messages each reached every connected viewer within ~0.2 s; the bots' 744 posts all went through. Video: ~1.2 Gbps delivered by R2/Cloudflare, ~601,000 one-second pieces, typical piece ~0.25–0.44 s (p95), only 0.1% slower than real time (no buffering). About 7% of piece requests got 404 (a piece listed before it had finished uploading); players retry, but it's worth a look. Status checks (`/api/live`, every viewer every 10 s): 60,317, 1 timeout, but p95 rose from ~0.4 s to ~2.7 s, so `/api/live` now shares one answer for 2 s. Video pieces aren't cached by Cloudflare yet (`DYNAMIC`); a cache rule for `.ts` would take that load off R2. Hetzner's account limits (shared cores, Primary IPs) allowed only 4 load machines next to the stream server.
+
+## Update 2026-10-03: running costs and what grows
+
+Estimates for JimBob's schedule (~5 hours a weekday, ~110 streamed hours a month); confirm against the first month's
+bills (Cloudflare → R2 → Metrics shows the operation counts).
+
+| Item | Cost | Grows with |
+|---|---|---|
+| Streaming server (Hetzner CPX31, $0.118/h, on only while streaming + 30 min) | ~$15/month incl. fixed IP and saved image | streamed hours |
+| R2 storage (recordings kept 14 days, ~4.7 GB per streamed hour) | ~$3–4/month | streamed hours |
+| R2 writes (Owncast 1-second pieces + playlists, recorder 2-second segments + playlists: ~4–5 million a month; 1 million free, then $4.50/million) | ~$15/month | streamed hours |
+| R2 reads while watching live (each viewer reads the playlist every second, and each 1-second piece unless Cloudflare caches it; 10 million a month free, then $0.36/million) | ~$1.30–2.60 per 1,000 viewer-hours past the free ~1,400–2,800 viewer-hours | viewers × hours |
+| B2 archive (all three qualities + audio, ~4.7 GB per streamed hour, $6/TB-month) | starts ~$3, then +~$3/month for every month of streaming | streamed hours, forever |
+
+Two changes keep this flat (MBJ-311, MBJ-312):
+- **Watching:** cache video pieces at Cloudflare (a free Cache Rule on `live.madebyjimbob.app`, `.ts` files; set up
+  2026-10-03 but not yet taking effect) and serve playlists so Cloudflare can hold them for a second. Then reads stop
+  growing with viewers: a 5-hour show at 1,000 viewers drops from ~$7–13 to cents.
+- **Archive:** keep 1080p only for recent streams (e.g. 30 days) and 720p + 360p + audio after that (~1.6 GB per hour):
+  the archive then grows ~$1/month per month instead of ~$3.

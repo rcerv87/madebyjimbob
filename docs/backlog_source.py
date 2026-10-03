@@ -332,6 +332,17 @@ S = [
   "When the stream ends it becomes a normal video on the site with its chat and comments, with no import; tier default configurable",
   "Archive copy moves to B2 (ADR-010); R2 copy deleted after a set time. A 4-hour stream ≈ 17 GB (1080p+720p+360p) ≈ $0.25/month while in R2",
   "Ruben, 2026-10-02: wanted as soon as possible; must be in the beta"], ["304"]),
+("311", 3, "Should", "S", "Flat cost for watching live (cache pieces and playlists)",
+ "As JimBob, I want a big live audience to cost the same as a small one.",
+ ["Video pieces (`.ts`) on `live.madebyjimbob.app` come from Cloudflare's cache (`cf-cache-status: HIT`), not R2",
+  "Live playlists are cacheable for about a second, so R2 sees roughly one read per quality per second per Cloudflare location, however many watch",
+  "Load test again: R2 read count stays roughly flat from 100 to 1,000 viewers; live delay unchanged (~4-5 s)",
+  "Today each viewer costs ~$1.30-2.60 per 1,000 viewer-hours in R2 reads past the free tier (2026-10-03 estimate)"], ["310"]),
+("312", 3, "Should", "S", "Archive keeps 1080p only for recent streams",
+ "As JimBob, I want the archive to stay cheap as years of streams pile up.",
+ ["Live streams are archived in B2 with 1080p, 720p, 360p and audio (~4.7 GB per streamed hour, ~+$3/month each month)",
+  "After a set time (e.g. 30 days, a setting) the 1080p copy is deleted from B2 and the replay's playlist drops it; 720p, 360p and audio stay (~1.6 GB per hour)",
+  "Decide with JimBob (strategy meeting): how long full quality is kept, or whether he keeps 1080p originals on his own drive"], ["310"]),
 
 # ---------------- 4 Mobile ----------------
 ("401", 2, "Must", "L", "Expo app scaffold",
