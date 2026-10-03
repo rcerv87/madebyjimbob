@@ -446,10 +446,8 @@ function Activity() {
   );
 }
 
-const TYPES = [
-  ['mention', 'Someone mentions you (@name)'],
-  ['reply', 'Someone replies to you'],
-];
+// Only replies to your comments notify (chat and @mentions don't, since 2026-10-03); direct messages will join them.
+const TYPES = [['reply', 'Someone replies to your comment']];
 
 function NotificationsSection() {
   const [prefs, setPrefs] = useState(null);

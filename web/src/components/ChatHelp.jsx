@@ -24,12 +24,12 @@ export default function ChatHelp({ live, onClose }) {
         <dl>
           <dt>Tap a name</dt>
           <dd>
-            Puts <b>@name</b> in your message. That’s a <b>mention</b>: they get a notification.
+            Puts <b>@name</b> in your message. That’s a <b>mention</b>: your message is highlighted for them.
           </dd>
           <dt>Tap a picture</dt>
           <dd>Opens their menu with everything below.</dd>
           <dt>Reply</dt>
-          <dd>Quotes their message above yours and notifies them. Tap a quote to jump to the original.</dd>
+          <dd>Quotes their message above yours. Tap a quote to jump to the original.</dd>
           <dt>Show only their messages</dt>
           <dd>Hides everyone else until you tap Show everyone.</dd>
           <dt>Highlight</dt>

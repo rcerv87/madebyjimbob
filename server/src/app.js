@@ -662,17 +662,9 @@ app.post(
       rt_offset: target?.offset_ms,
     });
     broadcast(video.id, { type: 'chat', message: msg });
+    // No notifications from chat (Ruben, 2026-10-03): opening one took people away from the live stream. A mention
+    // shows highlighted in the chat itself, and a reply's quote leads to what it answers.
     res.json({ message: msg });
-    notifyFor({
-      videoId: video.id,
-      videoTitle: video.title,
-      actor: user,
-      body,
-      offsetMs,
-      chatMessageId: rows[0].id,
-      mentions: rows[0].mentions,
-      replyToUserId: target?.user_id,
-    }).catch((err) => logger.error({ err }, 'chat notifications failed'));
   }),
 );
 
@@ -822,7 +814,7 @@ app.post(
       body,
       offsetMs,
       commentId: rows[0].id,
-      mentions: extractMentions(body),
+      // Only replies notify; @mentions in comments don't (2026-10-03).
       replyToUserId: target?.user_id,
     }).catch((err) => logger.error({ err }, 'comment notifications failed'));
   }),

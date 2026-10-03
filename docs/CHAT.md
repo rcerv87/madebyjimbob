@@ -65,8 +65,9 @@ Hidden messages are never deleted from the database — `hidden = true` keeps th
   to a reply quotes the reply.
 - **Timestamped comments** (`comments.offset_ms`) appear in the chat feed as comment bubbles and open their
   thread in the comments section.
-- **Mentions vs replies:** a mention is `@name` anywhere in a message and notifies that person; a reply quotes one
-  message (tap the quote to jump to it) and notifies its author. Tap a name to mention them; typing `@` suggests
+- **Mentions vs replies:** a mention is `@name` anywhere in a message and shows highlighted for that person; a reply
+  quotes one message (tap the quote to jump to it). Chat sends no notifications (2026-10-03: opening one took people
+  away from the live stream); only replies to comments notify, and direct messages will (MBJ-221). Tap a name to mention them; typing `@` suggests
   names from the video's chat and comments. Tap a picture for the menu: Reply, Show only their messages, View
   profile, highlight color (5 colors, one person each, per chat), Favorite (Premium, 10 colors, every chat and
   comment section, saved to the account; MBJ-220), Mute/Block/Report (MBJ-219). The **?** in the chat header

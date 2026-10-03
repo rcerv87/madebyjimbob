@@ -94,7 +94,7 @@ describe('linking a YouTube account by handle', () => {
     assert.equal((await ask(second, 'youtube', '@sharedhandle')).status, 409);
   });
 
-  test('@mentioning the YouTube handle notifies the member; unlinking puts the YouTube name back', async () => {
+  test('@mentioning a linked YouTube handle in chat notifies nobody; unlinking puts the YouTube name back', async () => {
     const member = await signIn(call, 'yt_mentioned');
     const fan = await signIn(call, 'yt_mentioner');
     const later = await imported({ channel: 'UC_mentioned', name: '@BigFanYT', body: 'hello' });
@@ -106,14 +106,9 @@ describe('linking a YouTube account by handle', () => {
       token: fan,
       body: { text: 'good point @BigFanYT', offsetMs: 2000 },
     });
-    // Notifications go out just after the post is answered; give them a moment.
-    let notes = [];
-    for (let i = 0; i < 20 && !notes.length; i += 1) {
-      await new Promise((r) => setTimeout(r, 50));
-      notes = (await call('/notifications', { token: member })).data.notifications;
-    }
-    assert.equal(notes[0]?.type, 'mention');
-    assert.equal(notes[0]?.actor, 'yt_mentioner');
+    // Chat doesn't notify (2026-10-03); the mention shows highlighted in the chat instead.
+    await new Promise((r) => setTimeout(r, 300));
+    assert.equal((await call('/notifications', { token: member })).data.notifications.length, 0);
 
     await call('/account/links/youtube', { method: 'DELETE', token: member });
     assert.equal((await links(member)).youtube, null);

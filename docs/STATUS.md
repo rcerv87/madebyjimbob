@@ -169,8 +169,9 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - **Comments** under each video: YouTube comments (threads, likes, pinned, Creator badge) and native ones.
   Comments can carry a moment; they then appear as bubbles in the chat and open their thread. Times typed in
   comments ("1:04:32") are clickable; 44 imported comments already carry one.
-- **Notifications**: mentions and replies in chat or comments → bell with unread count, a bubble while you're on
-  the site ("Jump to it" goes to the moment), and phone push (once the Render key is set).
+- **Notifications**: replies to your comments → bell with unread count, a bubble while you're on the site ("Jump to
+  it" goes to the moment), and phone push (once the Render key is set). Chat (mentions and replies) and @mentions in
+  comments don't notify since 2026-10-03; a mention shows highlighted in the chat. Direct messages will (MBJ-221).
 
 ### App
 - Installable **PWA**: Home Screen icon, full screen, Install app button (Android/desktop), iPhone

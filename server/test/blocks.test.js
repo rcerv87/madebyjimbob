@@ -71,19 +71,27 @@ describe('blocking and muting', () => {
     assert.equal(mutedReply.status, 200);
   });
 
-  test('no notifications from people you blocked or muted', async () => {
+  test('no notifications from people you muted (blocked ones can’t reply at all)', async () => {
     const before = (await notes(me)).length;
-    await sleep(1600);
-    await say(pest, 'hey @block_owner');
-    await say(quiet, 'yo @block_owner');
+    await sleep(5100); // one comment every 5 seconds
+    const mine = await call(`/videos/${videoId}/comments`, {
+      method: 'POST',
+      token: me,
+      body: { text: 'what do you all think' },
+    });
+    await call(`/videos/${videoId}/comments`, {
+      method: 'POST',
+      token: quiet,
+      body: { text: 'meh', replyToId: mine.data.comment.id },
+    });
     await sleep(500); // notifications go out just after the post; make sure none arrive
     assert.equal((await notes(me)).length, before);
-    // …while someone else's mention still does.
+    // …while someone else's reply still does.
     const other = await signIn(call, 'block_friend');
-    await call(`/videos/${videoId}/chat`, {
+    await call(`/videos/${videoId}/comments`, {
       method: 'POST',
       token: other,
-      body: { text: 'hi @block_owner', offsetMs: 1000 },
+      body: { text: 'good one', replyToId: mine.data.comment.id },
     });
     await sleep(500);
     assert.equal((await notes(me)).length, before + 1);

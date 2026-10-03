@@ -62,27 +62,29 @@ describe('notification settings', () => {
     assert.deepEqual(saved.data.prefs.reply, { site: true, push: true });
   });
 
-  test('bell off keeps mentions out of the bell; bell and push off means no notification at all', async () => {
+  test('bell off keeps comment replies out of the bell; bell and push off means no notification at all', async () => {
     const quiet = await signIn(call, 'quiet_fan');
     const silent = await signIn(call, 'silent_fan');
     const poster = await signIn(call, 'loud_poster');
     await call('/account/notifications', {
       method: 'PUT',
       token: quiet,
-      body: { prefs: { mention: { site: false } } },
+      body: { prefs: { reply: { site: false } } },
     });
     await call('/account/notifications', {
       method: 'PUT',
       token: silent,
-      body: { prefs: { mention: { site: false, push: false } } },
+      body: { prefs: { reply: { site: false, push: false } } },
     });
     const videoId = await seedVideo();
-    const posted = await call(`/videos/${videoId}/chat`, {
-      method: 'POST',
-      token: poster,
-      body: { text: 'hi @quiet_fan and @silent_fan', offsetMs: 1000 },
-    });
-    assert.equal(posted.status, 200);
+    const comment = (token, text, replyToId) =>
+      call(`/videos/${videoId}/comments`, { method: 'POST', token, body: { text, replyToId } });
+    const q = (await comment(quiet, 'quiet here')).data.comment;
+    const s = (await comment(silent, 'silent here')).data.comment;
+    assert.equal((await comment(poster, 'hi quiet', q.id)).status, 200);
+    await new Promise((r) => setTimeout(r, 5100)); // one comment every 5 seconds
+    assert.equal((await comment(poster, 'hi silent', s.id)).status, 200);
+    await new Promise((r) => setTimeout(r, 200));
 
     assert.equal((await call('/notifications', { token: quiet })).data.notifications.length, 0);
     assert.equal((await call('/notifications', { token: quiet })).data.unread, 0);

@@ -105,8 +105,9 @@ function deliver(userId, n, { bell = true, push: toPush = true } = {}) {
   if (toPush) push(userId, n).catch((err) => logger.warn({ err }, 'push failed'));
 }
 
-// Called after a native chat message or comment is saved. Replies notify the author of what was
-// answered; @mentions notify those users. Never yourself, and one notification per person per post.
+// Called after a comment is saved: a reply notifies the author of what was answered (and @mentions, when a caller
+// passes them; none do since 2026-10-03, when chat and mentions stopped notifying). Never yourself, and one
+// notification per person per post.
 export async function notifyFor({
   videoId,
   videoTitle,
