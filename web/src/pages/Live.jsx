@@ -73,6 +73,7 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
   const [muted, setMuted] = useState(false);
   // Catch-up speed while behind live (rewound or listening); at live it's always 1×.
   const [speed, setSpeed] = useState(1);
+  const [goingLive, setGoingLive] = useState(false);
   useEffect(() => {
     if (ref.current) ref.current.muted = muted;
     if (audioRef.current) audioRef.current.muted = muted;
@@ -321,10 +322,13 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
   }
 
   if (seekRef) seekRef.current = seek;
-  rateRef.current = Math.max(1, Math.min(2, !listening && rewindTo === null && liveBehind < 1.5 ? 1 : speed));
   const onLiveFeed = !listening && rewindTo === null;
-  const atLive = onLiveFeed && liveBehind < 1.5;
+  // Listening counts as live once it's within a few seconds of it (following the recording's end).
+  const listeningLive = listening && liveAt() - posRef.current < 8;
+  const atLive = (onLiveFeed && liveBehind < 1.5) || listeningLive || goingLive;
+  // Faster speeds only while behind; caught up (watching or listening) it's 1×.
   const rate = atLive ? 1 : speed;
+  rateRef.current = Math.max(1, Math.min(2, rate));
   const now = onLiveFeed ? liveAt() - liveBehind : posRef.current;
   return (
     <div className="live-player">
@@ -435,6 +439,11 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
           <button
             className={atLive ? 'live-badge live-go' : 'primary-btn live-go'}
             onClick={() => {
+              if (goingLive) return;
+              // Instant feedback: the switch can take a second or two (the listening player reloads at the live end).
+              setGoingLive(true);
+              setTimeout(() => setGoingLive(false), 2500);
+              posRef.current = liveAt();
               if (listeningRef.current) {
                 listenFromRef.current?.(liveAt());
                 return;
@@ -447,7 +456,7 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
             }}
             disabled={atLive}
           >
-            {atLive ? 'LIVE' : 'Back to LIVE'}
+            {goingLive ? 'Going live…' : atLive ? 'LIVE' : 'Back to LIVE'}
           </button>
         )}
         {dvr && (
