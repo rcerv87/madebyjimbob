@@ -43,6 +43,15 @@ function setMediaAction(action, handler) {
 // switches to the recording of the whole stream so far, and Back to LIVE switches back. Listen (or locking the phone)
 // switches to the sound alone from the same spot, and back to video from wherever the sound got to. Never starts
 // muted: if the browser blocks sound, a Play button waits for a tap.
+// Hidden switch for diagnosing the timeline: localStorage 'mbj.debugLive' = '1' logs each decision to the console.
+const dbg = (...a) => {
+  try {
+    if (localStorage.getItem('mbj.debugLive')) console.info('[live]', ...a);
+  } catch {
+    // storage blocked: no logging
+  }
+};
+
 function LivePlayer({ src, dvr, clock, seekRef }) {
   const ref = useRef(null);
   const audioRef = useRef(null);
@@ -107,19 +116,21 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
     const el = ref.current;
     if (!el || listening) return undefined;
     const play = () => el.play().catch(() => setNeedsTap(true));
-    if (rewindTo !== null && dvr)
-      return attachRecording(el, dvr.url, rewindTo, play, (at) => {
-        // Reached the end of what was recorded when it loaded: carry on from here, or go live if it's close.
-        posRef.current = at;
-        if (liveAt() - at < SHORT_REWIND_S) setRewindTo(null);
-        else {
-          setRewindTo(at);
-          setAttachKey((k) => k + 1);
-        }
-      });
+    if (rewindTo !== null && dvr) dbg('attach recording at', Math.round(rewindTo));
+    return attachRecording(el, dvr.url, rewindTo, play, (at) => {
+      dbg('recording ended at', Math.round(at), 'live at', Math.round(liveAt()));
+      // Reached the end of what was recorded when it loaded: carry on from here, or go live if it's close.
+      posRef.current = at;
+      if (liveAt() - at < SHORT_REWIND_S) setRewindTo(null);
+      else {
+        setRewindTo(at);
+        setAttachKey((k) => k + 1);
+      }
+    });
     if (!src) return undefined;
     liveBehindRef.current = 0;
     setLiveBehindState(0);
+    dbg('attach live feed', 'pending behind', pendingBehind.current);
     const cleanup = attachLive(el, src, () => {
       play();
       // Came from the recording to a spot a few seconds behind live: step back once the live feed has some buffer.
@@ -156,6 +167,7 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
         // A little behind on the live feed: pausing falls further behind, faster speeds catch up; caught up = live.
         const next = liveBehindRef.current + (video.paused ? 0.25 : (1 - video.playbackRate) * 0.25);
         if (next < 1.5) {
+          dbg('caught up: live');
           liveCtl.current?.toLive();
           setLiveBehind(0);
         } else setLiveBehind(next);
@@ -300,6 +312,14 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
       return;
     }
     const behind = live - target;
+    dbg('seek', {
+      asked: Math.round(t),
+      target: Math.round(target),
+      live: Math.round(live),
+      behind: Math.round(behind),
+      inRecording: rewindTo !== null,
+      loaded: Math.round(ref.current?.duration || 0),
+    });
     // At live: back to the live edge.
     if (behind < 1.5) {
       if (rewindTo !== null) setRewindTo(null);
@@ -555,6 +575,7 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
             value={Math.round(drag ?? Math.min(now, liveAt()))}
             onChange={(e) => setDrag(Number(e.target.value))}
             onPointerUp={(e) => {
+              dbg('timeline release', e.currentTarget.value, 'of', e.currentTarget.max, 'drag', drag);
               seek(Number(e.currentTarget.value));
               setDrag(null);
             }}
