@@ -38,7 +38,9 @@ const HLS = process.env.HLS_DIR || '/hls';
 // the site only trusts the current server's recording.
 const PREFIX = process.env.DVR_PREFIX || 'dvr';
 const SERVER_ID = process.env.LIVE_SERVER_ID || '';
-const SEGMENT_S = 6; // join Owncast's 1-second pieces into segments this long
+// Join Owncast's 1-second pieces into segments this long. Short, so the recording stays ~3-5 s behind live and a
+// 10-second rewind lands in it (6-second segments kept it ~10-15 s behind).
+const SEGMENT_S = 2;
 const QUIET_S = 12; // no new video this long = the stream ended (for now)
 const REJOIN_S = 120; // OBS back within this long after that (an internet blip): the same recording continues
 
@@ -83,12 +85,14 @@ function frameOf(bytes) {
 }
 
 // Writes one object to R2 (what viewers play) and, if set up, B2 (the archive). A B2 hiccup never stops recording.
+// The B2 copies go through their own queue, so the R2 copy (what viewers play) never waits on them.
+let b2Queue = Promise.resolve();
 async function store(key, body, contentType, cacheControl = 'no-cache') {
   await r2Put(cfg, key, body, contentType, cacheControl);
   if (b2)
-    await r2Put(b2, key, body, contentType, cacheControl).catch((err) =>
-      log('B2 copy failed', key, err.message),
-    );
+    b2Queue = b2Queue
+      .then(() => r2Put(b2, key, body, contentType, cacheControl))
+      .catch((err) => log('B2 copy failed', key, err.message));
 }
 // The first video timestamp in an MPEG-TS chunk, in seconds (or null). Segment lengths come from these: Owncast's own
 // listed lengths are rounded, and on the passed-through quality they drift, which put qualities out of step.
@@ -216,7 +220,8 @@ function flush(r, q, ended = false) {
   if (bytes.length) q.disc = false;
   q.buf = [];
   q.bufDur = 0;
-  r.chain = r.chain
+  // Each quality uploads on its own chain (in order within it), so qualities don't wait on each other.
+  q.chain = (q.chain || Promise.resolve())
     .then(async () => {
       if (bytes.length) {
         const file = `${q.seq++}.ts`;
@@ -296,7 +301,8 @@ async function finish(r) {
   r.lastPieceAt = quiet.since;
   last = { rec: r, finishedAt: Date.now() };
   for (const q of r.qualities.values()) flush(r, q, true);
-  await r.chain;
+  await Promise.all([...r.qualities.values()].map((q) => q.chain));
+  await b2Queue;
   const durationS = Math.round(
     Math.max(0, ...[...r.qualities.values()].map((q) => q.lines.reduce((s, l) => s + l.dur, 0))),
   );
