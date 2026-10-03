@@ -655,6 +655,31 @@ app.get(
   }),
 );
 
+// Names for the chat search's @ suggestions: who chatted in this video whose name contains what's typed, names that
+// start with it first, then the most talkative. Up to 8.
+app.get(
+  '/api/videos/:id/chat/names',
+  wrap(async (req, res) => {
+    const video = await watchableVideo(req, res, await currentUser(req));
+    if (!video) return;
+    const q = String(req.query.q || '')
+      .trim()
+      .replace(/^@/, '')
+      .toLowerCase()
+      .slice(0, 30);
+    if (!q) return res.json({ names: [] });
+    const { rows } = await pool.query(
+      `SELECT min(ltrim(author_name, '@')) AS name, count(*) AS n FROM chat_messages
+        WHERE video_id = $1 AND NOT hidden AND lower(ltrim(author_name, '@')) LIKE $2
+        GROUP BY lower(ltrim(author_name, '@'))
+        ORDER BY bool_or(lower(ltrim(author_name, '@')) LIKE $3) DESC, count(*) DESC, 1
+        LIMIT 8`,
+      [video.id, likePattern(q), likePattern(q).slice(1)],
+    );
+    res.json({ names: rows.map((r) => r.name) });
+  }),
+);
+
 // One conversation (MBJ-222): from any message, up its replies to where it started, then everything that grew out
 // of that first message (replies, replies to replies, every branch). In video order.
 app.get(

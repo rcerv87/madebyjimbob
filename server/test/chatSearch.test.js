@@ -85,6 +85,16 @@ describe('chat search (MBJ-218)', () => {
   });
 });
 
+describe('names for the search box', () => {
+  test('names containing what is typed, starting-with first, then the most talkative', async () => {
+    const names = async (q) =>
+      (await call(`/videos/${videoId}/chat/names?q=${encodeURIComponent(q)}`)).data.names;
+    assert.deepEqual(await names('@user'), ['User1', 'User2', 'User3', 'User4']);
+    assert.deepEqual(await names('ser1'), ['User1']);
+    assert.deepEqual(await names(''), []);
+  });
+});
+
 describe('conversations (MBJ-222)', () => {
   test('from any message: everything that grew out of the first one, every branch, in video order', async () => {
     const expected = [

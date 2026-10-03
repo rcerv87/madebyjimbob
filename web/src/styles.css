@@ -4041,3 +4041,17 @@ a.text-btn {
   border-radius: 3px;
   padding: 0 1px;
 }
+
+/* The search box's @ suggestions open below it. */
+.chat-search-box {
+  position: relative;
+}
+.mention-suggest.search-suggest {
+  top: calc(100% + 4px);
+  bottom: auto;
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  z-index: 20;
+}
