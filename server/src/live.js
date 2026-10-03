@@ -662,7 +662,8 @@ export async function proxyHls(req, res) {
       // The first seconds of a stream, before the recorder has published its copies: players wait (they retry every
       // few seconds) instead of starting on Owncast's playlists, which list pieces before they're uploaded and which a
       // player keeps for the whole stream. Past START_WAIT_MS without them, Owncast's own, so a stream always plays.
-      if (!edge && Date.now() - Date.parse(status?.startedAt || 0) < START_WAIT_MS) {
+      const waiting = process.env.LIVE_EDGE_PLAYLISTS === 'on' && !edge;
+      if (waiting && Date.now() - Date.parse(status?.startedAt || 0) < START_WAIT_MS) {
         res.set('Retry-After', '2');
         return res.status(503).end();
       }
