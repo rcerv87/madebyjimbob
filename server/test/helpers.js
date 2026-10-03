@@ -35,6 +35,7 @@ process.env.OWNCAST_URL = '';
 process.env.HETZNER_API_TOKEN = '';
 process.env.R2_ACCOUNT_ID = '';
 process.env.B2_ENDPOINT = '';
+process.env.DVR_PREFIX = '';
 process.env.RESEND_API_KEY = '';
 process.env.EMAIL_FROM = '';
 process.env.RESEND_WEBHOOK_SECRET = `whsec_${Buffer.from('test-webhook-secret').toString('base64')}`;

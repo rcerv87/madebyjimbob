@@ -69,3 +69,7 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
   the viewer's spot in recording time (`gapS` subtracts time OBS was away) and switches video ↔ sound from that spot.
   Owncast rewrites its first pieces just after OBS connects; the recorder skips renumbered pieces that arrive with no
   pause in a stream's first 20 seconds, and treats a pause as a reconnect.
+- **Isolation (2026-10-02):** recordings live under `DVR_PREFIX` (`dvr` on the live site; testing PCs set e.g.
+  `dvr-test`), and the recorder tags `current.json` with its `LIVE_SERVER_ID`; /live and the replay job only use the running
+  server's recording. A local test writing `dvr/current.json` once sent live viewers into a test recording. The reconnect
+  window is 2 minutes (was 10): separate streams on one server stay separate recordings.

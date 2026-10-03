@@ -21,7 +21,7 @@ Keep it current: when a new service or setting is added, add it here.
 | Service | Holds | Owner now | Settings | Effort to move |
 |---|---|---|---|---|
 | **GoDaddy** | Domain `madebyjimbob.app` (registration only) | Ruben | none (nameservers point to Cloudflare) | Easy |
-| **Cloudflare** | DNS for `madebyjimbob.app`; **R2** bucket `madebyjimbob-live` (live streams, recordings, replays); **Stream** (imported videos) | Ruben | `R2_*`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_STREAM_CUSTOMER_CODE` | Medium (data copy) |
+| **Cloudflare** | DNS for `madebyjimbob.app`; recordings under `DVR_PREFIX` (`dvr`); **R2** bucket `madebyjimbob-live` (live streams, recordings, replays); **Stream** (imported videos) | Ruben | `R2_*`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_STREAM_CUSTOMER_CODE` | Medium (data copy) |
 | **Backblaze B2** | Archive copies (720p, 360p, audio); beta bucket `Jimbob-beta` (US East, `s3.us-east-005.backblazeb2.com`) | Ruben during beta | `B2_ENDPOINT`, `B2_BUCKET`, `B2_KEY_ID`, `B2_APPLICATION_KEY` | Medium (data copy) |
 | **Render** | The site (web service `madebyjimbob`) and the **Postgres** database `madebyjimbob-db` (accounts, chat, comments, videos, settings) | Ruben | all of the below; `DATABASE_URL` comes from Render | Medium |
 | **Hetzner** | Streaming server, created per stream and deleted after; saved server image; fixed IP | Ruben (project `MadeByJimBob`) | `HETZNER_API_TOKEN` | Easy (nothing stored) |

@@ -87,6 +87,8 @@ export const b2 = () => {
   };
 };
 const RETAIN_DAYS = () => Number(process.env.LIVE_R2_RETAIN_DAYS || 14);
+// Recordings' folder in the buckets: 'dvr' for the live site; local testing sets DVR_PREFIX so it never touches it.
+const DVR = () => process.env.DVR_PREFIX || 'dvr';
 
 const fixedBase = () => (process.env.OWNCAST_URL || '').replace(/\/+$/, '');
 export const liveConfigured = () => Boolean(fixedBase()) || hetznerConfigured();
@@ -138,10 +140,10 @@ async function owncastStatus(base) {
 }
 
 // While live with the recorder on: where the whole stream so far can be rewound (MBJ-310).
-async function withRewind(status) {
+async function withRewind(status, server = null) {
   if (!status.online) return status;
   const rec = await currentRecording();
-  if (!rec?.live) return status;
+  if (!rec?.live || (server && !fromServer(rec, server))) return status;
   const videoId = await liveVideo(rec).catch((err) =>
     logger.warn({ err }, 'could not create the live video'),
   );
@@ -159,7 +161,7 @@ async function withRewind(status) {
 export async function liveStatus() {
   const base = await owncastBase();
   if (!base) return { online: false };
-  return withRewind(await owncastStatus(base));
+  return withRewind(await owncastStatus(base), fixedBase() ? null : await activeServer());
 }
 
 const hoursBetween = (a, b) => (new Date(b || Date.now()) - new Date(a)) / 3_600_000;
@@ -194,7 +196,7 @@ export async function studioLive() {
   const s = await activeServer();
   const status =
     s?.status === 'ready' && s.ip
-      ? await withRewind(await owncastStatus(`http://${s.ip}:8080`))
+      ? await withRewind(await owncastStatus(`http://${s.ip}:8080`), s)
       : { online: false };
   // While starting: has Owncast come up yet? (For Studio's step-by-step status.)
   const answering =
@@ -232,7 +234,7 @@ export async function studioLive() {
 const INSTALL_DOCKER = 'package_update: true\npackages: [docker.io]\n';
 const recorderFile = (name) =>
   fs.readFileSync(new URL(`../live-recorder/${name}`, import.meta.url)).toString('base64');
-function recorderSetup() {
+function recorderSetup(serverId) {
   const storage = r2();
   if (!storage) return { files: '', run: '' };
   const files = ['r2put.mjs', 'recorder.mjs']
@@ -244,6 +246,8 @@ function recorderSetup() {
     R2_ACCESS_KEY_ID: storage.accessKey,
     R2_SECRET_ACCESS_KEY: storage.secret,
     R2_BUCKET: storage.bucket,
+    DVR_PREFIX: DVR(),
+    LIVE_SERVER_ID: String(serverId ?? ''),
     // The recorder writes the archive copy to B2 as it records.
     ...(archive && {
       B2_ENDPOINT: archive.endpoint,
@@ -260,8 +264,8 @@ function recorderSetup() {
     run: `  - docker run -d --name recorder --restart unless-stopped -v /opt/recorder:/app:ro -v /opt/owncast/hls:/hls:ro ${envArgs} node:22-alpine sh -c "apk add --no-cache ffmpeg >/dev/null 2>&1; exec node /app/recorder.mjs"\n`,
   };
 }
-const cloudInit = (settings, fromImage) => {
-  const recorder = recorderSetup();
+const cloudInit = (settings, fromImage, serverId) => {
+  const recorder = recorderSetup(serverId);
   return `#cloud-config
 ${fromImage ? '' : INSTALL_DOCKER}${recorder.files}runcmd:
   - systemctl enable --now docker
@@ -281,7 +285,7 @@ export async function currentRecording() {
   const storage = r2();
   if (!storage) return null;
   try {
-    const res = await fetch(`${storage.publicUrl}/dvr/current.json?t=${Date.now()}`, {
+    const res = await fetch(`${storage.publicUrl}/${DVR()}/current.json?t=${Date.now()}`, {
       signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) throw new Error(`R2 answered ${res.status}`);
@@ -294,7 +298,7 @@ export async function currentRecording() {
   }
 }
 
-export const recordingUrl = (id) => `${r2().publicUrl}/dvr/${id}/master.m3u8`;
+export const recordingUrl = (id) => `${r2().publicUrl}/${DVR()}/${id}/master.m3u8`;
 
 const etDate = (iso) =>
   new Date(iso).toLocaleDateString('en-US', {
@@ -349,23 +353,25 @@ const getText = (url) =>
 
 // End stream while OBS is still sending: close the recording's playlists here (the recorder goes away with the
 // server), then save the replay.
-// Only recordings made on this server count (the bucket can hold older ones, or ones from local testing).
+// Only the running server's recording counts (the bucket holds older ones). The recorder tags it with its server; older
+// recordings without a tag count if they started after the server did.
 const fromServer = (rec, server) =>
-  Boolean(rec?.id) && new Date(rec.startedAt) >= new Date(server.created_at);
+  Boolean(rec?.id) &&
+  (rec.server ? rec.server === String(server.id) : new Date(rec.startedAt) >= new Date(server.created_at));
 
 export async function finishRecording(server) {
   const storage = r2();
   const rec = await currentRecording();
   if (!storage || !fromServer(rec, server)) return null;
   if (rec.live) {
-    const master = await getText(`${storage.publicUrl}/dvr/${rec.id}/master.m3u8`);
+    const master = await getText(`${storage.publicUrl}/${DVR()}/${rec.id}/master.m3u8`);
     let durationS = 0;
     const lists = [
       ...[...master.matchAll(/^(\d+)\/index\.m3u8$/gm)].map((m) => m[1]),
       ...(master.includes('URI="audio/index.m3u8"') ? ['audio'] : []),
     ];
     for (const n of lists) {
-      const key = `dvr/${rec.id}/${n}/index.m3u8`;
+      const key = `${DVR()}/${rec.id}/${n}/index.m3u8`;
       const list = await getText(`${storage.publicUrl}/${key}?t=${Date.now()}`);
       if (!list) continue;
       const total = [...list.matchAll(/^#EXTINF:([\d.]+)/gm)].reduce((sum, m) => sum + Number(m[1]), 0);
@@ -374,7 +380,7 @@ export async function finishRecording(server) {
         await r2Put(storage, key, `${list.trimEnd()}\n#EXT-X-ENDLIST\n`, 'application/vnd.apple.mpegurl');
     }
     Object.assign(rec, { live: false, endedAt: new Date().toISOString(), durationS: Math.round(durationS) });
-    await r2Put(storage, 'dvr/current.json', JSON.stringify(rec), 'application/json');
+    await r2Put(storage, `${DVR()}/current.json`, JSON.stringify(rec), 'application/json');
   }
   return saveReplay(rec);
 }
@@ -416,7 +422,7 @@ export async function goLive(userId) {
       server_type: SERVER_TYPE,
       image: image ? String(image.id) : 'ubuntu-24.04',
       location: LOCATION,
-      user_data: cloudInit(forServer(settings, row), Boolean(image)),
+      user_data: cloudInit(forServer(settings, row), Boolean(image), row.id),
       public_net: { enable_ipv4: true, enable_ipv6: false, ipv4: ip.id },
     });
     await pool.query('UPDATE live_servers SET hetzner_id = $2 WHERE id = $1', [row.id, server.id]);
@@ -651,7 +657,7 @@ export async function archiveReplays() {
   );
   let moved = 0;
   for (const v of rows) {
-    const prefix = `dvr/${v.live_recording_id}/`;
+    const prefix = `${DVR()}/${v.live_recording_id}/`;
     try {
       const inR2 = await s3List(storage, prefix);
       const inB2 = new Set(await s3List(archive, prefix));
@@ -694,7 +700,7 @@ export function startArchiveJob() {
 export async function archiveFile(recordingId, rest) {
   const archive = b2();
   if (!archive || !/^[\w./-]+$/.test(rest) || rest.includes('..')) return { status: 404 };
-  const key = `dvr/${recordingId}/${rest}`;
+  const key = `${DVR()}/${recordingId}/${rest}`;
   if (!rest.endsWith('.m3u8')) return { status: 302, redirect: presignGet(archive, key) };
   let text;
   try {
@@ -707,7 +713,9 @@ export async function archiveFile(recordingId, rest) {
     text = text
       .split('\n')
       .map((line) =>
-        line && !line.startsWith('#') ? presignGet(archive, `dvr/${recordingId}/${dir}${line.trim()}`) : line,
+        line && !line.startsWith('#')
+          ? presignGet(archive, `${DVR()}/${recordingId}/${dir}${line.trim()}`)
+          : line,
       )
       .join('\n');
   }
