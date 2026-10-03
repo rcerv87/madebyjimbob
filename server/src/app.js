@@ -609,10 +609,16 @@ app.get(
       .map((s) => s.trim().replace(/^@/, '').toLowerCase())
       .filter(Boolean)
       .slice(0, 100);
-    // who: part of a name, from the search box's @name (from is exact, for one person's messages).
+    // who: part of a name, from the search box's @name: their messages and mentions of them (from is exact and only
+    // their messages, for one person's messages).
     const who = String(req.query.who || '')
       .split(',')
-      .map((s) => s.trim().replace(/^@/, '').toLowerCase())
+      .map((s) =>
+        s
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9_.-]/g, ''),
+      )
       .filter(Boolean)
       .slice(0, 10);
     const only = String(req.query.only || '');
@@ -632,10 +638,15 @@ app.get(
         `(lower(ltrim(m.author_name, '@')) = ANY($${params.length}) OR lower(lu.username) = ANY($${params.length}))`,
       );
     }
+    // The search box's @name: what they said and what mentions them (part of the name, any case).
     if (who.length) {
       params.push(who.map(likePattern));
+      const n = params.length;
+      params.push(who.map((w) => `@[a-z0-9_.-]*${w.replaceAll('.', '\\.')}`)); // an @name containing it
       where.push(
-        `(lower(ltrim(m.author_name, '@')) LIKE ANY($${params.length}) OR lower(lu.username) LIKE ANY($${params.length}))`,
+        `(lower(ltrim(m.author_name, '@')) LIKE ANY($${n}) OR lower(lu.username) LIKE ANY($${n})
+          OR EXISTS (SELECT 1 FROM unnest(m.mentions) AS x WHERE lower(x) LIKE ANY($${n}))
+          OR lower(m.body) ~ ANY($${n + 1}))`,
       );
     }
     if (only === 'paid') where.push(`m.kind = 'paid'`);

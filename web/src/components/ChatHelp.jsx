@@ -62,9 +62,10 @@ export default function ChatHelp({ live, onClose }) {
         <dl>
           <dt>⌕ Search</dt>
           <dd>
-            Words from anywhere in this video’s chat (they’re highlighted), <b>@name</b> for what someone
-            said, and filters: favorites, super chats, JimBob and mods, YouTube, or the site. Tap a message’s
-            time to jump there.
+            Words from anywhere in this video’s chat (they’re highlighted); <b>@name</b> for what someone said
+            and every mention of them (names pop up as you type, or tap a name in the chat while searching);
+            and filters: favorites, super chats, JimBob and mods, YouTube, or the site. Tap a message’s time
+            to jump there.
           </dd>
           <dt>Type @</dt>
           <dd>Suggests names from this chat.</dd>
