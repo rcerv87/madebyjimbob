@@ -90,6 +90,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-222 | Conversation tracker in chat | Chat & moderation | 1 | Should | M | MBJ-219, MBJ-218 |
 | MBJ-224 | Member history: everything someone said, searchable, with links to the source | Chat & moderation | 1 | Should | M | MBJ-116, MBJ-218 |
 | MBJ-225 | Live conversations: join several at once and switch between them | Chat & moderation | 1 | Should | L | MBJ-222 |
+| MBJ-226 | Weekly recap: the week's best chat moments for JimBob | Chat & moderation | 1 | Should | M | MBJ-222, MBJ-225, MBJ-223 |
 | MBJ-701 | Video management in Studio | Studio & analytics | 1 | Must | L | MBJ-102 |
 | MBJ-703 | Members and revenue dashboard | Studio & analytics | 1 | Should | M | MBJ-104, MBJ-102 |
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
@@ -718,6 +719,20 @@ Acceptance criteria:
 - [x] Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)
 - [x] Show only their messages: a bar above the chat with Show everyone
 - [x] Ruben, 2026-10-03
+
+### MBJ-226 — Weekly recap: the week's best chat moments for JimBob
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-222, MBJ-225, MBJ-223
+
+As JimBob, I want to look back over the week's streams and pick the best conversations, super chats and moments, to go over them in a weekly recap show.
+
+Acceptance criteria:
+- [ ] Studio → Recap: pick a week (or any dates); it gathers across that week's streams: the most active conversations (MBJ-222/225), super chats and Bob Chats, the most-liked comments, the busiest chat moments, and the most talked-about words or topics
+- [ ] Each conversation reads as one piece: a threaded view (who answered whom, with branches indented), each message with its stream and moment, and a link that opens the video there
+- [ ] JimBob stars what he wants to cover; starred items form an ordered rundown for the recap show, which he can print or open on a second screen
+- [ ] Starred items can go on screen during the recap stream through the overlay (MBJ-223), one at a time
+- [ ] Optional: AI summaries of each conversation and of the week, from chat and transcripts (MBJ-605)
+- [ ] Ruben, 2026-10-03: JimBob could do weekly recaps going over highlights of the chats and other interactions
 
 ### MBJ-225 — Live conversations: join several at once and switch between them
 
