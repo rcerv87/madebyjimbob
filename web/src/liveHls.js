@@ -46,7 +46,9 @@ export function attachLive(el, src, onReady) {
       const b = el.buffered;
       const sk = el.seekable;
       const earliest = Math.min(b.length ? b.start(0) : Infinity, sk.length ? sk.start(0) : Infinity);
-      if (!Number.isFinite(earliest) || to < earliest || to > el.currentTime) return false;
+      // Back as far as what's buffered or still in the live window; forward only up to what's buffered.
+      const latest = b.length ? b.end(b.length - 1) - 0.5 : el.currentTime;
+      if (!Number.isFinite(earliest) || to < earliest || to > latest) return false;
       if (hls)
         Object.assign(hls.config, { liveMaxLatencyDurationCount: Infinity, maxLiveSyncPlaybackRate: 1 });
       el.currentTime = to;
