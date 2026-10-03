@@ -42,7 +42,10 @@ export async function deleteServer(id) {
 export const findLivePrimaryIp = async () =>
   (await call('GET', `/primary_ips?label_selector=${encodeURIComponent(LIVE_LABEL)}`)).primary_ips[0] || null;
 
-export const IMAGE_LABEL = 'mbj=live-image';
+// v2: images whose containers don't restart at boot. Older images (v1) started the previous Owncast and recorder for
+// a few seconds on every boot, and OBS could connect to that old Owncast.
+export const IMAGE_LABEL = 'mbj=live-image-v2';
+const OLD_IMAGE_LABEL = 'mbj=live-image';
 
 // The saved server image Go Live starts from, if one exists (newest first).
 export async function findLiveImage() {
@@ -58,8 +61,18 @@ export const snapshotServer = (id) =>
   call('POST', `/servers/${id}/actions/create_image`, {
     type: 'snapshot',
     description: 'MADEbyJIMBOB live server (Docker + Owncast)',
-    labels: { mbj: 'live-image' },
+    labels: { mbj: 'live-image-v2' },
   }).then((d) => d.action);
+
+// Deletes saved images from before v2 (they cost a little each month and must never be used).
+export async function deleteOldImages() {
+  const { images } = await call(
+    'GET',
+    `/images?type=snapshot&label_selector=${encodeURIComponent(OLD_IMAGE_LABEL)}`,
+  );
+  for (const image of images) await call('DELETE', `/images/${image.id}`);
+  return images.length;
+}
 
 export const getAction = (id) => call('GET', `/actions/${id}`).then((d) => d.action);
 
