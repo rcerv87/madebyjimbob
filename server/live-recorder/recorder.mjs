@@ -46,7 +46,17 @@ const SEGMENT_S = 2;
 const QUIET_S = 12; // no new video this long = the stream ended (for now)
 const REJOIN_S = 120; // OBS back within this long after that (an internet blip): the same recording continues
 
-const log = (...a) => console.log(new Date().toISOString(), ...a);
+// The log also goes to R2 (<prefix>/logs/<server>.log, the last 500 lines, every 30 s when it changed), so a problem on a
+// live server can be read without logging in to it.
+const logLines = [];
+let logDirty = false;
+const log = (...a) => {
+  const line = [new Date().toISOString(), ...a].join(' ');
+  console.log(line);
+  logLines.push(line);
+  if (logLines.length > 500) logLines.shift();
+  logDirty = true;
+};
 // ffmpeg copies the sound out of each segment (no re-encoding). Without it there's simply no audio-only copy.
 const DEBUG = Boolean(process.env.RECORDER_DEBUG);
 const HAS_FFMPEG = spawnSync('ffmpeg', ['-version']).status === 0;
@@ -479,6 +489,26 @@ if (process.env.LIVE_EDGE_PLAYLISTS === 'on')
     await edgeTick().catch((err) => log('live playlist failed', err.message));
     edgeBusy = false;
   }, 250);
+
+async function shipLog() {
+  if (!logDirty) return;
+  logDirty = false;
+  await r2Put(
+    cfg,
+    `${PREFIX}/logs/${SERVER_ID || 'unknown'}.log`,
+    `${logLines.join('\n')}\n`,
+    'text/plain',
+  ).catch(() => {
+    logDirty = true;
+  });
+}
+setInterval(shipLog, 30_000);
+// Whatever stops the recorder is in the log (and docker restarts it).
+for (const ev of ['uncaughtException', 'unhandledRejection'])
+  process.on(ev, (err) => {
+    log(ev, err?.stack || err);
+    shipLog().finally(() => process.exit(1));
+  });
 
 let busy = false;
 setInterval(async () => {
