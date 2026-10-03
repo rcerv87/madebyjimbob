@@ -263,17 +263,6 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
   }, [dvr, src]);
 
   // Paused by the phone as the page hid (not by the viewer): that's a lock too.
-  // Rewound only a little: the player catches up with the end of the recording (it's saved in 6-second chunks, so it
-  // runs ~10–15 s behind live) and keeps waiting for the next chunk. Within 30 s of live, waiting means go live.
-  const onVideoWaiting = () => {
-    const video = ref.current;
-    if (!video || listeningRef.current || rewindTo === null || !dvr) return;
-    if (liveAt() - video.currentTime < 30) {
-      posRef.current = liveAt();
-      setRewindTo(null);
-    }
-  };
-
   const onVideoPause = () => {
     pausedAt.current = Date.now();
     if (document.hidden && pausedAt.current - hiddenAt.current < 1000 && isPhone() && !listeningRef.current) {
@@ -525,7 +514,6 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
           if (listeningRef.current) ref.current?.pause();
           else audioRef.current?.pause();
         }}
-        onWaiting={onVideoWaiting}
         hidden={listening}
       />
       <audio
