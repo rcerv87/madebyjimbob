@@ -49,6 +49,15 @@ export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu }) {
           <>
             {notes && <Bell notes={notes} />}
             <span className={`tier-pill tier-${user.tier}`}>{TIER_LABEL[user.tier]}</span>
+            {/* The next tier up: Free → Plus, Plus → Premium (admins count as Premium). */}
+            {(user.tier === 'free' || user.tier === 'plus') && (
+              <Link
+                className="upgrade-btn"
+                to={`/membership?tier=${user.tier === 'free' ? 'plus' : 'premium'}`}
+              >
+                Upgrade
+              </Link>
+            )}
             <AccountMenu user={user} onSignOut={onSignOut} />
             <button className="text-btn" onClick={onSignOut}>
               Sign out
