@@ -7,54 +7,30 @@
 3. **Server decides access.** Tier checks and signed URLs happen on the server.
 4. **Start simple, scale by seams.** One Render service today; split out the chat ingest worker and add Redis when load or deployment needs require it.
 
-## System overview
+## System overview (as running, 2026-10-04)
 
-```mermaid
-flowchart LR
-  OBS[JimBob / OBS] -->|RTMP| YT[YouTube Live]
-  OBS -.->|later| OWN[Owned ingest<br/>MediaMTX / Owncast]
-  YT -->|chat API| ING[Chat ingest worker]
-  RUM[Rumble Live API] --> ING
-  OWN -.-> R2[(Cloudflare R2<br/>HLS segments)]
-  CFS[(Cloudflare Stream<br/>VOD)]
+![System map: OBS and Restream feed YouTube, Rumble and Owncast on Hetzner; Owncast and the recorder upload to Cloudflare R2; viewers get video from live.madebyjimbob.app and pages and chat from Render, which talks to Stripe, Shopify and Resend](system-map.svg)
 
-  subgraph Render
-    API[API + WebSockets]
-    ING
-    PG[(Postgres)]
-    RD[(Redis — later)]
-  end
+Solid lines are running; dashed ones aren't switched on yet. Source: `docs/system-map.svg` (hand-drawn SVG; edit the
+coordinates there).
 
-  ING --> PG
-  ING --> API
-  API --> PG
-  API -.-> RD
-
-  WEB[Web app] --> API
-  MOB[iOS / Android] --> API
-  WEB --> CFS
-  MOB --> CFS
-  WEB --> YT
-  MOB --> YT
-  API --> PAY[Stripe + RevenueCat]
-  API --> LK[LiveKit — call-ins]
-```
+Planned and not shown: YouTube/Rumble live chat merged in (MBJ-301), the OBS super chat overlay (MBJ-223), store apps
+(ADR-008), a second web instance with Redis (MBJ-205). A styled version of this map is on the strategy meeting page.
 
 ## Components
 
 | Component | Tech | Responsibility |
 |---|---|---|
-| API server | Node, Express, `ws` | REST API, WebSocket chat rooms, serves web build |
-| Chat ingest worker | Node (same repo, separate Render worker) | Polls YouTube/Rumble live chat, writes to Postgres, publishes to API |
-| Database | Postgres (Render) | System of record: users, videos, chat, entitlements, XP |
-| Pub/sub + rate limits | Redis / Render Key Value (Phase 3+) | Cross-instance chat fan-out, rate limiting, vote counters |
-| VOD | Cloudflare Stream | Upload, transcode, HLS delivery, thumbnails, captions |
-| Owned live (later) | MediaMTX or Owncast → Cloudflare R2 | Live HLS without platform dependency; audio-only rendition |
-| Web | React + Vite | Viewer app and Studio |
-| Mobile | Expo + expo-video | iOS/Android with background audio and PiP |
-| Payments | Stripe (web), RevenueCat (unifies Stripe/Apple/Google) | Subscriptions, tips |
-| Call-ins | LiveKit | Green room and caller media into OBS |
-| AI jobs | Whisper (captions), Claude API (recaps, chat analysis, moderation assist) | Batch jobs after each stream |
+| API server | Node 22, Express, `ws`, Better Auth | REST API, WebSocket chat rooms, serves the web build, Stripe/Resend webhooks |
+| Background jobs | Same process (timers) | Live server job (start, configure, End stream drain, idle/cap delete), replay trim (MBJ-312), account erasure, YouTube link matching |
+| Database | Postgres (Render), node-pg-migrate | System of record: users, videos, chat, comments, memberships, super chats, payment events |
+| Owned live | Owncast + recorder (docker) on a Hetzner CPX31 per stream | RTMP in, HLS ladder to R2; recorder builds the rewind copy, replay and audio (ADR-004) |
+| Video storage | Cloudflare R2 behind `live.madebyjimbob.app` (cached) | Live pieces, replays, and the library (ADR-010); Cloudflare Stream only for the first imports |
+| Web | React 18 + Vite, hls.js | Viewer app, Studio, PWA |
+| Payments | Stripe Checkout + Customer Portal (REST, no SDK) | Memberships and super chats; `users.tier` from subscriptions (ADR-013) |
+| Email | Resend | Account email (built, not switched on; ADR-012) |
+| Import | Import Helper on Ruben's PC (yt-dlp, ffmpeg) | YouTube video, chat replay and comments in; uploads to Stream |
+| Mobile (planned) | Wrap the web app or Expo (ADR-008) | Store apps with background audio and downloads |
 
 ## Phases
 
