@@ -121,6 +121,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-808 | Art section | Library & community | 2 | Should | S | MBJ-807 |
 | MBJ-205 | Redis pub/sub and rate limits | Chat & moderation | 3 | Should | M | MBJ-001 |
 | MBJ-223 | Pop-out chat and "show on stream" overlay for OBS | Chat & moderation | 3 | Should | M | MBJ-310, MBJ-109 |
+| MBJ-227 | Goals and progress bars for super chats and memberships | Chat & moderation | 3 | Should | M | MBJ-109, MBJ-223 |
 | MBJ-301 | Live video model and live page | Live via YouTube | 3 | Must | M | MBJ-003 |
 | MBJ-302 | YouTube live chat ingest worker | Live via YouTube | 3 | Must | L | MBJ-301, MBJ-205, MBJ-006 |
 | MBJ-303 | Live chat mode in the UI | Live via YouTube | 3 | Must | M | MBJ-302 |
@@ -719,6 +720,21 @@ Acceptance criteria:
 - [x] Highlights belong to one chat: they survive a page refresh and start clean in a new stream's chat (kept on this device)
 - [x] Show only their messages: a bar above the chat with Show everyone
 - [x] Ruben, 2026-10-03
+
+### MBJ-227 — Goals and progress bars for super chats and memberships
+
+**Status:** To do · **Phase 3 — Live via YouTube** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-109, MBJ-223
+
+As JimBob, I want to set a goal ("$500 tonight for a new mic", "100 members by Christmas") and show everyone how close we are, so people chip in to push it over.
+
+Acceptance criteria:
+- [ ] Studio → Goals: create a goal with a title, a target (dollars from super chats, new members, or both) and an optional end (this stream, a date, or open-ended); one or more active at a time
+- [ ] A progress bar on /live (under the player), on /superchat and on the membership page: amount so far, target, percent, and who just pushed it ("+$20 from @fan"); it updates the moment a payment lands
+- [ ] On stream: the same bar as an OBS Browser Source overlay (with MBJ-223), so YouTube and Rumble viewers see it too
+- [ ] Reaching the goal: a short celebration in the bar and in chat; JimBob can raise the target or start the next goal from Studio
+- [ ] Counts only payments made on the site (super chats, new or upgraded memberships), never YouTube's; refunded payments come off
+- [ ] Studio shows past goals and how long each took
+- [ ] Ruben, 2026-10-04
 
 ### MBJ-226 — Weekly recap: the week's best chat moments for JimBob
 
