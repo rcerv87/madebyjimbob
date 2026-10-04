@@ -379,3 +379,34 @@ One row per server Go Live created.
 | `watch_sessions (user_id, video_id, seconds, mode)` for XP and analytics | MBJ-601 |
 | `xp_events (user_id, kind, amount, ref_id, created_at)`, `badges`, `user_badges` | MBJ-602 |
 | `recaps (video_id, summary_md, chapters_json)` | MBJ-605 |
+
+### Payments (ADR-013)
+- `users.stripe_customer_id` (text unique): the member's Stripe customer. `users.manual_tier`: a tier given by hand
+  (testers, comps); `users.tier` = the higher of it and any live subscription.
+
+### subscriptions
+| column | type | notes |
+|---|---|---|
+| id | text PK | the provider's id (Stripe `sub_…`) |
+| user_id | bigint → users | cascade |
+| provider | text | `stripe` |
+| status | text | active, trialing, past_due (still a member), canceled, unpaid, incomplete |
+| tier | text | plus or premium (from the price) |
+| price_id, billing_interval | text | month or year |
+| current_period_end | timestamptz | renews or ends then |
+| cancel_at_period_end | boolean | |
+
+### superchats
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| user_id | bigint → users | set null when the account goes |
+| video_id | bigint → videos | the stream live on the site when it was bought; null if none (Studio only) |
+| amount_cents, currency | int, text | $2 to $500 |
+| message | text | up to 200 characters |
+| status | text | pending → paid (or expired, refunded) |
+| checkout_id | text unique | Stripe Checkout session |
+| chat_message_id | bigint → chat_messages | the paid message posted to the live chat |
+
+### payment_events
+Webhook event ids already applied (each event once).

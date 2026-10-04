@@ -6,6 +6,8 @@ import { api } from '../api.js';
 import useTitle from '../useTitle.js';
 import { createClock, useClock } from '../clock.js';
 import ChatPanel from '../components/ChatPanel.jsx';
+import SuperchatForm from '../components/SuperchatForm.jsx';
+import { useSearchParams } from 'react-router-dom';
 
 // How far behind live the live feed itself runs (seconds); jumps closer than this to live just play live.
 const LIVE_EDGE_S = 8;
@@ -688,6 +690,16 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
 export default function Live({ session }) {
   useTitle('Live');
   const [live, setLive] = useState(null);
+  // Super chats through the site (MBJ-109): a button while live; ?superchat=sent after paying.
+  const [superchatOpen, setSuperchatOpen] = useState(false);
+  const [params] = useSearchParams();
+  const sent = params.get('superchat') === 'sent';
+  const [payments, setPayments] = useState(false);
+  useEffect(() => {
+    api('/membership')
+      .then((d) => setPayments(d.configured))
+      .catch(() => {});
+  }, []);
   const clock = useMemo(() => createClock(), []);
   const seekRef = useRef(null);
 
@@ -720,7 +732,40 @@ export default function Live({ session }) {
           <h1>JimBob live</h1>
           {live.online && <span className="live-badge">LIVE</span>}
           {live.online && live.title && <span className="muted">{live.title}</span>}
+          {payments && (
+            <button
+              type="button"
+              className="primary-btn superchat-btn"
+              onClick={() => setSuperchatOpen(true)}
+            >
+              $ Super chat
+            </button>
+          )}
         </div>
+        {sent && (
+          <p className="notice" role="status">
+            Thanks! Your super chat is in the chat.
+          </p>
+        )}
+        {superchatOpen && (
+          <div className="dialog-backdrop" onClick={() => setSuperchatOpen(false)}>
+            <div
+              className="dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Send a super chat"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>Super chat JimBob</h2>
+              <SuperchatForm session={session} returnTo="/live" onDone={() => setSuperchatOpen(false)} />
+              <div className="dialog-actions">
+                <button type="button" className="text-btn" onClick={() => setSuperchatOpen(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {live.online && live.hls ? (
           <LivePlayer src={live.hls} dvr={live.dvr} clock={clock} seekRef={seekRef} />
         ) : (

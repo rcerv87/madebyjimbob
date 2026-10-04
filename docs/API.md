@@ -35,6 +35,12 @@ they get `isAdmin: true` and see every tier.
 | GET | `/videos/:id/chat/search` | tier | MBJ-218: `?q=` words (any case, anywhere in a message), `from=` exact names or @handles (comma separated; site and linked names), `who=` part of a name (the search box's @name: their messages and messages mentioning them), `only=paid\|youtube\|site\|staff`, `live=1` (said during the stream). At least one of them. `{ messages, more }`, video order, up to 300 |
 | GET | `/videos/:id/chat/names` | tier | The search box's @ suggestions: `?q=` part of a name; `{ names }`, names starting with it first, then the most talkative, up to 8 |
 | GET | `/videos/:id/chat/conversation/:messageId` | tier | MBJ-222: from any message, up its replies to where it started, then every reply, reply to a reply, and branch below that. `{ messages }`, video order, up to 1,000; 404 if no such message |
+| GET | `/membership` | — | ADR-013: `{ configured, plans: [{ tier, interval, amount, currency }], tier, membership, superchat: { minCents, maxCents } }`; `membership` = `{ tier, status, interval, renewsAt, cancelAtPeriodEnd, live }` or null |
+| POST | `/membership/checkout` | session | `{ tier: plus\|premium, interval: month\|year, returnTo }` → `{ url }` (Stripe Checkout). 400 bad plan, 409 already a member, 503 payments not set up |
+| POST | `/membership/portal` | session | → `{ url }` (Stripe Customer Portal: card, switch, cancel, receipts) |
+| POST | `/superchats/checkout` | session | `{ amountCents (200–50000), message, returnTo }` → `{ url }`; any time; once paid it goes into the live chat if JimBob is live on the site, and into Studio |
+| POST | `/webhooks/stripe` | Stripe signature | Checkout, subscription and refund events; each applied once |
+| GET | `/studio/superchats` | admin | Newest paid super chats: `{ superchats: [{ id, author, amountCents, currency, message, paidAt, videoId, videoTitle }] }` |
 | GET | `/account/favorites` | session | `{ favorites: [{ username, color, since }], active, colors }` (MBJ-220). `active` = Premium (favorites highlight); the list comes back either way so it can be managed. On `/me` as `user.favorites` only while Premium (else `[]`) |
 | PUT | `/account/favorites/:username` | session, Premium | `{ color }` from `red orange yellow lime green teal blue indigo purple pink`: add or recolor. 403 `{ upgrade: 'premium' }` below Premium; 400 for yourself, a bad color, or over 100 favorites; 404 no such member |
 | DELETE | `/account/favorites/:username` | session | Remove a favorite (any tier) |

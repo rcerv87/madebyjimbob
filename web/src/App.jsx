@@ -23,6 +23,11 @@ const Art = lazyPage(() => import('./pages/Art.jsx'));
 const ResetPassword = lazyPage(() => import('./pages/ResetPassword.jsx'));
 const Account = lazyPage(() => import('./pages/Account.jsx'));
 const Profile = lazyPage(() => import('./pages/Profile.jsx'));
+const Membership = lazyPage(() => import('./pages/Membership.jsx'));
+const MembershipWelcome = lazyPage(() =>
+  import('./pages/Membership.jsx').then((m) => ({ default: m.MembershipWelcome })),
+);
+const Superchat = lazyPage(() => import('./pages/Superchat.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 import { useKeepPlaying } from './keepPlaying.js';
@@ -90,6 +95,9 @@ export default function App() {
             <Route path="/watch/:id" element={null} />
             <Route path="/studio" element={<Studio user={user} />} />
             <Route path="/live" element={<Live session={session} />} />
+            <Route path="/membership" element={<Membership session={session} />} />
+            <Route path="/membership/welcome" element={<MembershipWelcome session={session} />} />
+            <Route path="/superchat" element={<Superchat session={session} />} />
             <Route path="/reset-password" element={<ResetPassword session={session} />} />
             <Route path="/account" element={<Account session={session} onUserChanged={refreshUser} />} />
             {/* /@username profiles (MBJ-116); anything else here is a 404 page. */}

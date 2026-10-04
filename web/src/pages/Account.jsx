@@ -4,6 +4,7 @@ import { api, timeAgo, TIER_LABEL } from '../api.js';
 import { PushPrompt } from '../notifications.jsx';
 import { usePush } from '../push.js';
 import useTitle from '../useTitle.js';
+import { PERKS, goTo } from '../membership.js';
 import { FAVORITE_COLORS } from '../favorites.js';
 
 // Account settings (MBJ-106): profile, sign-in and security, notifications, membership, privacy.
@@ -518,27 +519,55 @@ function NotificationsSection() {
   );
 }
 
-const PERKS = [
-  ['Free videos', true, true, true],
-  ['The full video library', false, true, true],
-  ['Premium-only streams and early access', false, false, true],
-  ['Post in chat', 'Slow mode', true, true],
-  ['Listen only and background audio', false, true, true],
-  ['Member podcast feed', false, true, true],
-  ['Chat badge', false, 'Plus', 'Premium'],
-  ['Call in to live shows', false, false, true],
-  ['Favorite members, highlighted in every chat', false, false, true],
-];
-
+// Membership (MBJ-104): the plan, when it renews or ends, and Stripe's page to change card, switch, or cancel.
 function MembershipSection({ user }) {
   const mark = (v) => (v === true ? '✓' : v || '—');
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api('/membership')
+      .then(setData)
+      .catch((e) => setError(e.message));
+  }, [user.tier]);
+  const m = data?.membership;
+  const day = (iso) =>
+    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const manage = async () => {
+    try {
+      goTo.url((await api('/membership/portal', { method: 'POST' })).url);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
   return (
     <section className="panel settings-section" id="membership">
       <h2>Membership</h2>
       <p>
         You’re on <strong>{TIER_LABEL[user.tier]}</strong>.{' '}
-        {user.tier === 'free' && 'Paid memberships open soon. Here’s what they’ll include:'}
+        {m?.live &&
+          m.renewsAt &&
+          (m.cancelAtPeriodEnd
+            ? `It ends on ${day(m.renewsAt)}.`
+            : `It renews on ${day(m.renewsAt)} (${m.interval === 'year' ? 'yearly' : 'monthly'}).`)}
       </p>
+      {m?.status === 'past_due' && (
+        <p className="error">
+          Your last payment didn’t go through. Update your card in Manage billing to keep your plan.
+        </p>
+      )}
+      <p className="settings-actions">
+        {m ? (
+          <button type="button" className="primary-btn" onClick={manage}>
+            Manage billing
+          </button>
+        ) : (
+          <Link className="primary-btn" to="/membership">
+            {data?.configured ? 'See plans and join' : 'See what memberships include'}
+          </Link>
+        )}{' '}
+        {m && <span className="muted small">Change card, switch plan, cancel, or see receipts.</span>}
+      </p>
+      {error && <p className="error small">{error}</p>}
       <div className="table-wrap">
         <table className="perks-table">
           <thead>

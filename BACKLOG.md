@@ -289,7 +289,7 @@ Acceptance criteria:
 
 ### MBJ-104 — Web subscriptions and entitlements
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-101
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-101
 
 As a viewer, I want to subscribe to Plus or Premium on the web.
 
@@ -301,14 +301,14 @@ Acceptance criteria:
 
 ### MBJ-105 — Pricing page and upsell
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-104
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-104
 
 As a free viewer, I want to see what paid tiers include and upgrade in one step.
 
 Acceptance criteria:
-- [ ] Pricing page shows the tier matrix from the PRD
-- [ ] Locked video screen links to upgrade with that tier preselected
-- [ ] After purchase, the user returns to the video and it plays
+- [x] Pricing page shows the tier matrix from the PRD
+- [x] Locked video screen links to upgrade with that tier preselected
+- [x] After purchase, the user returns to the video and it plays
 
 ### MBJ-106 — Account settings
 
@@ -353,7 +353,7 @@ Acceptance criteria:
 
 ### MBJ-109 — Payments API and receipts
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-104
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-104
 
 As a member, I want reliable billing; as JimBob, I want to see and manage payments.
 

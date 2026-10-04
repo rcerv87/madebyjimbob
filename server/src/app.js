@@ -14,7 +14,19 @@ import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
 import { pageMeta, renderPage } from './pages.js';
 import { toNodeHandler } from 'better-auth/node';
-import { auth, sessionUser, ADMIN_EMAILS } from './auth.js';
+import { auth, sessionUser, ADMIN_EMAILS, baseURL } from './auth.js';
+import {
+  billingConfigured,
+  plans,
+  membershipCheckout,
+  billingPortal,
+  superchatCheckout,
+  verifyStripeSignature,
+  handleStripeEvent,
+  membershipOf,
+  SUPERCHAT_MIN_CENTS,
+  SUPERCHAT_MAX_CENTS,
+} from './billing.js';
 import accountRouter from './account.js';
 import { viewerKey, recordView } from './views.js';
 import { findProfile, profileFor } from './profiles.js';
@@ -1054,6 +1066,121 @@ app.delete(
   }),
 );
 
+// ---------- memberships and super chats (MBJ-104, MBJ-109, ADR-013) ----------
+// The plans and prices (from Stripe), and the viewer's own membership.
+app.get(
+  '/api/membership',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    res.json({
+      configured: billingConfigured(),
+      plans: await plans(),
+      tier: user?.tier || 'free',
+      membership: user ? await membershipOf(user.id) : null,
+      superchat: { minCents: SUPERCHAT_MIN_CENTS, maxCents: SUPERCHAT_MAX_CENTS },
+    });
+  }),
+);
+
+// Stripe errors meant for the viewer (bad plan, already a member) keep their status; others are server errors.
+const billingRoute = (handler) =>
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in first.' });
+    if (!billingConfigured()) return res.status(503).json({ error: 'Payments aren’t open yet.' });
+    try {
+      res.json({ url: await handler(user, req) });
+    } catch (err) {
+      if (err.status === 400 || err.status === 409)
+        return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  });
+
+// { tier: plus | premium, interval: month | year, returnTo } → { url } of Stripe's checkout page.
+app.post(
+  '/api/membership/checkout',
+  billingRoute((user, req) =>
+    membershipCheckout(user, {
+      tier: req.body?.tier,
+      interval: req.body?.interval,
+      returnTo: req.body?.returnTo,
+      site: baseURL,
+    }),
+  ),
+);
+
+// → { url } of Stripe's page to change card, switch plan, cancel, and see receipts.
+app.post(
+  '/api/membership/portal',
+  billingRoute((user) => billingPortal(user, { site: baseURL })),
+);
+
+// { amountCents, message, returnTo } → { url }: a super chat any time (madebyjimbob.app/superchat), so viewers watching
+// on YouTube or Rumble pay JimBob here instead. Once paid: in the live chat if he's live on the site, and in Studio.
+app.post(
+  '/api/superchats/checkout',
+  billingRoute(async (user, req) => {
+    const status = await liveStatus().catch(() => null);
+    const videoId = status?.online ? status.dvr?.videoId : null;
+    return superchatCheckout(user, {
+      videoId,
+      amountCents: req.body?.amountCents,
+      message: filterText(textField(req.body?.message)).slice(0, 200),
+      returnTo: req.body?.returnTo,
+      site: baseURL,
+    });
+  }),
+);
+
+// A paid super chat joins its stream's chat at the live moment (or the end, if the stream has finished).
+async function postSuperchat(sc) {
+  if (!sc.video_id) return; // not live on the site: Studio → Super chats shows it
+  const { rows: who } = await pool.query('SELECT username FROM users WHERE id = $1', [sc.user_id]);
+  const status = await liveStatus().catch(() => null);
+  let offsetMs = null;
+  if (status?.dvr?.videoId && String(status.dvr.videoId) === String(sc.video_id)) {
+    const started = new Date(status.dvr.startedAt).getTime() + (status.dvr.gapS || 0) * 1000;
+    offsetMs = Math.max(0, Date.now() - started - 5000);
+  }
+  if (offsetMs === null) {
+    const { rows } = await pool.query(
+      'SELECT coalesce(max(offset_ms), 0) AS at FROM chat_messages WHERE video_id = $1',
+      [sc.video_id],
+    );
+    offsetMs = rows[0].at;
+  }
+  const amount = `$${(sc.amount_cents / 100).toFixed(2)}`;
+  const { rows } = await pool.query(
+    `INSERT INTO chat_messages (video_id, source, user_id, author_name, kind, body, amount_text, mentions, offset_ms, posted_live)
+     VALUES ($1, 'native', $2, $3, 'paid', $4, $5, $6, $7, true) RETURNING id`,
+    [
+      sc.video_id,
+      sc.user_id,
+      who[0]?.username || 'Supporter',
+      sc.message,
+      amount,
+      extractMentions(sc.message),
+      offsetMs,
+    ],
+  );
+  await pool.query('UPDATE superchats SET chat_message_id = $2 WHERE id = $1', [sc.id, rows[0].id]);
+  const { rows: full } = await pool.query(`${CHAT_SELECT} WHERE m.id = $1`, [rows[0].id]);
+  broadcast(sc.video_id, { type: 'chat', message: chatRow(full[0]) });
+  logger.info({ superchat: sc.id, videoId: sc.video_id, amount }, 'super chat posted');
+}
+
+// Stripe tells us about checkouts, renewals, cancellations, failed payments and refunds here.
+app.post(
+  '/api/webhooks/stripe',
+  wrap(async (req, res) => {
+    if (!verifyStripeSignature(req.rawBody, req.headers['stripe-signature']))
+      return res.status(400).json({ error: 'Bad signature.' });
+    const result = await handleStripeEvent(req.body, { onPaidChat: postSuperchat });
+    res.json({ received: true, result });
+  }),
+);
+
 // ---------- email provider webhooks ----------
 // Resend reports bounces and spam complaints here; those addresses never get mail again.
 app.post(
@@ -1067,6 +1194,35 @@ app.post(
 
 // ---------- studio dashboard (admins only) ----------
 app.use('/api/studio', requireAdmin);
+
+// Studio → Super chats (MBJ-109): the newest paid super chats from the site, live on the site or not, so JimBob can
+// read them during a YouTube or Rumble stream. ?since=<ISO time> for only newer ones.
+app.get(
+  '/api/studio/superchats',
+  wrap(async (req, res) => {
+    const since = req.query.since ? new Date(String(req.query.since)) : null;
+    const { rows } = await pool.query(
+      `SELECT s.id, s.amount_cents, s.currency, s.message, s.paid_at, s.video_id, v.title AS video_title,
+              coalesce(u.username, 'Deleted user') AS author
+         FROM superchats s LEFT JOIN users u ON u.id = s.user_id LEFT JOIN videos v ON v.id = s.video_id
+        WHERE s.status = 'paid' AND ($1::timestamptz IS NULL OR s.paid_at > $1)
+        ORDER BY s.paid_at DESC LIMIT 100`,
+      [since && !Number.isNaN(since.getTime()) ? since.toISOString() : null],
+    );
+    res.json({
+      superchats: rows.map((r) => ({
+        id: r.id,
+        author: r.author,
+        amountCents: r.amount_cents,
+        currency: r.currency,
+        message: r.message,
+        paidAt: r.paid_at,
+        videoId: r.video_id,
+        videoTitle: r.video_title,
+      })),
+    });
+  }),
+);
 
 // Studio → Live (ADR-004): the stream's state, the server's, and what OBS needs.
 app.get(
