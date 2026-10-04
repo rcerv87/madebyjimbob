@@ -4246,3 +4246,21 @@ a.text-btn {
   font-weight: 700;
   text-decoration: underline;
 }
+
+/* The $ beside Send: a round gold button, so it reads as "pay" next to the plain Send. */
+.superchat-compose-btn {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font-weight: 800;
+  font-size: 17px;
+  cursor: pointer;
+}
+.superchat-compose-btn:hover,
+.superchat-compose-btn:focus-visible {
+  filter: brightness(1.08);
+}

@@ -4,6 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import Membership, { MembershipWelcome } from '../pages/Membership.jsx';
 import SuperchatForm from '../components/SuperchatForm.jsx';
 import Watch from '../pages/Watch.jsx';
+import ChatPanel from '../components/ChatPanel.jsx';
 import { goTo } from '../membership.js';
 
 function fakeApi(routes) {
@@ -143,5 +144,41 @@ describe('super chats (MBJ-109)', () => {
     render(<SuperchatForm session={{ user: { username: 'fan' } }} />);
     fireEvent.change(screen.getByLabelText('Other amount ($)'), { target: { value: '1' } });
     expect(screen.getByRole('button', { name: /super chat/ }).disabled).toBe(true);
+  });
+
+  test('the $ beside Send carries what was typed into the super chat', async () => {
+    fakeApi({ '/videos/7/chat': [200, { messages: [] }] });
+    const onSuperchat = vi.fn();
+    render(
+      <MemoryRouter>
+        <ChatPanel
+          videoId="7"
+          timeMs={0}
+          getTimeMs={() => 0}
+          onSeek={() => {}}
+          session={{ user: { username: 'fan' } }}
+          live
+          onSuperchat={onSuperchat}
+        />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByLabelText('Chat message'), { target: { value: ' @jimbob great point ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send as a super chat' }));
+    expect(onSuperchat).toHaveBeenCalledWith('@jimbob great point');
+  });
+
+  test('the form starts with that message', () => {
+    render(<SuperchatForm session={{ user: { username: 'fan' } }} initialMessage="@jimbob great point" />);
+    expect(screen.getByLabelText(/Message/).value).toBe('@jimbob great point');
+  });
+
+  test('no $ in the chat when super chats are off', async () => {
+    fakeApi({ '/videos/7/chat': [200, { messages: [] }] });
+    render(
+      <MemoryRouter>
+        <ChatPanel videoId="7" timeMs={0} getTimeMs={() => 0} onSeek={() => {}} session={{ user: null }} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('button', { name: 'Send as a super chat' })).toBeNull();
   });
 });
