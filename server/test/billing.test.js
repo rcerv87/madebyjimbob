@@ -140,6 +140,10 @@ describe('memberships (MBJ-104)', () => {
     const session = stripe.calls.find((c) => c.path === '/v1/checkout/sessions').body;
     assert.equal(session.mode, 'subscription');
     assert.equal(session['line_items[0][price]'], 'price_premium_y');
+    assert.deepEqual(
+      [session['payment_method_types[0]'], session['payment_method_types[1]']],
+      ['card', 'link'],
+    );
     assert.equal(session.client_reference_id, String(await userId('bill_fan')));
     assert.match(session.success_url, /\/membership\/welcome\?return=%2Fwatch%2F12$/);
     // A second try reuses the same Stripe customer.
@@ -283,6 +287,10 @@ describe('super chats (MBJ-109)', () => {
     assert.equal(r.status, 200);
     const session = stripe.calls.find((c) => c.path === '/v1/checkout/sessions').body;
     assert.equal(session.mode, 'payment');
+    assert.deepEqual(
+      [session['payment_method_types[0]'], session['payment_method_types[1]']],
+      ['card', 'link'],
+    );
     assert.equal(session['line_items[0][price_data][unit_amount]'], '1000');
     assert.match(session.success_url, /\/superchat\?superchat=sent$/);
     assert.equal(
