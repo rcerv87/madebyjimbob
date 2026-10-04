@@ -262,9 +262,10 @@ describe('Go Live (owned live, ADR-004)', () => {
       assert.equal(sent.status, 200);
       assert.equal(sent.data.message.postedLive, true);
 
+      owncast.online = false; // OBS stopped
       await call('/studio/live/stop', { method: 'POST', token: admin });
-      // Viewers see it end at once; OBS is cut off with a new key (no reconnecting) and the recorder gets time to
-      // upload what it still has, so the server isn't deleted yet.
+      // The stream is over for viewers; OBS's key is changed (no reconnecting) and the recorder gets time to upload
+      // what it still has, so the server isn't deleted yet.
       assert.equal((await call('/live')).data.online, false);
       assert.equal(owncast.disconnected, true);
       assert.equal(owncast.values.streamkeys[0].comment, 'ended');
@@ -333,6 +334,7 @@ describe('Go Live (owned live, ADR-004)', () => {
       await call('/studio/live/start', { method: 'POST', token: admin });
       owncast = { online: true, config: [] };
       await tickLive();
+      owncast.online = false; // OBS stopped
       await call('/studio/live/stop', { method: 'POST', token: admin });
       // A second End stream while it finishes changes nothing.
       await call('/studio/live/stop', { method: 'POST', token: admin });
@@ -531,6 +533,12 @@ describe('Go Live (owned live, ADR-004)', () => {
     assert.equal(live.hls, '/live/hls/stream.m3u8');
     assert.equal((await call('/studio/live', { token: admin })).data.server.status, 'ready');
 
+    // Not while OBS is still streaming: the recording needs the stream stopped first.
+    const refused = await call('/studio/live/stop', { method: 'POST', token: admin });
+    assert.equal(refused.status, 409);
+    assert.match(refused.data.error, /Stop streaming in OBS, then press End stream/);
+    assert.equal(hetzner.servers.length, 1);
+    owncast.online = false;
     const ended = await call('/studio/live/stop', { method: 'POST', token: admin });
     assert.equal(ended.data.server.status, 'off');
     assert.deepEqual(hetzner.servers, []);

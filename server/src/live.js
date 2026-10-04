@@ -469,6 +469,13 @@ export async function goLive(userId) {
   return activeServer();
 }
 
+// Is OBS sending to the live server right now? (End stream waits for OBS to stop: the recording needs the stream to end
+// first. A server that isn't answering doesn't count, so a broken one can still be ended.)
+export async function obsStreaming() {
+  const base = await owncastBase();
+  return base ? (await owncastStatus(base)).online : false;
+}
+
 // After End stream the recorder gets this long to upload what it still has queued, then the server goes anyway.
 const DRAIN_MINUTES = 15;
 
