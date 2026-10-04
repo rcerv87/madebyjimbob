@@ -64,7 +64,8 @@ Much lower delivery cost and full control; we operate the ingest box. Enables ba
   server at once, so the end of both was lost. Now the audio uploads on its own chain, the recorder logs "falling
   behind" / "caught up" when a chain is more than 30 s behind, and End stream cuts OBS off (new stream key, disconnect),
   then the live job deletes the server once the recorder marks the recording finished, or after 15 minutes
-  (`live_servers.stop_requested_at`). Viewers see the stream end at once; Studio says it's finishing the upload.
+  (`live_servers.stop_requested_at`). Viewers see the stream end at once; Studio says it's finishing the upload. End stream is refused while OBS is still
+  streaming (Ruben, 2026-10-04): stop streaming in OBS first. A server that isn't answering can still be ended.
 - **Reconnects (2026-10-02):** if OBS drops and comes back within 10 minutes, the recorder keeps adding to the same
   recording with `#EXT-X-DISCONTINUITY` at each join (Owncast's clock and file names restart), so viewers can still rewind
   to the start and it stays one replay. The site sets the video back to live (no length) and updates its length when

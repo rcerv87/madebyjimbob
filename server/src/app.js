@@ -8,7 +8,16 @@ import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback, deleteFromStream, createDirectUpload, streamConfigured } from './stream.js';
 import { queueImports, listImports, jobRow, helperStatus, youtubeId } from './imports.js';
 import { checkReplacement } from './replacements.js';
-import { liveConfigured, liveStatus, studioLive, goLive, endLive, proxyHls, archiveFile } from './live.js';
+import {
+  liveConfigured,
+  liveStatus,
+  studioLive,
+  goLive,
+  endLive,
+  obsStreaming,
+  proxyHls,
+  archiveFile,
+} from './live.js';
 import { parseChannel, requestListing, channelPage, JIMBOB_CHANNEL } from './channel.js';
 import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
@@ -1273,6 +1282,11 @@ app.post(
 app.post(
   '/api/studio/live/stop',
   wrap(async (_req, res) => {
+    if (await obsStreaming())
+      return res.status(409).json({
+        error:
+          'Can’t end the stream while OBS is still streaming. Stop streaming in OBS, then press End stream.',
+      });
     await endLive('ended');
     res.json(await studioLive());
   }),
