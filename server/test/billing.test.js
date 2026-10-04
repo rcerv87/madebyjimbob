@@ -142,7 +142,7 @@ describe('memberships (MBJ-104)', () => {
     assert.equal(session['line_items[0][price]'], 'price_premium_y');
     assert.deepEqual(
       [session['payment_method_types[0]'], session['payment_method_types[1]']],
-      ['card', 'link'],
+      ['card', undefined],
     );
     assert.equal(session.client_reference_id, String(await userId('bill_fan')));
     assert.match(session.success_url, /\/membership\/welcome\?return=%2Fwatch%2F12$/);
@@ -289,7 +289,7 @@ describe('super chats (MBJ-109)', () => {
     assert.equal(session.mode, 'payment');
     assert.deepEqual(
       [session['payment_method_types[0]'], session['payment_method_types[1]']],
-      ['card', 'link'],
+      ['card', undefined],
     );
     assert.equal(session['line_items[0][price_data][unit_amount]'], '1000');
     assert.match(session.success_url, /\/superchat\?superchat=sent$/);
