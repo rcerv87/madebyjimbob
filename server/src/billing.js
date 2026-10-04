@@ -127,9 +127,9 @@ export async function membershipCheckout(user, { tier, interval, returnTo, site 
     line_items: [{ price, quantity: 1 }],
     allow_promotion_codes: true,
     subscription_data: { metadata: { user_id: user.id } },
-    // Cards (with Apple Pay and Google Pay) and Link: paid at once, so the membership starts right away. Bank payments
-    // (ACH) cost less but take days to clear, so they aren't offered.
-    payment_method_types: ['card', 'link'],
+    // Cards only (Apple Pay and Google Pay come with them): paid at once, so the membership starts right away. Not
+    // bank payments (days to clear), and not Link, which brings its own pay-by-bank and Klarna along.
+    payment_method_types: ['card'],
     success_url: `${site}/membership/welcome?return=${encodeURIComponent(back)}`,
     cancel_url: `${site}/membership?return=${encodeURIComponent(back)}`,
   });
@@ -210,7 +210,7 @@ export async function superchatCheckout(user, { videoId, amountCents, message, r
   const session = await stripe('POST', '/checkout/sessions', {
     mode: 'payment',
     // Same for super chats: they confirm at once, so the super chat shows right away.
-    payment_method_types: ['card', 'link'],
+    payment_method_types: ['card'],
     customer: await customerFor(user),
     client_reference_id: user.id,
     line_items: [
