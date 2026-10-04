@@ -4211,3 +4211,38 @@ a.text-btn {
     inset 5px 0 0 var(--hl),
     0 0 0 2px var(--hl);
 }
+
+/* Super chat colors by amount (paidLevel): yellow, green, blue, red, gold; each with text that reads on it. */
+.chat-msg.paid-yellow {
+  --paid-bg: #f5c518;
+  --paid-ink: #2b2100;
+}
+.chat-msg.paid-green {
+  --paid-bg: #2fbf71;
+  --paid-ink: #06281a;
+}
+.chat-msg.paid-blue {
+  --paid-bg: #2f7fe0;
+  --paid-ink: #ffffff;
+}
+.chat-msg.paid-red {
+  --paid-bg: #d93434;
+  --paid-ink: #ffffff;
+}
+.chat-msg.paid-gold {
+  --paid-bg: linear-gradient(135deg, #b8860b 0%, #ffd34d 45%, #fff1b0 55%, #e0a800 100%);
+  --paid-ink: #2b1d00;
+}
+.chat-msg.paid,
+.chat-msg.paid.hl {
+  background: var(--paid-bg, var(--gold));
+  color: var(--paid-ink, var(--gold-ink));
+}
+.chat-msg.paid .paid-head .author,
+.chat-msg.paid .mention {
+  color: var(--paid-ink, var(--gold-ink));
+}
+.chat-msg.paid .mention {
+  font-weight: 700;
+  text-decoration: underline;
+}

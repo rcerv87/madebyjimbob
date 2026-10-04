@@ -113,3 +113,12 @@ describe('conversations (MBJ-222)', () => {
     expect(await screen.findByText('pizza time')).toBeTruthy();
   });
 });
+
+describe('super chat colors', () => {
+  test('by amount: yellow, green, blue, red, gold', async () => {
+    const { paidLevel } = await import('../components/ChatPanel.jsx');
+    expect(
+      ['$2.00', '$4.99', '$5.00', '$10.00', '$25.00', '$50.00', '$500.00', 'CA$7.00', ''].map(paidLevel),
+    ).toEqual(['yellow', 'yellow', 'green', 'blue', 'red', 'gold', 'gold', 'green', 'yellow']);
+  });
+});
