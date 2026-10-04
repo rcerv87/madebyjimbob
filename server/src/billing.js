@@ -89,7 +89,14 @@ const priceFor = (tier, interval) =>
 
 async function customerFor(user) {
   const { rows } = await pool.query('SELECT stripe_customer_id, email FROM users WHERE id = $1', [user.id]);
-  if (rows[0]?.stripe_customer_id) return rows[0].stripe_customer_id;
+  // A customer deleted in Stripe's dashboard gets replaced by a new one.
+  if (rows[0]?.stripe_customer_id) {
+    const existing = await stripe('GET', `/customers/${rows[0].stripe_customer_id}`).catch((err) => {
+      if (err.status === 404) return { deleted: true };
+      throw err;
+    });
+    if (!existing.deleted) return rows[0].stripe_customer_id;
+  }
   const customer = await stripe('POST', '/customers', {
     email: rows[0]?.email || undefined,
     name: user.username,
