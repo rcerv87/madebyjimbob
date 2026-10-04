@@ -37,6 +37,8 @@ they get `isAdmin: true` and see every tier.
 | GET | `/videos/:id/chat/conversation/:messageId` | tier | MBJ-222: from any message, up its replies to where it started, then every reply, reply to a reply, and branch below that. `{ messages }`, video order, up to 1,000; 404 if no such message |
 | GET | `/membership` | — | ADR-013: `{ configured, plans: [{ tier, interval, amount, currency }], tier, membership, superchat: { minCents, maxCents } }`; `membership` = `{ tier, status, interval, renewsAt, cancelAtPeriodEnd, live }` or null |
 | POST | `/membership/checkout` | session | `{ tier: plus\|premium, interval: month\|year, returnTo }` → `{ url }` (Stripe Checkout). 400 bad plan, 409 already a member, 503 payments not set up |
+| GET | `/membership/upgrade` | session | `?tier=premium` → `{ amountDue, currency, tier }`: today's prorated charge to move up from the current plan (same interval) |
+| POST | `/membership/upgrade` | session | `{ tier }`: switch now on the card on file (`always_invoice`); the tier changes right away. 400 not an upgrade, no plan, or card declined |
 | POST | `/membership/portal` | session | → `{ url }` (Stripe Customer Portal: card, switch, cancel, receipts) |
 | POST | `/superchats/checkout` | session | `{ amountCents (200–50000), message, returnTo }` → `{ url }`; any time; once paid it goes into the live chat if JimBob is live on the site, and into Studio |
 | POST | `/webhooks/stripe` | Stripe signature | Checkout, subscription and refund events; each applied once |

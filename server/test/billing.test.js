@@ -24,7 +24,17 @@ function fakeFetch(url, opts = {}) {
   if (u.pathname === '/v1/checkout/sessions')
     return json({ id: `cs_${stripe.calls.length}`, url: 'https://checkout.stripe.com/c/test' });
   if (u.pathname === '/v1/billing_portal/sessions') return json({ url: 'https://billing.stripe.com/p/test' });
+  if (u.pathname === '/v1/invoices/create_preview') return json({ amount_due: 250, currency: 'usd' });
   const sub = u.pathname.match(/^\/v1\/subscriptions\/(.+)$/);
+  if (sub && method === 'POST') {
+    const cur = stripe.subscriptions[sub[1]];
+    const next = {
+      ...cur,
+      items: { data: [{ ...cur.items.data[0], price: { id: body['items[0][price]'] } }] },
+    };
+    stripe.subscriptions[sub[1]] = next;
+    return json(next);
+  }
   if (sub) return json(stripe.subscriptions[sub[1]]);
   return json({ error: { message: 'not faked' } }, 404);
 }
@@ -204,6 +214,38 @@ describe('memberships (MBJ-104)', () => {
       data: { object: subscription('sub_2', id, { status: 'canceled' }) },
     });
     assert.equal((await call('/me', { token })).data.user.tier, 'plus');
+  });
+
+  test('Plus → Premium in place: today’s prorated price first, then the switch, same billing interval', async () => {
+    const token = await signIn(call, 'bill_upgrader');
+    const id = await userId('bill_upgrader');
+    const plus = subscription('sub_up', id);
+    plus.items.data[0].id = 'si_up';
+    plus.items.data[0].price = { id: 'price_plus_m' };
+    stripe.subscriptions.sub_up = plus;
+    await webhook({ id: 'evt_up1', type: 'customer.subscription.created', data: { object: plus } });
+    assert.equal((await call('/me', { token })).data.user.tier, 'plus');
+    assert.equal((await call('/membership/upgrade?tier=plus', { token })).status, 400, 'not an upgrade');
+
+    const preview = await call('/membership/upgrade?tier=premium', { token });
+    assert.deepEqual(preview.data, { amountDue: 250, currency: 'usd', tier: 'premium' });
+    const p = stripe.calls.find((c) => c.path === '/v1/invoices/create_preview').body;
+    assert.equal(p['subscription_details[items][0][price]'], 'price_premium_m');
+
+    const done = await call('/membership/upgrade', { method: 'POST', token, body: { tier: 'premium' } });
+    assert.equal(done.status, 200);
+    const update = stripe.calls.findLast(
+      (c) => c.path === '/v1/subscriptions/sub_up' && c.method === 'POST',
+    ).body;
+    assert.deepEqual(
+      [update['items[0][id]'], update['items[0][price]'], update.proration_behavior],
+      ['si_up', 'price_premium_m', 'always_invoice'],
+    );
+    assert.equal(
+      (await call('/me', { token })).data.user.tier,
+      'premium',
+      'right away, not after the webhook',
+    );
   });
 
   test('Manage billing opens Stripe’s page', async () => {

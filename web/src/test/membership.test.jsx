@@ -69,6 +69,28 @@ describe('membership page (MBJ-105)', () => {
     expect(document.querySelector('.plan-card.picked h2').textContent).toBe('Premium');
   });
 
+  test('a Plus member upgrades to Premium here: today’s price first, then one click', async () => {
+    const sent = fakeApi({
+      '/membership': [
+        200,
+        member({ tier: 'plus', membership: { tier: 'plus', status: 'active', live: true } }),
+      ],
+      '/membership/upgrade': [200, { amountDue: 250, currency: 'usd', tier: 'premium' }],
+      'POST /membership/upgrade': [200, { tier: 'premium' }],
+    });
+    const refreshUser = vi.fn();
+    renderAt('/membership?tier=premium', (s) => <Membership session={s} />, {
+      user: { username: 'fan', tier: 'plus' },
+      refreshUser,
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Upgrade to Premium' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Upgrade to Premium' });
+    expect(dialog.textContent).toContain('$2.50');
+    fireEvent.click(screen.getByRole('button', { name: 'Upgrade for $2.50' }));
+    await waitFor(() => expect(refreshUser).toHaveBeenCalled());
+    expect(sent('POST', '/membership/upgrade')).toEqual([{ tier: 'premium' }]);
+  });
+
   test('not open yet: says so, and Join is off', async () => {
     fakeApi({ '/membership': [200, member({ configured: false, plans: [] })] });
     renderAt('/membership', (s) => <Membership session={s} />, { user: { username: 'fan', tier: 'free' } });

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, TIER_LABEL } from '../api.js';
-import { PERKS, money, goTo } from '../membership.js';
+import { PERKS, TIERS, money, goTo } from '../membership.js';
 import useTitle from '../useTitle.js';
 
 // The membership page (MBJ-105): what each tier includes, its price (from Stripe), and Join, which opens Stripe's
@@ -14,6 +14,7 @@ export default function Membership({ session }) {
   const [data, setData] = useState(null);
   const [interval, setInterval_] = useState('month');
   const [busy, setBusy] = useState('');
+  const [upgrade, setUpgrade] = useState(null); // { tier, amountDue, currency } while confirming
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -43,6 +44,29 @@ export default function Membership({ session }) {
       setError(err.message);
       setBusy('');
     }
+  };
+  // A member moving up (Plus → Premium): show today's prorated charge, then switch on the card on file.
+  const askUpgrade = async (tier) => {
+    setError('');
+    setBusy(tier);
+    try {
+      setUpgrade(await api(`/membership/upgrade?tier=${tier}`));
+    } catch (err) {
+      setError(err.message);
+    }
+    setBusy('');
+  };
+  const confirmUpgrade = async () => {
+    setBusy('upgrade');
+    try {
+      await api('/membership/upgrade', { method: 'POST', body: { tier: upgrade.tier } });
+      setUpgrade(null);
+      await session.refreshUser?.();
+    } catch (err) {
+      setError(err.message);
+      setUpgrade(null);
+    }
+    setBusy('');
   };
   const manage = async () => {
     setBusy('manage');
@@ -102,7 +126,16 @@ export default function Membership({ session }) {
               </ul>
               {mine ? (
                 <p className="plan-mine">Your plan</p>
-              ) : tier === 'free' ? null : member ? (
+              ) : tier === 'free' ? null : member && TIERS.indexOf(tier) > TIERS.indexOf(myTier) ? (
+                <button
+                  type="button"
+                  className="primary-btn"
+                  onClick={() => askUpgrade(tier)}
+                  disabled={Boolean(busy)}
+                >
+                  {busy === tier ? 'Checking price…' : `Upgrade to ${TIER_LABEL[tier]}`}
+                </button>
+              ) : member ? (
                 <button type="button" className="text-btn" onClick={manage} disabled={busy === 'manage'}>
                   Switch in Manage billing
                 </button>
@@ -124,6 +157,39 @@ export default function Membership({ session }) {
           );
         })}
       </div>
+      {upgrade && (
+        <div className="dialog-backdrop" onClick={() => setUpgrade(null)}>
+          <div
+            className="dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Upgrade to ${TIER_LABEL[upgrade.tier]}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>Upgrade to {TIER_LABEL[upgrade.tier]}</h2>
+            <p>
+              You’ll pay <strong>{money(upgrade.amountDue, upgrade.currency)}</strong> today (the difference
+              for the rest of this billing period), then the {TIER_LABEL[upgrade.tier]} price at your next
+              renewal. It uses the card on file and starts right away.
+            </p>
+            <div className="dialog-actions">
+              <button type="button" className="text-btn" onClick={() => setUpgrade(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={confirmUpgrade}
+                disabled={busy === 'upgrade'}
+              >
+                {busy === 'upgrade'
+                  ? 'Upgrading…'
+                  : `Upgrade for ${money(upgrade.amountDue, upgrade.currency)}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {member && (
         <p>
           <button type="button" className="text-btn" onClick={manage} disabled={busy === 'manage'}>

@@ -24,6 +24,8 @@ import {
   verifyStripeSignature,
   handleStripeEvent,
   membershipOf,
+  upgradePreview,
+  upgradeSubscription,
   SUPERCHAT_MIN_CENTS,
   SUPERCHAT_MAX_CENTS,
 } from './billing.js';
@@ -1114,6 +1116,29 @@ app.post(
 app.post(
   '/api/membership/portal',
   billingRoute((user) => billingPortal(user, { site: baseURL })),
+);
+
+// Plus → Premium in place: ?tier=premium → { amountDue, currency } to show first; then POST { tier } to switch.
+const billingJson = (handler) =>
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in first.' });
+    if (!billingConfigured()) return res.status(503).json({ error: 'Payments aren’t open yet.' });
+    try {
+      res.json(await handler(user, req));
+    } catch (err) {
+      if (err.status === 400 || err.status === 409)
+        return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  });
+app.get(
+  '/api/membership/upgrade',
+  billingJson((user, req) => upgradePreview(user, String(req.query.tier || ''))),
+);
+app.post(
+  '/api/membership/upgrade',
+  billingJson((user, req) => upgradeSubscription(user, String(req.body?.tier || ''))),
 );
 
 // { amountCents, message, returnTo } → { url }: a super chat any time (madebyjimbob.app/superchat), so viewers watching

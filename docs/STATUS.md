@@ -178,7 +178,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 ### Memberships and super chats (ADR-013)
 - **/membership**: Free, Plus and Premium with perks and prices from Stripe (monthly/yearly), Join → Stripe Checkout →
   back where the viewer was (e.g. the locked video, now open); **/membership/welcome** waits for the membership to
-  switch on. Locked videos have **Join <tier>**. Account settings → Membership: renews/ends date, card problems, and
+  switch on. Locked videos have **Join <tier>**. **Upgrade** in the top bar: Free → the Plus plan; Plus → Premium in
+  place (the prorated price for today, then one click on the card on file). Account settings → Membership: renews/ends date, card problems, and
   **Manage billing** (Stripe's portal: card, switch, cancel, receipts). Stripe's webhooks keep `users.tier` right
   (renewals, failed cards, cancellations); tiers given by hand stay (`manual_tier`).
 - **Super chats any time**: `madebyjimbob.app/superchat` (to pin in YouTube/Rumble chats and descriptions) and a

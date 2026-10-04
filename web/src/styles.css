@@ -4188,3 +4188,18 @@ a.text-btn {
   border-radius: 6px;
   padding: 1px 8px;
 }
+
+.upgrade-btn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-text);
+  color: var(--accent-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.upgrade-btn:hover {
+  background: var(--accent-text);
+  color: var(--bg);
+}

@@ -136,6 +136,55 @@ export async function billingPortal(user, { site }) {
   return session.url;
 }
 
+// ---------- upgrading in place (Plus → Premium) ----------
+
+// The member's live subscription, its item, and the price to move to (same billing interval when offered).
+async function upgradeTarget(user, tier) {
+  const { rows } = await pool.query(
+    `SELECT id, tier, billing_interval FROM subscriptions WHERE user_id = $1 AND status = ANY($2::text[])
+      ORDER BY updated_at DESC LIMIT 1`,
+    [user.id, LIVE_STATUSES],
+  );
+  const current = rows[0];
+  if (!current) throw Object.assign(new Error('Join a plan first.'), { status: 400 });
+  if (rank(tier) <= rank(current.tier))
+    throw Object.assign(new Error('That isn’t an upgrade from your plan.'), { status: 400 });
+  const price = priceFor(tier, current.billing_interval) || priceFor(tier, 'month');
+  if (!price) throw Object.assign(new Error('That plan isn’t available.'), { status: 400 });
+  const sub = await stripe('GET', `/subscriptions/${current.id}`);
+  return { sub, item: sub.items.data[0], price };
+}
+
+// What switching now costs today (the prorated difference), before the member confirms.
+export async function upgradePreview(user, tier) {
+  const { sub, item, price } = await upgradeTarget(user, tier);
+  const invoice = await stripe('POST', '/invoices/create_preview', {
+    customer: sub.customer,
+    subscription: sub.id,
+    subscription_details: { items: [{ id: item.id, price }], proration_behavior: 'always_invoice' },
+  });
+  return { amountDue: invoice.amount_due, currency: invoice.currency, tier };
+}
+
+// Switch now, charging the difference to the card on file; the tier changes right away.
+export async function upgradeSubscription(user, tier) {
+  const { sub, item, price } = await upgradeTarget(user, tier);
+  let updated;
+  try {
+    updated = await stripe('POST', `/subscriptions/${sub.id}`, {
+      items: [{ id: item.id, price }],
+      proration_behavior: 'always_invoice',
+      payment_behavior: 'error_if_incomplete',
+    });
+  } catch (err) {
+    if (err.status === 402 || err.status === 400)
+      throw Object.assign(new Error(`The card was declined: ${err.message}`), { status: 400 });
+    throw err;
+  }
+  await saveSubscription(updated, user.id);
+  return { tier };
+}
+
 // Super chat checkout: the message waits until the payment succeeds, then goes into the live chat (videoId: the
 // stream live on the site, or null when he isn't: it still goes through and shows in Studio).
 export async function superchatCheckout(user, { videoId, amountCents, message, returnTo, site }) {
