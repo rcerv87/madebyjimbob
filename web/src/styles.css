@@ -4203,3 +4203,11 @@ a.text-btn {
   background: var(--accent-text);
   color: var(--bg);
 }
+
+/* A highlighted person's super chat keeps its gold (readable dark text); the highlight shows as a stripe and ring. */
+.chat-msg.paid.hl {
+  background: var(--gold);
+  box-shadow:
+    inset 5px 0 0 var(--hl),
+    0 0 0 2px var(--hl);
+}
