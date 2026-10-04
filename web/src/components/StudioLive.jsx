@@ -197,7 +197,9 @@ export default function StudioLive() {
           <span className={`small ${state === 'starting' ? 'live-pending' : ''}`}>
             {live.server?.saving
               ? 'Saving a faster-start copy of the server, then deleting it (about 2 minutes)…'
-              : SERVER_STATE[state] || state}
+              : live.server?.finishing
+                ? 'Stream ended. Finishing the recording upload, then deleting the server (up to 15 minutes)…'
+                : SERVER_STATE[state] || state}
           </span>
           {state === 'off' && (
             <button className="primary-btn" disabled={busy} onClick={() => act('start')}>

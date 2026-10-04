@@ -236,8 +236,10 @@ function flush(r, q, ended = false) {
   q.buf = [];
   q.bufDur = 0;
   // Each quality uploads on its own chain (in order within it), so qualities don't wait on each other.
+  queued(q, `quality ${q.n}`, dur);
   q.chain = (q.chain || Promise.resolve())
     .then(async () => {
+      let piece = null;
       if (bytes.length) {
         const file = `${q.seq++}.ts`;
         await store(
@@ -251,14 +253,11 @@ function flush(r, q, ended = false) {
         const prev = q.lines.at(-1);
         if (prev && !disc && start !== null && q.lastStart !== null && q.lastStart !== undefined) {
           const real = start - q.lastStart;
-          if (real > 0 && real < 60) {
-            prev.dur = real;
-            const prevSound = r.audio?.from === q.n ? r.audio.lines.at(-1) : null;
-            if (prevSound) prevSound.dur = real;
-          }
+          if (real > 0 && real < 60) prev.dur = real;
         }
         q.lastStart = start;
         q.lines.push({ file, dur, disc });
+        piece = { bytes, file, dur, disc, start };
         // Thumbnail from the first quality: about 20 seconds in, and again at 5 minutes (past any intro screen).
         const recorded = q.lines.reduce((sum, l) => sum + l.dur, 0);
         if (HAS_FFMPEG && q === r.qualities.values().next().value) {
@@ -270,28 +269,62 @@ function flush(r, q, ended = false) {
               await store(`${PREFIX}/${r.id}/thumb.jpg`, jpg, 'image/jpeg', 'public, max-age=300');
           }
         }
-        if (r.audio?.from === q.n) {
-          const sound = await audioOf(bytes).catch((err) => log('audio failed', err.message));
-          if (sound?.length) {
-            await store(
-              `${PREFIX}/${r.id}/audio/${file}`,
-              sound,
-              'video/mp2t',
-              'public, max-age=31536000, immutable',
-            );
-            r.audio.lines.push({ file, dur, disc });
-          }
-        }
       }
       await store(`${PREFIX}/${r.id}/${q.n}/index.m3u8`, playlist(q, ended), 'application/vnd.apple.mpegurl');
-      if (r.audio?.from === q.n)
-        await store(
-          `${PREFIX}/${r.id}/audio/index.m3u8`,
-          playlist(r.audio, ended),
-          'application/vnd.apple.mpegurl',
-        );
+      if (r.audio?.from === q.n) flushAudio(r, piece, ended);
     })
-    .catch((err) => log('upload failed', err.message));
+    .catch((err) => log('upload failed', err.message))
+    .finally(() => queued(q, `quality ${q.n}`, -dur));
+}
+
+// The sound alone is cut (ffmpeg) and uploaded on its own chain, so its quality never waits on it. (2026-10-04: done in
+// line, the smallest quality and the audio fell ~10 minutes behind on a busy server, and End stream lost that much.)
+function flushAudio(r, piece, ended) {
+  const a = r.audio;
+  const dur = piece?.dur || 0;
+  queued(a, 'audio', dur);
+  a.chain = (a.chain || Promise.resolve())
+    .then(async () => {
+      const sound = piece && (await audioOf(piece.bytes).catch((err) => log('audio failed', err.message)));
+      if (sound?.length) {
+        const prev = a.lines.at(-1);
+        if (
+          prev &&
+          !piece.disc &&
+          piece.start !== null &&
+          a.lastStart !== null &&
+          a.lastStart !== undefined
+        ) {
+          const real = piece.start - a.lastStart;
+          if (real > 0 && real < 60) prev.dur = real;
+        }
+        a.lastStart = piece.start;
+        await store(
+          `${PREFIX}/${r.id}/audio/${piece.file}`,
+          sound,
+          'video/mp2t',
+          'public, max-age=31536000, immutable',
+        );
+        a.lines.push({ file: piece.file, dur: piece.dur, disc: piece.disc });
+      }
+      await store(`${PREFIX}/${r.id}/audio/index.m3u8`, playlist(a, ended), 'application/vnd.apple.mpegurl');
+    })
+    .catch((err) => log('audio upload failed', err.message))
+    .finally(() => queued(a, 'audio', -dur));
+}
+
+// Seconds of video waiting in one chain. More than LAG_WARN_S is said in the log (and again once it catches up), so a
+// slow server shows up there instead of only as a short replay.
+const LAG_WARN_S = 30;
+function queued(chain, name, seconds) {
+  chain.pending = (chain.pending || 0) + seconds;
+  if (!chain.behind && chain.pending > LAG_WARN_S) {
+    chain.behind = true;
+    log('falling behind:', name, `about ${Math.round(chain.pending)}s waiting to upload`);
+  } else if (chain.behind && chain.pending <= SEGMENT_S) {
+    chain.behind = false;
+    log('caught up:', name);
+  }
 }
 
 // OBS came back soon after the stream seemed to end: keep adding to the same recording, so viewers can still rewind to
@@ -318,6 +351,7 @@ async function finish(r) {
   last = { rec: r, finishedAt: Date.now() };
   for (const q of r.qualities.values()) flush(r, q, true);
   await Promise.all([...r.qualities.values()].map((q) => q.chain));
+  await r.audio?.chain; // after the qualities, which add the last audio pieces to it
   await b2Queue;
   const durationS = Math.round(
     Math.max(0, ...[...r.qualities.values()].map((q) => q.lines.reduce((s, l) => s + l.dur, 0))),

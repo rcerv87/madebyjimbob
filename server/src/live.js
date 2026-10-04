@@ -237,6 +237,7 @@ export async function studioLive() {
           type: s.server_type,
           error: s.error,
           saving: s.status === 'stopping' && Boolean(s.snapshot_action_id),
+          finishing: s.status === 'stopping' && !s.snapshot_action_id,
           created: Boolean(s.hetzner_id),
           answering,
         }
@@ -468,13 +469,48 @@ export async function goLive(userId) {
   return activeServer();
 }
 
+// After End stream the recorder gets this long to upload what it still has queued, then the server goes anyway.
+const DRAIN_MINUTES = 15;
+
+// End stream (or idle, cap, failed). Viewers see it end at once. While the recorder is still recording on this server,
+// OBS is cut off (and can't reconnect) and the recorder finishes uploading; the live job closes the server when it's
+// done (closeServer). Otherwise the server closes now.
 export async function endLive(reason = 'ended') {
   const s = await activeServer();
   if (!s) return null;
-  await pool.query(`UPDATE live_servers SET status = 'stopping', stop_reason = $2 WHERE id = $1`, [
-    s.id,
-    reason,
-  ]);
+  if (s.status === 'stopping') return s; // already ending
+  await pool.query(
+    `UPDATE live_servers SET status = 'stopping', stop_reason = $2, stop_requested_at = now() WHERE id = $1`,
+    [s.id, reason],
+  );
+  const rec = s.ready_at && s.ip && reason !== 'failed' ? await currentRecording().catch(() => null) : null;
+  if (fromServer(rec, s) && rec.live) {
+    await stopObs(s).catch((err) => logger.warn({ err }, 'could not disconnect OBS'));
+    logger.info({ liveServer: s.id, reason }, 'stream ended; waiting for the recorder to finish uploading');
+    return s;
+  }
+  return closeServer(s, reason);
+}
+
+// OBS off this server for good: a new stream key (so OBS's automatic reconnect is refused), then disconnect it. The
+// recorder sees no new video and finishes the recording.
+async function stopObs(s) {
+  const settings = forServer(await liveSettings(), s);
+  const base = `http://${s.ip}:8080`;
+  const headers = { Authorization: adminAuth(settings), 'Content-Type': 'application/json' };
+  const key = crypto.randomBytes(12).toString('base64url');
+  await fetch(`${base}/api/admin/config/streamkeys`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ value: [{ key, comment: 'ended' }] }),
+    signal: AbortSignal.timeout(5000),
+  });
+  await fetch(`${base}/api/admin/disconnect`, { method: 'POST', headers, signal: AbortSignal.timeout(5000) });
+}
+
+// The recording is closed (by the recorder, or here if it didn't finish in time) and saved as a replay; then the
+// server is deleted (after saving a faster-start image the first time).
+async function closeServer(s, reason) {
   if (s.ready_at)
     await finishRecording(s).catch((err) => logger.warn({ err }, 'could not finish the recording'));
   // No saved image yet and this server got fully set up: save one first (a couple of minutes); the live job deletes
@@ -584,6 +620,12 @@ export async function tickLive() {
       await endLive('failed');
       await pool.query(`UPDATE live_servers SET status = 'failed' WHERE id = $1`, [s.id]);
     }
+  } else if (s?.status === 'stopping' && !s.snapshot_action_id) {
+    // End stream was pressed: close once the recorder has finished uploading (or DRAIN_MINUTES later regardless).
+    const rec = await currentRecording().catch(() => null);
+    const uploading = fromServer(rec, s) && rec.live;
+    if (!uploading || hoursBetween(s.stop_requested_at || s.created_at) * 60 >= DRAIN_MINUTES)
+      await closeServer(s, s.stop_reason || 'ended');
   } else if (s?.status === 'stopping' && s.snapshot_action_id) {
     // Waiting for the image to save; delete once it's done, failed, or 20 minutes after End stream.
     const action = await getAction(s.snapshot_action_id).catch(() => ({ status: 'error' }));
