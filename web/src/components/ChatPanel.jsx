@@ -60,6 +60,7 @@ export default function ChatPanel({
   onOpenThread,
   session,
   live = false,
+  onSuperchat,
 }) {
   const [byId, setById] = useState(() => new Map());
   const [commentsById, setCommentsById] = useState(() => new Map());
@@ -815,6 +816,18 @@ export default function ChatPanel({
           autoComplete="off"
           onFocus={() => !session.user && session.requireSignIn()}
         />
+        {onSuperchat && (
+          // Send what's typed as a super chat instead: the text (and any @reply) carries over, no copy and paste.
+          <button
+            type="button"
+            className="superchat-compose-btn"
+            aria-label="Send as a super chat"
+            title="Send as a super chat"
+            onClick={() => (session.user ? onSuperchat(text.trim()) : session.requireSignIn())}
+          >
+            $
+          </button>
+        )}
         <button className="primary-btn" disabled={sending}>
           Send
         </button>

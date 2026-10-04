@@ -690,8 +690,11 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
 export default function Live({ session }) {
   useTitle('Live');
   const [live, setLive] = useState(null);
-  // Super chats through the site (MBJ-109): a button while live; ?superchat=sent after paying.
-  const [superchatOpen, setSuperchatOpen] = useState(false);
+  // Super chats through the site (MBJ-109): a button while live and a $ beside Send in the chat; ?superchat=sent after
+  // paying. null = closed, otherwise the message to start with (what was typed in the chat).
+  const [superchat, setSuperchat] = useState(null);
+  const superchatOpen = superchat !== null;
+  const closeSuperchat = () => setSuperchat(null);
   const [params] = useSearchParams();
   const sent = params.get('superchat') === 'sent';
   const [payments, setPayments] = useState(false);
@@ -733,11 +736,7 @@ export default function Live({ session }) {
           {live.online && <span className="live-badge">LIVE</span>}
           {live.online && live.title && <span className="muted">{live.title}</span>}
           {payments && (
-            <button
-              type="button"
-              className="primary-btn superchat-btn"
-              onClick={() => setSuperchatOpen(true)}
-            >
+            <button type="button" className="primary-btn superchat-btn" onClick={() => setSuperchat('')}>
               $ Super chat
             </button>
           )}
@@ -748,7 +747,7 @@ export default function Live({ session }) {
           </p>
         )}
         {superchatOpen && (
-          <div className="dialog-backdrop" onClick={() => setSuperchatOpen(false)}>
+          <div className="dialog-backdrop" onClick={closeSuperchat}>
             <div
               className="dialog"
               role="dialog"
@@ -757,9 +756,14 @@ export default function Live({ session }) {
               onClick={(e) => e.stopPropagation()}
             >
               <h2>Super chat JimBob</h2>
-              <SuperchatForm session={session} returnTo="/live" onDone={() => setSuperchatOpen(false)} />
+              <SuperchatForm
+                session={session}
+                returnTo="/live"
+                initialMessage={superchat}
+                onDone={closeSuperchat}
+              />
               <div className="dialog-actions">
-                <button type="button" className="text-btn" onClick={() => setSuperchatOpen(false)}>
+                <button type="button" className="text-btn" onClick={closeSuperchat}>
                   Cancel
                 </button>
               </div>
@@ -785,6 +789,7 @@ export default function Live({ session }) {
           onSeek={(ms) => seekRef.current?.(ms / 1000)}
           session={session}
           live
+          onSuperchat={payments ? setSuperchat : undefined}
         />
       )}
     </div>

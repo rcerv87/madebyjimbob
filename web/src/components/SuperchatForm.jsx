@@ -6,10 +6,10 @@ const AMOUNTS = [200, 500, 1000, 2000, 5000, 10000];
 
 // Pay JimBob a super chat (MBJ-109): pick an amount, write a message, pay on Stripe's page; it shows in the live chat
 // (or in Studio when he isn't live on the site). Signed-out viewers sign in first.
-export default function SuperchatForm({ session, returnTo = '/live', onDone }) {
+export default function SuperchatForm({ session, returnTo = '/live', onDone, initialMessage = '' }) {
   const [cents, setCents] = useState(500);
   const [custom, setCustom] = useState('');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(initialMessage.slice(0, 200));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const amount = custom ? Math.round(Number(custom) * 100) : cents;
