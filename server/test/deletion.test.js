@@ -83,7 +83,8 @@ describe('download my data', () => {
     assert.equal(data.likes[0].vote, 'like');
     assert.equal(data.watchProgress[0].position_ms, 42_000);
     assert.ok(data.securityHistory.some((e) => e.type === 'account_created'));
-    assert.deepEqual(data.payments, []);
+    assert.deepEqual(data.memberships, []);
+    assert.deepEqual(data.superchats, []);
     assert.doesNotMatch(text, /password|"token"|scrypt/i);
     assert.equal((await call('/account/export')).status, 401);
   });

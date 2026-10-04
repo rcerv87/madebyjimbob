@@ -16,6 +16,24 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## Waiting on Ruben
 
+- **Turn on payments (ADR-013), test mode first** (about 20 minutes; nothing is charged in test mode):
+  1. Stripe account: the one money should land in is JimBob's (stripe.com → Start now). For building and testing,
+     test mode works on any account (no business details needed): toggle **Test mode** at the top right.
+  2. **Product catalog → Add product**: "Plus" with a recurring monthly price (and a yearly one if offered), then
+     "Premium" the same. Open each price and copy its id (`price_…`).
+  3. **Developers → API keys**: copy the **Secret key** (`sk_test_…`).
+  4. **Developers → Webhooks → Add endpoint**: URL `https://madebyjimbob.onrender.com/api/webhooks/stripe`; events
+     `checkout.session.completed`, `checkout.session.expired`, `customer.subscription.created`,
+     `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`. Copy the **Signing secret**
+     (`whsec_…`).
+  5. **Settings → Billing → Customer portal**: turn it on; allow cancelling, updating the payment method, and switching
+     between Plus and Premium.
+  6. Render → Environment: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PLUS_MONTHLY`,
+     `STRIPE_PRICE_PREMIUM_MONTHLY` (and the yearly ones if made). Save.
+  7. Test: /membership → Join (card `4242 4242 4242 4242`, any future date, any CVC); /superchat → $5. Then switch the
+     same steps to **live mode** in JimBob's account when he's ready.
+
+
 - **Production keeps everything on R2; B2 is for development only** (Ruben and JimBob, 2026-10-03). Render still has
   the B2 settings, so the recorder copies every stream to Ruben's `Jimbob-beta` and, from ~2026-10-16, replays older
   than 14 days would move to B2 and leave R2. Remove them from production (keep them in the local `.env`):
@@ -156,6 +174,17 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   going); unlocking switches back to the video.
 - English auto-captions (CC in the player) on all 4 videos; transcripts stored in our database.
 - Phone layout: video, then live chat, then comments.
+
+### Memberships and super chats (ADR-013)
+- **/membership**: Free, Plus and Premium with perks and prices from Stripe (monthly/yearly), Join → Stripe Checkout →
+  back where the viewer was (e.g. the locked video, now open); **/membership/welcome** waits for the membership to
+  switch on. Locked videos have **Join <tier>**. Account settings → Membership: renews/ends date, card problems, and
+  **Manage billing** (Stripe's portal: card, switch, cancel, receipts). Stripe's webhooks keep `users.tier` right
+  (renewals, failed cards, cancellations); tiers given by hand stay (`manual_tier`).
+- **Super chats any time**: `madebyjimbob.app/superchat` (to pin in YouTube/Rumble chats and descriptions) and a
+  **$ Super chat** button on /live: $2–$500 with a message, paid on Stripe. Live on the site → a paid message in the
+  live chat; always → **Studio → Super chats** (refreshes every 10 s, for a second screen). On screen for YouTube and
+  Rumble viewers with the overlay (MBJ-223). Off until the Stripe settings are on Render (Waiting on Ruben).
 
 ### Conversation
 - **Live chat replay** in sync with the video, from YouTube's chat replay (super chats, memberships, emoji).

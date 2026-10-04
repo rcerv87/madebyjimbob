@@ -29,7 +29,7 @@ Keep it current: when a new service or setting is added, add it here.
 | **GitHub** | The code (`rcerv87/madebyjimbob`, private) | Ruben | none | Easy |
 | **Google Cloud** | YouTube Data API key (channel list) | Ruben | `YOUTUBE_API_KEY` | Easy |
 | **Shopify** | JimBob's store, read publicly | JimBob already | `SHOP_URL` | none |
-| **Payments** (not built) | Memberships, Bob Chats | — | — | Set up in JimBob's name from the start |
+| **Stripe** | Memberships and super chats (ADR-013): customers, subscriptions, prices, payouts to his bank | JimBob from the start (test mode on either account while building) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` | Live in his account from day one; a test account's subscriptions don't move |
 | **Apple / Google developer accounts** | Phone apps | Ruben (by choice) | — | Apps can be transferred between developer accounts later |
 
 ## Before moving anything

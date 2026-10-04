@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, count, formatTime, timeAgo, TIER_LABEL } from '../api.js';
 import { createClock, useClock } from '../clock.js';
 import { readLocal, resumePoint, saveProgress, viewerId } from '../progress.js';
@@ -175,9 +175,15 @@ export default function Watch({ session, background = false }) {
           <div className="locked">
             <h2>{TIER_LABEL[video.minTier]} members only</h2>
             <p>This stream is part of the {TIER_LABEL[video.minTier]} tier.</p>
+            <Link
+              className="primary-btn"
+              to={`/membership?tier=${video.minTier}&return=${encodeURIComponent(`/watch/${video.id}`)}`}
+            >
+              Join {TIER_LABEL[video.minTier]}
+            </Link>
             {!session.user && (
-              <button className="primary-btn" onClick={session.requireSignIn}>
-                Sign in
+              <button className="text-btn" onClick={session.requireSignIn}>
+                Already a member? Sign in
               </button>
             )}
           </div>

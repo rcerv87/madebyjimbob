@@ -4055,3 +4055,136 @@ a.text-btn {
   overflow-y: auto;
   z-index: 20;
 }
+
+/* Membership page (MBJ-105) and super chats (MBJ-109). */
+.membership-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding-inline: 16px;
+  padding-block: 24px 48px;
+}
+.membership-page h1 {
+  margin-bottom: 4px;
+}
+.interval-pick {
+  margin: 16px 0;
+  width: max-content;
+}
+.plan-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 16px 0 24px;
+}
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.plan-card.picked {
+  border-color: var(--accent-text);
+  box-shadow: 0 0 0 2px var(--accent-text) inset;
+}
+.plan-card h2 {
+  margin: 0;
+}
+.plan-price {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+}
+.plan-price .muted {
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+.plan-card ul {
+  margin: 4px 0 12px;
+  padding-left: 18px;
+  flex: 1;
+}
+.plan-card li {
+  margin: 4px 0;
+}
+.plan-mine {
+  font-weight: 600;
+  color: var(--accent-text);
+  margin: 0;
+}
+.notice {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.superchat-page {
+  max-width: 560px;
+}
+.superchat-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.superchat-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.superchat-form input,
+.superchat-form textarea {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+}
+.superchat-amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.superchat-amounts button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.superchat-amounts button[aria-pressed='true'] {
+  background: var(--accent-text);
+  border-color: var(--accent-text);
+  color: var(--bg);
+}
+.live-head .superchat-btn {
+  margin-left: auto;
+}
+.superchat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.superchat-list li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.superchat-list .amount {
+  flex: none;
+  font-weight: 700;
+  color: #1e232c;
+  background: #3ee0c4;
+  border-radius: 6px;
+  padding: 1px 8px;
+}

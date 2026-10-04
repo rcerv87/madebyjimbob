@@ -34,11 +34,11 @@ MBJ-103,Signed playback URLs,Accounts & memberships,Phase 1 — VOD platform,Mus
 - API returns a short-lived signed token URL only to entitled users
 - Free videos stay unsigned
 - Import script sets the flag based on `--tier`",MBJ-101
-MBJ-104,Web subscriptions and entitlements,Accounts & memberships,Phase 1 — VOD platform,Must,L,To do,"As a viewer, I want to subscribe to Plus or Premium on the web.","- Stripe Checkout for Plus and Premium (monthly; annual optional)
+MBJ-104,Web subscriptions and entitlements,Accounts & memberships,Phase 1 — VOD platform,Must,L,In progress,"As a viewer, I want to subscribe to Plus or Premium on the web.","- Stripe Checkout for Plus and Premium (monthly; annual optional)
 - RevenueCat receives Stripe purchases; webhook updates `entitlements`
 - `users.tier` derived from active entitlements; expires correctly on cancel/lapse
 - Webhooks verified by signature and idempotent",MBJ-101
-MBJ-105,Pricing page and upsell,Accounts & memberships,Phase 1 — VOD platform,Must,M,To do,"As a free viewer, I want to see what paid tiers include and upgrade in one step.","- Pricing page shows the tier matrix from the PRD
+MBJ-105,Pricing page and upsell,Accounts & memberships,Phase 1 — VOD platform,Must,M,Done,"As a free viewer, I want to see what paid tiers include and upgrade in one step.","- Pricing page shows the tier matrix from the PRD
 - Locked video screen links to upgrade with that tier preselected
 - After purchase, the user returns to the video and it plays",MBJ-104
 MBJ-106,Account settings,Accounts & memberships,Phase 1 — VOD platform,Must,M,Done,"As a member, I want one place to manage my profile, sign-in, notifications, membership, and privacy.","- `/account` (signed in only) with sections: Profile, Sign-in and security, Notifications, Membership, Privacy and data
@@ -58,7 +58,7 @@ MBJ-108,Registration,Accounts & memberships,Phase 1 — VOD platform,Must,M,In p
 - Bot protection: Cloudflare Turnstile on the form, plus rate limits per IP and per email
 - Errors say what went wrong and how to fix it (""That username is taken — try jimbobfan_2"")
 - Existing POC accounts are asked to add and verify an email the next time they sign in","MBJ-101, MBJ-114"
-MBJ-109,Payments API and receipts,Accounts & memberships,Phase 1 — VOD platform,Must,M,To do,"As a member, I want reliable billing; as JimBob, I want to see and manage payments.","- Stripe webhooks (checkout, renewals, failures, refunds) update entitlements idempotently
+MBJ-109,Payments API and receipts,Accounts & memberships,Phase 1 — VOD platform,Must,M,In progress,"As a member, I want reliable billing; as JimBob, I want to see and manage payments.","- Stripe webhooks (checkout, renewals, failures, refunds) update entitlements idempotently
 - Members see payment history and receipts; Stripe customer portal to change card or cancel
 - Studio: revenue, refunds, failed payments; test mode for staging
 - Backup processor evaluated (PRD open question)",MBJ-104

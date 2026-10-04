@@ -1,0 +1,279 @@
+import { test, before, after, describe } from 'node:test';
+import assert from 'node:assert/strict';
+import crypto from 'crypto';
+import { startServer, stopServer, client, signIn, seedVideo, pool } from './helpers.js';
+
+const realFetch = globalThis.fetch;
+const stripe = { calls: [], subscriptions: {}, customers: 0 };
+const formOf = (body) => Object.fromEntries(new URLSearchParams(String(body || '')));
+function fakeFetch(url, opts = {}) {
+  const u = new URL(String(url));
+  if (u.hostname !== 'api.stripe.com') return realFetch(url, opts);
+  const method = opts.method || 'GET';
+  const body = formOf(opts.body);
+  stripe.calls.push({ method, path: u.pathname, body });
+  const json = (data, status = 200) => Promise.resolve(new Response(JSON.stringify(data), { status }));
+  const price = u.pathname.match(/^\/v1\/prices\/(.+)$/);
+  if (price) {
+    const amounts = { price_plus_m: 500, price_premium_m: 1000, price_premium_y: 10000 };
+    return amounts[price[1]]
+      ? json({ id: price[1], unit_amount: amounts[price[1]], currency: 'usd', active: true })
+      : json({ error: { message: 'No such price' } }, 404);
+  }
+  if (u.pathname === '/v1/customers') return json({ id: `cus_${(stripe.customers += 1)}` });
+  if (u.pathname === '/v1/checkout/sessions')
+    return json({ id: `cs_${stripe.calls.length}`, url: 'https://checkout.stripe.com/c/test' });
+  if (u.pathname === '/v1/billing_portal/sessions') return json({ url: 'https://billing.stripe.com/p/test' });
+  const sub = u.pathname.match(/^\/v1\/subscriptions\/(.+)$/);
+  if (sub) return json(stripe.subscriptions[sub[1]]);
+  return json({ error: { message: 'not faked' } }, 404);
+}
+
+let call;
+let base;
+const SECRET = 'whsec_test';
+before(async () => {
+  Object.assign(process.env, {
+    STRIPE_SECRET_KEY: 'sk_test_x',
+    STRIPE_WEBHOOK_SECRET: SECRET,
+    STRIPE_PRICE_PLUS_MONTHLY: 'price_plus_m',
+    STRIPE_PRICE_PREMIUM_MONTHLY: 'price_premium_m',
+    STRIPE_PRICE_PREMIUM_YEARLY: 'price_premium_y',
+  });
+  ({ base } = await startServer());
+  call = client(base);
+  globalThis.fetch = fakeFetch;
+});
+after(async () => {
+  globalThis.fetch = realFetch;
+  for (const k of [
+    'STRIPE_SECRET_KEY',
+    'STRIPE_WEBHOOK_SECRET',
+    'STRIPE_PRICE_PLUS_MONTHLY',
+    'STRIPE_PRICE_PREMIUM_MONTHLY',
+    'STRIPE_PRICE_PREMIUM_YEARLY',
+  ])
+    delete process.env[k];
+  await stopServer();
+});
+
+// Sends a Stripe event the way Stripe does: JSON body, signed header.
+async function webhook(event, secret = SECRET) {
+  const raw = JSON.stringify(event);
+  const t = Math.floor(Date.now() / 1000);
+  const sig = crypto.createHmac('sha256', secret).update(`${t}.${raw}`).digest('hex');
+  const res = await realFetch(`${new URL(base).origin}/api/webhooks/stripe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Stripe-Signature': `t=${t},v1=${sig}` },
+    body: raw,
+  });
+  return { status: res.status, data: await res.json() };
+}
+const subscription = (id, userId, over = {}) => ({
+  id,
+  object: 'subscription',
+  customer: 'cus_x',
+  status: 'active',
+  cancel_at_period_end: false,
+  metadata: { user_id: String(userId) },
+  items: {
+    data: [
+      { price: { id: 'price_premium_m' }, current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400 },
+    ],
+  },
+  ...over,
+});
+const userId = async (name) =>
+  (await pool.query('SELECT id FROM users WHERE username = $1', [name])).rows[0].id;
+
+describe('memberships (MBJ-104)', () => {
+  test('the plans and prices come from Stripe', async () => {
+    const r = await call('/membership');
+    assert.equal(r.data.configured, true);
+    assert.deepEqual(
+      r.data.plans.map((p) => [p.tier, p.interval, p.amount]),
+      [
+        ['plus', 'month', 500],
+        ['premium', 'month', 1000],
+        ['premium', 'year', 10000],
+      ],
+    );
+  });
+
+  test('checkout: sign in first, a real plan, one Stripe customer per member, back to where they were', async () => {
+    assert.equal(
+      (await call('/membership/checkout', { method: 'POST', body: { tier: 'plus', interval: 'month' } }))
+        .status,
+      401,
+    );
+    const token = await signIn(call, 'bill_fan');
+    assert.equal(
+      (
+        await call('/membership/checkout', {
+          method: 'POST',
+          token,
+          body: { tier: 'gold', interval: 'month' },
+        })
+      ).status,
+      400,
+    );
+    stripe.calls = [];
+    const r = await call('/membership/checkout', {
+      method: 'POST',
+      token,
+      body: { tier: 'premium', interval: 'year', returnTo: '/watch/12' },
+    });
+    assert.equal(r.status, 200);
+    assert.equal(r.data.url, 'https://checkout.stripe.com/c/test');
+    const session = stripe.calls.find((c) => c.path === '/v1/checkout/sessions').body;
+    assert.equal(session.mode, 'subscription');
+    assert.equal(session['line_items[0][price]'], 'price_premium_y');
+    assert.equal(session.client_reference_id, String(await userId('bill_fan')));
+    assert.match(session.success_url, /\/membership\/welcome\?return=%2Fwatch%2F12$/);
+    // A second try reuses the same Stripe customer.
+    await call('/membership/checkout', { method: 'POST', token, body: { tier: 'plus', interval: 'month' } });
+    assert.equal(stripe.calls.filter((c) => c.path === '/v1/customers').length, 1);
+    // A full address as returnTo is ignored (only paths on this site).
+    await call('/membership/checkout', {
+      method: 'POST',
+      token,
+      body: { tier: 'plus', interval: 'month', returnTo: '//evil.example' },
+    });
+    assert.match(stripe.calls.at(-1).body.success_url, /return=%2F$/);
+  });
+
+  test('Stripe events set the tier: paid → Premium; renewals keep it; cancelled → back; each event once', async () => {
+    const token = await signIn(call, 'bill_member');
+    const id = await userId('bill_member');
+    assert.equal((await webhook({ id: 'evt_bad', type: 'x', data: { object: {} } }, 'wrong')).status, 400);
+
+    stripe.subscriptions.sub_1 = subscription('sub_1', id);
+    const done = await webhook({
+      id: 'evt_1',
+      type: 'checkout.session.completed',
+      data: { object: { mode: 'subscription', subscription: 'sub_1', client_reference_id: String(id) } },
+    });
+    assert.equal(done.data.result, 'handled');
+    assert.equal((await call('/me', { token })).data.user.tier, 'premium');
+    const m = (await call('/membership', { token })).data.membership;
+    assert.deepEqual([m.tier, m.status, m.interval, m.live], ['premium', 'active', 'month', true]);
+    assert.ok(new Date(m.renewsAt) > new Date());
+    // Already a member: no second subscription.
+    assert.equal(
+      (
+        await call('/membership/checkout', {
+          method: 'POST',
+          token,
+          body: { tier: 'plus', interval: 'month' },
+        })
+      ).status,
+      409,
+    );
+
+    assert.equal(
+      (await webhook({ id: 'evt_1', type: 'checkout.session.completed', data: { object: {} } })).data.result,
+      'duplicate',
+    );
+    await webhook({
+      id: 'evt_2',
+      type: 'customer.subscription.updated',
+      data: { object: subscription('sub_1', id, { status: 'past_due' }) },
+    });
+    assert.equal((await call('/me', { token })).data.user.tier, 'premium', 'card retrying: still a member');
+    await webhook({
+      id: 'evt_3',
+      type: 'customer.subscription.deleted',
+      data: { object: subscription('sub_1', id, { status: 'canceled' }) },
+    });
+    assert.equal((await call('/me', { token })).data.user.tier, 'free');
+  });
+
+  test('a tier given by hand stays when a subscription ends', async () => {
+    const token = await signIn(call, 'bill_comped');
+    const id = await userId('bill_comped');
+    await pool.query(`UPDATE users SET manual_tier = 'plus', tier = 'plus' WHERE id = $1`, [id]);
+    await webhook({
+      id: 'evt_4',
+      type: 'customer.subscription.updated',
+      data: { object: subscription('sub_2', id) },
+    });
+    assert.equal((await call('/me', { token })).data.user.tier, 'premium');
+    await webhook({
+      id: 'evt_5',
+      type: 'customer.subscription.deleted',
+      data: { object: subscription('sub_2', id, { status: 'canceled' }) },
+    });
+    assert.equal((await call('/me', { token })).data.user.tier, 'plus');
+  });
+
+  test('Manage billing opens Stripe’s page', async () => {
+    const token = await signIn(call, 'bill_portal');
+    const r = await call('/membership/portal', { method: 'POST', token });
+    assert.equal(r.data.url, 'https://billing.stripe.com/p/test');
+    assert.match(stripe.calls.at(-1).body.return_url, /\/account#membership$/);
+  });
+});
+
+describe('super chats (MBJ-109)', () => {
+  test('any time: not live on the site, it still goes to checkout, and Studio shows it once paid', async () => {
+    const token = await signIn(call, 'sc_anytime');
+    stripe.calls = [];
+    const r = await call('/superchats/checkout', {
+      method: 'POST',
+      token,
+      body: { amountCents: 1000, message: 'from YouTube with love', returnTo: '/superchat' },
+    });
+    assert.equal(r.status, 200);
+    const session = stripe.calls.find((c) => c.path === '/v1/checkout/sessions').body;
+    assert.equal(session.mode, 'payment');
+    assert.equal(session['line_items[0][price_data][unit_amount]'], '1000');
+    assert.match(session.success_url, /\/superchat\?superchat=sent$/);
+    assert.equal(
+      (await call('/superchats/checkout', { method: 'POST', token, body: { amountCents: 100 } })).status,
+      400,
+    );
+
+    const sc = (
+      await pool.query(`SELECT id, video_id FROM superchats WHERE message = 'from YouTube with love'`)
+    ).rows[0];
+    assert.equal(sc.video_id, null);
+    await webhook({
+      id: 'evt_any',
+      type: 'checkout.session.completed',
+      data: {
+        object: { mode: 'payment', payment_status: 'paid', metadata: { superchat_id: String(sc.id) } },
+      },
+    });
+    const admin = await signIn(call, 'test_admin');
+    const list = (await call('/studio/superchats', { token: admin })).data.superchats;
+    assert.deepEqual(
+      [list[0].author, list[0].amountCents, list[0].message, list[0].videoId],
+      ['sc_anytime', 1000, 'from YouTube with love', null],
+    );
+    assert.equal((await call('/studio/superchats', { token })).status, 403, 'Studio only');
+  });
+
+  test('once paid, it joins the stream’s chat as a paid message with the amount; once only', async () => {
+    await signIn(call, 'sc_fan');
+    const id = await userId('sc_fan');
+    const videoId = await seedVideo();
+    const { rows } = await pool.query(
+      `INSERT INTO superchats (user_id, video_id, amount_cents, message) VALUES ($1, $2, 500, 'great show @jimbob') RETURNING id`,
+      [id, videoId],
+    );
+    const paid = { mode: 'payment', payment_status: 'paid', metadata: { superchat_id: String(rows[0].id) } };
+    await webhook({ id: 'evt_sc1', type: 'checkout.session.completed', data: { object: paid } });
+    await webhook({ id: 'evt_sc2', type: 'checkout.session.completed', data: { object: paid } });
+    const chat = (await call(`/videos/${videoId}/chat?from=0&to=600000`)).data.messages;
+    assert.equal(chat.length, 1);
+    assert.deepEqual(
+      [chat[0].kind, chat[0].amount, chat[0].body, chat[0].author],
+      ['paid', '$5.00', 'great show @jimbob', 'sc_fan'],
+    );
+    const sc = (
+      await pool.query('SELECT status, chat_message_id FROM superchats WHERE id = $1', [rows[0].id])
+    ).rows[0];
+    assert.equal(sc.status, 'paid');
+    assert.equal(String(sc.chat_message_id), chat[0].id);
+  });
+});

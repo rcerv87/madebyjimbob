@@ -149,6 +149,8 @@ export async function exportData(userId) {
     emails,
     links,
     favorites,
+    memberships,
+    superchats,
   ] = await Promise.all([
     q(`SELECT id, username, display_name, email, email_verified, image, tier, xp, notification_prefs, created_at,
          deletion_requested_at FROM users WHERE id = $1`),
@@ -172,6 +174,10 @@ export async function exportData(userId) {
          WHERE user_id = $1`),
     q(`SELECT u.username, f.color, f.created_at FROM user_favorites f JOIN users u ON u.id = f.favorite_id
          WHERE f.user_id = $1`),
+    q(`SELECT tier, status, billing_interval, current_period_end, cancel_at_period_end, created_at
+         FROM subscriptions WHERE user_id = $1 ORDER BY created_at`),
+    q(`SELECT s.video_id, v.title AS video_title, s.amount_cents, s.currency, s.message, s.status, s.created_at,
+         s.paid_at FROM superchats s JOIN videos v ON v.id = s.video_id WHERE s.user_id = $1 ORDER BY s.created_at`),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -187,7 +193,8 @@ export async function exportData(userId) {
     emailsSent: emails,
     linkedAccounts: links,
     favorites,
-    // Paid memberships, tips, and receipts appear here once payments exist (MBJ-104, 109).
-    payments: [],
+    // Card details and receipts stay with Stripe (Account settings → Manage billing).
+    memberships,
+    superchats,
   };
 }
