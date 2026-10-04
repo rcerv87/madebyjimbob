@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 625" width="1000" height="625" role="img" aria-labelledby="sysmap-title">
+  <title id="sysmap-title">System map: JimBob streams through Restream to YouTube, Rumble and the site's Owncast server on Hetzner; Owncast and the recorder upload video to Cloudflare R2; viewers get video from live.madebyjimbob.app and pages and chat from the website on Render, which keeps its database, starts and stops the streaming server, and talks to Stripe, Shopify and Resend.</title>
+  <style>
+  .bg { fill: #ffffff; }
+  .grp { fill: #e2f0f1; stroke: #d8e1e2; }
+  .gl { fill: #27717a; font: 600 12px sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+  .n rect { fill: #ffffff; stroke: #27717a; stroke-width: 1.3; }
+  .n.store rect { fill: #e4f3e9; stroke: #1f6b3a; }
+  .n.ext rect { stroke: #5b6b6d; }
+  .n.you rect { fill: #27717a; stroke: #27717a; }
+  .n.you text { fill: #ffffff; }
+  .n.dashn rect { stroke-dasharray: 5 4; }
+  .t { fill: #1b2526; font: 600 13px sans-serif; text-anchor: middle; }
+  .s { fill: #5b6b6d; font: 11px sans-serif; text-anchor: middle; }
+  .e { fill: none; stroke: #5b6b6d; stroke-width: 1.3; }
+  .e.dash { stroke-dasharray: 5 4; }
+  .head { fill: #5b6b6d; }
+  .el { fill: #5b6b6d; font: 11px sans-serif; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round; }
+</style>
+  <rect class="bg" width="1000" height="625"/>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0 L10 5 L0 10 z"/></marker>
+  </defs>
+
+  <rect class="grp" x="230" y="20" width="220" height="195" rx="10"/><text class="gl" x="242" y="40">Hetzner · only while live</text>
+  <rect class="grp" x="510" y="20" width="220" height="295" rx="10"/><text class="gl" x="522" y="40">Cloudflare</text>
+  <rect class="grp" x="510" y="360" width="470" height="185" rx="10"/><text class="gl" x="522" y="380">Render · the website</text>
+
+  <path class="e" d="M95 90 V138" marker-end="url(#arr)"/>
+  <path class="e" d="M70 186 L58 228" marker-end="url(#arr)"/>
+  <path class="e" d="M120 186 L132 228" marker-end="url(#arr)"/>
+  <path class="e" d="M170 160 C205 160 215 98 248 96" marker-end="url(#arr)"/><text class="el" x="214" y="138">custom server</text>
+  <path class="e dash" d="M170 60 C200 60 220 68 248 70" marker-end="url(#arr)"/><text class="el" x="208" y="52">or straight</text>
+  <path class="e" d="M430 78 H528" marker-end="url(#arr)"/><text class="el" x="479" y="70">live pieces</text>
+  <path class="e" d="M340 111 V138" marker-end="url(#arr)"/>
+  <path class="e" d="M430 168 C480 168 480 100 528 98" marker-end="url(#arr)"/><text class="el" x="470" y="156">recording</text>
+  <path class="e" d="M620 111 V138" marker-end="url(#arr)"/>
+  <path class="e" d="M710 168 H788" marker-end="url(#arr)"/><text class="el" x="749" y="160">video</text>
+  <path class="e" d="M710 268 C750 268 760 192 788 188" marker-end="url(#arr)"/><text class="el" x="755" y="262">older videos</text>
+  <path class="e" d="M885 196 C885 320 760 340 702 393" marker-start="url(#arr)" marker-end="url(#arr)"/><text class="el" x="878" y="300" text-anchor="end">pages, chat</text>
+  <path class="e" d="M730 428 L758 448"/>
+  <path class="e" d="M730 498 L758 474"/>
+  <path class="e" d="M522 360 L438 217" marker-end="url(#arr)"/><text class="el" x="446" y="246" text-anchor="end">Go Live / End stream</text>
+  <path class="e" d="M55 270 V288" marker-end="url(#arr)"/>
+  <path class="e" d="M170 305 C350 305 400 268 528 268" marker-end="url(#arr)"/><text class="el" x="330" y="298">uploads videos</text>
+  <path class="e" d="M170 325 C330 325 440 402 528 405" marker-end="url(#arr)"/><text class="el" x="300" y="346">chat, comments</text>
+  <path class="e" d="M202 423 C380 423 420 425 528 425" marker-start="url(#arr)" marker-end="url(#arr)"/><text class="el" x="360" y="416">checkout · payment confirmed</text>
+  <path class="e" d="M530 440 C400 440 330 488 202 488" marker-end="url(#arr)"/><text class="el" x="300" y="474">products</text>
+  <path class="e dash" d="M530 448 C420 448 330 553 202 553" marker-end="url(#arr)"/><text class="el" x="330" y="540">email · not on yet</text>
+  <path class="e" d="M630 575 V547" marker-end="url(#arr)"/><text class="el" x="640" y="565" text-anchor="start">every change deploys</text>
+
+  <g class="n"><rect x="20" y="40" width="150" height="50" rx="7"/><text class="t" x="95" y="62">JimBob</text><text class="s" x="95" y="78">OBS</text></g>
+  <g class="n"><rect x="20" y="140" width="150" height="46" rx="7"/><text class="t" x="95" y="168">Restream</text></g>
+  <g class="n ext"><rect x="20" y="230" width="70" height="40" rx="7"/><text class="t" x="55" y="255">YouTube</text></g>
+  <g class="n ext"><rect x="100" y="230" width="70" height="40" rx="7"/><text class="t" x="135" y="255">Rumble</text></g>
+  <g class="n"><rect x="20" y="290" width="150" height="50" rx="7"/><text class="t" x="95" y="311">Ruben's PC</text><text class="s" x="95" y="327">Import Helper</text></g>
+  <g class="n"><rect x="250" y="55" width="180" height="56" rx="7"/><text class="t" x="340" y="78">Owncast</text><text class="s" x="340" y="96">makes 1080p, 720p, 360p</text></g>
+  <g class="n"><rect x="250" y="140" width="180" height="56" rx="7"/><text class="t" x="340" y="163">Recorder</text><text class="s" x="340" y="181">rewind copy, replay, audio</text></g>
+  <g class="n store"><rect x="530" y="55" width="180" height="56" rx="7"/><text class="t" x="620" y="78">R2 storage</text><text class="s" x="620" y="96">live video, replays, library</text></g>
+  <g class="n"><rect x="530" y="140" width="180" height="56" rx="7"/><text class="t" x="620" y="163">live.madebyjimbob.app</text><text class="s" x="620" y="181">cache in front of R2</text></g>
+  <g class="n store"><rect x="530" y="240" width="180" height="56" rx="7"/><text class="t" x="620" y="263">Stream</text><text class="s" x="620" y="281">first imported videos</text></g>
+  <g class="n you"><rect x="790" y="140" width="190" height="56" rx="7"/><text class="t" x="885" y="163">Viewers and members</text><text class="s" x="885" y="181">phone and desktop</text></g>
+  <g class="n"><rect x="530" y="395" width="200" height="56" rx="7"/><text class="t" x="630" y="418">Website and API</text><text class="s" x="630" y="436">pages, accounts, chat</text></g>
+  <g class="n"><rect x="530" y="470" width="200" height="56" rx="7"/><text class="t" x="630" y="493">Background jobs</text><text class="s" x="630" y="511">live server, replay trim, erasing</text></g>
+  <g class="n store"><rect x="760" y="430" width="200" height="60" rx="7"/><text class="t" x="860" y="455">Postgres database</text><text class="s" x="860" y="473">members, chat, payments</text></g>
+  <g class="n ext"><rect x="20" y="400" width="180" height="46" rx="7"/><text class="t" x="110" y="420">Stripe</text><text class="s" x="110" y="436">checkout, billing</text></g>
+  <g class="n ext"><rect x="20" y="465" width="180" height="46" rx="7"/><text class="t" x="110" y="485">Shopify store</text><text class="s" x="110" y="501">products</text></g>
+  <g class="n ext dashn"><rect x="20" y="530" width="180" height="46" rx="7"/><text class="t" x="110" y="550">Resend</text><text class="s" x="110" y="566">account email</text></g>
+  <g class="n ext"><rect x="530" y="575" width="200" height="40" rx="7"/><text class="t" x="630" y="600">GitHub · the code</text></g>
+</svg>

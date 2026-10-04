@@ -1,6 +1,6 @@
 # MadeByJimBob — status
 
-Last updated: 2026-09-30. Update this file when a story ships or a decision is made.
+Last updated: 2026-10-04 (system map in `docs/ARCHITECTURE.md`; meeting summary on the strategy meeting page). Update this file when a story ships or a decision is made.
 Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlog_source.py`).
 
 ## At a glance
@@ -9,14 +9,15 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 |---|---|
 | Live site | https://madebyjimbob.onrender.com (Render: web service + Postgres; deploys on every push to `main`) |
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
-| Video | Cloudflare Stream, Starter bundle ($5/mo: 1,000 min stored, 5,000 min delivered). About 270 min used |
+| Video | Cloudflare R2 behind `live.madebyjimbob.app` for live, replays and the library (ADR-010); Cloudflare Stream Starter ($5/mo) only for the first imports |
 | Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 276 automated tests (167 server, 109 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 104 stories; 26 done, 14 in progress |
+| Quality | 344 automated tests (202 server, 142 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 116 stories; 30 done, 19 in progress |
 
 ## Waiting on Ruben
 
-- **Turn on payments (ADR-013), test mode first** (about 20 minutes; nothing is charged in test mode):
+- **Payments (ADR-013): test mode is on (2026-10-03)**, with Plus $5/mo and Premium $10/mo or $100/yr; memberships and
+  super chats tested end to end. **Left: live mode in JimBob's Stripe account with the real prices** (same steps):
   1. Stripe account: the one money should land in is JimBob's (stripe.com → Start now). For building and testing,
      test mode works on any account (no business details needed): toggle **Test mode** at the top right.
   2. **Product catalog → Add product**: "Plus" with a recurring monthly price (and a yearly one if offered), then
@@ -34,7 +35,8 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
      same steps to **live mode** in JimBob's account when he's ready.
 
 
-- **Production keeps everything on R2; B2 is for development only** (Ruben and JimBob, 2026-10-03). Render still has
+- **Done (2026-10-03): B2 settings off production** (the 2026-10-03 stream wrote nothing to B2). Kept for the record:
+  **Production keeps everything on R2; B2 is for development only** (Ruben and JimBob, 2026-10-03). Render had
   the B2 settings, so the recorder copies every stream to Ruben's `Jimbob-beta` and, from ~2026-10-16, replays older
   than 14 days would move to B2 and leave R2. Remove them from production (keep them in the local `.env`):
   Render → `madebyjimbob` → **Environment** → delete `B2_ENDPOINT`, `B2_BUCKET`, `B2_KEY_ID`, `B2_APPLICATION_KEY` →
@@ -63,7 +65,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
      Browser Cache TTL → "Respect Existing Headers" (the 4-hour default was stamped on 404s too). The site also holds
      players for up to 30 s at a stream's start until the live playlists are published (a player that started on
      Owncast's kept them all stream and hit 404s).
-     Cache Reserve is not needed (paid). **Next: add `m3u8` to that rule** (Edit expression →
+     Cache Reserve is not needed (paid). **Done (2026-10-03): `m3u8` added to that rule** (Edit expression →
      `(http.host eq "live.madebyjimbob.app" and (http.request.uri.path.extension eq "ts" or http.request.uri.path.extension eq "m3u8"))`)
      so live playlists (`dvr/live/<n>.m3u8`, 1-second cache, MBJ-311) are held by Cloudflare. Owncast's and recordings'
      playlists say `no-cache`, so they stay fresh. Then a Go Live to check (Claude watches `cf-cache-status`).
@@ -71,13 +73,13 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   3. Resend email records on madebyjimbob.app (item 7).
   4. Bot accounts `loadbot_1`–`5` and `chat_tester` exist on the live site for chat tests: keep or delete?
 
-1. **Turn on phone push on the live site:** Render → `madebyjimbob` → Environment → add `VAPID_PRIVATE_KEY`
+1. **Turn on phone push on the live site** (checked 2026-10-04: still off, `/api/push/key` is empty): Render → `madebyjimbob` → Environment → add `VAPID_PRIVATE_KEY`
    with the value from your local `.env` (same name). Save; Render redeploys. The in-site bell works without it.
 2. **Roll the Cloudflare API token** (it was pasted in chat): Cloudflare → My Profile → API Tokens → ⋯ → Roll,
    then update `CF_API_TOKEN` in `.env`.
-3. **Decide R2 vs Stream** for the full library (`docs/adr/010-vod-on-r2.md`) before importing more than a few streams.
+3. **Done (2026-10-03): R2 for the full library** (ADR-010). Waiting on JimBob's Takeout export to import it.
 4. **GitHub branch rule:** Settings → Branches → rule for `main` → require the **CI / check** status (finishes MBJ-005).
-5. **Domain:** beta runs on **madebyjimbob.app** (buy it with JimBob's OK, about $15/year; Cloudflare). Later,
+5. **Domain:** beta runs on **madebyjimbob.app** (bought, on Cloudflare since 2026-10-03; the site itself still answers on onrender.com). Later,
    JimBob chooses the final address: madebyjimbob.com with the store at shop.madebyjimbob.com (recommended), or
    watch.madebyjimbob.com. The switch checklist is in `docs/adr/011-domain-and-store.md` ("Beta address").
 6. **JimBob's OK** on using his avatar, banner art, and store products in the platform before the link goes wide.
@@ -324,6 +326,14 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | 2026-09-30 | Registration and profiles split into MBJ-106, 108, 113–119; 13+ checkbox, profiles public but not in search, deleted members' messages stay as "Deleted user" |
 | 2026-10-03 | **Everything on Cloudflare R2 from the start** (live recordings, replays, and the library), agreed by JimBob: one storage, free to watch, no later move between providers. Backblaze B2 only for Ruben's development (ADR-010) |
 | 2026-10-03 | Favorites are a Premium feature (MBJ-220); stream latency modes: Normal now, Low latency later (MBJ-313) |
+| 2026-10-03 | Replays keep 1080p for 30 days, then 720p and below (JimBob; MBJ-312) |
+| 2026-10-03 | Payments on Stripe: Checkout and the Customer Portal, no RevenueCat on the web until the apps sell in-app; Helcim is the backup (ADR-013) |
+| 2026-10-03 | Super chats sold on the platform any time, also to people watching on YouTube or Rumble; $2–$500 |
+| 2026-10-03 | Cards only (Apple Pay and Google Pay included); no bank/ACH, Klarna or Link: not instant, or extra steps |
+| 2026-10-03 | Notifications only for replies to your comments; chat mentions highlight only |
+| 2026-10-03 | Chat history and conversation tools start as moderator/admin tools (MBJ-218, 224) |
+| 2026-10-04 | Super chats colored by amount (yellow $2, green $5, blue $10, red $20, gold $50+); the $ beside Send keeps the typed text; no character limits and no paying for longer messages |
+| 2026-10-04 | End stream only after OBS has stopped; the server waits for the recorder to finish uploading (up to 15 minutes) before it's deleted |
 
 ## Known limits (fine for a demo, not for launch)
 
