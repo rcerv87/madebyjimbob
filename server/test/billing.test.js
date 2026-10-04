@@ -21,6 +21,8 @@ function fakeFetch(url, opts = {}) {
       : json({ error: { message: 'No such price' } }, 404);
   }
   if (u.pathname === '/v1/customers') return json({ id: `cus_${(stripe.customers += 1)}` });
+  const cus = u.pathname.match(/^\/v1\/customers\/(.+)$/);
+  if (cus) return stripe.deleted?.has(cus[1]) ? json({ id: cus[1], deleted: true }) : json({ id: cus[1] });
   if (u.pathname === '/v1/checkout/sessions')
     return json({ id: `cs_${stripe.calls.length}`, url: 'https://checkout.stripe.com/c/test' });
   if (u.pathname === '/v1/billing_portal/sessions') return json({ url: 'https://billing.stripe.com/p/test' });
@@ -246,6 +248,19 @@ describe('memberships (MBJ-104)', () => {
       'premium',
       'right away, not after the webhook',
     );
+  });
+
+  test('a customer deleted in Stripe is replaced by a new one', async () => {
+    const token = await signIn(call, 'bill_deleted');
+    await call('/membership/portal', { method: 'POST', token });
+    const old = (await pool.query(`SELECT stripe_customer_id FROM users WHERE username = 'bill_deleted'`))
+      .rows[0].stripe_customer_id;
+    stripe.deleted = new Set([old]);
+    await call('/membership/portal', { method: 'POST', token });
+    const now = (await pool.query(`SELECT stripe_customer_id FROM users WHERE username = 'bill_deleted'`))
+      .rows[0].stripe_customer_id;
+    assert.notEqual(now, old);
+    stripe.deleted = null;
   });
 
   test('Manage billing opens Stripe’s page', async () => {
