@@ -62,6 +62,10 @@ function fakeFetch(url, opts = {}) {
       (owncast.values ||= {})[key] = JSON.parse(opts.body).value;
       return json(200, { success: true });
     }
+    if (u.pathname === '/api/admin/disconnect') {
+      owncast.disconnected = true;
+      return json(200, { success: true });
+    }
     if (u.pathname === '/api/admin/serverconfig') {
       const v = owncast.values || {};
       return json(200, {
@@ -259,6 +263,20 @@ describe('Go Live (owned live, ADR-004)', () => {
       assert.equal(sent.data.message.postedLive, true);
 
       await call('/studio/live/stop', { method: 'POST', token: admin });
+      // Viewers see it end at once; OBS is cut off with a new key (no reconnecting) and the recorder gets time to
+      // upload what it still has, so the server isn't deleted yet.
+      assert.equal((await call('/live')).data.online, false);
+      assert.equal(owncast.disconnected, true);
+      assert.equal(owncast.values.streamkeys[0].comment, 'ended');
+      assert.equal(hetzner.servers.length, 1);
+      assert.doesNotMatch(r2.objects['dvr/rec1/0/index.m3u8'], /ENDLIST/);
+      assert.equal((await call('/studio/live', { token: admin })).data.server.finishing, true);
+      await tickLive();
+      assert.equal(hetzner.servers.length, 1, 'still uploading');
+      // The recorder never says it's done: 15 minutes on, the recording is closed here and the server goes.
+      await pool.query(`UPDATE live_servers SET stop_requested_at = now() - interval '16 minutes'`);
+      await tickLive();
+      assert.equal(hetzner.servers.length, 0);
       assert.match(r2.objects['dvr/rec1/0/index.m3u8'], /#EXT-X-ENDLIST\n$/);
       assert.match(r2.objects['dvr/rec1/1/index.m3u8'], /#EXT-X-ENDLIST\n$/);
       const rec = JSON.parse(r2.objects['dvr/current.json']);
@@ -294,6 +312,41 @@ describe('Go Live (owned live, ADR-004)', () => {
       // Saved once, even if the job sees the finished recording again.
       const { saveReplay } = await import('../src/live.js');
       assert.equal(await saveReplay(rec), null);
+    } finally {
+      process.env.R2_ACCOUNT_ID = '';
+    }
+  });
+
+  test('End stream waits for the recorder to finish uploading, then deletes the server', async () => {
+    Object.assign(process.env, {
+      R2_ACCOUNT_ID: 'acct',
+      R2_ACCESS_KEY_ID: 'key',
+      R2_SECRET_ACCESS_KEY: 'secret',
+      R2_BUCKET: 'madebyjimbob-live',
+      R2_PUBLIC_URL: 'https://pub-test.r2.dev/',
+    });
+    const done = '#EXTM3U\n#EXTINF:6.000,\n0.ts\n#EXT-X-ENDLIST\n';
+    const startedAt = new Date(Date.now() + 1000).toISOString();
+    r2.objects['dvr/current.json'] = JSON.stringify({ id: 'rec2', startedAt, live: true });
+    try {
+      const admin = await signIn(call, 'test_admin');
+      await call('/studio/live/start', { method: 'POST', token: admin });
+      owncast = { online: true, config: [] };
+      await tickLive();
+      await call('/studio/live/stop', { method: 'POST', token: admin });
+      // A second End stream while it finishes changes nothing.
+      await call('/studio/live/stop', { method: 'POST', token: admin });
+      assert.equal(hetzner.servers.length, 1);
+      // The recorder uploads the rest and marks the recording finished: the next check saves it and deletes the server.
+      Object.assign(r2.objects, {
+        'dvr/rec2/0/index.m3u8': done,
+        'dvr/current.json': JSON.stringify({ id: 'rec2', startedAt, live: false, durationS: 6 }),
+      });
+      await tickLive();
+      assert.equal(hetzner.servers.length, 0);
+      assert.equal(r2.objects['dvr/rec2/0/index.m3u8'], done, 'the recorder’s own playlist is left as is');
+      const { rows } = await pool.query(`SELECT duration_s FROM videos WHERE live_recording_id = 'rec2'`);
+      assert.equal(rows[0]?.duration_s, 6);
     } finally {
       process.env.R2_ACCOUNT_ID = '';
     }
