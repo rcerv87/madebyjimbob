@@ -824,6 +824,13 @@ export default function ChatPanel({
   );
 }
 
+// A super chat's color by amount: yellow from $2, green from $5, blue from $10, red from $20, gold from $50. Other
+// currencies use their number as is (close enough for a color).
+export function paidLevel(amount) {
+  const value = Number(String(amount || '').replace(/[^0-9.]/g, '')) || 0;
+  return value >= 50 ? 'gold' : value >= 20 ? 'red' : value >= 10 ? 'blue' : value >= 5 ? 'green' : 'yellow';
+}
+
 // Text with what was searched for highlighted (any case).
 function Marked({ text, mark }) {
   if (!mark) return text;
@@ -927,7 +934,7 @@ const ChatMessage = memo(function ChatMessage({
   if (m.kind === 'paid') {
     return (
       <li
-        className={`chat-msg paid ${flash ? 'flash' : ''} ${color ? `hl hl-${color}` : ''}`}
+        className={`chat-msg paid paid-${paidLevel(m.amount)} ${flash ? 'flash' : ''} ${color ? `hl hl-${color}` : ''}`}
         data-msg={m.id}
       >
         <div className="paid-head">
