@@ -100,6 +100,13 @@ const userId = async (name) =>
 
 describe('memberships (MBJ-104)', () => {
   test('the plans and prices come from Stripe', async () => {
+    // A wrong id (e.g. a test-mode price with the live key) isn't remembered: fixing the setting works at once.
+    process.env.STRIPE_PRICE_PLUS_MONTHLY = 'price_from_test_mode';
+    assert.deepEqual(
+      (await call('/membership')).data.plans.map((p) => p.tier),
+      ['premium', 'premium'],
+    );
+    process.env.STRIPE_PRICE_PLUS_MONTHLY = ' price_plus_m\n'; // pasted with a space and a line break
     const r = await call('/membership');
     assert.equal(r.data.configured, true);
     assert.deepEqual(

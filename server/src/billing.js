@@ -25,7 +25,7 @@ function priceMap() {
   const map = new Map();
   for (const tier of ['plus', 'premium'])
     for (const interval of ['monthly', 'yearly']) {
-      const id = process.env[`STRIPE_PRICE_${tier.toUpperCase()}_${interval.toUpperCase()}`];
+      const id = process.env[`STRIPE_PRICE_${tier.toUpperCase()}_${interval.toUpperCase()}`]?.trim();
       if (id) map.set(id, { tier, interval: interval === 'monthly' ? 'month' : 'year' });
     }
   return map;
@@ -46,7 +46,7 @@ async function stripe(method, path, params) {
   const res = await fetch(`${API}${path}${method === 'GET' && params ? `?${form(params)}` : ''}`, {
     method,
     headers: {
-      Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+      Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY.trim()}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: method === 'GET' ? undefined : form(params || {}),
@@ -70,15 +70,18 @@ export async function plans() {
   if (!billingConfigured()) return [];
   if (planCache.plans && Date.now() - planCache.at < 600_000) return planCache.plans;
   const out = [];
+  let failed = false;
   for (const [id, p] of priceMap()) {
     try {
       const price = await stripe('GET', `/prices/${encodeURIComponent(id)}`);
       if (price.active !== false) out.push({ ...p, amount: price.unit_amount, currency: price.currency });
     } catch (err) {
+      failed = true;
       logger.warn({ err, price: id }, 'could not read a Stripe price');
     }
   }
-  planCache = { at: Date.now(), plans: out };
+  // Only a complete answer is kept: after a failed read (a wrong id, Stripe busy) the next visitor tries again.
+  if (!failed) planCache = { at: Date.now(), plans: out };
   return out;
 }
 
@@ -244,7 +247,7 @@ function safePath(p) {
 // ---------- webhooks ----------
 
 // Stripe-Signature: t=<time>,v1=<hmac>[,v1=…]; the HMAC is over "<time>.<raw body>". Five minutes of leeway.
-export function verifyStripeSignature(raw, header, secret = process.env.STRIPE_WEBHOOK_SECRET) {
+export function verifyStripeSignature(raw, header, secret = process.env.STRIPE_WEBHOOK_SECRET?.trim()) {
   if (!secret || !raw || !header) return false;
   const parts = Object.fromEntries(
     String(header)
