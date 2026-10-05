@@ -29,7 +29,7 @@ Keep it current: when a new service or setting is added, add it here.
 | **GitHub** | The code (`rcerv87/madebyjimbob`, private) | Ruben | none | Easy |
 | **Google Cloud** | YouTube Data API key (channel list) | Ruben | `YOUTUBE_API_KEY` | Easy |
 | **Shopify** | JimBob's store, read publicly | JimBob already | `SHOP_URL` | none |
-| **Stripe** | Memberships and super chats (ADR-013): customers, subscriptions, prices, payouts to his bank | JimBob from the start (test mode on either account while building) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` | Live in his account from day one; a test account's subscriptions don't move |
+| **Stripe** | Memberships and super chats (ADR-013): customers, subscriptions, saved cards, prices, payouts | **Ruben's account in live mode since 2026-10-05** (real-money tests); moves to JimBob's before launch | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` | New account: nothing moves (customers, subscriptions and saved cards stay in Ruben's). See step 9 |
 | **Apple / Google developer accounts** | Phone apps | Ruben (by choice) | — | Apps can be transferred between developer accounts later |
 
 ## Before moving anything
@@ -53,6 +53,7 @@ Easiest and least risky first; each step is independent unless noted.
 6. Domain and DNS (Cloudflare zone, GoDaddy registration)
 7. Render (site and database)
 8. GitHub (code)
+9. Stripe (payments): before real members pay, so the money and the members start in JimBob's account
 
 ## Steps
 
@@ -139,6 +140,39 @@ Render can transfer services between workspaces: invite JimBob's workspace, tran
 ### 8. GitHub
 GitHub → repository → Settings → Transfer ownership → JimBob's account or organization. Then reconnect Render's
 deploys to the new repository location, and re-add the branch rule and Actions settings.
+
+### 9. Stripe (payments)
+Stripe accounts can't be transferred, and customers, subscriptions and saved cards don't move between accounts. So
+JimBob's account starts empty: do this **before real members join**. Anyone who paid in Ruben's account (tests) is
+cancelled and refunded there first; their site accounts drop back to Free automatically (the site ends a membership
+Stripe doesn't recognize).
+
+In JimBob's Stripe account, **Test mode off** for every step:
+- [ ] **Activate the account**: business details, his bank account for payouts, statement descriptor (e.g.
+  "MADEBYJIMBOB"). The first payout is usually held about 7 days.
+- [ ] **Product catalog**: "Plus" and "Premium" with the agreed prices (monthly, and yearly if offered). Copy each
+  **price** id (`price_…`, not `prod_…`).
+- [ ] **Developers → API keys**: the **Secret key** (`sk_live_…`) and the **Publishable key** (`pk_live_…`).
+- [ ] **Developers → Webhooks → Add endpoint**: `https://<site>/api/webhooks/stripe` with events
+  `checkout.session.completed`, `checkout.session.expired`, `customer.subscription.created`,
+  `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`. Copy its **Signing secret**
+  (`whsec_…`, different from Ruben's).
+- [ ] **Settings → Billing → Customer portal**: on; allow cancelling, updating the payment method, switching between
+  Plus and Premium, and invoices.
+- [ ] **Settings → Payment methods**: **Cards**, **Apple Pay** and **Google Pay** on (fingerprint / Face ID checkout).
+  Leave bank payments, Klarna and Link off (the site only offers cards anyway).
+- [ ] **Settings → Payment method domains**: add the site's domain(s) (`madebyjimbob.onrender.com`,
+  `madebyjimbob.app`, and the final `.com` when it moves) so Apple Pay works in the checkout window on our pages.
+- [ ] **Settings → Branding**: his logo, icon and teal (#27717A), so the checkout window looks like the site.
+- [ ] Invite Ruben: **Settings → Team → Invite**, role **Developer** (or Administrator), so he can see logs and help.
+
+Then on Render → `madebyjimbob` → Environment, replace `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`,
+`STRIPE_WEBHOOK_SECRET`, and every `STRIPE_PRICE_*` with JimBob's values, and Save. Check:
+- [ ] /membership shows the right prices (if the plans don't show, a price id and the key are from different accounts or
+  modes: Render → Logs, search "Stripe price").
+- [ ] One real Plus join, one $2 super chat (in the live chat during a stream), an upgrade, and a card added in Account →
+  Payment methods; then cancel and refund in Stripe. The webhook events arrive (site shows the membership, the super chat).
+- [ ] In Ruben's Stripe account: cancel anything left, refund the tests, and roll or delete the old keys and webhook.
 
 ## After the move
 
