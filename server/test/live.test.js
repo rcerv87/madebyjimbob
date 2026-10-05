@@ -354,6 +354,58 @@ describe('Go Live (owned live, ADR-004)', () => {
     }
   });
 
+  test('deleting a replay in Studio removes its recording from R2; a stream live right now can’t be deleted', async () => {
+    Object.assign(process.env, {
+      R2_ACCOUNT_ID: 'acct',
+      R2_ACCESS_KEY_ID: 'key',
+      R2_SECRET_ACCESS_KEY: 'secret',
+      R2_BUCKET: 'madebyjimbob-live',
+      R2_PUBLIC_URL: 'https://pub-test.r2.dev/',
+    });
+    try {
+      const add = async (rec) =>
+        (
+          await pool.query(
+            `INSERT INTO videos (title, kind, hls_url, live_recording_id, duration_s) VALUES ($1, 'live', $2, $1, 60) RETURNING id`,
+            [rec, `https://pub-test.r2.dev/dvr/${rec}/master.m3u8`],
+          )
+        ).rows[0].id;
+      const gone = await add('rec-gone');
+      const kept = await add('rec-kept');
+      const live = await add('rec-live');
+      Object.assign(r2.objects, {
+        'dvr/rec-gone/master.m3u8': 'x',
+        'dvr/rec-gone/0/index.m3u8': 'x',
+        'dvr/rec-gone/0/0.ts': 'x',
+        'dvr/rec-gone/audio/0.ts': 'x',
+        'dvr/rec-kept/0/0.ts': 'x',
+        'dvr/current.json': JSON.stringify({
+          id: 'rec-live',
+          startedAt: new Date().toISOString(),
+          live: true,
+        }),
+      });
+      const admin = await signIn(call, 'test_admin');
+      const r = await call(`/studio/videos/${gone}`, { method: 'DELETE', token: admin, body: {} });
+      assert.equal(r.status, 200);
+      assert.equal(r.data.files, 'deleting');
+      for (let i = 0; i < 50 && Object.keys(r2.objects).some((k) => k.startsWith('dvr/rec-gone/')); i++)
+        await new Promise((res) => setTimeout(res, 20));
+      assert.deepEqual(
+        Object.keys(r2.objects).filter((k) => k.startsWith('dvr/rec-gone/')),
+        [],
+        'every file of that recording',
+      );
+      assert.ok(r2.objects['dvr/rec-kept/0/0.ts'], 'other recordings untouched');
+      const refused = await call(`/studio/videos/${live}`, { method: 'DELETE', token: admin, body: {} });
+      assert.equal(refused.status, 409);
+      assert.match(refused.data.error, /live right now/);
+      await pool.query('DELETE FROM videos WHERE id = ANY($1)', [[kept, live]]);
+    } finally {
+      process.env.R2_ACCOUNT_ID = '';
+    }
+  });
+
   test('with R2 set, Owncast uploads there and viewers get each quality from R2', async () => {
     Object.assign(process.env, {
       R2_ACCOUNT_ID: 'acct',

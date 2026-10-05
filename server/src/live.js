@@ -810,6 +810,29 @@ export function withoutHd(master) {
   return list.includes('#EXT-X-STREAM-INF') ? { list, removed } : { list: master, removed: [] };
 }
 
+// A deleted replay's files: everything under its recording in R2 (and in the B2 archive, where that's set up).
+// Thousands of small pieces per stream, so deleted a few at a time in the background. Returns how many went.
+export async function deleteRecordingFiles(recordingId) {
+  if (!/^[\w.:-]+$/.test(String(recordingId))) return 0; // never a wider prefix than one recording
+  const prefix = `${DVR()}/${recordingId}/`;
+  let deleted = 0;
+  for (const store of [r2(), b2()].filter(Boolean)) {
+    const keys = await s3List(store, prefix);
+    let next = 0;
+    const worker = async () => {
+      while (next < keys.length) {
+        const key = keys[next++];
+        await s3Request(store, 'DELETE', key).catch((err) =>
+          logger.warn({ err, key }, 'could not delete a file'),
+        );
+        deleted += 1;
+      }
+    };
+    await Promise.all(Array.from({ length: 16 }, worker));
+  }
+  return deleted;
+}
+
 // Replays older than LIVE_HD_DAYS keep 720p and below (JimBob, 2026-10-03; MBJ-312): the full-HD quality leaves the
 // replay's list first, then its files are deleted from R2. ~4.7 GB per streamed hour becomes ~1.6 GB.
 export async function trimReplays() {

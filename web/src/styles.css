@@ -4307,3 +4307,19 @@ a.text-btn {
 .text-btn.danger {
   color: var(--danger);
 }
+
+/* Studio → Content: bulk actions for the ticked videos */
+.bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--raised);
+}
+.studio tr.picked td {
+  background: var(--raised);
+}
