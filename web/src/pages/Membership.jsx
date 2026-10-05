@@ -53,6 +53,8 @@ export default function Membership({ session }) {
       setUpgrade(await api(`/membership/upgrade?tier=${tier}`));
     } catch (err) {
       setError(err.message);
+      // The server may have found the membership gone (e.g. a test-mode one): show the plans as they are now.
+      session.refreshUser?.();
     }
     setBusy('');
   };
