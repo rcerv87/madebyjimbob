@@ -144,6 +144,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-505 | Owned live recordings | Owned live & audio | 4 | Should | M | MBJ-501 |
 | MBJ-506 | Move stored video to R2 (ADR-010) | Owned live & audio | 4 | Should | M | — |
 | MBJ-806 | Import the whole channel | Library & community | 4 | Should | M | MBJ-506 |
+| MBJ-818 | Library Uploader: a folder on JimBob's PC goes to R2 | Library & community | 4 | Must | L | MBJ-506, MBJ-806 |
 | MBJ-601 | Watch and listen tracking | Engagement & AI | 5 | Must | S | MBJ-101 |
 | MBJ-602 | XP, levels, badges | Engagement & AI | 5 | Should | M | MBJ-601 |
 | MBJ-603 | Leaderboards | Engagement & AI | 5 | Could | S | MBJ-602 |
@@ -1515,6 +1516,20 @@ Acceptance criteria:
 - [ ] Live card at the top of Videos
 - [ ] Studio Go live switch pointing at the YouTube live URL until MBJ-301 detects it automatically
 - [ ] When not live, show the next stream from the schedule (weekdays around 12:00pm ET)
+
+### MBJ-818 — Library Uploader: a folder on JimBob's PC goes to R2
+
+**Status:** To do · **Phase 4 — Owned live + audio** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-506, MBJ-806
+
+As JimBob, I want to fill one folder with my Google Takeout export and have every video end up on the site, without doing anything else (the Cloudflare setup page, part 2).
+
+Acceptance criteria:
+- [ ] A Windows program with a desktop shortcut (ffmpeg included, nothing else to install); JimBob double-clicks it and leaves the window open; it shows progress (done, in progress, left, time remaining)
+- [ ] Watches the "MADEbyJIMBOB Library" folder on his drive: reads the Takeout .zip files as they are (no unzipping), matches each video to its YouTube video from Takeout's metadata (the same matching as Studio → From files), and also takes OBS recordings put there
+- [ ] For each video: makes 720p, 360p and audio-only (single-file HLS, so a handful of uploads per video), using an NVIDIA card when present; uploads to his R2 bucket under the library path; registers the video on the site, then the import helper adds chat and comments (MBJ-806)
+- [ ] No keys on his PC: he signs in with his site account once and the site hands out short-lived upload permission per file (presigned, multipart for big files)
+- [ ] Picks up where it left off after a restart, sleep or lost connection; skips what's already uploaded; anything added to the folder later goes up too
+- [ ] Build once JimBob's Cloudflare account and R2 bucket exist (MIGRATION.md step 5), so uploads land in his storage from the start
 
 ### MBJ-806 — Import the whole channel
 
