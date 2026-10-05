@@ -30,6 +30,18 @@ the account.
 - **No RevenueCat on the web** (MBJ-104 had it): it's only needed once the phone apps sell in-app; until then Stripe is
   the record.
 
+## Update 2026-10-05: checkout inside the site, saved cards
+
+- With `STRIPE_PUBLISHABLE_KEY` set, Join and super chats open Stripe's checkout in a window on our page (embedded,
+  `ui_mode: embedded_page`, `redirect_on_completion: never`): nobody leaves the live stream, closing the window keeps
+  the message, and once paid the super chat leaves the chat box and a thank-you shows. Joining goes to the welcome screen
+  and, once the membership is on, straight back to where the viewer was. Without the key: Stripe's own page as before
+  (a cancelled super chat comes back to the chat box).
+- Every checkout offers "save my card for next time" (`saved_payment_method_options.payment_method_save`); cards saved
+  that way are offered again, so a returning member just confirms (Face ID, Touch ID, or their bank's check) and pays.
+  Cards saved only by a membership (no box ticked) aren't offered again: Stripe's rule for card networks.
+- Upgrades (Plus → Premium) already charge the card on file with one click.
+
 ## Consequences
 
 - Fees: about 2.9% + 30¢ per payment (a $5 super chat keeps about $4.55, against about $3.50 through YouTube).

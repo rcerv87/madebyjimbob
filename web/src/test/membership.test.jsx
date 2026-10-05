@@ -6,6 +6,7 @@ import SuperchatForm from '../components/SuperchatForm.jsx';
 import Watch from '../pages/Watch.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
 import { goTo } from '../membership.js';
+import { stripeEmbed } from '../stripeEmbed.js';
 
 function fakeApi(routes) {
   globalThis.fetch = vi.fn(async (url, opts = {}) => {
@@ -65,7 +66,7 @@ describe('membership page (MBJ-105)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Join Premium' }));
     await waitFor(() => expect(go).toHaveBeenCalledWith('https://checkout.stripe.com/c/x'));
     expect(sent('POST', '/membership/checkout')).toEqual([
-      { tier: 'premium', interval: 'month', returnTo: '/watch/12' },
+      { tier: 'premium', interval: 'month', returnTo: '/watch/12', embedded: false },
     ]);
     expect(document.querySelector('.plan-card.picked h2').textContent).toBe('Premium');
   });
@@ -90,6 +91,32 @@ describe('membership page (MBJ-105)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Upgrade for $2.50' }));
     await waitFor(() => expect(refreshUser).toHaveBeenCalled());
     expect(sent('POST', '/membership/upgrade')).toEqual([{ tier: 'premium' }]);
+  });
+
+  test('with Stripe’s key, Join pays inside the page, then the welcome and straight back', async () => {
+    fakeApi({
+      '/membership': [200, member({ publishableKey: 'pk_test_1' })],
+      'POST /membership/checkout': [200, { clientSecret: 'cs_m_secret' }],
+    });
+    let complete;
+    vi.spyOn(stripeEmbed, 'mount').mockImplementation(async ({ onComplete }) => {
+      complete = onComplete;
+      return () => {};
+    });
+    const session = { user: { username: 'fan', tier: 'free' }, refreshUser: () => {} };
+    render(
+      <MemoryRouter initialEntries={['/membership?tier=plus&return=%2Flive']}>
+        <Routes>
+          <Route path="/membership" element={<Membership session={session} />} />
+          <Route path="/membership/welcome" element={<MembershipWelcome session={session} />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Join Plus' }));
+    expect(await screen.findByRole('dialog', { name: 'Join Plus' })).toBeTruthy();
+    await waitFor(() => expect(complete).toBeTypeOf('function'));
+    complete();
+    expect(await screen.findByText(/Setting up your membership/)).toBeTruthy();
   });
 
   test('not open yet: says so, and Join is off', async () => {
@@ -138,6 +165,42 @@ describe('super chats (MBJ-109)', () => {
     expect(sent('POST', '/superchats/checkout')).toEqual([
       { amountCents: 2000, message: 'love the show', returnTo: '/superchat' },
     ]);
+  });
+
+  test('with Stripe’s key the checkout opens in the page; paid → onPaid; Back keeps the message', async () => {
+    const sent = fakeApi({ 'POST /superchats/checkout': [200, { clientSecret: 'cs_1_secret' }] });
+    let complete;
+    const mount = vi.spyOn(stripeEmbed, 'mount').mockImplementation(async ({ onComplete }) => {
+      complete = onComplete;
+      return () => {};
+    });
+    const onPaid = vi.fn();
+    render(
+      <SuperchatForm
+        session={{ user: { username: 'fan' } }}
+        publishableKey="pk_test_1"
+        initialMessage="@jimbob great point"
+        onPaid={onPaid}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Send $5 super chat' }));
+    await waitFor(() => expect(mount).toHaveBeenCalled());
+    expect(mount.mock.calls[0][0]).toMatchObject({
+      publishableKey: 'pk_test_1',
+      clientSecret: 'cs_1_secret',
+    });
+    expect(sent('POST', '/superchats/checkout')[0]).toMatchObject({
+      embedded: true,
+      message: '@jimbob great point',
+    });
+    // Back: nothing paid, the message is still there.
+    fireEvent.click(screen.getByRole('button', { name: '← Back' }));
+    expect(screen.getByLabelText(/Message/).value).toBe('@jimbob great point');
+    // Again, and this time it's paid.
+    fireEvent.click(screen.getByRole('button', { name: 'Send $5 super chat' }));
+    await waitFor(() => expect(mount).toHaveBeenCalledTimes(2));
+    complete();
+    expect(onPaid).toHaveBeenCalledWith({ amount: 500, message: '@jimbob great point' });
   });
 
   test('a typed amount under $2 can’t be sent', () => {

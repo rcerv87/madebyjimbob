@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { api } from '../api.js';
 import SuperchatForm from '../components/SuperchatForm.jsx';
 import useTitle from '../useTitle.js';
 
@@ -8,6 +10,12 @@ export default function Superchat({ session }) {
   useTitle('Super chat');
   const [params] = useSearchParams();
   const sent = params.get('superchat') === 'sent';
+  const [publishableKey, setPublishableKey] = useState(null);
+  useEffect(() => {
+    api('/membership')
+      .then((d) => setPublishableKey(d.publishableKey || null))
+      .catch(() => {});
+  }, []);
   return (
     <div className="membership-page superchat-page">
       <h1>Super chat JimBob</h1>
@@ -26,7 +34,7 @@ export default function Superchat({ session }) {
             Watching on YouTube or Rumble? Send your super chat here: it goes to JimBob directly, and he sees
             it on his stream.
           </p>
-          <SuperchatForm session={session} returnTo="/superchat" />
+          <SuperchatForm session={session} returnTo="/superchat" publishableKey={publishableKey} />
         </>
       )}
     </div>

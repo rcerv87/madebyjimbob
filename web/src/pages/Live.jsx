@@ -6,7 +6,7 @@ import { api } from '../api.js';
 import useTitle from '../useTitle.js';
 import { createClock, useClock } from '../clock.js';
 import ChatPanel from '../components/ChatPanel.jsx';
-import SuperchatForm from '../components/SuperchatForm.jsx';
+import SuperchatForm, { DRAFT_KEY } from '../components/SuperchatForm.jsx';
 import { useSearchParams } from 'react-router-dom';
 
 // How far behind live the live feed itself runs (seconds); jumps closer than this to live just play live.
@@ -690,19 +690,45 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
 export default function Live({ session }) {
   useTitle('Live');
   const [live, setLive] = useState(null);
-  // Super chats through the site (MBJ-109): a button while live and a $ beside Send in the chat; ?superchat=sent after
-  // paying. null = closed, otherwise the message to start with (what was typed in the chat).
-  const [superchat, setSuperchat] = useState(null);
-  const superchatOpen = superchat !== null;
-  const closeSuperchat = () => setSuperchat(null);
+  // Super chats through the site (MBJ-109): a button while live and a $ beside Send in the chat. The checkout opens in
+  // a window over the page, so the stream keeps playing; closing it keeps the message for next time, and once it's paid
+  // the message leaves the chat box too. (Without Stripe's publishable key: Stripe's own page, ?superchat=sent or
+  // =canceled on the way back, the message restored to the chat box if canceled.)
+  const [superchatOpen, setSuperchatOpen] = useState(false);
+  const [draft, setDraft] = useState('');
   const [params] = useSearchParams();
-  const sent = params.get('superchat') === 'sent';
-  const [payments, setPayments] = useState(false);
+  const [restored] = useState(() => {
+    try {
+      const kept = sessionStorage.getItem(DRAFT_KEY) || '';
+      sessionStorage.removeItem(DRAFT_KEY);
+      return params.get('superchat') === 'canceled' ? kept : '';
+    } catch {
+      return '';
+    }
+  });
+  const [thanks, setThanks] = useState(params.get('superchat') === 'sent');
+  const [chatClear, setChatClear] = useState(0);
+  const [payments, setPayments] = useState({ on: false, publishableKey: null });
   useEffect(() => {
     api('/membership')
-      .then((d) => setPayments(d.configured))
+      .then((d) => setPayments({ on: d.configured, publishableKey: d.publishableKey || null }))
       .catch(() => {});
   }, []);
+  useEffect(() => {
+    if (!thanks) return undefined;
+    const t = setTimeout(() => setThanks(false), 8000);
+    return () => clearTimeout(t);
+  }, [thanks]);
+  const openSuperchat = (text) => {
+    if (text) setDraft(text);
+    setSuperchatOpen(true);
+  };
+  const superchatPaid = () => {
+    setSuperchatOpen(false);
+    setDraft('');
+    setChatClear((n) => n + 1);
+    setThanks(true);
+  };
   const clock = useMemo(() => createClock(), []);
   const seekRef = useRef(null);
 
@@ -735,35 +761,32 @@ export default function Live({ session }) {
           <h1>JimBob live</h1>
           {live.online && <span className="live-badge">LIVE</span>}
           {live.online && live.title && <span className="muted">{live.title}</span>}
-          {payments && (
-            <button type="button" className="primary-btn superchat-btn" onClick={() => setSuperchat('')}>
+          {payments.on && (
+            <button type="button" className="primary-btn superchat-btn" onClick={() => openSuperchat('')}>
               $ Super chat
             </button>
           )}
         </div>
-        {sent && (
+        {thanks && (
           <p className="notice" role="status">
             Thanks! Your super chat is in the chat.
           </p>
         )}
         {superchatOpen && (
-          <div className="dialog-backdrop" onClick={closeSuperchat}>
-            <div
-              className="dialog"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Send a super chat"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <div className="dialog-backdrop">
+            <div className="dialog pay-dialog" role="dialog" aria-modal="true" aria-label="Send a super chat">
               <h2>Super chat JimBob</h2>
               <SuperchatForm
                 session={session}
                 returnTo="/live"
-                initialMessage={superchat}
-                onDone={closeSuperchat}
+                initialMessage={draft}
+                onDraft={setDraft}
+                onPaid={superchatPaid}
+                onDone={() => setSuperchatOpen(false)}
+                publishableKey={payments.publishableKey}
               />
               <div className="dialog-actions">
-                <button type="button" className="text-btn" onClick={closeSuperchat}>
+                <button type="button" className="text-btn" onClick={() => setSuperchatOpen(false)}>
                   Cancel
                 </button>
               </div>
@@ -789,7 +812,9 @@ export default function Live({ session }) {
           onSeek={(ms) => seekRef.current?.(ms / 1000)}
           session={session}
           live
-          onSuperchat={payments ? setSuperchat : undefined}
+          onSuperchat={payments.on ? openSuperchat : undefined}
+          initialText={restored}
+          clearSignal={chatClear}
         />
       )}
     </div>

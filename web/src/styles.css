@@ -4264,3 +4264,18 @@ a.text-btn {
 .superchat-compose-btn:focus-visible {
   filter: brightness(1.08);
 }
+
+/* Stripe's checkout inside the page (super chats, joining): wider than other dialogs, Stripe draws its own form. */
+.dialog.pay-dialog {
+  max-width: 520px;
+}
+.embedded-pay {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.embedded-pay-frame {
+  min-height: 360px;
+  border-radius: 10px;
+  overflow: hidden;
+}
