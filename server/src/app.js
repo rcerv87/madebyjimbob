@@ -34,6 +34,10 @@ import {
   handleStripeEvent,
   membershipOf,
   upgradePreview,
+  listCards,
+  addCardCheckout,
+  quickCard,
+  removeCard,
   upgradeSubscription,
   SUPERCHAT_MIN_CENTS,
   SUPERCHAT_MAX_CENTS,
@@ -1146,6 +1150,24 @@ const billingJson = (handler) =>
       throw err;
     }
   });
+// Account → Payment methods: saved cards, add one (Stripe's checkout without a charge), offer one at checkout, remove.
+app.get(
+  '/api/billing/cards',
+  billingJson(async (user) => ({ cards: await listCards(user) })),
+);
+app.post(
+  '/api/billing/cards',
+  billingJson((user, req) => addCardCheckout(user, { site: baseURL, embedded: Boolean(req.body?.embedded) })),
+);
+app.post(
+  '/api/billing/cards/:id/quick',
+  billingJson((user, req) => quickCard(user, String(req.params.id))),
+);
+app.delete(
+  '/api/billing/cards/:id',
+  billingJson((user, req) => removeCard(user, String(req.params.id))),
+);
+
 app.get(
   '/api/membership/upgrade',
   billingJson((user, req) => upgradePreview(user, String(req.query.tier || ''))),

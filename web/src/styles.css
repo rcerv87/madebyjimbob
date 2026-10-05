@@ -4279,3 +4279,31 @@ a.text-btn {
   border-radius: 10px;
   overflow: hidden;
 }
+
+/* Account → Payment methods */
+.card-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.card-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.card-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.text-btn.danger {
+  color: var(--danger);
+}
