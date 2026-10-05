@@ -164,7 +164,22 @@ async function upgradeTarget(user, tier) {
     throw Object.assign(new Error('That isn’t an upgrade from your plan.'), { status: 400 });
   const price = priceFor(tier, current.billing_interval) || priceFor(tier, 'month');
   if (!price) throw Object.assign(new Error('That plan isn’t available.'), { status: 400 });
-  const sub = await stripe('GET', `/subscriptions/${current.id}`);
+  const sub = await stripe('GET', `/subscriptions/${current.id}`).catch(async (err) => {
+    if (err.status !== 404) throw err;
+    // Stripe doesn't know it (made in test mode before the switch to live, or deleted there): it no longer counts.
+    await pool.query(`UPDATE subscriptions SET status = 'canceled', updated_at = now() WHERE id = $1`, [
+      current.id,
+    ]);
+    await recomputeTier(user.id);
+    throw Object.assign(
+      new Error(
+        'Your membership wasn’t found in billing (it may have been a test). Join a plan to continue.',
+      ),
+      {
+        status: 409,
+      },
+    );
+  });
   return { sub, item: sub.items.data[0], price };
 }
 

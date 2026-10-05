@@ -37,7 +37,10 @@ function fakeFetch(url, opts = {}) {
     stripe.subscriptions[sub[1]] = next;
     return json(next);
   }
-  if (sub) return json(stripe.subscriptions[sub[1]]);
+  if (sub)
+    return stripe.subscriptions[sub[1]]
+      ? json(stripe.subscriptions[sub[1]])
+      : json({ error: { message: 'No such subscription' } }, 404);
   return json({ error: { message: 'not faked' } }, 404);
 }
 
@@ -259,6 +262,26 @@ describe('memberships (MBJ-104)', () => {
       'premium',
       'right away, not after the webhook',
     );
+  });
+
+  test('a subscription Stripe doesn’t know (made in test mode) ends instead of breaking the upgrade', async () => {
+    const token = await signIn(call, 'bill_testmode');
+    const id = await userId('bill_testmode');
+    await webhook({
+      id: 'evt_tm1',
+      type: 'customer.subscription.created',
+      data: {
+        object: subscription('sub_testmode', id, {
+          items: { data: [{ id: 'si_tm', price: { id: 'price_plus_m' } }] },
+        }),
+      },
+    });
+    assert.equal((await call('/me', { token })).data.user.tier, 'plus');
+    const r = await call('/membership/upgrade?tier=premium', { token });
+    assert.equal(r.status, 409);
+    assert.match(r.data.error, /Join a plan/);
+    assert.equal((await call('/me', { token })).data.user.tier, 'free');
+    assert.equal((await call('/membership', { token })).data.membership.live, false);
   });
 
   test('a customer deleted in Stripe is replaced by a new one', async () => {
