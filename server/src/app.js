@@ -1089,6 +1089,8 @@ app.get(
       tier: user?.tier || 'free',
       membership: user ? await membershipOf(user.id) : null,
       superchat: { minCents: SUPERCHAT_MIN_CENTS, maxCents: SUPERCHAT_MAX_CENTS },
+      // Lets the site show Stripe's checkout inside its own pages (publishable: safe to share).
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY?.trim() || null,
     });
   }),
 );
@@ -1100,7 +1102,8 @@ const billingRoute = (handler) =>
     if (!user) return res.status(401).json({ error: 'Sign in first.' });
     if (!billingConfigured()) return res.status(503).json({ error: 'Payments aren’t open yet.' });
     try {
-      res.json({ url: await handler(user, req) });
+      const out = await handler(user, req);
+      res.json(typeof out === 'string' ? { url: out } : out);
     } catch (err) {
       if (err.status === 400 || err.status === 409)
         return res.status(err.status).json({ error: err.message });
@@ -1108,7 +1111,8 @@ const billingRoute = (handler) =>
     }
   });
 
-// { tier: plus | premium, interval: month | year, returnTo } → { url } of Stripe's checkout page.
+// { tier: plus | premium, interval: month | year, returnTo, embedded } → { url } of Stripe's checkout page, or
+// { clientSecret } to show it inside the site.
 app.post(
   '/api/membership/checkout',
   billingRoute((user, req) =>
@@ -1117,6 +1121,7 @@ app.post(
       interval: req.body?.interval,
       returnTo: req.body?.returnTo,
       site: baseURL,
+      embedded: Boolean(req.body?.embedded),
     }),
   ),
 );
@@ -1150,7 +1155,7 @@ app.post(
   billingJson((user, req) => upgradeSubscription(user, String(req.body?.tier || ''))),
 );
 
-// { amountCents, message, returnTo } → { url }: a super chat any time (madebyjimbob.app/superchat), so viewers watching
+// { amountCents, message, returnTo, embedded } → { url } or { clientSecret }: a super chat any time (madebyjimbob.app/superchat), so viewers watching
 // on YouTube or Rumble pay JimBob here instead. Once paid: in the live chat if he's live on the site, and in Studio.
 app.post(
   '/api/superchats/checkout',
@@ -1163,6 +1168,7 @@ app.post(
       message: filterText(textField(req.body?.message)).slice(0, 200),
       returnTo: req.body?.returnTo,
       site: baseURL,
+      embedded: Boolean(req.body?.embedded),
     });
   }),
 );

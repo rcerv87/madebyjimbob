@@ -109,9 +109,33 @@ async function customerFor(user) {
   return customer.id;
 }
 
-// Returns Stripe's checkout page address. returnTo: where to land afterwards (a path on this site).
-// Throws { status: 400 | 409 } with a message for the viewer.
-export async function membershipCheckout(user, { tier, interval, returnTo, site }) {
+// Stripe Checkout, either as Stripe's own page ({ url }) or inside ours ({ clientSecret }: embedded, so the viewer
+// never leaves; the live stream keeps playing behind it). Both offer "save my card for next time", and cards saved that
+// way are offered again, so a returning member just confirms (Face ID, Touch ID, or the bank's check) and pays.
+async function createCheckout(params, { embedded, success, cancel }) {
+  const common = { ...params, saved_payment_method_options: { payment_method_save: 'enabled' } };
+  if (!embedded) {
+    const session = await stripe('POST', '/checkout/sessions', {
+      ...common,
+      success_url: success,
+      cancel_url: cancel,
+    });
+    return { session, result: { url: session.url } };
+  }
+  // Never redirects (cards only), so there's no return page: the site hears about the payment from the webhook.
+  const open = (uiMode) =>
+    stripe('POST', '/checkout/sessions', { ...common, ui_mode: uiMode, redirect_on_completion: 'never' });
+  // Current API versions call it embedded_page; accounts on an older version call it embedded.
+  const session = await open('embedded_page').catch((err) => {
+    if (err.status === 400 && /ui_mode/.test(err.message)) return open('embedded');
+    throw err;
+  });
+  return { session, result: { clientSecret: session.client_secret } };
+}
+
+// Returns { url } of Stripe's checkout page, or { clientSecret } to show it inside the site (embedded). returnTo: where
+// to land afterwards (a path on this site). Throws { status: 400 | 409 } with a message for the viewer.
+export async function membershipCheckout(user, { tier, interval, returnTo, site, embedded = false }) {
   const price = priceFor(tier, interval === 'year' ? 'year' : 'month');
   if (!price) throw Object.assign(new Error('That plan isn’t available.'), { status: 400 });
   const { rows } = await pool.query(
@@ -123,20 +147,25 @@ export async function membershipCheckout(user, { tier, interval, returnTo, site 
       status: 409,
     });
   const back = safePath(returnTo);
-  const session = await stripe('POST', '/checkout/sessions', {
-    mode: 'subscription',
-    customer: await customerFor(user),
-    client_reference_id: user.id,
-    line_items: [{ price, quantity: 1 }],
-    allow_promotion_codes: true,
-    subscription_data: { metadata: { user_id: user.id } },
-    // Cards only (Apple Pay and Google Pay come with them): paid at once, so the membership starts right away. Not
-    // bank payments (days to clear), and not Link, which brings its own pay-by-bank and Klarna along.
-    payment_method_types: ['card'],
-    success_url: `${site}/membership/welcome?return=${encodeURIComponent(back)}`,
-    cancel_url: `${site}/membership?return=${encodeURIComponent(back)}`,
-  });
-  return session.url;
+  const { result } = await createCheckout(
+    {
+      mode: 'subscription',
+      customer: await customerFor(user),
+      client_reference_id: user.id,
+      line_items: [{ price, quantity: 1 }],
+      allow_promotion_codes: true,
+      subscription_data: { metadata: { user_id: user.id } },
+      // Cards only (Apple Pay and Google Pay come with them): paid at once, so the membership starts right away. Not
+      // bank payments (days to clear), and not Link, which brings its own pay-by-bank and Klarna along.
+      payment_method_types: ['card'],
+    },
+    {
+      embedded,
+      success: `${site}/membership/welcome?return=${encodeURIComponent(back)}`,
+      cancel: `${site}/membership?return=${encodeURIComponent(back)}`,
+    },
+  );
+  return result;
 }
 
 // Stripe's page to change card, switch plan, cancel, and see receipts.
@@ -215,7 +244,10 @@ export async function upgradeSubscription(user, tier) {
 
 // Super chat checkout: the message waits until the payment succeeds, then goes into the live chat (videoId: the
 // stream live on the site, or null when he isn't: it still goes through and shows in Studio).
-export async function superchatCheckout(user, { videoId, amountCents, message, returnTo, site }) {
+export async function superchatCheckout(
+  user,
+  { videoId, amountCents, message, returnTo, site, embedded = false },
+) {
   const cents = Math.round(Number(amountCents));
   if (!Number.isFinite(cents) || cents < SUPERCHAT_MIN_CENTS || cents > SUPERCHAT_MAX_CENTS)
     throw Object.assign(new Error('Pick an amount from $2 to $500.'), { status: 400 });
@@ -225,32 +257,37 @@ export async function superchatCheckout(user, { videoId, amountCents, message, r
   );
   const id = rows[0].id;
   const back = safePath(returnTo || '/live');
-  const session = await stripe('POST', '/checkout/sessions', {
-    mode: 'payment',
-    // Same for super chats: they confirm at once, so the super chat shows right away.
-    payment_method_types: ['card'],
-    customer: await customerFor(user),
-    client_reference_id: user.id,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: 'usd',
-          unit_amount: cents,
-          product_data: {
-            name: 'Super chat for JimBob',
-            description: message ? message.slice(0, 200) : undefined,
+  const { session, result } = await createCheckout(
+    {
+      mode: 'payment',
+      // Same for super chats: they confirm at once, so the super chat shows right away.
+      payment_method_types: ['card'],
+      customer: await customerFor(user),
+      client_reference_id: user.id,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'usd',
+            unit_amount: cents,
+            product_data: {
+              name: 'Super chat for JimBob',
+              description: message ? message.slice(0, 200) : undefined,
+            },
           },
         },
-      },
-    ],
-    metadata: { superchat_id: id },
-    payment_intent_data: { metadata: { superchat_id: id } },
-    success_url: `${site}${back}${back.includes('?') ? '&' : '?'}superchat=sent`,
-    cancel_url: `${site}${back}`,
-  });
+      ],
+      metadata: { superchat_id: id },
+      payment_intent_data: { metadata: { superchat_id: id } },
+    },
+    {
+      embedded,
+      success: `${site}${back}${back.includes('?') ? '&' : '?'}superchat=sent`,
+      cancel: `${site}${back}${back.includes('?') ? '&' : '?'}superchat=canceled`,
+    },
+  );
   await pool.query('UPDATE superchats SET checkout_id = $2 WHERE id = $1', [id, session.id]);
-  return session.url;
+  return result;
 }
 
 // Only paths on this site (no "//evil.com" or full addresses).

@@ -24,7 +24,11 @@ function fakeFetch(url, opts = {}) {
   const cus = u.pathname.match(/^\/v1\/customers\/(.+)$/);
   if (cus) return stripe.deleted?.has(cus[1]) ? json({ id: cus[1], deleted: true }) : json({ id: cus[1] });
   if (u.pathname === '/v1/checkout/sessions')
-    return json({ id: `cs_${stripe.calls.length}`, url: 'https://checkout.stripe.com/c/test' });
+    return json({
+      id: `cs_${(sessionCount += 1)}`,
+      url: 'https://checkout.stripe.com/c/test',
+      client_secret: `cs_${sessionCount}_secret_x`,
+    });
   if (u.pathname === '/v1/billing_portal/sessions') return json({ url: 'https://billing.stripe.com/p/test' });
   if (u.pathname === '/v1/invoices/create_preview') return json({ amount_due: 250, currency: 'usd' });
   const sub = u.pathname.match(/^\/v1\/subscriptions\/(.+)$/);
@@ -45,6 +49,7 @@ function fakeFetch(url, opts = {}) {
 }
 
 let call;
+let sessionCount = 0;
 let base;
 const SECRET = 'whsec_test';
 before(async () => {
@@ -306,6 +311,42 @@ describe('memberships (MBJ-104)', () => {
 });
 
 describe('super chats (MBJ-109)', () => {
+  test('inside the page: Stripe’s checkout opens embedded (no redirect), with saved cards offered', async () => {
+    const token = await signIn(call, 'sc_embedded');
+    process.env.STRIPE_PUBLISHABLE_KEY = ' pk_test_abc ';
+    assert.equal((await call('/membership')).data.publishableKey, 'pk_test_abc');
+    stripe.calls = [];
+    const r = await call('/superchats/checkout', {
+      method: 'POST',
+      token,
+      body: { amountCents: 500, message: 'from the live chat', returnTo: '/live', embedded: true },
+    });
+    assert.equal(r.status, 200);
+    assert.match(r.data.clientSecret, /_secret_/);
+    assert.equal(r.data.url, undefined);
+    const session = stripe.calls.find((c) => c.path === '/v1/checkout/sessions').body;
+    assert.deepEqual(
+      [
+        session.ui_mode,
+        session.redirect_on_completion,
+        session['saved_payment_method_options[payment_method_save]'],
+      ],
+      ['embedded_page', 'never', 'enabled'],
+    );
+    assert.equal(session.success_url, undefined, 'embedded sessions have no return page');
+    // Stripe's own page (no key on the site) still offers saving the card, and a cancel lands back with the draft.
+    const page = await call('/superchats/checkout', {
+      method: 'POST',
+      token,
+      body: { amountCents: 500, message: 'x', returnTo: '/live' },
+    });
+    assert.ok(page.data.url);
+    const hosted = stripe.calls.findLast((c) => c.path === '/v1/checkout/sessions').body;
+    assert.equal(hosted['saved_payment_method_options[payment_method_save]'], 'enabled');
+    assert.match(hosted.cancel_url, /\/live\?superchat=canceled$/);
+    delete process.env.STRIPE_PUBLISHABLE_KEY;
+  });
+
   test('any time: not live on the site, it still goes to checkout, and Studio shows it once paid', async () => {
     const token = await signIn(call, 'sc_anytime');
     stripe.calls = [];

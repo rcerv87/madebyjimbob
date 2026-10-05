@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, TIER_LABEL } from '../api.js';
 import { PERKS, TIERS, money, goTo } from '../membership.js';
 import useTitle from '../useTitle.js';
+import EmbeddedPay from '../components/EmbeddedPay.jsx';
 
 // The membership page (MBJ-105): what each tier includes, its price (from Stripe), and Join, which opens Stripe's
 // checkout and comes back to where the viewer was (?return=, e.g. a locked video), with ?tier= picked.
@@ -16,6 +17,8 @@ export default function Membership({ session }) {
   const [busy, setBusy] = useState('');
   const [upgrade, setUpgrade] = useState(null); // { tier, amountDue, currency } while confirming
   const [error, setError] = useState('');
+  const [checkout, setCheckout] = useState(null); // { tier, clientSecret } while paying inside the page
+  const navigate = useNavigate();
 
   useEffect(() => {
     api('/membership')
@@ -35,11 +38,16 @@ export default function Membership({ session }) {
     setError('');
     setBusy(tier);
     try {
-      const { url } = await api('/membership/checkout', {
+      // With Stripe's publishable key the checkout opens inside this page; otherwise on Stripe's own page.
+      const embedded = Boolean(data?.publishableKey);
+      const r = await api('/membership/checkout', {
         method: 'POST',
-        body: { tier, interval: priceOf(tier)?.interval || interval, returnTo },
+        body: { tier, interval: priceOf(tier)?.interval || interval, returnTo, embedded },
       });
-      goTo.url(url);
+      if (r.clientSecret) {
+        setCheckout({ tier, clientSecret: r.clientSecret });
+        setBusy('');
+      } else goTo.url(r.url);
     } catch (err) {
       setError(err.message);
       setBusy('');
@@ -159,6 +167,24 @@ export default function Membership({ session }) {
           );
         })}
       </div>
+      {checkout && (
+        <div className="dialog-backdrop">
+          <div
+            className="dialog pay-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Join ${TIER_LABEL[checkout.tier]}`}
+          >
+            <h2>Join {TIER_LABEL[checkout.tier]}</h2>
+            <EmbeddedPay
+              publishableKey={data.publishableKey}
+              clientSecret={checkout.clientSecret}
+              onPaid={() => navigate(`/membership/welcome?return=${encodeURIComponent(returnTo)}`)}
+              onBack={() => setCheckout(null)}
+            />
+          </div>
+        </div>
+      )}
       {upgrade && (
         <div className="dialog-backdrop" onClick={() => setUpgrade(null)}>
           <div
@@ -213,7 +239,8 @@ export default function Membership({ session }) {
   );
 }
 
-// After Stripe's checkout: the membership switches on when Stripe tells the site (usually seconds), then back.
+// After Stripe's checkout: the membership switches on when Stripe tells the site (usually seconds), then straight back
+// to where the viewer was (e.g. the locked video or the live stream), with nothing to tap.
 export function MembershipWelcome({ session }) {
   useTitle('Welcome');
   const [params] = useSearchParams();
@@ -221,6 +248,13 @@ export function MembershipWelcome({ session }) {
   const [waited, setWaited] = useState(0);
   const tier = session.user?.tier || 'free';
   const on = tier !== 'free';
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!on || returnTo === '/') return undefined;
+    const t = setTimeout(() => navigate(returnTo, { replace: true }), 1500);
+    return () => clearTimeout(t);
+  }, [on, returnTo, navigate]);
 
   useEffect(() => {
     if (on || waited >= 30) return undefined;

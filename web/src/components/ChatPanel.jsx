@@ -61,6 +61,8 @@ export default function ChatPanel({
   session,
   live = false,
   onSuperchat,
+  initialText = '',
+  clearSignal = 0,
 }) {
   const [byId, setById] = useState(() => new Map());
   const [commentsById, setCommentsById] = useState(() => new Map());
@@ -80,7 +82,11 @@ export default function ChatPanel({
   const onMenu = useCallback((open) => setMenus((n) => Math.max(0, n + (open ? 1 : -1))), []);
   const frozenUpTo = useRef(null);
   useEffect(() => () => clearTimeout(touchTimer.current), []);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
+  // A super chat sent from what was typed here: the box empties once it's paid.
+  useEffect(() => {
+    if (clearSignal) setText('');
+  }, [clearSignal]);
   const [replyTarget, setReplyTarget] = useState(null);
   // Filtering (MBJ-218, 222): one person's messages or one conversation (from a person's menu), or a search (words,
   // @names, and one kind), all across the whole video on the server. Highlights are kept on this device.
