@@ -451,6 +451,15 @@ MBJ-818,Library Uploader: a folder on JimBob's PC goes to R2,Library & community
 - No keys on his PC: he signs in with his site account once and the site hands out short-lived upload permission per file (presigned, multipart for big files)
 - Picks up where it left off after a restart, sleep or lost connection; skips what's already uploaded; anything added to the folder later goes up too
 - Build once JimBob's Cloudflare account and R2 bucket exist (MIGRATION.md step 5), so uploads land in his storage from the start","MBJ-506, MBJ-806"
+MBJ-820,MVP end-to-end test with JimBob and beta testers,Library & community,Phase 1 — VOD platform,Must,S,To do,"As the product owner, I want one full run of the MVP on the live site, with JimBob running a stream and a few beta testers, before inviting more people.","- Before: account email on (MBJ-114), JimBob registered with Studio access, test replays cleared, payments in the mode chosen for testers (test cards, or real money refunded after)
+- Testers: sign up and sign in on phone and computer; watch recorded videos with chat replay and comments; a members-only video asks to join
+- JimBob: Go Live in Studio, stream from his OBS through Restream to the site and YouTube, end the stream (OBS first), and the replay appears with its chat
+- Live: ~5 s delay, rewind and Back to LIVE, Listen, fullscreen, chat (mentions, replies, highlights, search), a super chat from the $ beside Send showing colored in the chat and in Studio → Super chats
+- Money: join Plus in the page, the locked video opens, upgrade to Premium, add a card in Account → Payment methods, cancel in Manage billing
+- Results recorded per check on the shared beta test checklist; every failure becomes a story or a fix","MBJ-114, MBJ-102, MBJ-104, MBJ-109, MBJ-310"
+MBJ-819,Beta feedback inside the site,Library & community,Phase 1 — VOD platform,Should,S,To do,"As a beta tester, I want to report a problem or idea from the page I'm on, without finding another place to write it.","- ""Send feedback"" in the avatar menu (and on phones): a short note, optional screenshot, sent with the page, the video and moment if any, and the device and browser
+- Studio → Feedback lists them for JimBob and Ruben (new, seen, done); each can become a backlog story
+- Turned off with a setting when the beta ends",MBJ-101
 MBJ-806,Import the whole channel,Library & community,Phase 4 — Owned live + audio,Should,M,In progress,"As the operator, I want to load JimBob's full library in one run.","- Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list
 - Proposes file-to-video matches for review; OBS recordings matched by date and length with an offset adjustment
 - Skips videos already imported; deletes local copies after upload; resumable overnight run",MBJ-506
