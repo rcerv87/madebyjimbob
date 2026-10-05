@@ -112,8 +112,10 @@ async function customerFor(user) {
 // Stripe Checkout, either as Stripe's own page ({ url }) or inside ours ({ clientSecret }: embedded, so the viewer
 // never leaves; the live stream keeps playing behind it). Both offer "save my card for next time", and cards saved that
 // way are offered again, so a returning member just confirms (Face ID, Touch ID, or the bank's check) and pays.
-async function createCheckout(params, { embedded, success, cancel }) {
-  const common = { ...params, saved_payment_method_options: { payment_method_save: 'enabled' } };
+async function createCheckout(params, { embedded, success, cancel, offerSave = true }) {
+  const common = offerSave
+    ? { ...params, saved_payment_method_options: { payment_method_save: 'enabled' } }
+    : params;
   if (!embedded) {
     const session = await stripe('POST', '/checkout/sessions', {
       ...common,
@@ -290,6 +292,85 @@ export async function superchatCheckout(
   return result;
 }
 
+// ---------- saved cards (Account → Payment methods) ----------
+
+const customerIdOf = async (user) =>
+  (await pool.query('SELECT stripe_customer_id FROM users WHERE id = $1', [user.id])).rows[0]
+    ?.stripe_customer_id || null;
+
+// [{ id, brand, last4, expMonth, expYear, quick }] — quick: offered again at checkout (the member said so).
+export async function listCards(user) {
+  const customer = await customerIdOf(user);
+  if (!customer) return [];
+  const list = await stripe('GET', `/customers/${customer}/payment_methods`, {
+    type: 'card',
+    limit: 20,
+  }).catch((err) => {
+    if (err.status === 404) return { data: [] }; // a customer from test mode, or deleted
+    throw err;
+  });
+  return list.data.map((pm) => ({
+    id: pm.id,
+    brand: pm.card?.brand || 'card',
+    last4: pm.card?.last4 || '',
+    expMonth: pm.card?.exp_month,
+    expYear: pm.card?.exp_year,
+    quick: pm.allow_redisplay === 'always',
+  }));
+}
+
+// Stripe's checkout in setup mode: adds a card without charging it. The webhook marks it for quick checkout.
+export async function addCardCheckout(user, { site, embedded = false }) {
+  const { result } = await createCheckout(
+    {
+      mode: 'setup',
+      currency: 'usd',
+      customer: await customerFor(user),
+      client_reference_id: user.id,
+      payment_method_types: ['card'],
+      metadata: { purpose: 'save_card' },
+    },
+    {
+      embedded,
+      offerSave: false,
+      success: `${site}/account?card=added#payment-methods`,
+      cancel: `${site}/account#payment-methods`,
+    },
+  );
+  return result;
+}
+
+async function ownedCard(user, id) {
+  const customer = await customerIdOf(user);
+  const pm = await stripe('GET', `/payment_methods/${encodeURIComponent(id)}`).catch(() => null);
+  if (!customer || !pm || pm.customer !== customer)
+    throw Object.assign(new Error('That card isn’t on your account.'), { status: 400 });
+  return pm;
+}
+
+// The member asks for a card (e.g. one saved by a membership) to be offered at checkout.
+export async function quickCard(user, id) {
+  await ownedCard(user, id);
+  await stripe('POST', `/payment_methods/${encodeURIComponent(id)}`, { allow_redisplay: 'always' });
+  return { ok: true };
+}
+
+// Removes a card, but never a member's only card while a membership renews on it.
+export async function removeCard(user, id) {
+  await ownedCard(user, id);
+  const { rows } = await pool.query(
+    'SELECT 1 FROM subscriptions WHERE user_id = $1 AND status = ANY($2::text[]) LIMIT 1',
+    [user.id, LIVE_STATUSES],
+  );
+  if (rows.length && (await listCards(user)).length <= 1)
+    throw Object.assign(
+      new Error('Your membership renews on this card. Add another card first, or cancel in Manage billing.'),
+      { status: 409 },
+    );
+  await stripe('POST', `/payment_methods/${encodeURIComponent(id)}/detach`);
+  return { ok: true };
+}
+
 // Only paths on this site (no "//evil.com" or full addresses).
 function safePath(p) {
   const s = String(p || '/');
@@ -336,6 +417,12 @@ export async function handleStripeEvent(event, { onPaidChat } = {}) {
         );
       if (obj.mode === 'payment' && obj.metadata?.superchat_id && obj.payment_status === 'paid')
         await superchatPaid(obj.metadata.superchat_id, onPaidChat);
+      // A card added in Account → Payment methods: offered at checkout from now on (that's why it was added).
+      if (obj.mode === 'setup' && obj.setup_intent) {
+        const intent = await stripe('GET', `/setup_intents/${obj.setup_intent}`);
+        if (intent.payment_method)
+          await stripe('POST', `/payment_methods/${intent.payment_method}`, { allow_redisplay: 'always' });
+      }
       break;
     case 'customer.subscription.created':
     case 'customer.subscription.updated':

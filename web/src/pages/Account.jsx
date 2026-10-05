@@ -6,6 +6,7 @@ import { usePush } from '../push.js';
 import useTitle from '../useTitle.js';
 import { PERKS, goTo } from '../membership.js';
 import { FAVORITE_COLORS } from '../favorites.js';
+import EmbeddedPay from '../components/EmbeddedPay.jsx';
 
 // Account settings (MBJ-106): profile, sign-in and security, notifications, membership, privacy.
 export default function Account({ session, onUserChanged }) {
@@ -35,6 +36,7 @@ export default function Account({ session, onUserChanged }) {
       <SecuritySection user={user} onUserChanged={onUserChanged} />
       <NotificationsSection />
       <MembershipSection user={user} />
+      <PaymentMethodsSection />
       <PrivacySection onUserChanged={onUserChanged} />
     </div>
   );
@@ -520,6 +522,146 @@ function NotificationsSection() {
 }
 
 // Membership (MBJ-104): the plan, when it renews or ends, and Stripe's page to change card, switch, or cancel.
+// Saved cards (any member, with or without a plan): add one without being charged, let a card be offered at checkout
+// (one tap for super chats and joining), or remove one. Cards are kept by Stripe; only the brand and last digits show.
+const BRAND = { visa: 'Visa', mastercard: 'Mastercard', amex: 'American Express', discover: 'Discover' };
+function PaymentMethodsSection() {
+  const [params] = useSearchParams();
+  const [cards, setCards] = useState(null);
+  const [config, setConfig] = useState(null);
+  const [adding, setAdding] = useState(null); // client secret while the add-a-card window is open
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState(params.get('card') === 'added' ? 'Card added.' : '');
+  const load = useCallback(
+    () =>
+      api('/billing/cards')
+        .then((d) => setCards(d.cards))
+        .catch((e) => setError(e.message)),
+    [],
+  );
+  useEffect(() => {
+    api('/membership')
+      .then((d) => {
+        setConfig(d);
+        if (d.configured) load();
+      })
+      .catch(() => {});
+  }, [load]);
+  if (!config?.configured) return null;
+
+  const add = async () => {
+    setError('');
+    setBusy('add');
+    try {
+      const r = await api('/billing/cards', {
+        method: 'POST',
+        body: { embedded: Boolean(config.publishableKey) },
+      });
+      if (r.clientSecret) setAdding(r.clientSecret);
+      else goTo.url(r.url);
+    } catch (err) {
+      setError(err.message);
+    }
+    setBusy('');
+  };
+  const act = async (id, path, method) => {
+    setError('');
+    setBusy(id);
+    try {
+      await api(`/billing/cards/${id}${path}`, { method });
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+    setBusy('');
+  };
+  const added = () => {
+    setAdding(null);
+    setNotice('Card added.');
+    // Stripe tells the site a moment later; the card shows (and turns on for one tap) within seconds.
+    load();
+    setTimeout(load, 2500);
+    setTimeout(load, 6000);
+  };
+
+  return (
+    <section className="panel settings-section" id="payment-methods">
+      <h2>Payment methods</h2>
+      <p className="muted small">
+        Saved cards make super chats and joining one tap: you just confirm. Cards are kept by Stripe, never on
+        this site.
+      </p>
+      {notice && (
+        <p className="notice small" role="status">
+          {notice}
+        </p>
+      )}
+      {cards === null ? (
+        <p className="muted small">Loading…</p>
+      ) : cards.length === 0 ? (
+        <p className="muted small">No saved cards yet.</p>
+      ) : (
+        <ul className="card-list">
+          {cards.map((c) => (
+            <li key={c.id}>
+              <span>
+                <strong>{BRAND[c.brand] || c.brand}</strong> •••• {c.last4}{' '}
+                <span className="muted small">
+                  expires {String(c.expMonth).padStart(2, '0')}/{String(c.expYear).slice(-2)}
+                </span>
+              </span>
+              <span className="card-actions">
+                {c.quick ? (
+                  <span className="muted small">One tap ✓</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-btn"
+                    disabled={busy === c.id}
+                    onClick={() => act(c.id, '/quick', 'POST')}
+                  >
+                    Use for one-tap payments
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="text-btn danger"
+                  disabled={busy === c.id}
+                  onClick={() => act(c.id, '', 'DELETE')}
+                  aria-label={`Remove ${BRAND[c.brand] || c.brand} ending ${c.last4}`}
+                >
+                  Remove
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="settings-actions">
+        <button type="button" className="primary-btn" onClick={add} disabled={busy === 'add'}>
+          {busy === 'add' ? 'Opening…' : 'Add a card'}
+        </button>{' '}
+        <span className="muted small">Nothing is charged.</span>
+      </p>
+      {error && <p className="error small">{error}</p>}
+      {adding && (
+        <div className="dialog-backdrop">
+          <div className="dialog pay-dialog" role="dialog" aria-modal="true" aria-label="Add a card">
+            <h2>Add a card</h2>
+            <EmbeddedPay
+              publishableKey={config.publishableKey}
+              clientSecret={adding}
+              onPaid={added}
+              onBack={() => setAdding(null)}
+            />
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function MembershipSection({ user }) {
   const mark = (v) => (v === true ? '✓' : v || '—');
   const [data, setData] = useState(null);

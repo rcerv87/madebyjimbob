@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { startServer, stopServer, client, signIn, seedVideo, pool } from './helpers.js';
 
 const realFetch = globalThis.fetch;
-const stripe = { calls: [], subscriptions: {}, customers: 0 };
+const stripe = { calls: [], subscriptions: {}, customers: 0, cards: {} };
 const formOf = (body) => Object.fromEntries(new URLSearchParams(String(body || '')));
 function fakeFetch(url, opts = {}) {
   const u = new URL(String(url));
@@ -13,6 +13,33 @@ function fakeFetch(url, opts = {}) {
   const body = formOf(opts.body);
   stripe.calls.push({ method, path: u.pathname, body });
   const json = (data, status = 200) => Promise.resolve(new Response(JSON.stringify(data), { status }));
+  // Saved cards: { pm_id: { customer, allow_redisplay } }.
+  const cardsOf = u.pathname.match(/^\/v1\/customers\/([^/]+)\/payment_methods$/);
+  if (cardsOf)
+    return json({
+      data: Object.entries(stripe.cards)
+        .filter(([, c]) => c.customer === cardsOf[1])
+        .map(([id, c]) => ({
+          id,
+          customer: c.customer,
+          allow_redisplay: c.allow_redisplay,
+          card: { brand: 'visa', last4: '4242', exp_month: 12, exp_year: 2030 },
+        })),
+    });
+  const detach = u.pathname.match(/^\/v1\/payment_methods\/([^/]+)\/detach$/);
+  if (detach) {
+    delete stripe.cards[detach[1]];
+    return json({ id: detach[1] });
+  }
+  const pmId = u.pathname.match(/^\/v1\/payment_methods\/([^/]+)$/);
+  if (pmId) {
+    const c = stripe.cards[pmId[1]];
+    if (!c) return json({ error: { message: 'No such PaymentMethod' } }, 404);
+    if (method === 'POST' && body.allow_redisplay) c.allow_redisplay = body.allow_redisplay;
+    return json({ id: pmId[1], customer: c.customer, allow_redisplay: c.allow_redisplay });
+  }
+  const si = u.pathname.match(/^\/v1\/setup_intents\/([^/]+)$/);
+  if (si) return json({ id: si[1], payment_method: 'pm_new' });
   const price = u.pathname.match(/^\/v1\/prices\/(.+)$/);
   if (price) {
     const amounts = { price_plus_m: 500, price_premium_m: 1000, price_premium_y: 10000 };
@@ -307,6 +334,63 @@ describe('memberships (MBJ-104)', () => {
     const r = await call('/membership/portal', { method: 'POST', token });
     assert.equal(r.data.url, 'https://billing.stripe.com/p/test');
     assert.match(stripe.calls.at(-1).body.return_url, /\/account#membership$/);
+  });
+});
+
+describe('payment methods (Account)', () => {
+  test('list, add without a charge (offered at checkout once added), turn on one tap, remove', async () => {
+    const token = await signIn(call, 'card_holder');
+    assert.deepEqual((await call('/billing/cards', { token })).data.cards, [], 'no Stripe customer yet');
+    stripe.calls = [];
+    const add = await call('/billing/cards', { method: 'POST', token, body: { embedded: true } });
+    assert.match(add.data.clientSecret, /_secret_/);
+    const session = stripe.calls.find((c) => c.path === '/v1/checkout/sessions').body;
+    assert.deepEqual([session.mode, session.ui_mode, session.currency], ['setup', 'embedded_page', 'usd']);
+    const customer = session.customer;
+
+    // Stripe confirms the new card: it's marked to be offered again.
+    stripe.cards.pm_new = { customer, allow_redisplay: 'unspecified' };
+    await webhook({
+      id: 'evt_setup',
+      type: 'checkout.session.completed',
+      data: { object: { mode: 'setup', setup_intent: 'seti_1', client_reference_id: '1' } },
+    });
+    assert.equal(stripe.cards.pm_new.allow_redisplay, 'always');
+
+    // A card saved by a membership: listed, and one tap only when the member asks.
+    stripe.cards.pm_member = { customer, allow_redisplay: 'limited' };
+    let cards = (await call('/billing/cards', { token })).data.cards;
+    assert.deepEqual(
+      cards.map((c) => [c.id, c.quick, c.last4]),
+      [
+        ['pm_new', true, '4242'],
+        ['pm_member', false, '4242'],
+      ],
+    );
+    await call('/billing/cards/pm_member/quick', { method: 'POST', token });
+    assert.equal(stripe.cards.pm_member.allow_redisplay, 'always');
+
+    // Someone else's card can't be touched.
+    stripe.cards.pm_other = { customer: 'cus_someone_else', allow_redisplay: 'limited' };
+    assert.equal((await call('/billing/cards/pm_other', { method: 'DELETE', token })).status, 400);
+    assert.ok(stripe.cards.pm_other);
+
+    assert.equal((await call('/billing/cards/pm_new', { method: 'DELETE', token })).status, 200);
+    cards = (await call('/billing/cards', { token })).data.cards;
+    assert.deepEqual(
+      cards.map((c) => c.id),
+      ['pm_member'],
+    );
+
+    // A member's only card, while the membership renews on it, stays.
+    const id = await userId('card_holder');
+    await pool.query(
+      `INSERT INTO subscriptions (id, user_id, status, tier) VALUES ('sub_card_holder', $1, 'active', 'plus')`,
+      [id],
+    );
+    const kept = await call('/billing/cards/pm_member', { method: 'DELETE', token });
+    assert.equal(kept.status, 409);
+    assert.match(kept.data.error, /Add another card first/);
   });
 });
 

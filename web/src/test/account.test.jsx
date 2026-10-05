@@ -65,6 +65,32 @@ const renderAccount = (u = user, path = '/account') =>
   );
 
 describe('account settings page', () => {
+  test('payment methods: saved cards, one tap for a card saved by a membership, remove', async () => {
+    const sent = fakeApi({
+      ...routes,
+      '/membership': [200, { configured: true, plans: [], membership: null, publishableKey: null }],
+      '/billing/cards': [
+        200,
+        {
+          cards: [
+            { id: 'pm_1', brand: 'visa', last4: '4242', expMonth: 3, expYear: 2030, quick: false },
+            { id: 'pm_2', brand: 'mastercard', last4: '4444', expMonth: 11, expYear: 2029, quick: true },
+          ],
+        },
+      ],
+      'POST /billing/cards/pm_1/quick': [200, { ok: true }],
+      'DELETE /billing/cards/pm_2': [200, { ok: true }],
+    });
+    renderAccount();
+    expect(await screen.findByRole('heading', { name: 'Payment methods' })).toBeTruthy();
+    expect(await screen.findByText('expires 03/30')).toBeTruthy();
+    expect(screen.getByText('One tap ✓')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Use for one-tap payments' }));
+    await waitFor(() => expect(sent('POST', '/billing/cards/pm_1/quick')).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Mastercard ending 4444' }));
+    await waitFor(() => expect(sent('DELETE', '/billing/cards/pm_2')).toHaveLength(1));
+  });
+
   test('asks signed-out visitors to sign in', () => {
     fakeApi(routes);
     renderAccount(null);
