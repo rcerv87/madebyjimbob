@@ -37,6 +37,7 @@ export function jobRow(r) {
     error: r.error,
     videoId: r.video_id,
     streamUid: r.stream_uid,
+    hlsUrl: r.hls_url,
     createdAt: r.created_at,
     startedAt: r.started_at,
     finishedAt: r.finished_at,
