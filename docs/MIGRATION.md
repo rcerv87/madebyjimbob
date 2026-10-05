@@ -95,6 +95,10 @@ are kept in case a second copy is ever wanted.
 **Started 2026-10-05:** Ruben has Administrator access to JimBob's Cloudflare account; the bucket `madebyjimbob-live`
 there takes the YouTube library first (Library Uploader, MBJ-818, `LIBRARY_R2_*` on Render). Live recordings and replays
 follow when the site's `R2_*` settings switch to his account (copy `dvr/` across first).
+- [ ] **Replace the R2 token.** `LIBRARY_R2_*` uses a **User API token** Ruben made as a delegated Administrator (only
+  JimBob, as Super Administrator, can make account tokens). It stops working if Ruben's access is removed. JimBob: R2 →
+  Manage API tokens → **Create Account API Token**, Object Read & Write on `madebyjimbob-live`; then swap the key id and
+  secret on Render (and the site's `R2_*` once live streams move there), and delete Ruben's user token.
 
 **R2 (live recordings, replays, the library):** move it early. It grows about half a terabyte every month JimBob
 streams on the site, so the copy takes longer the longer it waits (R2 doesn't charge for the downloads).
