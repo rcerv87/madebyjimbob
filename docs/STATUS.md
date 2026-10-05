@@ -16,6 +16,18 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## Waiting on Ruben
 
+- **Library Uploader (MBJ-818, built 2026-10-05):** the program for JimBob's PC that puts his whole YouTube library
+  (Takeout .zip files in a "MADEbyJIMBOB Library" folder) on R2. Tested end to end on this PC (zip → match → 720p, 360p,
+  audio → upload → the video plays on the site; a new video goes to the import helper). Left for Ruben:
+  1. JimBob's Cloudflare: bucket `madebyjimbob-live`, CORS, the r2.dev public address (testing), and an Object Read &
+     Write token for that bucket; then `LIBRARY_R2_ACCOUNT_ID`, `LIBRARY_R2_ACCESS_KEY_ID`,
+     `LIBRARY_R2_SECRET_ACCESS_KEY`, `LIBRARY_R2_BUCKET`, `LIBRARY_R2_PUBLIC_URL` on Render (and in the local `.env`).
+  2. Build the folder: `node tools/library-uploader/build.mjs --ffmpeg <folder with ffmpeg.exe and ffprobe.exe>`
+     (→ `tools/library-uploader/dist/MADEbyJIMBOB Library Uploader.zip`, ~200 MB), copy it to JimBob's PC, unzip, and
+     put the "Start MADEbyJIMBOB Library Uploader" shortcut on his desktop. He signs in once with his site account.
+  3. Keep the import helper running on Ruben's PC so new videos get their chat and comments.
+  4. Before real viewers: connect `live.madebyjimbob.app` to JimBob's bucket (domain move, MIGRATION.md step 6).
+
 - **Payments (ADR-013): test mode is on (2026-10-03)**, with Plus $5/mo and Premium $10/mo or $100/yr; memberships and
   super chats tested end to end. **Left: live mode in JimBob's Stripe account with the real prices** (same steps):
   1. Stripe account: the one money should land in is JimBob's (stripe.com → Start now). For building and testing,

@@ -8,6 +8,7 @@ import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback, deleteFromStream, createDirectUpload, streamConfigured } from './stream.js';
 import { queueImports, listImports, jobRow, helperStatus, youtubeId } from './imports.js';
 import { checkReplacement } from './replacements.js';
+import { startUpload, signUpload, finishUpload, uploadedKeys, channelTitles } from './library.js';
 import {
   liveConfigured,
   liveStatus,
@@ -1510,6 +1511,39 @@ app.post(
     const { status } = await sendEmail({ to, template, data: tpl.sample(), userId: req.user.id });
     res.json({ status });
   }),
+);
+
+// The Library Uploader (MBJ-818), signed in as JimBob or an admin: start a video, get upload links for its files,
+// finish it; plus what's already uploaded and the channel's titles for matching.
+const libraryRoute = (handler) =>
+  wrap(async (req, res) => {
+    try {
+      res.json(await handler(req));
+    } catch (err) {
+      if ([400, 404, 409, 503].includes(err.status))
+        return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  });
+app.get(
+  '/api/studio/library/channel',
+  libraryRoute(() => channelTitles()),
+);
+app.post(
+  '/api/studio/library/uploaded',
+  libraryRoute((req) => uploadedKeys(req.body)),
+);
+app.post(
+  '/api/studio/library/uploads',
+  libraryRoute((req) => startUpload(req.user, req.body)),
+);
+app.post(
+  '/api/studio/library/uploads/:id/sign',
+  libraryRoute((req) => signUpload(req.params.id, req.body)),
+);
+app.post(
+  '/api/studio/library/uploads/:id/finish',
+  libraryRoute((req) => finishUpload(req.user, req.params.id, req.body)),
 );
 
 // Delete a video (MBJ-701): from the site with its chat, comments, likes, progress, and notifications, and

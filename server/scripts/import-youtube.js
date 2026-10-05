@@ -5,6 +5,7 @@
 //   npm run import:youtube -- <youtube-url> [--tier free|plus|premium] [--stream-uid <uid>] [--chat-only] [--no-comments]
 //
 //   --stream-uid   Video is already on Cloudflare Stream; skip download/upload.
+//   --hls-url      Video is already on R2 (the Library Uploader); skip download/upload and play it from there.
 //   --chat-only    Skip the video; re-import chat and comments for a video already in the database.
 //   --no-comments  Don't import YouTube comments.
 //
@@ -30,7 +31,7 @@ const flag = (name) => {
 };
 function isFlagValue(a) {
   const i = args.indexOf(a);
-  return i > 0 && ['--tier', '--stream-uid'].includes(args[i - 1]);
+  return i > 0 && ['--tier', '--stream-uid', '--hls-url'].includes(args[i - 1]);
 }
 
 if (!url) {
@@ -85,8 +86,9 @@ if (withComments) {
 // ---------- 4. video -> Cloudflare Stream ----------
 let streamUid = typeof flag('stream-uid') === 'string' ? flag('stream-uid') : null;
 const chatOnly = flag('chat-only') === true;
+const hlsUrl = typeof flag('hls-url') === 'string' ? flag('hls-url') : null;
 
-if (!streamUid && !chatOnly) {
+if (!streamUid && !hlsUrl && !chatOnly) {
   const { CF_ACCOUNT_ID, CF_API_TOKEN } = process.env;
   if (!CF_ACCOUNT_ID || !CF_API_TOKEN) {
     console.error('Set CF_ACCOUNT_ID and CF_API_TOKEN in .env to upload video.');
@@ -129,10 +131,11 @@ const publishedAt =
       : null;
 
 const { rows } = await pool.query(
-  `INSERT INTO videos (youtube_id, stream_uid, title, description, duration_s, published_at, min_tier, kind)
-   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  `INSERT INTO videos (youtube_id, stream_uid, title, description, duration_s, published_at, min_tier, kind, hls_url)
+   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
    ON CONFLICT (youtube_id) DO UPDATE SET
      stream_uid = COALESCE(EXCLUDED.stream_uid, videos.stream_uid),
+     hls_url = COALESCE(EXCLUDED.hls_url, videos.hls_url),
      title = EXCLUDED.title, description = EXCLUDED.description,
      duration_s = EXCLUDED.duration_s, published_at = EXCLUDED.published_at, kind = EXCLUDED.kind
    RETURNING id`,
@@ -145,6 +148,7 @@ const { rows } = await pool.query(
     publishedAt,
     tier,
     videoKind(meta),
+    hlsUrl,
   ],
 );
 const videoId = rows[0].id;

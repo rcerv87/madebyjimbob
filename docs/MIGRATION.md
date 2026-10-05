@@ -92,6 +92,10 @@ are kept in case a second copy is ever wanted.
 4. Keep Ruben's bucket a week, then delete it.
 
 ### 5. Cloudflare R2 and Stream
+**Started 2026-10-05:** Ruben has Administrator access to JimBob's Cloudflare account; the bucket `madebyjimbob-live`
+there takes the YouTube library first (Library Uploader, MBJ-818, `LIBRARY_R2_*` on Render). Live recordings and replays
+follow when the site's `R2_*` settings switch to his account (copy `dvr/` across first).
+
 **R2 (live recordings, replays, the library):** move it early. It grows about half a terabyte every month JimBob
 streams on the site, so the copy takes longer the longer it waits (R2 doesn't charge for the downloads).
 1. JimBob's Cloudflare account: create bucket `madebyjimbob-live`, the same CORS policy (site origins, GET/HEAD), and

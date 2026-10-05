@@ -9,7 +9,7 @@ export default [
   js.configs.recommended,
   { rules: { 'no-unused-vars': ['error', { argsIgnorePattern: '^_' }] } },
   {
-    files: ['server/**/*.{js,mjs}', '*.js'],
+    files: ['server/**/*.{js,mjs}', 'tools/**/*.{js,mjs}', '*.js'],
     languageOptions: { ecmaVersion: 2024, sourceType: 'module', globals: globals.node },
   },
   {

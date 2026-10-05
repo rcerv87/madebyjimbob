@@ -64,6 +64,7 @@ function runImport(job) {
     if (!job.withComments) args.push('--no-comments');
     // Added from a file: the video is already on Cloudflare; fetch only the title, chat, and comments.
     if (job.streamUid) args.push('--stream-uid', job.streamUid);
+    if (job.hlsUrl) args.push('--hls-url', job.hlsUrl); // already on R2 from the Library Uploader
     const child = spawn(process.execPath, args, {
       cwd: path.join(__dirname, '..'),
       env: { ...process.env, PATH, IMPORT_SKIP_MIGRATE: '1' },

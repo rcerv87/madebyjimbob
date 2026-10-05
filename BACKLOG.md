@@ -1521,7 +1521,7 @@ Acceptance criteria:
 
 ### MBJ-818 — Library Uploader: a folder on JimBob's PC goes to R2
 
-**Status:** To do · **Phase 4 — Owned live + audio** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-506, MBJ-806
+**Status:** In progress · **Phase 4 — Owned live + audio** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-506, MBJ-806
 
 As JimBob, I want to fill one folder with my Google Takeout export and have every video end up on the site, without doing anything else (the Cloudflare setup page, part 2).
 

@@ -68,6 +68,18 @@ Prices are estimates as of this date; check current Cloudflare pricing before de
   locks or the app is in the background, and audio downloads.
 - **Price check (2026-10-01):** B2 is $6.95/TB/month (pay as you go), so ~2.2 TB ≈ $15/month. B2 Overdrive (unlimited free egress) needs a multi-petabyte commitment, so it doesn't apply.
 
+## Update 2026-10-05: the Library Uploader (MBJ-818)
+
+The library goes straight into JimBob's own Cloudflare account (bucket `madebyjimbob-live`, the same name as the beta
+bucket, so moving live streams there later is a settings swap). The Library Uploader on his PC reads his Takeout .zip
+files in place, matches each video to its YouTube id (Takeout's CSV, an [id] in the name, or a unique channel title),
+converts it to 720p, 360p and audio (6-second HLS, the same master layout as live replays, so Listen only works) and
+uploads to `library/<youtube id>/` with short-lived links from the site (`/api/studio/library/*`); the bucket keys
+(`LIBRARY_R2_*`) stay on Render. A video already on the site switches to the R2 copy; a new one is queued for the
+import helper with its R2 address (`--hls-url`), which adds title, chat and comments without downloading. Viewers need
+a public address on that bucket: the r2.dev one for testing, `live.madebyjimbob.app` once the domain moves to his
+account (MIGRATION.md step 6).
+
 ## Update 2026-10-03: decided, everything on R2
 
 Ruben and JimBob agreed to start everything on Cloudflare R2: live recordings, replays, and the imported library. One

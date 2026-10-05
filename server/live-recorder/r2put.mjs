@@ -77,6 +77,11 @@ export async function s3List(cfg, prefix) {
 
 // A time-limited link anyone can GET (query-string SigV4), for playing a private bucket.
 export function presignGet(cfg, key, expiresS = 21600) {
+  return presign(cfg, 'GET', key, expiresS);
+}
+
+// A time-limited link for one request on one key (GET to read, PUT to upload), signed with query-string SigV4.
+export function presign(cfg, method, key, expiresS = 21600) {
   const url = new URL(`${cfg.endpoint}/${cfg.bucket}/${key.split('/').map(encodeURIComponent).join('/')}`);
   const region = cfg.region || url.host.match(/^s3\.([a-z0-9-]+)\.backblazeb2\.com$/)?.[1] || 'auto';
   const amzDate = new Date().toISOString().replace(/[-:]|\.\d{3}/g, '');
@@ -94,7 +99,7 @@ export function presignGet(cfg, key, expiresS = 21600) {
     .sort()
     .join('&');
   const canonical = [
-    'GET',
+    method,
     url.pathname,
     canonicalQuery,
     `host:${url.host}\n`,
