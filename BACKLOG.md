@@ -96,6 +96,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-704 | Data export | Studio & analytics | 1 | Should | S | MBJ-102 |
 | MBJ-705 | User management in Studio | Studio & analytics | 1 | Must | M | MBJ-102, MBJ-204 |
 | MBJ-706 | Pick videos from the channel to import | Studio & analytics | 1 | Must | M | MBJ-701 |
+| MBJ-707 | Retitle queue in Studio | Studio & analytics | 1 | Must | M | MBJ-614, MBJ-616, MBJ-701 |
+| MBJ-708 | Push new titles back to YouTube (optional) | Studio & analytics | 1 | Could | S | MBJ-707, MBJ-615 |
 | MBJ-801 | Videos dashboard with filters | Library & community | 1 | Must | M | — |
 | MBJ-802 | Playlists | Library & community | 1 | Must | M | MBJ-801 |
 | MBJ-803 | Up next and autoplay | Library & community | 1 | Must | S | MBJ-802 |
@@ -155,6 +157,9 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-611 | Watch-time rewards (e.g. a free t-shirt) | Engagement & AI | 5 | Should | M | MBJ-601, MBJ-108, MBJ-807 |
 | MBJ-612 | Supporter shout-outs | Engagement & AI | 5 | Should | M | MBJ-207 |
 | MBJ-613 | Ratings, moment reactions, and hotspots | Engagement & AI | 5 | Should | L | MBJ-601 |
+| MBJ-614 | Transcripts overnight on the PC (free) | Engagement & AI | 5 | Must | M | MBJ-604 |
+| MBJ-615 | YouTube captions as a transcript source | Engagement & AI | 5 | Should | S | MBJ-614, MBJ-306 |
+| MBJ-616 | Overview, key moments and title ideas | Engagement & AI | 5 | Must | M | MBJ-614 |
 | MBJ-702 | Chat analytics | Studio & analytics | 5 | Should | M | MBJ-102 |
 
 ## Epic 0xx — Foundation
@@ -1288,6 +1293,44 @@ Acceptance criteria:
 - [ ] Clicking a result opens the video at that moment (?t=)
 - [ ] Postgres full-text search to start; filters by stream, speaker, date, and source (said on stream vs chat)
 
+### MBJ-614 — Transcripts overnight on the PC (free)
+
+**Status:** To do · **Phase 5 — Engagement** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-604
+
+As JimBob, I want a transcript of every video without paying per minute, so each one can get a real title and overview (docs/RETITLING.md).
+
+Acceptance criteria:
+- [ ] The helper on the PC (the import helper or the Library Uploader) picks videos with no transcript and works through them overnight, in a time window set in Studio (default 11pm-7am); stopping and restarting picks up where it left off
+- [ ] Order of sources: a transcript already stored (Cloudflare Stream captions) → YouTube's own captions (MBJ-615) → speech-to-text on the PC with a free, open model (Whisper via faster-whisper or whisper.cpp; uses an NVIDIA card when present, the processor otherwise)
+- [ ] Timed transcript saved per video (who-said-what comes later with MBJ-608); Studio shows queued / transcribing / done and the hours left
+- [ ] Works for the YouTube back catalog, R2 library videos (MBJ-506) and new site streams after they end
+- [ ] Cost: $0 (the PC's electricity); a 4-hour stream takes roughly 20-60 minutes with an NVIDIA card, several hours without
+
+### MBJ-615 — YouTube captions as a transcript source
+
+**Status:** To do · **Phase 5 — Engagement** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-614, MBJ-306
+
+As JimBob, I want the captions YouTube already made for my videos used as transcripts, so most videos need no transcribing at all.
+
+Acceptance criteria:
+- [ ] JimBob connects his YouTube channel once in Studio (Google sign-in, YouTube scope); the token is stored encrypted and can be disconnected
+- [ ] For each queued video: list its caption tracks and download the best one (his uploaded captions first, else YouTube's automatic ones) through the official YouTube Data API
+- [ ] Fits the free daily quota (about 50 downloads a day), far more than the 1-2 videos a day planned; when the quota runs out the rest wait for tomorrow or go to the PC (MBJ-614)
+- [ ] Videos without usable captions (or once the channel is gone) fall back to the PC
+
+### MBJ-616 — Overview, key moments and title ideas
+
+**Status:** To do · **Phase 5 — Engagement** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-614
+
+As JimBob, I want each video's transcript turned into a short overview, key moments and catchy title options, ready when I sit down to retitle.
+
+Acceptance criteria:
+- [ ] Runs overnight after the transcript (MBJ-614), as drafts; it never changes a published title or description by itself
+- [ ] Each draft: an overview (a few paragraphs: topic, guests, main arguments), key moments with timestamps (they become chapters that seek the player), 5 title options in a punchy, curiosity-driven style under ~70 characters, and suggested tags
+- [ ] Cheapest first: a free open model on the same PC overnight (e.g. through Ollama; long transcripts summarized in parts, then combined). Setting in Studio to use Claude Haiku 4.5 through the Message Batches API instead (50% off: about $0.04 per 4-hour stream, ~$35 for the whole 926-video library) if the free model's titles aren't good enough
+- [ ] The prompt carries JimBob's voice and a few of his favorite titles as examples; Regenerate asks for a fresh draft (tonight, or right away with the paid option)
+- [ ] Drafts and the model used are stored per video, so results can be compared
+
 ### MBJ-606 — Call-ins
 
 **Status:** To do · **Phase 5 — Engagement** · **Priority:** Could · **Size:** XL · **Depends on:** MBJ-104, MBJ-301
@@ -1342,6 +1385,31 @@ Acceptance criteria:
 - [x] Pasted links (the current box) that are already on the site say "You already have this" with a link to it (already skipped today)
 - [x] Listing works from Render with a YouTube Data API key (free quota: about 1 unit per 50 videos via the channel's uploads playlist); without a key, the import helper lists the channel with yt-dlp and Studio shows the list when it's back
 - [x] Tier and "also import comments" apply to everything queued in one go
+
+### MBJ-707 — Retitle queue in Studio
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-614, MBJ-616, MBJ-701
+
+As JimBob, I want to work through my old videos 1-2 a day, giving each a real title and overview, over the next 1-3 years (docs/RETITLING.md).
+
+Acceptance criteria:
+- [ ] Studio → Videos: a "Needs a new title" filter and a progress count (e.g. 37 of 926 done); sort by newest, oldest or most watched
+- [ ] Opening a video shows the draft (MBJ-616): the 5 title options, the overview and key moments, next to the transcript (searchable, each line seeks the player)
+- [ ] JimBob picks a title or writes his own, edits the overview and moments, and presses Publish: the site's title, description and chapters change at once
+- [ ] The original YouTube title is kept (shown small, still searchable, used for matching); every change is recorded with who and when, and can be undone
+- [ ] Videos without a transcript or draft yet show where they are in the overnight queue, with "Do this one next"
+
+### MBJ-708 — Push new titles back to YouTube (optional)
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Could · **Size:** S · **Depends on:** MBJ-707, MBJ-615
+
+As JimBob, I want the option to send a video's new title and overview to the same video on YouTube, so both places match and YouTube viewers get the better title too.
+
+Acceptance criteria:
+- [ ] Off by default: an "Also update on YouTube" checkbox on Publish (MBJ-707), remembered per channel
+- [ ] Uses the YouTube connection from MBJ-615 (videos.update: title, description; within the free quota, about 200 updates a day)
+- [ ] The YouTube description gets the overview, the key moments as YouTube chapters (0:00 first) and a link to the video on the site; what was there before is saved so it can be put back
+- [ ] Each push is logged; failures (quota, a removed video) show in Studio and can be retried
 
 ### MBJ-702 — Chat analytics
 

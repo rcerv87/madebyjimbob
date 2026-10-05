@@ -381,6 +381,11 @@ reach 30 days around 2026-11-02.
 8. **Gamification** — XP, levels, and activity badges for heavy chatters and commenters (MBJ-601, 602),
    watch-time rewards such as a free t-shirt after a set number of hours, delivered as a Shopify code (MBJ-611),
    and supporter shout-outs for super chats and Bob Chats, with a queue and optional on-stream overlay (MBJ-612).
+8b. **Retitle the library** (planned 2026-10-05, not built; flow in `docs/RETITLING.md`): transcripts overnight on a PC
+   for free (YouTube's captions first, then Whisper, MBJ-614/615), drafts of an overview, key moments and 5 title ideas
+   (free model on the PC, Claude Haiku 4.5 batch ~$0.04 a stream as the fallback, MBJ-616), a "Needs a new title" queue
+   in Studio for 1-2 videos a day over 1-3 years (MBJ-707), and optionally the same title and overview pushed to YouTube
+   (MBJ-708).
 9. **AI stream notes** — a facilitator-style notes page per stream: summary, sections, who said what, key
    exchanges, super chats and Bob Chats with answers, questions and promises (MBJ-605); speaker labels (MBJ-608);
    tags for topics and people with browse pages (MBJ-609); search inside streams (MBJ-610). Transcripts for all
