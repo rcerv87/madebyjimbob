@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import StudioImports from '../components/StudioImports.jsx';
 import StudioVideoActions, { tusUpload } from '../components/StudioVideoActions.jsx';
+import Studio from '../pages/Studio.jsx';
 
 function fakeApi(routes) {
   globalThis.fetch = vi.fn(async (url, opts = {}) => {
@@ -190,5 +191,61 @@ describe('Studio → Add videos → From the channel', () => {
     expect(screen.getAllByText(/npm run import:worker/).length).toBeGreaterThan(0);
     await new Promise((r) => setTimeout(r, 50));
     expect(sent('POST', '/studio/channel/refresh')).toHaveLength(1);
+  });
+});
+
+describe('Studio → Content: bulk actions', () => {
+  const video = (id, title, minTier = 'free') => ({
+    id,
+    title,
+    minTier,
+    durationS: 30,
+    views: 0,
+    youtubeMsgs: 0,
+    nativeMsgs: 0,
+    paidMsgs: 0,
+    likes: 0,
+    dislikes: 0,
+  });
+  const overview = {
+    totals: { videos: 3, views: 0, chatters: 0, youtubeMsgs: 0, nativeMsgs: 0, paidMsgs: 0 },
+    videos: [video(1, 'Test stream A'), video(2, 'Test stream B'), video(3, 'Real show')],
+    topChatters: [],
+  };
+
+  test('tick videos, change their access together, or delete them with their files', async () => {
+    const sent = fakeApi({
+      '/studio/overview': [200, overview],
+      'PATCH /studio/videos/1': [200, { ok: true }],
+      'PATCH /studio/videos/2': [200, { ok: true }],
+      'DELETE /studio/videos/1': [200, { ok: true, files: 'deleting' }],
+      'DELETE /studio/videos/2': [200, { ok: true, files: 'deleting' }],
+    });
+    render(
+      <MemoryRouter>
+        <Studio user={{ username: 'jimbob', isAdmin: true }} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Select Test stream A' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Test stream B' }));
+    expect(screen.getByText('2 selected')).toBeTruthy();
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Access for the selected videos' }), {
+      target: { value: 'plus' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(sent('PATCH', '/studio/videos/2')).toEqual([{ minTier: 'plus' }]));
+    expect(sent('PATCH', '/studio/videos/1')).toEqual([{ minTier: 'plus' }]);
+    expect(sent('PATCH', '/studio/videos/3')).toEqual([]);
+
+    // Select all, then untick the real show, then delete the two test streams.
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Select all videos' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select Real show' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete…' }));
+    expect(screen.getByRole('checkbox', { name: /Also delete the video files/ }).checked).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete 2' }));
+    await waitFor(() => expect(sent('DELETE', '/studio/videos/2')).toEqual([{ removeFromStream: true }]));
+    expect(sent('DELETE', '/studio/videos/1')).toEqual([{ removeFromStream: true }]);
+    expect(sent('DELETE', '/studio/videos/3')).toEqual([]);
   });
 });

@@ -29,6 +29,41 @@ export default function Studio({ user }) {
     if (user?.isAdmin) load();
   }, [user?.isAdmin, load]);
 
+  // Bulk actions on the Content table: tick videos (or all), then change access or delete them together.
+  const [picked, setPicked] = useState(() => new Set());
+  const [bulk, setBulk] = useState({ confirm: false, files: true, tier: 'free', progress: '' });
+  const toggle = (id) =>
+    setPicked((p) => {
+      const next = new Set(p);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const runBulk = async (label, ids, call) => {
+    setSaveError('');
+    const failed = [];
+    for (let i = 0; i < ids.length; i += 1) {
+      setBulk((b) => ({ ...b, progress: `${label} ${i + 1} of ${ids.length}…` }));
+      try {
+        await call(ids[i]);
+      } catch (e) {
+        failed.push(`${data.videos.find((v) => v.id === ids[i])?.title || ids[i]}: ${e.message}`);
+      }
+    }
+    setBulk((b) => ({ ...b, confirm: false, progress: '' }));
+    setPicked(new Set());
+    if (failed.length) setSaveError(`Some didn't go through: ${failed.join('; ')}`);
+    load();
+  };
+  const bulkDelete = () =>
+    runBulk('Deleting', [...picked], (id) =>
+      api(`/studio/videos/${id}`, { method: 'DELETE', body: { removeFromStream: bulk.files } }),
+    );
+  const bulkTier = () =>
+    runBulk('Updating', [...picked], (id) =>
+      api(`/studio/videos/${id}`, { method: 'PATCH', body: { minTier: bulk.tier } }),
+    );
+
   const setTier = async (id, minTier) => {
     setSaveError('');
     try {
@@ -67,10 +102,82 @@ export default function Studio({ user }) {
         <section className="panel">
           <h2>Content</h2>
           {saveError && <p className="error small">{saveError}</p>}
+          {picked.size > 0 && (
+            <div className="bulk-bar" role="region" aria-label="Selected videos">
+              <strong>{picked.size} selected</strong>
+              {bulk.progress ? (
+                <span className="small">{bulk.progress}</span>
+              ) : bulk.confirm ? (
+                <>
+                  <span className="small">
+                    Delete {picked.size} video{picked.size === 1 ? '' : 's'} with their chat and comments?
+                  </span>
+                  <label className="check small">
+                    <input
+                      type="checkbox"
+                      checked={bulk.files}
+                      onChange={(e) => setBulk((b) => ({ ...b, files: e.target.checked }))}
+                    />
+                    Also delete the video files (Cloudflare Stream and replay recordings in R2)
+                  </label>
+                  <button type="button" className="danger-btn small" onClick={bulkDelete}>
+                    Delete {picked.size}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-btn small"
+                    onClick={() => setBulk((b) => ({ ...b, confirm: false }))}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <label className="small">
+                    Access{' '}
+                    <select
+                      value={bulk.tier}
+                      onChange={(e) => setBulk((b) => ({ ...b, tier: e.target.value }))}
+                      aria-label="Access for the selected videos"
+                    >
+                      {Object.entries(TIER_LABEL).map(([k, l]) => (
+                        <option key={k} value={k}>
+                          {l}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button type="button" className="primary-btn small" onClick={bulkTier}>
+                    Apply
+                  </button>
+                  <button
+                    type="button"
+                    className="text-btn small danger-text"
+                    onClick={() => setBulk((b) => ({ ...b, confirm: true }))}
+                  >
+                    Delete…
+                  </button>
+                  <button type="button" className="text-btn small" onClick={() => setPicked(new Set())}>
+                    Clear
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      aria-label="Select all videos"
+                      checked={data.videos.length > 0 && picked.size === data.videos.length}
+                      onChange={(e) =>
+                        setPicked(e.target.checked ? new Set(data.videos.map((v) => v.id)) : new Set())
+                      }
+                    />
+                  </th>
                   <th>Video</th>
                   <th>Length</th>
                   <th>Views</th>
@@ -84,7 +191,15 @@ export default function Studio({ user }) {
               </thead>
               <tbody>
                 {data.videos.map((v) => (
-                  <tr key={v.id}>
+                  <tr key={v.id} className={picked.has(v.id) ? 'picked' : undefined}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${v.title}`}
+                        checked={picked.has(v.id)}
+                        onChange={() => toggle(v.id)}
+                      />
+                    </td>
                     <td className="title-cell">
                       <Link to={`/watch/${v.id}`}>{v.title}</Link>
                       <StudioVideoActions video={v} onChanged={load} />

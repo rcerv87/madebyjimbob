@@ -17,6 +17,8 @@ import {
   obsStreaming,
   proxyHls,
   archiveFile,
+  currentRecording,
+  deleteRecordingFiles,
 } from './live.js';
 import { parseChannel, requestListing, channelPage, JIMBOB_CHANNEL } from './channel.js';
 import { logger, httpLogger } from './logger.js';
@@ -1511,15 +1513,26 @@ app.post(
 );
 
 // Delete a video (MBJ-701): from the site with its chat, comments, likes, progress, and notifications, and
-// (removeFromStream) its file from Cloudflare Stream unless another video on the site uses the same file.
+// (removeFromStream, on by default) its files: the Cloudflare Stream file unless another video uses it, or a replay's
+// recording in R2 (deleted in the background; thousands of pieces). A stream that's live right now can't be deleted.
 // Its spots in imported YouTube playlists are kept, so it reappears there if it's imported again.
 app.delete(
   '/api/studio/videos/:id',
   wrap(async (req, res) => {
     const video = await findVideo(req.params.id);
     if (!video) return res.status(404).json({ error: 'Video not found.' });
-    const { rows } = await pool.query('SELECT stream_uid FROM videos WHERE id = $1', [video.id]);
+    const { rows } = await pool.query('SELECT stream_uid, live_recording_id FROM videos WHERE id = $1', [
+      video.id,
+    ]);
     const uid = rows[0]?.stream_uid;
+    const recording = rows[0]?.live_recording_id;
+    if (recording) {
+      const current = await currentRecording().catch(() => null);
+      if (current?.live && current.id === recording)
+        return res
+          .status(409)
+          .json({ error: 'This stream is live right now. End it first, then delete it.' });
+    }
     await pool.query(
       'UPDATE playlist_items SET video_id = NULL WHERE video_id = $1 AND youtube_id IS NOT NULL',
       [video.id],
@@ -1536,7 +1549,14 @@ app.delete(
             reason: 'cloudflare-unreachable',
           }));
     }
-    res.json({ ok: true, streamUid: uid || null, stream });
+    let files = null;
+    if (req.body?.removeFromStream !== false && recording) {
+      files = 'deleting';
+      deleteRecordingFiles(recording)
+        .then((n) => logger.info({ videoId: video.id, recording, files: n }, 'replay files deleted'))
+        .catch((err) => logger.warn({ err, recording }, 'deleting replay files failed'));
+    }
+    res.json({ ok: true, streamUid: uid || null, stream, files });
   }),
 );
 

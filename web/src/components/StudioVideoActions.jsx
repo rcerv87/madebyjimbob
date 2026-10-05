@@ -168,7 +168,7 @@ export default function StudioVideoActions({ video, onChanged }) {
           Delete “{video.title}” and its chat and comments?
           <label className="check">
             <input type="checkbox" checked={alsoFile} onChange={(e) => setAlsoFile(e.target.checked)} />
-            Also delete the file from Cloudflare
+            Also delete the video file (Cloudflare Stream, or the replay’s recording in R2)
           </label>
           <button className="danger-btn small" onClick={remove}>
             Delete
