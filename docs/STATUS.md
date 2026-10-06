@@ -16,6 +16,14 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 
 ## Waiting on Ruben
 
+- **Move the site to madebyjimbob.app (code ready 2026-10-05):** 1) Render → madebyjimbob → Settings → Custom Domains:
+  add `madebyjimbob.app` and `www.madebyjimbob.app`; 2) Cloudflare (Ruben's account) → madebyjimbob.app → DNS: the
+  records Render shows, **DNS only** (grey cloud); 3) once Render says Verified and the certificate is issued, set
+  `SITE_URL=https://madebyjimbob.app` on Render (pages on the onrender.com address then redirect; the API, webhooks
+  and health check still answer there); 4) Stripe webhook URL and Resend webhook URL to the new address (optional: the
+  old ones keep working); 5) Stripe → Payment method domains: madebyjimbob.app (Apple Pay). Everyone signs in again
+  once (cookies belong to an address).
+
 - **Library Uploader (MBJ-818, built 2026-10-05):** the program for JimBob's PC that puts his whole YouTube library
   (Takeout .zip files in a "MADEbyJIMBOB Library" folder) on R2. Tested end to end on this PC (zip → match → 720p, 360p,
   audio → upload → the video plays on the site; a new video goes to the import helper). Left for Ruben:

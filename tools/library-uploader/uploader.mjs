@@ -52,7 +52,7 @@ const saveJson = (f, data) => {
   fs.renameSync(`${f}.tmp`, f);
 };
 const config = loadJson(configFile, {});
-const SITE = (arg('site') || config.site || 'https://madebyjimbob.onrender.com').replace(/\/+$/, '');
+const SITE = (arg('site') || config.site || 'https://madebyjimbob.app').replace(/\/+$/, '');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const now = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const say = (...a) => console.log(`${now()}  ${a.join(' ')}`);

@@ -80,6 +80,16 @@ const app = express();
 // Behind Render's proxy: trust X-Forwarded-Proto so page URLs (link previews, canonical) use https.
 app.set('trust proxy', 1);
 app.use(httpLogger);
+// One address for the site: once SITE_URL is set (https://madebyjimbob.app), pages opened on the onrender.com
+// address move there for good. The API (webhooks from Stripe and Resend, Render's health check, open tabs) still
+// answers on the old address.
+app.use((req, res, next) => {
+  if (!process.env.SITE_URL || !['GET', 'HEAD'].includes(req.method) || req.path.startsWith('/api/'))
+    return next();
+  const canonical = new URL(process.env.SITE_URL);
+  if (req.hostname === canonical.hostname || !req.hostname.endsWith('.onrender.com')) return next();
+  res.redirect(301, canonical.origin + req.originalUrl);
+});
 // The client IP as Express sees it behind Render's proxy, for Better Auth's rate limits and session list.
 app.use((req, _res, next) => {
   req.headers['x-mbj-client-ip'] = req.ip;
