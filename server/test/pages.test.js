@@ -151,3 +151,15 @@ test('once SITE_URL is set, pages on the onrender.com address move there; the AP
     delete process.env.SITE_URL;
   }
 });
+
+test('the super chat and membership pages are real pages with their own previews', async () => {
+  for (const [path, title] of [
+    ['/superchat', 'Super chat JimBob'],
+    ['/membership', 'Membership'],
+    ['/membership/welcome', 'Welcome'],
+  ]) {
+    const res = await fetch(site + path);
+    assert.equal(res.status, 200, path);
+    assert.match(await res.text(), new RegExp(`<title>${title} · MADEbyJIMBOB</title>`), path);
+  }
+});
