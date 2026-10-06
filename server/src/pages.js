@@ -71,6 +71,17 @@ export async function pageMeta(pathname) {
     return page('Art', "JimBob's illustrations and comics: originals, prints, and digital art.");
   if (p === '/studio') return { ...page('Studio'), noindex: true };
   if (p === '/live') return page('JimBob live', 'Watch JimBob live on MADEbyJIMBOB.');
+  if (p === '/superchat')
+    return page(
+      'Super chat JimBob',
+      'Send JimBob a super chat from anywhere, even while you watch on YouTube or Rumble.',
+    );
+  if (p === '/membership')
+    return page(
+      'Membership',
+      'Join Plus or Premium: the full library, member streams, and perks. Supports JimBob directly.',
+    );
+  if (p === '/membership/welcome') return { ...page('Welcome'), noindex: true };
   if (p === '/reset-password') return { ...page('Reset password'), noindex: true };
   if (p === '/account') return { ...page('Account settings'), noindex: true };
 
