@@ -113,3 +113,41 @@ test('a "$" in a title or description shows exactly as typed', async () => {
   assert.equal(meta(r.html, 'name', 'description'), 'Costs $5, $$ and $` too');
   assert.equal((r.html.match(/<\/head>/g) || []).length, 1);
 });
+
+test('once SITE_URL is set, pages on the onrender.com address move there; the API still answers', async () => {
+  const http = await import('node:http');
+  const get = (path, host, method = 'GET') =>
+    new Promise((resolve, reject) => {
+      const u = new URL(site + path);
+      const req = http.request(
+        { hostname: u.hostname, port: u.port, path: u.pathname + u.search, method, headers: { host } },
+        (res) => {
+          res.resume();
+          resolve({ status: res.statusCode, location: res.headers.location });
+        },
+      );
+      req.on('error', reject);
+      req.end();
+    });
+  assert.equal(
+    (await get('/live', 'madebyjimbob.onrender.com')).status,
+    200,
+    'nothing moves until SITE_URL is set',
+  );
+  process.env.SITE_URL = 'https://madebyjimbob.app';
+  try {
+    assert.deepEqual(await get('/watch/12?t=90', 'madebyjimbob.onrender.com'), {
+      status: 301,
+      location: 'https://madebyjimbob.app/watch/12?t=90',
+    });
+    assert.equal(
+      (await get('/api/health', 'madebyjimbob.onrender.com')).status,
+      200,
+      'Render’s health check',
+    );
+    assert.equal((await get('/', 'madebyjimbob.app')).status, 200, 'the new address itself');
+    assert.equal((await get('/', 'localhost')).status, 200, 'a developer’s machine');
+  } finally {
+    delete process.env.SITE_URL;
+  }
+});

@@ -4,7 +4,7 @@
 const TEAL = '#27717A';
 
 export function siteUrl() {
-  return (process.env.SITE_URL || 'https://madebyjimbob.onrender.com').replace(/\/+$/, '');
+  return (process.env.SITE_URL || 'https://madebyjimbob.app').replace(/\/+$/, '');
 }
 
 const esc = (s) =>

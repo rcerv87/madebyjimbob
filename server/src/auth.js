@@ -100,8 +100,11 @@ export const auth = betterAuth({
       logger[level === 'success' ? 'info' : level]({ component: 'auth', ...(err && { err }) }, message);
     },
   },
-  // The site's own origin is always trusted; on a developer's machine, any localhost port (Vite, tests).
-  trustedOrigins: onRender ? [] : ['http://localhost:*', 'http://127.0.0.1:*'],
+  // The site's own origin is always trusted, and on Render its onrender.com address too (tabs opened there before the
+  // move to SITE_URL keep working); on a developer's machine, any localhost port (Vite, tests).
+  trustedOrigins: onRender
+    ? [process.env.RENDER_EXTERNAL_URL].filter(Boolean)
+    : ['http://localhost:*', 'http://127.0.0.1:*'],
   advanced: {
     cookiePrefix: 'mbj',
     useSecureCookies: baseURL.startsWith('https://'),

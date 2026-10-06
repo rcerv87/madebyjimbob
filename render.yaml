@@ -34,7 +34,11 @@ services:
       - key: VAPID_PUBLIC_KEY
         value: BH1VujLaplskaCgClakGNih8KJnpfZQeCmIPrYHdjRoG3Lz40RPA-ys-l_w6l0alxJOT4BC-rM1agNIyMi6epf0
       - key: VAPID_SUBJECT
-        value: https://madebyjimbob.onrender.com
+        value: https://madebyjimbob.app
+      # The site's address (https://madebyjimbob.app). Set by hand only after the domain is connected in Render →
+      # Custom Domains; then pages opened on the onrender.com address move there.
+      - key: SITE_URL
+        sync: false
       - key: VAPID_PRIVATE_KEY
         sync: false
       # Account email (ADR-012). Set all four by hand in Render → madebyjimbob → Environment.
