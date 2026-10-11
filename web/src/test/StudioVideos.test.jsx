@@ -222,7 +222,7 @@ describe('Studio → Content: bulk actions', () => {
       'DELETE /studio/videos/2': [200, { ok: true, files: 'deleting' }],
     });
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/studio/videos']}>
         <Studio user={{ username: 'jimbob', isAdmin: true }} />
       </MemoryRouter>,
     );

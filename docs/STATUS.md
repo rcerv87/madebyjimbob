@@ -279,6 +279,11 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   Studio → Account email to preview each one and send a test. Off until the Resend keys are on Render.
 - Tiers enforced on the server for video, chat, comments, and the live WebSocket (the socket knows you from
   the session cookie).
+- **Studio has tabs (2026-10-10):** Overview (the numbers, a "Needs attention" list with links, a members snapshot, top
+  chatters), Live (go live + super chats), Videos (content table + playlists), Add videos, Members (list + linked
+  accounts), Reports, Email. Each tab has its own address (`/studio/members` …), so refresh and shared links work;
+  tabs show a count when something is waiting (open reports, link requests, failed imports), and only the open tab
+  loads its data. A Money tab (members and revenue) comes with MBJ-703.
 - **Studio → Members (MBJ-705, first part, 2026-10-10):** every account, most recently active first, with search
   (username, name, or a whole email), filters (mods and admins, new this week, banned, membership), a role switch
   (member, mod, admin; admins open Studio), and ban with a reason / unban. A ban signs the member out everywhere and

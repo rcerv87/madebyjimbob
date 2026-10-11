@@ -18,7 +18,7 @@ export default function Sidebar({ isAdmin, onNavigate }) {
           <NavLink
             key={l.to}
             to={l.to}
-            end
+            end={l.to !== '/studio'}
             onClick={onNavigate}
             className={({ isActive }) => `side-link ${isActive ? 'active' : ''}`}
           >

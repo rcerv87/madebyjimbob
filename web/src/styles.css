@@ -2962,6 +2962,51 @@ button.quote:hover {
 .stat.accent .stat-label {
   color: var(--gold-ink);
 }
+.studio h1 {
+  margin-bottom: 8px;
+}
+/* Studio's sections: one row that scrolls sideways on a phone instead of wrapping. */
+.studio-tabs {
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.studio-tabs::-webkit-scrollbar {
+  display: none;
+}
+.studio-tabs .library-tab {
+  white-space: nowrap;
+  flex: none;
+}
+.tab-count {
+  display: inline-block;
+  min-width: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.studio-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.stats.compact {
+  margin-bottom: 0;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+.stats.compact .stat:not(.accent) {
+  background: var(--bg);
+}
+.studio-content,
+.studio > .panel {
+  margin-bottom: 16px;
+}
 .studio-cols {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;

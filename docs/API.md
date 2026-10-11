@@ -73,7 +73,7 @@ they get `isAdmin: true` and see every tier.
 | GET | `/push/key` | — | `{ publicKey }` (null when push isn't configured) |
 | POST | `/push/subscribe` | required | `{ subscription }` from `PushManager.subscribe()`; 503 when push isn't configured |
 | DELETE | `/push/subscribe` | required | `{ endpoint }` |
-| GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded) |
+| GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded), plus what the Overview tab shows: `attention { openReports, pendingLinks, failedImports, queuedImports }` and `members { total, newThisWeek, paying }` |
 | PATCH | `/studio/videos/:id` | admin | `{ minTier }` |
 | DELETE | `/studio/videos/:id` | admin | `{ removeFromStream? }` (default true). Deletes the video and its chat, comments, likes, progress, and notifications; keeps its spots in imported YouTube playlists (unlinked). Returns `{ ok, streamUid, stream: { deleted, reason } }`; `reason` is `not-configured` (no Cloudflare keys on the server), `shared` (another video uses the file), or a Cloudflare error |
 | POST | `/studio/videos/:id/replacement` | admin | `{ size, name }` → `{ uploadUrl, uid }`: a one-time Cloudflare tus URL the browser uploads the new file to directly (pieces of 50 MB). 503 without Cloudflare keys |
