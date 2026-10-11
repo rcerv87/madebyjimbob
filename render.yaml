@@ -46,6 +46,9 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      # Beta feedback (MBJ-819): on unless this is "off".
+      - key: FEEDBACK
+        sync: false
       # Account email (ADR-012). Set all four by hand in Render → madebyjimbob → Environment.
       - key: RESEND_API_KEY
         sync: false

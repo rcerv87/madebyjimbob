@@ -111,7 +111,7 @@ describe('Videos page', () => {
 
   test('Play all starts the binge queue at what’s in progress, in the order the page is sorted', async () => {
     open();
-    const link = await screen.findByRole('link', { name: '▶ Play all 4 unwatched' });
+    const link = await screen.findByRole('link', { name: '▶ Play all 4 you haven’t finished' });
     expect(link.getAttribute('href')).toBe('/watch/4?list=unwatched&order=new');
   });
 

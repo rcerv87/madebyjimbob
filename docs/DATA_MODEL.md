@@ -18,6 +18,9 @@ columns are added by the story noted.
 | tier | text | `free | plus | premium` — derived from entitlements after MBJ-104; never settable by the user |
 | youtube_channel_id | text | set when user links YouTube (MBJ-305) |
 | xp | int | never settable by the user |
+| timeout_until, timeout_reason, timeout_stream, timeout_by | timestamptz, text, text, bigint → users (set null) | a timeout from Studio → Members (MBJ-705): until then the member can't chat or comment. `timeout_stream` is the live recording's id for a "this stream" timeout, cleared when that recording ends |
+| marketing_opt_in_at, marketing_source | timestamptz, text | asked for news by email (MBJ-107), when, and where (`signup \| account`); null = not on the list |
+| welcome_dismissed_at | timestamptz | hid the welcome checklist in Account settings (MBJ-115) |
 | username_chosen | boolean | false for an account made through Google until the member picks their username (MBJ-110); default true |
 | role | text | `viewer \| mod \| admin`; admin opens Studio (Studio → Members, or `npm run set-role`), never settable by the user |
 | banned_at, ban_reason, banned_by | timestamptz, text, bigint → users (set null) | set by Studio → Members (MBJ-705); while `banned_at` is set the account has no sessions and can't sign in |
@@ -321,6 +324,34 @@ Premium lapses (they just aren't sent to the web app until the member is Premium
 | color | text | `red orange yellow lime green teal blue indigo purple pink` |
 | created_at | timestamptz | |
 
+### feedback
+Notes from beta testers (MBJ-819), listed in Studio → Feedback; in the member's data export.
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| user_id | bigint → users | cascade |
+| note | text | |
+| page | text | path and query it was sent from |
+| video_id | bigint → videos | set null |
+| offset_ms | bigint | where the video was |
+| user_agent, screen | text | device and browser; `390x844 @3x` |
+| screenshot, screenshot_type | bytea, text | optional, shrunk in the browser, up to 2 MB |
+| status | text | `new \| seen \| done` |
+| handled_by | bigint → users | set null |
+| created_at | timestamptz | |
+
+### newsletter_contacts
+People on the email list without a site account (MBJ-107), imported with `npm run import:newsletter` (the Shopify
+newsletter list). The list Studio exports is members who opted in plus these, minus unsubscribes and bounces.
+| column | type | notes |
+|---|---|---|
+| email | text PK | lower case |
+| name | text | |
+| source | text | `shopify`, … |
+| consented_at | timestamptz | when they said yes there, if known |
+| unsubscribed_at | timestamptz | set by the unsubscribe link; an import never clears it |
+| created_at | timestamptz | |
+
 ### mod_actions
 The log of what staff did to whom (MBJ-705); shown in Studio → Members. Hiding messages and timeouts (MBJ-204) will write here too.
 | column | type | notes |
@@ -330,7 +361,7 @@ The log of what staff did to whom (MBJ-705); shown in Studio → Members. Hiding
 | target_user_id | bigint → users | cascade (erased with the account) |
 | target_author_channel_id | text | a YouTube or Rumble author without a site account (MBJ-204) |
 | message_id | bigint | the chat message acted on (MBJ-204) |
-| action | text | `role \| ban \| unban` for now |
+| action | text | `role \| ban \| unban \| timeout \| untimeout` for now |
 | duration_s | int | timeouts (MBJ-204) |
 | reason | text | the ban reason, or `viewer → admin` for a role change |
 | created_at | timestamptz | |

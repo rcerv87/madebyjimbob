@@ -335,7 +335,7 @@ Acceptance criteria:
 
 ### MBJ-107 — Owned email list
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-101, MBJ-102
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-101, MBJ-102
 
 As JimBob, I want my audience's contact info so no platform can take my audience away.
 
@@ -441,7 +441,7 @@ Acceptance criteria:
 
 ### MBJ-115 — Welcome steps
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-108
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-108
 
 As a new member, I want a quick start that makes the site mine without forcing anything.
 
@@ -1571,14 +1571,14 @@ Acceptance criteria:
 
 ### MBJ-819 — Beta feedback inside the site
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-101
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-101
 
 As a beta tester, I want to report a problem or idea from the page I'm on, without finding another place to write it.
 
 Acceptance criteria:
-- [ ] "Send feedback" in the avatar menu (and on phones): a short note, optional screenshot, sent with the page, the video and moment if any, and the device and browser
-- [ ] Studio → Feedback lists them for JimBob and Ruben (new, seen, done); each can become a backlog story
-- [ ] Turned off with a setting when the beta ends
+- [x] "Send feedback" in the avatar menu (and on phones): a short note, optional screenshot, sent with the page, the video and moment if any, and the device and browser
+- [x] Studio → Feedback lists them for JimBob and Ruben (new, seen, done); each can become a backlog story
+- [x] Turned off with a setting when the beta ends
 
 ### MBJ-806 — Import the whole channel
 
@@ -1666,15 +1666,15 @@ Acceptance criteria:
 
 ### MBJ-814 — Unwatched filter and binge queue
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-212, MBJ-803
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-212, MBJ-803
 
 As a viewer, I want to see what I haven't watched and play it all back to back.
 
 Acceptance criteria:
-- [ ] Filter chips on Videos: Unwatched, In progress, Watched (from watch progress; account when signed in, browser otherwise)
-- [ ] Binge queue: an automatic playlist of everything you haven't finished, in-progress first then oldest to newest (or newest first), that plays with Up next and autoplay, in Listen only too
-- [ ] Mark as watched / unwatched from a video's menu; finishing a video (last 30s) marks it watched
-- [ ] Counts on the chips and a "Keep watching" row on the Videos page
+- [x] Filter chips on Videos: Unwatched, In progress, Watched (from watch progress; account when signed in, browser otherwise)
+- [x] Binge queue: an automatic playlist of everything you haven't finished, in-progress first then oldest to newest (or newest first), that plays with Up next and autoplay, in Listen only too
+- [x] Mark as watched / unwatched from a video's menu; finishing a video (last 30s) marks it watched
+- [x] Counts on the chips and a "Keep watching" row on the Videos page
 
 ### MBJ-815 — Technical SEO
 

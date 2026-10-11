@@ -46,7 +46,7 @@ MBJ-106,Account settings,Accounts & memberships,Phase 1 — VOD platform,Must,M,
 - Notifications: per-type on/off for in-site, push, and email (replaces the scattered toggles)
 - Membership shows tier, renewal date, and manage/cancel once MBJ-104 lands; before that it shows Free and what paid tiers include
 - Account menu in the top bar links here; works at phone width",MBJ-101
-MBJ-107,Owned email list,Accounts & memberships,Phase 1 — VOD platform,Must,S,To do,"As JimBob, I want my audience's contact info so no platform can take my audience away.","- Marketing opt-in checkbox at signup, stored with timestamp
+MBJ-107,Owned email list,Accounts & memberships,Phase 1 — VOD platform,Must,S,In progress,"As JimBob, I want my audience's contact info so no platform can take my audience away.","- Marketing opt-in checkbox at signup, stored with timestamp
 - Admin can export opted-in users as CSV from Studio
 - Unsubscribe link handling documented
 - Start from the existing Shopify newsletter list (export from Shopify customers who accepted marketing)","MBJ-101, MBJ-102"
@@ -88,7 +88,7 @@ MBJ-114,Sending email (ADR),Accounts & memberships,Phase 1 — VOD platform,Must
 - Plain branded templates: verify email, reset password, email changed, new sign-in, account deleted
 - Bounces and complaints recorded; bounced addresses stop getting mail
 - Server tests never send real email (a stub records what would have been sent)",
-MBJ-115,Welcome steps,Accounts & memberships,Phase 1 — VOD platform,Should,S,To do,"As a new member, I want a quick start that makes the site mine without forcing anything.","- After sign-up: add an avatar, pick notifications (live alerts on by default), link YouTube (MBJ-215), see membership options
+MBJ-115,Welcome steps,Accounts & memberships,Phase 1 — VOD platform,Should,S,In progress,"As a new member, I want a quick start that makes the site mine without forcing anything.","- After sign-up: add an avatar, pick notifications (live alerts on by default), link YouTube (MBJ-215), see membership options
 - Every step can be skipped; a checklist on the profile shows what's left
 - Ends on the page they signed up from, or the latest video",MBJ-108
 MBJ-116,Public profile,Accounts & memberships,Phase 1 — VOD platform,Should,M,Done,"As a viewer, I want to see who someone in chat is; as a member, I want a page that shows I'm part of the community.","- `/@username` page: avatar, display name, bio, links, joined date, tier badge, and badges/level once MBJ-602 lands
@@ -470,7 +470,7 @@ MBJ-820,MVP end-to-end test with JimBob and beta testers,Library & community,Pha
 - Live: ~5 s delay, rewind and Back to LIVE, Listen, fullscreen, chat (mentions, replies, highlights, search), a super chat from the $ beside Send showing colored in the chat and in Studio → Super chats
 - Money: join Plus in the page, the locked video opens, upgrade to Premium, add a card in Account → Payment methods, cancel in Manage billing
 - Results recorded per check on the shared beta test checklist; every failure becomes a story or a fix","MBJ-114, MBJ-102, MBJ-104, MBJ-109, MBJ-310"
-MBJ-819,Beta feedback inside the site,Library & community,Phase 1 — VOD platform,Should,S,To do,"As a beta tester, I want to report a problem or idea from the page I'm on, without finding another place to write it.","- ""Send feedback"" in the avatar menu (and on phones): a short note, optional screenshot, sent with the page, the video and moment if any, and the device and browser
+MBJ-819,Beta feedback inside the site,Library & community,Phase 1 — VOD platform,Should,S,Done,"As a beta tester, I want to report a problem or idea from the page I'm on, without finding another place to write it.","- ""Send feedback"" in the avatar menu (and on phones): a short note, optional screenshot, sent with the page, the video and moment if any, and the device and browser
 - Studio → Feedback lists them for JimBob and Ruben (new, seen, done); each can become a backlog story
 - Turned off with a setting when the beta ends",MBJ-101
 MBJ-806,Import the whole channel,Library & community,Phase 4 — Owned live + audio,Should,M,In progress,"As the operator, I want to load JimBob's full library in one run.","- Import from a Google Takeout folder (match by YouTube ID from the metadata) or the channel list
@@ -501,7 +501,7 @@ MBJ-813,Schedule calendar with export,Library & community,Phase 1 — VOD platfo
 - Export: Add to calendar per event (Google, Apple, Outlook via an .ics file) and a subscribe link (webcal/ICS feed) that keeps a viewer's calendar updated automatically
 - Remind me: push and in-site notification before an event starts (MBJ-214), and at go-live
 - Feeds the live indicator's ""Next stream"" (MBJ-805) and can post an announcement to Posts (MBJ-804)",
-MBJ-814,Unwatched filter and binge queue,Library & community,Phase 1 — VOD platform,Should,S,To do,"As a viewer, I want to see what I haven't watched and play it all back to back.","- Filter chips on Videos: Unwatched, In progress, Watched (from watch progress; account when signed in, browser otherwise)
+MBJ-814,Unwatched filter and binge queue,Library & community,Phase 1 — VOD platform,Should,S,Done,"As a viewer, I want to see what I haven't watched and play it all back to back.","- Filter chips on Videos: Unwatched, In progress, Watched (from watch progress; account when signed in, browser otherwise)
 - Binge queue: an automatic playlist of everything you haven't finished, in-progress first then oldest to newest (or newest first), that plays with Up next and autoplay, in Listen only too
 - Mark as watched / unwatched from a video's menu; finishing a video (last 30s) marks it watched
 - Counts on the chips and a ""Keep watching"" row on the Videos page","MBJ-212, MBJ-803"

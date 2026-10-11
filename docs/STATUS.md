@@ -314,9 +314,28 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   Studio → Account email to preview each one and send a test. Off until the Resend keys are on Render.
 - Tiers enforced on the server for video, chat, comments, and the live WebSocket (the socket knows you from
   the session cookie).
+- **Five quick wins (2026-10-11):**
+  - **Timeouts** (MBJ-705): Studio → Members → Time out… for this stream, 1 week, 2 weeks or until a date, with a
+    reason only staff see. The member stays signed in and can watch and like; the chat and comment boxes say when
+    it ends, and a super chat's message is dropped. Ends by itself or with End timeout. Reports and name cards have
+    a "Time out or ban" link straight to the member. "This stream" needs a live stream and is untested against a
+    real one.
+  - **Beta feedback** (MBJ-819): account menu → Send feedback (note, page, video and moment, device, optional
+    screenshot); Studio → Feedback (new, seen, done; Copy as a backlog story). `FEEDBACK=off` on Render ends it.
+  - **Email list** (MBJ-107): a news checkbox at sign-up (unticked by default) and a switch in Account settings;
+    Studio → Email shows the count and downloads a CSV with each person's unsubscribe link. Only confirmed emails
+    are on the list. **Left for Ruben:** export Shopify → Customers → Export (CSV), then
+    `npm run import:newsletter -- <file> --live`. Sending to the list from the site is MBJ-709.
+  - **Unwatched and binge queue** (MBJ-814): Unwatched / In progress / Watched chips with counts, a Keep watching
+    row, "Play all you haven't finished" (in progress first, then oldest to newest, or newest first when the
+    page is sorted that way), and Mark as watched on a video's page. Videos with no recorded length can't be
+    marked or count as watched. Not done: marking from a card's menu on the Videos page.
+  - **Welcome steps** (MBJ-115): after sign-up, a skippable dialog (confirm email, notifications on this device,
+    link YouTube, membership); Account settings keeps "Finish setting up" until done or hidden. Not done: adding
+    an avatar (needs Edit profile, MBJ-117) and live alerts (there's no live notification yet).
 - **Studio has tabs (2026-10-10):** Overview (the numbers, a "Needs attention" list with links, a members snapshot, top
   chatters), Live (go live + super chats), Videos (content table + playlists), Add videos, Library uploader, Members (list + linked
-  accounts), Reports, Email. Each tab has its own address (`/studio/members` …), so refresh and shared links work;
+  accounts), Reports, Feedback, Email. Each tab has its own address (`/studio/members` …), so refresh and shared links work;
   tabs show a count when something is waiting (open reports, link requests, failed imports), and only the open tab
   loads its data. A Money tab (members and revenue) comes with MBJ-703; editing emails and sending to groups from the Email tab is MBJ-709.
 - **Studio → Members (MBJ-705, first part, 2026-10-10):** every account, most recently active first, with search

@@ -132,7 +132,7 @@ export default function Home() {
           </div>
           {bingeHref && queue.length > 1 && (
             <Link className="text-btn binge-link" to={bingeHref}>
-              ▶ Play all {queue.length} unwatched
+              ▶ Play all {queue.length} you haven’t finished
             </Link>
           )}
         </div>
