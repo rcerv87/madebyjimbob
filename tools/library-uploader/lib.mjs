@@ -75,6 +75,26 @@ export function matchFile(name, { csv, byTitle }) {
   return same?.length === 1 ? same[0] : null;
 }
 
+// Videos that were never on YouTube go in a folder with this name inside the library folder (any depth, any
+// case); each becomes a new draft on the site instead of waiting in needs-review.txt.
+export const SITE_ONLY_DIR = 'Not on YouTube';
+// `where`: the file's path inside the library folder (for a video inside a zip, the zip's path).
+export const isSiteOnly = (where) =>
+  String(where)
+    .split(/[\\/]/)
+    .slice(0, -1)
+    .some((part) => part.trim().toLowerCase() === SITE_ONLY_DIR.toLowerCase());
+
+// A starting title from a file name: "2019_03_02 Art-stream (final).mp4" → "2019 03 02 Art-stream (final)".
+export const titleFromName = (name) =>
+  String(name)
+    .split(/[\\/]/)
+    .pop()
+    .replace(VIDEO, '')
+    .replace(/[_\s]+/g, ' ')
+    .trim()
+    .slice(0, 200) || 'Untitled video';
+
 // The uploader's id for a source file: the zip part (or folder path), the entry, and its size.
 export const fileKey = (container, entry, size) => `${container}|${entry}|${size}`;
 

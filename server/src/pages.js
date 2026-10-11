@@ -104,7 +104,7 @@ export async function pageMeta(pathname) {
   const watch = p.match(/^\/watch\/(\d{1,18})$/);
   if (watch) {
     const { rows } = await pool.query(
-      'SELECT id, title, description, stream_uid, duration_s, published_at FROM videos WHERE id = $1',
+      'SELECT id, title, description, stream_uid, duration_s, published_at FROM videos WHERE id = $1 AND NOT draft',
       [watch[1]],
     );
     const v = rows[0];

@@ -23,6 +23,9 @@ import {
   ffmpegArgs,
   masterPlaylist,
   duration,
+  SITE_ONLY_DIR,
+  isSiteOnly,
+  titleFromName,
 } from './lib.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -176,13 +179,27 @@ async function scan(folder) {
         if (isMetadataCsv(e.name))
           for (const [k, v] of takeoutIds(await readZipText(file, e).catch(() => ''))) csv.set(k, v);
         else if (VIDEO.test(e.name))
-          videos.push({ key: fileKey(rel, e.name, e.size), name: e.name, size: e.size, zip: file, entry: e });
+          videos.push({
+            key: fileKey(rel, e.name, e.size),
+            name: e.name,
+            size: e.size,
+            zip: file,
+            entry: e,
+            where: rel,
+          });
       }
     } else if (isMetadataCsv(file)) {
       for (const [k, v] of takeoutIds(fs.readFileSync(file, 'utf8'))) csv.set(k, v);
     } else if (VIDEO.test(file)) {
-      const { size } = fs.statSync(file);
-      videos.push({ key: fileKey('', rel, size), name: rel, size, path: file });
+      const { size, mtime } = fs.statSync(file);
+      videos.push({
+        key: fileKey('', rel, size),
+        name: rel,
+        size,
+        path: file,
+        where: rel,
+        recordedAt: mtime,
+      });
     }
   }
   return { videos, csv };
@@ -313,10 +330,18 @@ async function processVideo(item, match, folder, n, total) {
   const label = `[${n}/${total}] ${match.title || item.name}`;
   const { data: start } = await api('/studio/library/uploads', {
     method: 'POST',
-    body: { youtubeId: match.youtubeId, fileKey: item.key, title: match.title, sizeBytes: item.size },
+    body: match.siteOnly
+      ? {
+          siteOnly: true,
+          fileKey: item.key,
+          title: match.title,
+          sizeBytes: item.size,
+          recordedAt: item.recordedAt,
+        }
+      : { youtubeId: match.youtubeId, fileKey: item.key, title: match.title, sizeBytes: item.size },
   });
   if (start.done) return 'already on the site';
-  const work = path.join(folder, WORK_DIR, match.youtubeId);
+  const work = path.join(folder, WORK_DIR, match.youtubeId || `site-${start.uploadId}`);
   fs.rmSync(work, { recursive: true, force: true });
   fs.mkdirSync(work, { recursive: true });
   try {
@@ -366,6 +391,7 @@ async function processVideo(item, match, folder, n, total) {
       method: 'POST',
       body: { durationS: info.durationS },
     });
+    if (fin.draft) return 'uploaded as a draft; title and publish it in Studio → Videos';
     return fin.videoId
       ? 'on the site (replaced the old copy)'
       : 'uploaded; the site is adding its chat and comments';
@@ -401,6 +427,8 @@ async function main() {
       : 'Using the processor (no NVIDIA card found; slower).',
   );
   const stateFile = path.join(folder, STATE_FILE);
+  // The place for videos that were never on YouTube, made for you so it's there to find.
+  fs.mkdirSync(path.join(folder, SITE_ONLY_DIR), { recursive: true });
 
   for (;;) {
     const state = loadJson(stateFile, { done: {}, failed: {} });
@@ -431,7 +459,10 @@ async function main() {
     let n = 0;
     for (const item of todo) {
       n += 1;
-      const match = matchFile(item.name, { csv, byTitle });
+      // A YouTube video if it matches one; otherwise a new site-only draft when it's in "Not on YouTube".
+      const match =
+        matchFile(item.name, { csv, byTitle }) ||
+        (isSiteOnly(item.where) ? { siteOnly: true, title: titleFromName(item.name) } : null);
       if (!match) {
         unmatched.push(item.name);
         continue;
@@ -440,7 +471,7 @@ async function main() {
         const result = await processVideo(item, match, folder, n, todo.length);
         endStatus();
         say(`✓ ${match.title || item.name}: ${result}`);
-        state.done[item.key] = match.youtubeId;
+        state.done[item.key] = match.youtubeId || 'site-only';
         delete state.failed[item.key];
       } catch (err) {
         endStatus();
@@ -456,11 +487,13 @@ async function main() {
     fs.writeFileSync(
       path.join(folder, 'needs-review.txt'),
       unmatched.length
-        ? `These ${unmatched.length} files couldn't be matched to a YouTube video. Ruben can match them in Studio → From files.\r\n\r\n${unmatched.join('\r\n')}\r\n`
+        ? `These ${unmatched.length} files couldn't be matched to a YouTube video, so they were not uploaded.\r\n\r\nIf a video was never on YouTube, move its file into the "${SITE_ONLY_DIR}" folder (inside this one) and it uploads as a new video.\r\nOtherwise send this list to Ruben; he can match them in Studio.\r\n\r\n${unmatched.join('\r\n')}\r\n`
         : 'Every video file was matched.\r\n',
     );
     if (unmatched.length)
-      say(`${unmatched.length} files couldn't be matched; see needs-review.txt in the folder.`);
+      say(
+        `${unmatched.length} files couldn't be matched; see needs-review.txt. Never on YouTube? Move them into "${SITE_ONLY_DIR}".`,
+      );
     if (has('once')) return;
     say(`All caught up. Checking the folder again in ${RESCAN_MIN} minutes (leave this window open).`);
     await sleep(RESCAN_MIN * 60000);

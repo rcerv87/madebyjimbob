@@ -39,6 +39,14 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
      (`node tools/library-uploader/publish.mjs`). The download needs Render's `LIBRARY_R2_*` to point at the same
      bucket as the local `.env` (the wizard says so if it can't find the file).
   3. Keep the import helper running on Ruben's PC so new videos get their chat and comments.
+  - **Videos that were never on YouTube (2026-10-10):** files in a `Not on YouTube` folder inside the library
+    folder (the program makes it) upload as new site-only videos. They arrive as **drafts** in Studio → Videos
+    (title from the file name, dated when the file was made), hidden from everyone but Studio accounts until
+    JimBob sets the title and access and presses Publish. Deleting one also deletes its files. Files outside
+    that folder that match nothing on YouTube are still only listed in `needs-review.txt`. Tested end to end on
+    this PC (uploader → draft → preview plays → publish → delete removes the files).
+    Still to come: description and thumbnail editing for site-only videos, and matching a needs-review file to
+    a YouTube video from Studio.
   4. Before real viewers: connect `live.madebyjimbob.app` to JimBob's bucket (domain move, MIGRATION.md step 6).
 
 - **Sign in with Google (MBJ-110, built 2026-10-10): needs the Google keys.** The button appears in the sign-in

@@ -1,5 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import StudioUploader from '../components/StudioUploader.jsx';
 
 const ready = {
@@ -19,7 +20,11 @@ describe('Studio → Library uploader', () => {
 
   test('walks through the steps: download, folder, start, and live progress', async () => {
     serve(ready);
-    render(<StudioUploader />);
+    render(
+      <MemoryRouter>
+        <StudioUploader />
+      </MemoryRouter>,
+    );
     expect(screen.getByText('Step 1 of 5: Before you start')).toBeTruthy();
     expect(await screen.findByText('jimbob')).toBeTruthy();
 
@@ -29,6 +34,7 @@ describe('Studio → Library uploader', () => {
 
     next('Make the folder');
     expect(screen.getByText('MADEbyJIMBOB Library')).toBeTruthy();
+    expect(screen.getByText('Not on YouTube')).toBeTruthy();
     next('Start it');
     expect(screen.getByText(/Windows protected your PC/)).toBeTruthy();
     next('Let it run');
@@ -43,7 +49,11 @@ describe('Studio → Library uploader', () => {
   test('remembers the step, and says so when the download or a password is missing', async () => {
     window.localStorage.setItem('mbj-uploader-step', '1');
     serve({ ...ready, download: null, hasPassword: false });
-    render(<StudioUploader />);
+    render(
+      <MemoryRouter>
+        <StudioUploader />
+      </MemoryRouter>,
+    );
     expect(screen.getByText('Step 2 of 5: Get the program')).toBeTruthy();
     expect(await screen.findByText(/needs to be published/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));

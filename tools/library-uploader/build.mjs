@@ -62,6 +62,8 @@ fs.writeFileSync(
     '3. Leave the window open. It makes the versions the site plays and uploads them, one video at a time, and',
     '   shows what it is doing. You can close it any time; it picks up where it left off next time.',
     '4. New files dropped in the folder later are picked up too (it checks every 10 minutes).',
+    '5. Videos that were never on YouTube: put them in the "Not on YouTube" folder inside "MADEbyJIMBOB Library"',
+    '   (the program makes it). They upload as drafts; give them a title and publish them in Studio → Videos.',
     '',
     'Videos it cannot match to a YouTube video are listed in "needs-review.txt" in the folder. Send that to Ruben.',
     'Keep the drive: it is your full-quality backup.',

@@ -4556,3 +4556,36 @@ a.text-btn {
     padding-right: 6px;
   }
 }
+
+/* ---------- studio: draft videos ---------- */
+.studio-drafts {
+  margin-bottom: 16px;
+}
+.draft-form {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+.draft-form input {
+  flex: 1 1 280px;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.draft-form select {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+.draft-form .error {
+  flex-basis: 100%;
+  margin: 0;
+}

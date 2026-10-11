@@ -16,6 +16,8 @@ import {
   masterPlaylist,
   isMetadataCsv,
   VIDEO,
+  isSiteOnly,
+  titleFromName,
 } from '../../tools/library-uploader/lib.mjs';
 
 // A small zip, stored or deflated, the way Takeout writes them.
@@ -171,5 +173,25 @@ describe('converting', () => {
     assert.match(m, /RESOLUTION=1280x720[^\n]*\n720p\/index\.m3u8/);
     assert.match(m, /RESOLUTION=640x360[^\n]*\n360p\/index\.m3u8/);
     assert.doesNotMatch(masterPlaylist({ width: 1280, height: 720, hasAudio: false }), /listen/);
+  });
+});
+
+describe('videos that were never on YouTube', () => {
+  test('only files inside a "Not on YouTube" folder count, at any depth and in any case', () => {
+    assert.equal(isSiteOnly('Not on YouTube\\2019_art.mp4'), true);
+    assert.equal(isSiteOnly('not on youtube/old/2019_art.mp4'), true);
+    assert.equal(isSiteOnly('extras/Not On YouTube/clips.zip'), true, 'a zip in the folder, too');
+    assert.equal(isSiteOnly('2019_art.mp4'), false);
+    assert.equal(isSiteOnly('takeout-001.zip'), false);
+    assert.equal(isSiteOnly('Not on YouTube.mp4'), false, 'a file with that name is not the folder');
+  });
+
+  test('the starting title comes from the file name', () => {
+    assert.equal(
+      titleFromName('Not on YouTube\\2019_03_02  Art-stream (final).mp4'),
+      '2019 03 02 Art-stream (final)',
+    );
+    assert.equal(titleFromName('a/b/clip.MKV'), 'clip');
+    assert.equal(titleFromName('___.mp4'), 'Untitled video');
   });
 });
