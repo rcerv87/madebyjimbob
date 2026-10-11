@@ -5,7 +5,7 @@ import ChatHelp from './ChatHelp.jsx';
 import ChatOptions from './ChatOptions.jsx';
 import { favoriteMap } from '../favorites.js';
 import { useSearchParams } from 'react-router-dom';
-import { api, formatTime } from '../api.js';
+import { api, formatTime, timeoutNote } from '../api.js';
 
 const WINDOW_MS = 120_000;
 const VISIBLE = 150;
@@ -493,6 +493,7 @@ export default function ChatPanel({
       session.user
         ? {
             me: session.user.username,
+            staff: Boolean(session.user.isAdmin),
             onChanged: refreshUser,
             premium: session.user.tier === 'premium',
             favorites: favoriteMap(session.user),
@@ -816,7 +817,11 @@ export default function ChatPanel({
           }}
           onKeyDown={onKeyDown}
           onBlur={() => setSuggest({ items: [], index: 0 })}
-          placeholder={session.user ? `Chat as ${session.user.username}` : 'Sign in to chat'}
+          placeholder={
+            timeoutNote(session.user) ||
+            (session.user ? `Chat as ${session.user.username}` : 'Sign in to chat')
+          }
+          disabled={Boolean(timeoutNote(session.user))}
           aria-label="Chat message"
           maxLength={200}
           autoComplete="off"

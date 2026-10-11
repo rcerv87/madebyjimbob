@@ -132,3 +132,97 @@ test('staff and yourself can’t be banned', async () => {
   const me = await find('test_admin');
   assert.equal((await post(`/studio/members/${me.id}/ban`, { reason: 'oops' })).status, 409);
 });
+
+test('a timeout stops chat, comments and super chat messages, but not watching or liking', async () => {
+  const token = await signIn(call, 'hothead');
+  const { id } = await find('hothead');
+  const say = () => post(`/videos/${videoId}/chat`, { text: 'hello', offsetMs: 1000 }, token);
+  const timeout = (body) => post(`/studio/members/${id}/timeout`, body);
+
+  assert.equal((await timeout({ length: 'week' })).status, 400, 'needs a reason');
+  assert.equal((await timeout({ length: 'forever', reason: 'x' })).status, 400);
+  assert.equal((await timeout({ length: 'custom', until: 'soon', reason: 'x' })).status, 400);
+  assert.equal(
+    (await timeout({ length: 'custom', until: new Date(Date.now() - 1000).toISOString(), reason: 'x' }))
+      .status,
+    400,
+    'not in the past',
+  );
+  const noStream = await timeout({ length: 'stream', reason: 'x' });
+  assert.equal(noStream.status, 409);
+  assert.match(noStream.data.error, /No stream is live/);
+
+  const r = await timeout({ length: 'week', reason: 'Insults in chat' });
+  assert.equal(r.status, 200);
+  const days = (new Date(r.data.member.timeoutUntil) - Date.now()) / 86400000;
+  assert.ok(days > 6.99 && days < 7.01, `about a week, got ${days}`);
+  assert.equal(r.data.member.timeoutReason, 'Insults in chat');
+
+  const me = (await call('/me', { token })).data.user;
+  assert.ok(me.timeoutUntil, 'still signed in, and told when it ends');
+  assert.equal(me.timeoutReason, undefined, 'the reason is for staff only');
+  const refused = await say();
+  assert.equal(refused.status, 403);
+  assert.match(refused.data.error, /timed out/);
+  assert.equal(refused.data.timeoutUntil, me.timeoutUntil);
+  assert.equal((await post(`/videos/${videoId}/comments`, { text: 'hello' }, token)).status, 403);
+  assert.equal((await call(`/videos/${videoId}`, { token })).status, 200, 'can still watch');
+  assert.equal((await post(`/videos/${videoId}/vote`, { value: 1 }, token)).status, 200, 'can still like');
+  assert.equal((await list('?filter=timedout')).total, 1);
+
+  // A custom end, then ended early.
+  const until = new Date(Date.now() + 3 * 86400000).toISOString();
+  const custom = await timeout({ length: 'custom', until, reason: 'Extended' });
+  assert.equal(new Date(custom.data.member.timeoutUntil).toISOString(), until);
+  const ended = await call(`/studio/members/${id}/timeout`, { method: 'DELETE', token: admin });
+  assert.equal(ended.data.member.timeoutUntil, null);
+  assert.equal((await call('/me', { token })).data.user.timeoutUntil, null);
+  assert.equal((await say()).status, 200, 'can post again');
+
+  // One that has run out no longer counts.
+  await pool.query(
+    `UPDATE users SET timeout_until = now() - interval '1 minute', timeout_reason = 'old' WHERE id = $1`,
+    [id],
+  );
+  assert.equal((await find('hothead')).timeoutUntil, null);
+  assert.equal((await list('?filter=timedout')).total, 0);
+
+  const { rows } = await pool.query(
+    `SELECT action, reason, duration_s IS NOT NULL AS timed FROM mod_actions WHERE target_user_id = $1 ORDER BY id`,
+    [id],
+  );
+  assert.deepEqual(rows, [
+    { action: 'timeout', reason: 'Insults in chat', timed: true },
+    { action: 'timeout', reason: 'Extended', timed: true },
+    { action: 'untimeout', reason: null, timed: false },
+  ]);
+});
+
+test('"this stream" timeouts end when the stream does; staff can’t be timed out', async () => {
+  await signIn(call, 'stream_pest');
+  const { id } = await find('stream_pest');
+  // As timeoutMember stores it for a live stream (there is no live stream in tests).
+  await pool.query(
+    `UPDATE users SET timeout_until = now() + interval '12 hours', timeout_reason = 'spam', timeout_stream = 'rec-77'
+     WHERE id = $1`,
+    [id],
+  );
+  const during = await find('stream_pest');
+  assert.equal(during.timeoutThisStream, true);
+  const { saveReplay } = await import('../src/live.js');
+  await saveReplay({ id: 'rec-other', live: false, durationS: 10 }).catch(() => {});
+  assert.ok((await find('stream_pest')).timeoutUntil, 'another stream ending changes nothing');
+  await saveReplay({ id: 'rec-77', live: false, durationS: 10 }).catch(() => {});
+  assert.equal((await find('stream_pest')).timeoutUntil, null, 'lifted when that stream ended');
+
+  await signIn(call, 'a_second_mod');
+  const mod = await find('a_second_mod');
+  await post(`/studio/members/${mod.id}/role`, { role: 'mod' });
+  const r = await post(`/studio/members/${mod.id}/timeout`, { length: 'week', reason: 'oops' });
+  assert.equal(r.status, 409);
+  const self = await find('test_admin');
+  assert.equal(
+    (await post(`/studio/members/${self.id}/timeout`, { length: 'week', reason: 'x' })).status,
+    409,
+  );
+});

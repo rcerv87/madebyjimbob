@@ -369,6 +369,12 @@ export async function liveVideo(recording) {
 // A finished recording: its video gets its length and becomes a replay (once). Returns the id, or null if done before.
 export async function saveReplay(recording) {
   if (!recording?.id || recording.live) return null;
+  // Timeouts given "for this stream" end with it (MBJ-705). Straight SQL: members.js imports this file.
+  await pool.query(
+    `UPDATE users SET timeout_until = NULL, timeout_reason = NULL, timeout_stream = NULL, timeout_by = NULL
+     WHERE timeout_stream = $1`,
+    [String(recording.id)],
+  );
   await liveVideo(recording);
   const { rows } = await pool.query(
     `UPDATE videos SET duration_s = $2 WHERE live_recording_id = $1 AND duration_s IS DISTINCT FROM $2 RETURNING id`,

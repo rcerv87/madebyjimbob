@@ -72,6 +72,16 @@ export const count = (n, noun, plural = `${noun}s`) => `${compact(n)} ${Number(n
 
 export const TIER_LABEL = { free: 'Free', plus: 'Plus', premium: 'Premium' };
 
+// "Oct 18, 3:00 PM" in the viewer's own time zone.
+export const dateTime = (value) =>
+  new Date(value).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+// What a timed-out member sees in the chat and comment boxes (MBJ-705), or null when they can post.
+export const timeoutNote = (user) =>
+  user?.timeoutUntil && new Date(user.timeoutUntil) > new Date()
+    ? `You’re timed out until ${dateTime(user.timeoutUntil)}. You can still watch and like.`
+    : null;
+
 // Splits text into plain parts and typed timestamps ("1:04:32", "12:05") so they can be made clickable.
 // Same rule as server/src/ingest/timestamps.js.
 const STAMP = /(?<![\d:])(?:(\d{1,2}):)?([0-5]?\d):([0-5]\d)(?![\d:])/g;

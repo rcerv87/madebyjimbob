@@ -58,7 +58,15 @@ import accountRouter from './account.js';
 import { viewerKey, recordView } from './views.js';
 import { findProfile, profileFor } from './profiles.js';
 import { hasBlocked, hiddenBy, fileReport, listReports } from './blocks.js';
-import { listMembers, setRole, banMember, unbanMember, recentActions } from './members.js';
+import {
+  listMembers,
+  setRole,
+  banMember,
+  unbanMember,
+  timeoutMember,
+  endTimeout,
+  recentActions,
+} from './members.js';
 import { favoritesOf, canFavorite } from './favorites.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
@@ -147,6 +155,16 @@ const isId = (value) => /^\d{1,18}$/.test(String(value));
 const isTier = (value) => typeof value === 'string' && Object.hasOwn(TIER_RANK, value);
 // Text from a JSON body; anything else (an object, a number) counts as empty rather than "[object Object]".
 const textField = (value) => (typeof value === 'string' ? value : '');
+
+// A timed-out member (Studio → Members) can watch and like but not post. Sends the refusal and returns true.
+function refusedForTimeout(user, res) {
+  if (!user?.timeoutUntil) return false;
+  res.status(403).json({
+    error: 'You’re timed out, so you can’t post right now. You can still watch and like.',
+    timeoutUntil: user.timeoutUntil,
+  });
+  return true;
+}
 
 // Returns the video row, or null for unknown or malformed ids.
 async function findVideo(id) {
@@ -783,6 +801,7 @@ app.post(
   wrap(async (req, res) => {
     const user = await currentUser(req);
     if (!user) return res.status(401).json({ error: 'Sign in to chat.' });
+    if (refusedForTimeout(user, res)) return;
     const video = await watchableVideo(req, res, user);
     if (!video) return;
 
@@ -925,6 +944,7 @@ app.post(
   wrap(async (req, res) => {
     const user = await currentUser(req);
     if (!user) return res.status(401).json({ error: 'Sign in to comment.' });
+    if (refusedForTimeout(user, res)) return;
     const video = await watchableVideo(req, res, user);
     if (!video) return;
 
@@ -1216,7 +1236,8 @@ app.post(
     return superchatCheckout(user, {
       videoId,
       amountCents: req.body?.amountCents,
-      message: filterText(textField(req.body?.message)).slice(0, 200),
+      // A timed-out member can still support the stream, but their words don't go in the chat.
+      message: user.timeoutUntil ? '' : filterText(textField(req.body?.message)).slice(0, 200),
       returnTo: req.body?.returnTo,
       site: baseURL,
       embedded: Boolean(req.body?.embedded),
@@ -1557,6 +1578,20 @@ app.post(
   memberRoute(async (req) => ({
     member: await banMember(req.user, req.params.id, textField(req.body?.reason)),
   })),
+);
+app.post(
+  '/api/studio/members/:id/timeout',
+  memberRoute(async (req) => ({
+    member: await timeoutMember(req.user, req.params.id, {
+      length: req.body?.length,
+      until: req.body?.until,
+      reason: textField(req.body?.reason),
+    }),
+  })),
+);
+app.delete(
+  '/api/studio/members/:id/timeout',
+  memberRoute(async (req) => ({ member: await endTimeout(req.user, req.params.id) })),
 );
 app.delete(
   '/api/studio/members/:id/ban',

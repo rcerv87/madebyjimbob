@@ -78,7 +78,10 @@ export default function StudioReports() {
                 <Link className="small" to={where(r)}>
                   See it in the video
                 </Link>
-              )}
+              )}{' '}
+              <Link className="small" to={`/studio/members?q=${encodeURIComponent(r.target)}`}>
+                Time out or ban
+              </Link>
             </div>
             <div className="form-actions">
               {status === 'open' ? (

@@ -1,26 +1,47 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { api, count, timeAgo, TIER_LABEL } from '../api.js';
+import { Link, useSearchParams } from 'react-router-dom';
+import { api, count, dateTime, timeAgo, TIER_LABEL } from '../api.js';
 
 const ROLE_LABEL = { viewer: 'Member', mod: 'Mod', admin: 'Admin' };
 const FILTERS = [
   ['all', 'Everyone'],
   ['staff', 'Mods and admins'],
   ['new', 'New this week'],
+  ['timedout', 'Timed out'],
   ['banned', 'Banned'],
 ];
-const ACTION = { role: 'changed the role of', ban: 'banned', unban: 'unbanned' };
+const ACTION = {
+  role: 'changed the role of',
+  ban: 'banned',
+  unban: 'unbanned',
+  timeout: 'timed out',
+  untimeout: 'ended the timeout of',
+};
+const LENGTHS = [
+  ['stream', 'This stream'],
+  ['week', '1 week'],
+  ['twoweeks', '2 weeks'],
+  ['custom', 'Until a date…'],
+];
+// <input type="datetime-local"> wants local time without a zone: "2026-10-18T15:00".
+const localInput = (date) => {
+  const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return d.toISOString().slice(0, 16);
+};
 
-// Studio → Members (MBJ-705): find a member, change their role (admins open Studio), ban or unban them.
-// Timeouts, highlights and hiding a member's messages come with the moderation tools (MBJ-204).
+// Studio → Members (MBJ-705): find a member, change their role (admins open Studio), time them out (can't post,
+// can still watch and like), ban or unban them. `?q=<username>` opens with that member found (from a report or a
+// name card). Highlights and hiding a member's messages come with the moderation tools (MBJ-204).
 export default function StudioMembers({ user }) {
-  const [q, setQ] = useState('');
-  const [search, setSearch] = useState('');
+  const [params] = useSearchParams();
+  const [q, setQ] = useState(() => params.get('q') || '');
+  const [search, setSearch] = useState(() => params.get('q') || '');
   const [filter, setFilter] = useState('all');
   const [tier, setTier] = useState('');
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [banning, setBanning] = useState(null); // { id, reason }
+  const [timing, setTiming] = useState(null); // { id, length, until, reason }
 
   // Search as they type, but not on every key.
   useEffect(() => {
@@ -63,6 +84,7 @@ export default function StudioMembers({ user }) {
       const { member } = await call();
       setData((old) => ({ ...old, members: old.members.map((m) => (m.id === member.id ? member : m)) }));
       setBanning(null);
+      setTiming(null);
       fetchPage()
         .then((d) => setData((old) => ({ ...old, actions: d.actions })))
         .catch(() => {});
@@ -77,6 +99,20 @@ export default function StudioMembers({ user }) {
     act(() => api(`/studio/members/${banning.id}/ban`, { method: 'POST', body: { reason: banning.reason } }));
   };
   const unban = (m) => act(() => api(`/studio/members/${m.id}/ban`, { method: 'DELETE' }));
+  const timeOut = (e) => {
+    e.preventDefault();
+    act(() =>
+      api(`/studio/members/${timing.id}/timeout`, {
+        method: 'POST',
+        body: {
+          length: timing.length,
+          reason: timing.reason,
+          ...(timing.length === 'custom' && { until: new Date(timing.until).toISOString() }),
+        },
+      }),
+    );
+  };
+  const endTimeout = (m) => act(() => api(`/studio/members/${m.id}/timeout`, { method: 'DELETE' }));
 
   const members = data?.members || [];
   return (
@@ -133,6 +169,7 @@ export default function StudioMembers({ user }) {
                   <span className="badge ok">{m.adminByEmail ? 'Admin' : ROLE_LABEL[m.role]}</span>
                 )}
                 {m.bannedAt && <span className="badge bad">Banned</span>}
+                {m.timeoutUntil && <span className="badge bad">Timed out</span>}
                 <div className="muted small">
                   {m.email || 'No email'}
                   {m.email && !m.emailVerified && ' (not confirmed)'} · joined {timeAgo(m.createdAt)} ·{' '}
@@ -143,6 +180,55 @@ export default function StudioMembers({ user }) {
                   <div className="small">
                     Banned {timeAgo(m.bannedAt)}: {m.banReason}
                   </div>
+                )}
+                {m.timeoutUntil && (
+                  <div className="small">
+                    Timed out {m.timeoutThisStream ? 'for this stream' : `until ${dateTime(m.timeoutUntil)}`}:{' '}
+                    {m.timeoutReason}
+                  </div>
+                )}
+                {timing?.id === m.id && (
+                  <form className="ban-form" onSubmit={timeOut}>
+                    <select
+                      value={timing.length}
+                      onChange={(e) => setTiming({ ...timing, length: e.target.value })}
+                      aria-label={`How long to time out ${m.username}`}
+                    >
+                      {LENGTHS.map(([k, l]) => (
+                        <option key={k} value={k}>
+                          {l}
+                        </option>
+                      ))}
+                    </select>
+                    {timing.length === 'custom' && (
+                      <input
+                        type="datetime-local"
+                        value={timing.until}
+                        min={localInput(new Date())}
+                        onChange={(e) => setTiming({ ...timing, until: e.target.value })}
+                        aria-label="Ends"
+                        required
+                      />
+                    )}
+                    <input
+                      autoFocus
+                      value={timing.reason}
+                      onChange={(e) => setTiming({ ...timing, reason: e.target.value })}
+                      placeholder="Why? (only mods see this)"
+                      aria-label={`Why time out ${m.username}`}
+                      maxLength={500}
+                    />
+                    <button type="submit" className="primary-btn small" disabled={!timing.reason.trim()}>
+                      Time out {m.username}
+                    </button>
+                    <button type="button" className="text-btn small" onClick={() => setTiming(null)}>
+                      Cancel
+                    </button>
+                    <p className="muted small">
+                      They stay signed in and can watch and like, but can’t chat, comment, or put a message on
+                      a super chat until it ends. They see when it ends, not the reason.
+                    </p>
+                  </form>
                 )}
                 {banning?.id === m.id && (
                   <form className="ban-form" onSubmit={ban}>
@@ -184,6 +270,33 @@ export default function StudioMembers({ user }) {
                     ))}
                   </select>
                 )}
+                {m.timeoutUntil && !m.bannedAt && (
+                  <button type="button" className="text-btn" onClick={() => endTimeout(m)}>
+                    End timeout
+                  </button>
+                )}
+                {!m.bannedAt &&
+                  !m.timeoutUntil &&
+                  !you &&
+                  m.role === 'viewer' &&
+                  !m.adminByEmail &&
+                  timing?.id !== m.id && (
+                    <button
+                      type="button"
+                      className="text-btn"
+                      onClick={() => {
+                        setBanning(null);
+                        setTiming({
+                          id: m.id,
+                          length: 'week',
+                          until: localInput(new Date(Date.now() + 7 * 86400000)),
+                          reason: '',
+                        });
+                      }}
+                    >
+                      Time out…
+                    </button>
+                  )}
                 {m.bannedAt ? (
                   <button type="button" className="text-btn" onClick={() => unban(m)}>
                     Unban
@@ -196,7 +309,10 @@ export default function StudioMembers({ user }) {
                     <button
                       type="button"
                       className="text-btn danger-text"
-                      onClick={() => setBanning({ id: m.id, reason: '' })}
+                      onClick={() => {
+                        setTiming(null);
+                        setBanning({ id: m.id, reason: '' });
+                      }}
                     >
                       Ban…
                     </button>

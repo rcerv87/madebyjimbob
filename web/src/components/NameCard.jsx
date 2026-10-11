@@ -149,6 +149,12 @@ export default function NameCard({
                 View profile
               </Link>
             )}
+            {profile && moderation?.staff && (
+              // Studio accounts go straight to this member in Studio → Members (time out, ban, role).
+              <Link to={`/studio/members?q=${encodeURIComponent(profile)}`} onClick={() => setOpen(false)}>
+                Time out or ban
+              </Link>
+            )}
             {all.map((a) => (
               <button
                 key={a.label}
