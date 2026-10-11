@@ -37,6 +37,9 @@ process.env.HETZNER_API_TOKEN = '';
 process.env.R2_ACCOUNT_ID = '';
 process.env.B2_ENDPOINT = '';
 process.env.DVR_PREFIX = '';
+// Google sign-in off in tests (nothing ever goes to Google), whatever the local .env has.
+process.env.GOOGLE_CLIENT_ID = '';
+process.env.GOOGLE_CLIENT_SECRET = '';
 process.env.RESEND_API_KEY = '';
 process.env.EMAIL_FROM = '';
 process.env.RESEND_WEBHOOK_SECRET = `whsec_${Buffer.from('test-webhook-secret').toString('base64')}`;

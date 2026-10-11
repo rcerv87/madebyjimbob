@@ -41,6 +41,11 @@ services:
         sync: false
       - key: VAPID_PRIVATE_KEY
         sync: false
+      # Sign in with Google (MBJ-110): the OAuth client's id and secret. Without both, the button is hidden.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
       # Account email (ADR-012). Set all four by hand in Render → madebyjimbob → Environment.
       - key: RESEND_API_KEY
         sync: false

@@ -64,6 +64,39 @@ export const baseURL = (
   `http://localhost:${process.env.PORT || 3000}`
 ).replace(/\/+$/, '');
 
+// Sign in with Google (MBJ-110): on once both settings are there. The address to give Google is
+// <site>/api/auth/callback/google.
+export const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+
+// Is this username allowed and free? Returns the reason it isn't, or null. Used for Google sign-ups and
+// for the one-time "pick your username" step after one.
+export async function usernameProblem(name, { email, exceptUserId } = {}) {
+  if (!USERNAME_RE.test(name)) return 'Use 3–32 letters, numbers, or underscores.';
+  if (containsBannedWord(name)) return 'That username isn’t allowed. Please pick another.';
+  if (RESERVED.has(name.toLowerCase()) && !ADMIN_EMAILS.has(String(email || '').toLowerCase()))
+    return 'That username is reserved. Please pick another.';
+  const { rowCount } = await pool.query(
+    'SELECT 1 FROM users WHERE username_key = lower($1) AND id IS DISTINCT FROM $2',
+    [name, exceptUserId ?? null],
+  );
+  return rowCount ? 'That username is taken. Please pick another.' : null;
+}
+
+// A starting username for someone who joined through Google: their name without spaces plus a few digits
+// (never their email address), until they pick their own.
+export async function suggestUsername(fullName) {
+  const base = String(fullName || '')
+    .normalize('NFKD')
+    .replace(/[^A-Za-z0-9_]/g, '')
+    .slice(0, 24);
+  for (let i = 0; i < 20; i += 1) {
+    const stem = base.length >= 3 && i < 10 ? base : 'member';
+    const name = `${stem}${crypto.randomInt(1000, 10000)}`;
+    if (!(await usernameProblem(name))) return name;
+  }
+  return `member${crypto.randomInt(10 ** 9, 10 ** 10)}`;
+}
+
 const plugins = [
   username({
     minUsernameLength: 3,
@@ -126,6 +159,14 @@ export const auth = betterAuth({
       xp: { type: 'number', required: false, defaultValue: 0, input: false },
       // 'admin' opens Studio (npm run set-role); never settable by the user.
       role: { type: 'string', required: false, defaultValue: 'viewer', input: false },
+      // False for someone who joined through Google until they pick their own username.
+      usernameChosen: {
+        type: 'boolean',
+        required: false,
+        defaultValue: true,
+        input: false,
+        fieldName: 'username_chosen',
+      },
     },
     changeEmail: { enabled: true, updateEmailWithoutVerification: true },
   },
@@ -145,6 +186,11 @@ export const auth = betterAuth({
   },
   account: {
     modelName: 'accounts',
+    // Signing in with Google joins an existing account with the same email only when that account's email is
+    // confirmed (the library's default); otherwise someone could sign up with your address and wait for you.
+    accountLinking: { enabled: true },
+    // We only ask Google who you are, so its access tokens are never kept (see the account hook below).
+    updateAccountOnSignIn: false,
     fields: {
       userId: 'user_id',
       accountId: 'account_id',
@@ -203,6 +249,19 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
+          // Joined through Google (no username typed): start with a made-up one and ask them to pick.
+          if (!user.username) {
+            const picked = await suggestUsername(user.name);
+            return {
+              data: {
+                ...user,
+                username: picked.toLowerCase(),
+                displayUsername: picked,
+                name: picked,
+                usernameChosen: false,
+              },
+            };
+          }
           const name = String(user.username || '').toLowerCase();
           if (RESERVED.has(name) && !ADMIN_EMAILS.has(String(user.email).toLowerCase())) {
             throw new APIError('BAD_REQUEST', {
@@ -216,6 +275,15 @@ export const auth = betterAuth({
         after: async (user, ctx) => {
           await logSecurityEvent(user.id, 'account_created', requestOrigin(ctx?.headers));
         },
+      },
+    },
+    account: {
+      create: {
+        // Google's tokens aren't needed after sign-in, so they're never stored.
+        before: async (account) =>
+          account.providerId === 'credential'
+            ? undefined
+            : { data: { ...account, accessToken: null, refreshToken: null, idToken: null } },
       },
     },
     session: {
@@ -263,6 +331,16 @@ export const auth = betterAuth({
       '/verify-password': { window: 60 * 10, max: 10 },
     },
   },
+  ...(googleEnabled && {
+    socialProviders: {
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        // Always show Google's account chooser, so a shared computer doesn't sign in the last person.
+        prompt: 'select_account',
+      },
+    },
+  }),
   plugins,
 });
 
@@ -285,6 +363,8 @@ export function publicUser(u) {
     tier: isAdmin ? 'premium' : u.tier || 'free',
     xp: u.xp ?? 0,
     isAdmin,
+    // Joined through Google and still on the made-up username: the site asks them to pick one.
+    needsUsername: u.usernameChosen === false,
     email: hasEmail ? u.email : null,
     emailVerified: Boolean(u.emailVerified),
     // Ask them to confirm only when a confirmation email can actually be sent.

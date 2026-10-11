@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import express from 'express';
 import { fromNodeHeaders } from 'better-auth/node';
 import { pool } from './db.js';
-import { auth, baseURL, sessionUser } from './auth.js';
+import { auth, baseURL, sessionUser, usernameProblem } from './auth.js';
 import { sendEmail, normalizeEmail } from './email.js';
 import { maskEmail } from './emailTemplates.js';
 import { logSecurityEvent, requestOrigin } from './security.js';
@@ -39,6 +39,47 @@ async function requireUser(req, res, next) {
     next(err);
   }
 }
+
+// The one-time "pick your username" step after joining through Google (MBJ-110): `{ username }` sets it,
+// `{ keep: true }` keeps the made-up one. Either way it can't be changed here again.
+router.post(
+  '/username',
+  requireUser,
+  wrap(async (req, res) => {
+    if (!req.user.needsUsername) return res.status(409).json({ error: 'Your username is already set.' });
+    if (req.body?.keep === true) {
+      await pool.query('UPDATE users SET username_chosen = true WHERE id = $1', [req.user.id]);
+      return res.json({ username: req.user.username });
+    }
+    const name = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+    const problem = await usernameProblem(name, { email: req.user.email, exceptUserId: req.user.id });
+    if (problem) return res.status(400).json({ error: problem });
+    const db = await pool.connect();
+    try {
+      await db.query('BEGIN');
+      // The display name started as the made-up username, so it follows unless they already changed it.
+      await db.query(
+        `UPDATE users SET username = $2, username_key = lower($2), username_chosen = true, updated_at = now(),
+           display_name = CASE WHEN display_name = username THEN $2 ELSE display_name END
+         WHERE id = $1`,
+        [req.user.id, name],
+      );
+      // Anything they posted in the meantime carries the new name too.
+      await db.query('UPDATE chat_messages SET author_name = $2 WHERE user_id = $1', [req.user.id, name]);
+      await db.query('UPDATE comments SET author_name = $2 WHERE user_id = $1', [req.user.id, name]);
+      await db.query('COMMIT');
+    } catch (err) {
+      await db.query('ROLLBACK');
+      // Two people asking for the same name at once: the unique index decides.
+      if (err.code === '23505')
+        return res.status(400).json({ error: 'That username is taken. Please pick another.' });
+      throw err;
+    } finally {
+      db.release();
+    }
+    res.json({ username: name });
+  }),
+);
 
 // Every type/channel pair, true unless turned off.
 export function fullPrefs(stored = {}) {

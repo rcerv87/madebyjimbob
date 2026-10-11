@@ -11,6 +11,9 @@ they get `isAdmin: true` and see every tier.
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/auth/sign-up/email` | — | `{ email, username, name, password, callbackURL? }`. Username 3–32 `[A-Za-z0-9_]`, unique ignoring case, not reserved or rude; password 10–128 chars and not in a known breach. Signs in and emails a verification link (to `callbackURL`, e.g. `/?verified=1`). Errors are `{ code, message }`: `USERNAME_IS_ALREADY_TAKEN`, `USER_ALREADY_EXISTS`, `USERNAME_RESERVED`, `INVALID_USERNAME`, `PASSWORD_TOO_SHORT`, `PASSWORD_COMPROMISED`, … |
+| GET | `/sign-in-options` | — | `{ google }`: whether to show Continue with Google (on once `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set) |
+| POST | `/auth/sign-in/social` | — | `{ provider: "google", callbackURL, errorCallbackURL }` → `{ url, redirect }`: send the browser to `url`. Google returns to `/auth/callback/google`, which signs in (or creates the account) and redirects to `callbackURL`; a problem goes to `errorCallbackURL` with `?error=<code>` (`account_not_linked`: an account with that email exists and its email isn't confirmed) |
+| POST | `/account/username` | session | Once, for an account made through Google (`needsUsername` in `/me`): `{ username }` sets it (400 with the reason if it's taken, reserved, or not 3–32 letters, numbers, underscores), or `{ keep: true }` keeps the made-up one. 409 when the username is already set |
 | POST | `/auth/sign-in/username` | — | `{ username, password }` (any case). 401 `INVALID_USERNAME_OR_PASSWORD` |
 | POST | `/auth/sign-in/email` | — | `{ email, password }`. 401 `INVALID_EMAIL_OR_PASSWORD` |
 | POST | `/auth/sign-out` | session | Ends this session |
