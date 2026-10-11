@@ -5,6 +5,7 @@
 
 import crypto from 'crypto';
 import { pool } from './db.js';
+import { logger } from './logger.js';
 import { presign, s3Request, s3List } from '../live-recorder/r2put.mjs';
 
 // One bucket's settings from the environment, or null when any is missing. `names` are the prefixes to try for
@@ -219,8 +220,22 @@ export const UPLOADER_KEY = 'tools/MADEbyJIMBOB-Library-Uploader.zip';
 export async function uploaderStatus(user) {
   const store = libraryStore();
   let download = null;
+  // "Not there" (404) is ordinary: the program hasn't been published to that bucket. Anything else means this
+  // server can't use the library's bucket (a refused key, a wrong account), which would also stop uploads, so
+  // Studio says so.
+  let storageProblem = null;
   for (const place of allStores()) {
-    const head = await s3Request(place, 'HEAD', UPLOADER_KEY).catch(() => null);
+    const head = await s3Request(place, 'HEAD', UPLOADER_KEY).catch((err) => {
+      const code = String(err.message).match(/: (\d{3})\b/)?.[1];
+      if (code !== '404' && place === allStores()[0]) {
+        storageProblem =
+          code === '403' || code === '401'
+            ? `The video storage refused this site’s key (${code}). Uploads won’t work until the LIBRARY_R2 key on the server is fixed.`
+            : `The video storage couldn’t be reached (${code || String(err.message).slice(0, 80)}).`;
+        logger.warn({ err: err.message, bucket: place.bucket }, 'library storage check failed');
+      }
+      return null;
+    });
     if (head) {
       download = {
         url: presign(place, 'GET', UPLOADER_KEY, 3600),
@@ -250,6 +265,7 @@ export async function uploaderStatus(user) {
   const p = progress.rows[0];
   return {
     storageReady: Boolean(store),
+    storageProblem,
     // Where uploaded videos are served from (a public address, no secret): shows which bucket this server uses.
     storageHost: store ? new URL(store.publicUrl).host : null,
     download,

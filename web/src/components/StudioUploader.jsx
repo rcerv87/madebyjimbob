@@ -96,6 +96,11 @@ export default function StudioUploader() {
           {error}
         </p>
       )}
+      {status?.storageProblem && (
+        <p className="error" role="alert">
+          {status.storageProblem} Tell Ruben before you start.
+        </p>
+      )}
 
       <div className="wizard-body">
         <h3>
