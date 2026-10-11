@@ -26,6 +26,9 @@ import {
   SITE_ONLY_DIR,
   isSiteOnly,
   titleFromName,
+  STARTUP_FILE,
+  startupScript,
+  lockHeld,
 } from './lib.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -400,12 +403,103 @@ async function processVideo(item, match, folder, n, total) {
   }
 }
 
+// ---------- starting with Windows ----------
+
+// The Start file sits next to the app folder; the Startup folder is per person, so no admin rights are needed.
+const START_BAT = path.join(HERE, '..', 'Start MADEbyJIMBOB Library Uploader.bat');
+const startupPath = () =>
+  process.env.APPDATA &&
+  path.join(process.env.APPDATA, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', STARTUP_FILE);
+
+// Turns starting with Windows on or off; returns whether it's on now. Rewritten on every run while it's on, so
+// it keeps working after the uploader folder is moved.
+function setAutoStart(on) {
+  const file = startupPath();
+  if (!file) return false;
+  try {
+    if (on) {
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, startupScript(path.resolve(START_BAT)));
+    } else fs.rmSync(file, { force: true });
+    return on;
+  } catch (err) {
+    say(`Couldn't change starting with Windows: ${err.message}`);
+    return false;
+  }
+}
+
+// Asked once, the first time; the answer is remembered. `--autostart on|off` changes it later.
+async function chooseAutoStart() {
+  const flag = arg('autostart');
+  if (flag === 'on' || flag === 'off') {
+    config.autoStart = setAutoStart(flag === 'on');
+    saveJson(configFile, config);
+    say(
+      config.autoStart
+        ? 'This will start by itself when you turn on the PC and log in.'
+        : 'This will no longer start by itself. Double-click the Start file to run it.',
+    );
+    return flag;
+  }
+  if (config.autoStart === undefined && process.stdin.isTTY && !has('once')) {
+    console.log(
+      '\nAfter a restart or a power cut, should this start again by itself when you log in to Windows?',
+    );
+    const a = await ask('Start automatically? (Y/n): ');
+    config.autoStart = setAutoStart(!/^n/i.test(a));
+    saveJson(configFile, config);
+    say(
+      config.autoStart
+        ? 'OK. It will start by itself (minimized) when you turn on the PC and log in.'
+        : 'OK. After a restart, double-click the Start file to run it again.',
+    );
+  } else if (config.autoStart) setAutoStart(true);
+  return null;
+}
+
+// ---------- one at a time ----------
+
+// Two uploaders on the same folder would fight over the same files (double-click while one is already running
+// from startup). The lock holds the running one's process id; a stale lock from a power cut is ignored.
+function takeLock(folder) {
+  const file = path.join(folder, '.uploader-lock');
+  const alive = (pid) => {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch (err) {
+      return err.code === 'EPERM';
+    }
+  };
+  let text = '';
+  try {
+    text = fs.readFileSync(file, 'utf8');
+  } catch {
+    // no lock yet
+  }
+  if (lockHeld(text, alive, process.pid)) return false;
+  fs.writeFileSync(file, String(process.pid));
+  process.on('exit', () => {
+    try {
+      if (fs.readFileSync(file, 'utf8').trim() === String(process.pid)) fs.rmSync(file, { force: true });
+    } catch {
+      // already gone
+    }
+  });
+  return true;
+}
+
 // ---------- main ----------
 
 let ENCODER = 'x264';
 
 async function main() {
   console.log('MADEbyJIMBOB Library Uploader\n');
+  // Only turning starting with Windows on or off (the two helper files in the folder): do that and stop.
+  if (arg('autostart')) {
+    await chooseAutoStart();
+    return;
+  }
   if (spawnSync(FFMPEG, ['-version']).status !== 0) {
     console.log('ffmpeg is missing next to this program. Ask Ruben for the full uploader folder.');
     await ask('Press Enter to close.');
@@ -418,7 +512,18 @@ async function main() {
     const typed = await ask(`Where is the "${FOLDER_NAME}" folder? (e.g. E:\\${FOLDER_NAME}): `);
     if (typed && fs.existsSync(typed)) folder = typed;
   }
-  if (config.folder !== folder) saveJson(configFile, { ...config, site: SITE, folder });
+  if (config.folder !== folder) {
+    config.folder = folder;
+    config.site = SITE;
+    saveJson(configFile, config);
+  }
+  if (!takeLock(folder)) {
+    console.log('\nThe uploader is already running in another window (look for it on the taskbar).');
+    console.log('This window will close in 15 seconds.');
+    await sleep(15000);
+    process.exit(3); // the Start file doesn't restart after this
+  }
+  await chooseAutoStart();
   ENCODER = pickEncoder();
   say(`Folder: ${folder}`);
   say(

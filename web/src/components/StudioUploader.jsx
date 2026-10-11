@@ -227,6 +227,10 @@ export default function StudioUploader() {
                 If it asks where the folder is, type its location (for example E:\{FOLDER}) and press{' '}
                 <strong>Enter</strong>.
               </li>
+              <li>
+                It asks <strong>“Start automatically?”</strong> Press <strong>Enter</strong> for yes. Then
+                after a restart or a power cut it starts again by itself when you log in to Windows.
+              </li>
             </ol>
           </>
         )}
@@ -271,6 +275,12 @@ export default function StudioUploader() {
               <li>
                 You can close the window any time. Double-click the Start file again and it picks up where it
                 left off. Nothing is uploaded twice.
+              </li>
+              <li>
+                <strong>After a restart or a power cut</strong> it starts again by itself once you log in to
+                Windows (minimized, on the taskbar). The video it was in the middle of starts over; finished
+                ones are kept. To turn this off, double-click <strong>Stop starting automatically</strong> in
+                the uploader folder.
               </li>
               <li>New files you add to the folder later are found within 10 minutes.</li>
               <li>
