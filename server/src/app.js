@@ -26,7 +26,7 @@ import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
 import { pageMeta, renderPage } from './pages.js';
 import { toNodeHandler } from 'better-auth/node';
-import { auth, sessionUser, ADMIN_EMAILS, baseURL } from './auth.js';
+import { auth, sessionUser, ADMIN_EMAILS, baseURL, googleEnabled } from './auth.js';
 import {
   billingConfigured,
   plans,
@@ -298,6 +298,9 @@ app.get(
 );
 
 // ---------- account ----------
+// Which sign-in buttons to show (MBJ-110): Google appears once its keys are set.
+app.get('/api/sign-in-options', (_req, res) => res.json({ google: googleEnabled }));
+
 app.get(
   '/api/me',
   wrap(async (req, res) => {

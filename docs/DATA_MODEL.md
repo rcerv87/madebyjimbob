@@ -18,6 +18,7 @@ columns are added by the story noted.
 | tier | text | `free | plus | premium` — derived from entitlements after MBJ-104; never settable by the user |
 | youtube_channel_id | text | set when user links YouTube (MBJ-305) |
 | xp | int | never settable by the user |
+| username_chosen | boolean | false for an account made through Google until the member picks their username (MBJ-110); default true |
 | role | text | `viewer \| mod \| admin`; admin opens Studio (Studio → Members, or `npm run set-role`), never settable by the user |
 | banned_at, ban_reason, banned_by | timestamptz, text, bigint → users (set null) | set by Studio → Members (MBJ-705); while `banned_at` is set the account has no sessions and can't sign in |
 | deletion_requested_at | timestamptz | set by Delete my account; erased 30 days later unless they sign in (MBJ-118) |
@@ -44,7 +45,7 @@ Better Auth (MBJ-101, ADR-006) maps its models onto these snake_case tables in `
 
 ### accounts
 Sign-in methods per user: `provider_id = 'credential'` holds the password hash (Better Auth scrypt, or a POC `scrypt$salt$hash`
-that still verifies); Google/Apple rows come with MBJ-110.
+that still verifies); `provider_id = 'google'` rows (MBJ-110) hold only the Google account id (`account_id`), never tokens; Apple comes later.
 | column | type | notes |
 |---|---|---|
 | id | bigserial PK | |

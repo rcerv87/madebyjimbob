@@ -3,7 +3,8 @@ import { Routes, Route } from 'react-router-dom';
 import { api, setSignedIn } from './api.js';
 import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
-import SignInDialog from './components/SignInDialog.jsx';
+import SignInDialog, { googleError } from './components/SignInDialog.jsx';
+import PickUsername from './components/PickUsername.jsx';
 import AccountNotice from './components/AccountNotice.jsx';
 import Home from './pages/Home.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -35,6 +36,16 @@ import { useKeepPlaying } from './keepPlaying.js';
 export default function App() {
   const [user, setUser] = useState(null);
   const [signingIn, setSigningIn] = useState(false);
+  // Google sent them back with a problem (?auth=google&error=<code>): say so in the sign-in dialog, once.
+  const [signInError] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('auth') !== 'google') return '';
+    window.history.replaceState(null, '', window.location.pathname);
+    return p.get('error') ? googleError(p.get('error')) : '';
+  });
+  useEffect(() => {
+    if (signInError) setSigningIn('signin');
+  }, [signInError]);
   const [navOpen, setNavOpen] = useState(false);
 
   // The session cookie (if any) says who this is; progress saving and sockets follow along.
@@ -108,9 +119,11 @@ export default function App() {
       </main>
       <NotificationToast notes={notes} />
       <IosInstallHint />
+      {user?.needsUsername && <PickUsername user={user} onDone={() => refreshUser()} />}
       {signingIn && (
         <SignInDialog
           initialMode={signingIn}
+          initialError={signInError}
           onClose={() => setSigningIn(false)}
           onSignedIn={(u) => {
             setUser(u);

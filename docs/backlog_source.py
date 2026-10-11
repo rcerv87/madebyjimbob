@@ -792,7 +792,7 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "00
 # 706: From the channel in Studio (helper lists with yt-dlp; API key path ready), filters, select all, members-only badge, "You already have this".
 # 102: users.role + npm run set-role (admin opens Studio); roles changed in Studio → Members (with MBJ-705); mod role use and /api/mod/* remain (MBJ-204).
 # 705: list, search, filters (staff, new, banned, tier), role change, ban with reason / unban, mod_actions log. Remain: member page with history, timeouts (this stream / 1 week / 2 weeks / custom date; can still watch and like), hide all messages, highlight, staff notes, tier override, live over WebSocket (with MBJ-204).
-# 110: device list and sign out any device (in /account) done; Google/Apple/X/Facebook, magic link, passkeys, merging accounts remain.
+# 110: device list and sign out any device (in /account) done; Sign in with Google done (button appears once the Google keys are on Render; new members pick a username once; joins an existing account only when its email is confirmed). Apple/X/Facebook, magic link, passkeys, linking YouTube through Google, add/remove sign-in methods remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():

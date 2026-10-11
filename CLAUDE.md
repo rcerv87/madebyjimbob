@@ -97,6 +97,10 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   Better Auth checks the database as soon as it loads, and racing the rebuild stalled requests.
 - Studio is tabbed (`web/src/pages/Studio.jsx`, `TABS`): each section lives at `/studio/<id>`. A new tab needs its id in
   `TABS` and in the `/studio/...` pattern in `server/src/pages.js`, or a refresh on it is a 404.
+- Sign in with Google (MBJ-110): Better Auth's `socialProviders.google` in `auth.js`, on only when `GOOGLE_CLIENT_ID`
+  and `GOOGLE_CLIENT_SECRET` are set. A user created without a username (a Google sign-up) gets one from
+  `suggestUsername()` and `username_chosen = false`; the site then asks once (`PickUsername.jsx`,
+  `POST /api/account/username`). Google's tokens are never stored.
 - Members and bans (MBJ-705): `server/src/members.js`. Role changes and bans go through it so they're logged in
   `mod_actions`. A ban deletes the member's sessions and `auth.js` refuses new ones; there's no per-request ban check.
 - Deleting accounts: `server/src/deletion.js`. A request waits 30 days (signing in cancels it); an hourly job in
@@ -140,6 +144,6 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 ## Known POC shortcuts (tracked in backlog)
 
 - Studio access: `users.role = 'admin'` (Studio → Members, or npm run set-role) or a verified email in `ADMIN_EMAILS`; mods have no tools of their own yet → MBJ-204
-- Google/Apple sign-in, magic links, passkeys, and the device list aren't built yet → MBJ-110
+- Apple/X/Facebook sign-in, magic links, and passkeys aren't built yet (Google and the device list are) → MBJ-110
 - Stream URLs unsigned → MBJ-103
 - In-memory rate limit → MBJ-205 (Redis)

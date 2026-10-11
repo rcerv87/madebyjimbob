@@ -29,6 +29,7 @@ Keep it current: when a new service or setting is added, add it here.
 | **GitHub** | The code (`rcerv87/madebyjimbob`, private) | Ruben | none | Easy |
 | **Google Cloud** | YouTube Data API key (channel list) | Ruben | `YOUTUBE_API_KEY` | Easy |
 | **Shopify** | JimBob's store, read publicly | JimBob already | `SHOP_URL` | none |
+| **Google Cloud** | Sign in with Google (MBJ-110): one OAuth client; no cost, no data kept at Google | Ruben's Google account until JimBob's project exists | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Make a new client in JimBob's Google account and swap the two settings. Members keep signing in: they're matched by their Google account, not by the client. See step 10 |
 | **Stripe** | Memberships and super chats (ADR-013): customers, subscriptions, saved cards, prices, payouts | **Ruben's account in live mode since 2026-10-05** (real-money tests); moves to JimBob's before launch | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` | New account: nothing moves (customers, subscriptions and saved cards stay in Ruben's). See step 9 |
 | **Apple / Google developer accounts** | Phone apps | Ruben (by choice) | — | Apps can be transferred between developer accounts later |
 
@@ -181,6 +182,18 @@ Then on Render → `madebyjimbob` → Environment, replace `STRIPE_SECRET_KEY`, 
 - [ ] One real Plus join, one $2 super chat (in the live chat during a stream), an upgrade, and a card added in Account →
   Payment methods; then cancel and refund in Stripe. The webhook events arrive (site shows the membership, the super chat).
 - [ ] In Ruben's Stripe account: cancel anything left, refund the tests, and roll or delete the old keys and webhook.
+
+### 10. Google sign-in
+Nothing moves: a Google sign-in is tied to the member's Google account, so a new OAuth client in JimBob's Google
+account works for everyone who already joined that way.
+- [ ] In JimBob's Google account: console.cloud.google.com → new project "MADEbyJIMBOB" → **Google Auth Platform**:
+  app name MADEbyJIMBOB, his support email, audience **External**, logo, and the site's privacy and terms links.
+- [ ] **Clients → Create client → Web application**: authorized redirect URI `https://<site>/api/auth/callback/google`
+  (one per address the site answers on; add the `.com` one when the domain moves).
+- [ ] **Audience → Publish app** (the name-and-email sign-in needs no Google review). Until published, only listed
+  test users can sign in.
+- [ ] Render → Environment: replace `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, Save; sign in with Google once to
+  check; then delete the client in Ruben's project.
 
 ## After the move
 

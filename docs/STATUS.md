@@ -36,6 +36,20 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   3. Keep the import helper running on Ruben's PC so new videos get their chat and comments.
   4. Before real viewers: connect `live.madebyjimbob.app` to JimBob's bucket (domain move, MIGRATION.md step 6).
 
+- **Sign in with Google (MBJ-110, built 2026-10-10): needs the Google keys.** The button appears in the sign-in
+  dialog once `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are on Render. Left for Ruben (about 10 minutes, $0):
+  1. console.cloud.google.com → project picker → **New project** "MADEbyJIMBOB" → Create, and select it.
+  2. Menu → **APIs & Services → OAuth consent screen** (Google Auth Platform) → **Get started**: app name
+     MADEbyJIMBOB, support email, audience **External**, contact email, agree, Create.
+  3. **Clients → Create client**: type **Web application**, name "MADEbyJIMBOB site"; under **Authorized redirect
+     URIs** add `https://madebyjimbob.app/api/auth/callback/google` → Create. Copy the **Client ID** and **Client secret**.
+  4. **Audience → Publish app** → Confirm (otherwise only test users you list can sign in).
+  5. Render → madebyjimbob → Environment: add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` → Save.
+  6. On the site: Sign in → Continue with Google. A new member is asked once to pick a username.
+  Branding (logo on Google's screen) needs Google's brand review; optional, and sign-in works without it.
+  Not tested against real Google yet (no keys here): the round trip to Google and back, and a banned member
+  trying Google.
+
 - **Payments (ADR-013): test mode is on (2026-10-03)**, with Plus $5/mo and Premium $10/mo or $100/yr; memberships and
   super chats tested end to end. **Left: live mode in JimBob's Stripe account with the real prices** (same steps):
   1. Stripe account: the one money should land in is JimBob's (stripe.com → Start now). For building and testing,
