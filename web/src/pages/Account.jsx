@@ -4,6 +4,7 @@ import { api, timeAgo, TIER_LABEL } from '../api.js';
 import { PushPrompt } from '../notifications.jsx';
 import { usePush } from '../push.js';
 import useTitle from '../useTitle.js';
+import { WelcomeChecklist } from '../components/WelcomeSteps.jsx';
 import { PERKS, goTo } from '../membership.js';
 import { FAVORITE_COLORS } from '../favorites.js';
 import EmbeddedPay from '../components/EmbeddedPay.jsx';
@@ -31,6 +32,7 @@ export default function Account({ session, onUserChanged }) {
     <div className="account-page">
       <h1>Account settings</h1>
       {emailResult && <EmailResult result={emailResult} onClose={() => setParams({}, { replace: true })} />}
+      <WelcomeChecklist user={user} />
       <ProfileSection user={user} />
       <LinkedAccountsSection onUserChanged={onUserChanged} />
       <SecuritySection user={user} onUserChanged={onUserChanged} />

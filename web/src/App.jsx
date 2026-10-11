@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar.jsx';
 import SignInDialog, { googleError } from './components/SignInDialog.jsx';
 import PickUsername from './components/PickUsername.jsx';
 import FeedbackDialog from './components/FeedbackDialog.jsx';
+import { WelcomeDialog } from './components/WelcomeSteps.jsx';
 import AccountNotice from './components/AccountNotice.jsx';
 import Home from './pages/Home.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -40,6 +41,8 @@ export default function App() {
   // What the site offers right now (from /api/me): Send feedback during the beta.
   const [options, setOptions] = useState({});
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  // Right after signing up (MBJ-115): a short, skippable welcome on top of the page they were on.
+  const [welcoming, setWelcoming] = useState(false);
   // Google sent them back with a problem (?auth=google&error=<code>): say so in the sign-in dialog, once.
   const [signInError] = useState(() => {
     const p = new URLSearchParams(window.location.search);
@@ -128,15 +131,28 @@ export default function App() {
       <NotificationToast notes={notes} />
       <IosInstallHint />
       {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
-      {user?.needsUsername && <PickUsername user={user} onDone={() => refreshUser()} />}
+      {user?.needsUsername && (
+        // Joined through Google: the welcome follows once they have their username.
+        <PickUsername
+          user={user}
+          onDone={() => {
+            refreshUser();
+            setWelcoming(true);
+          }}
+        />
+      )}
+      {welcoming && user && !user.needsUsername && (
+        <WelcomeDialog user={user} onClose={() => setWelcoming(false)} />
+      )}
       {signingIn && (
         <SignInDialog
           initialMode={signingIn}
           initialError={signInError}
           onClose={() => setSigningIn(false)}
-          onSignedIn={(u) => {
+          onSignedIn={(u, { isNew } = {}) => {
             setUser(u);
             setSigningIn(false);
+            if (isNew) setWelcoming(true);
           }}
         />
       )}

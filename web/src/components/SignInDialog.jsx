@@ -77,7 +77,7 @@ export default function SignInDialog({ onClose, onSignedIn, initialMode = 'signi
         }
       }
       const { user } = await api('/me');
-      onSignedIn(user);
+      onSignedIn(user, { isNew: mode === 'signup' });
     } catch (err) {
       setError(err.message);
     } finally {
