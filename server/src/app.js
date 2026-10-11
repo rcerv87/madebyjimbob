@@ -58,7 +58,25 @@ import accountRouter from './account.js';
 import { viewerKey, recordView } from './views.js';
 import { findProfile, profileFor } from './profiles.js';
 import { hasBlocked, hiddenBy, fileReport, listReports } from './blocks.js';
-import { listMembers, setRole, banMember, unbanMember, recentActions } from './members.js';
+import {
+  listMembers,
+  setRole,
+  banMember,
+  unbanMember,
+  timeoutMember,
+  endTimeout,
+  recentActions,
+} from './members.js';
+import {
+  feedbackEnabled,
+  sendFeedback,
+  listFeedback,
+  setFeedbackStatus,
+  feedbackScreenshot,
+  newFeedbackCount,
+  FEEDBACK_STATUSES,
+} from './feedback.js';
+import { emailListSummary, emailListCsv, unsubscribe, validUnsubscribe } from './emailList.js';
 import { favoritesOf, canFavorite } from './favorites.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
@@ -122,15 +140,16 @@ app.post('/api/auth/change-email', async (req, res, next) => {
 });
 // Sign-up, sign-in, sign-out, email verification, password reset (Better Auth reads its own body).
 app.all('/api/auth/*', toNodeHandler(auth));
-app.use(
-  express.json({
-    limit: '50kb',
-    // Webhook signatures are over the exact bytes received.
-    verify: (req, _res, buf) => {
-      if (req.url.startsWith('/api/webhooks/')) req.rawBody = buf;
-    },
-  }),
-);
+const smallJson = express.json({
+  limit: '50kb',
+  // Webhook signatures are over the exact bytes received.
+  verify: (req, _res, buf) => {
+    if (req.url.startsWith('/api/webhooks/')) req.rawBody = buf;
+  },
+});
+// Feedback can carry a screenshot (shrunk in the browser), so it alone may be bigger.
+const feedbackJson = express.json({ limit: '3mb' });
+app.use((req, res, next) => (req.path === '/api/feedback' ? feedbackJson : smallJson)(req, res, next));
 
 // ---------- helpers ----------
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -147,6 +166,16 @@ const isId = (value) => /^\d{1,18}$/.test(String(value));
 const isTier = (value) => typeof value === 'string' && Object.hasOwn(TIER_RANK, value);
 // Text from a JSON body; anything else (an object, a number) counts as empty rather than "[object Object]".
 const textField = (value) => (typeof value === 'string' ? value : '');
+
+// A timed-out member (Studio → Members) can watch and like but not post. Sends the refusal and returns true.
+function refusedForTimeout(user, res) {
+  if (!user?.timeoutUntil) return false;
+  res.status(403).json({
+    error: 'You’re timed out, so you can’t post right now. You can still watch and like.',
+    timeoutUntil: user.timeoutUntil,
+  });
+  return true;
+}
 
 // Returns the video row, or null for unknown or malformed ids.
 async function findVideo(id) {
@@ -330,7 +359,67 @@ app.get(
       // Favorites highlight only while the member is Premium (MBJ-220); kept, but not sent, otherwise.
       user.favorites = canFavorite(user) ? await favoritesOf(user.id) : [];
     }
-    res.json({ user });
+    // What the site offers right now, for everyone: Send feedback is on during the beta (FEEDBACK=off ends it).
+    res.json({ user, options: { feedback: feedbackEnabled() } });
+  }),
+);
+
+// Unsubscribe from news emails (MBJ-107), from the link in an email: no sign-in. Opening the link asks first (mail
+// scanners open links); pressing the button, or a mail app's one-click unsubscribe (a POST), does it.
+const unsubscribePage = (title, body) =>
+  `<!doctype html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" /><title>${title} · MADEbyJIMBOB</title><style>body{font-family:system-ui,sans-serif;background:#161a22;color:#e8eaed;display:grid;place-items:center;min-height:100vh;margin:0}main{max-width:420px;padding:24px;text-align:center}button{background:#27717a;color:#fff;border:0;border-radius:8px;padding:10px 18px;font-size:1rem;cursor:pointer}a{color:#7fd3dc}</style></head><body><main><h1>${title}</h1>${body}</main></body></html>`;
+const escapeHtml = (s) =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  );
+app.all(
+  '/api/unsubscribe',
+  wrap(async (req, res) => {
+    const email = textField(req.query.e).trim().toLowerCase();
+    const token = textField(req.query.t);
+    if (!validUnsubscribe(email, token)) {
+      return res
+        .status(400)
+        .send(
+          unsubscribePage(
+            'That link didn’t work',
+            '<p>It may have been cut off. Open the link from the email again, or turn off news emails in Account settings.</p>',
+          ),
+        );
+    }
+    if (req.method === 'POST') {
+      await unsubscribe(email);
+      return res.send(
+        unsubscribePage(
+          'You’re unsubscribed',
+          `<p>${escapeHtml(email)} won’t get news emails from MADEbyJIMBOB. Account emails (like password resets) still arrive.</p><p><a href="/">Back to the site</a></p>`,
+        ),
+      );
+    }
+    if (req.method !== 'GET') return res.status(405).end();
+    const action = `/api/unsubscribe?e=${encodeURIComponent(email)}&t=${encodeURIComponent(token)}`;
+    res.send(
+      unsubscribePage(
+        'Stop news emails?',
+        `<p>${escapeHtml(email)} will stop getting news emails from MADEbyJIMBOB.</p><form method="post" action="${escapeHtml(action)}"><button>Unsubscribe</button></form>`,
+      ),
+    );
+  }),
+);
+
+// Send feedback (MBJ-819): { note, page, videoId, offsetMs, screen, screenshot (a data URL, optional) }.
+app.post(
+  '/api/feedback',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to send feedback.' });
+    try {
+      res.json(await sendFeedback(user, req.body, req.headers['user-agent']));
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
   }),
 );
 
@@ -783,6 +872,7 @@ app.post(
   wrap(async (req, res) => {
     const user = await currentUser(req);
     if (!user) return res.status(401).json({ error: 'Sign in to chat.' });
+    if (refusedForTimeout(user, res)) return;
     const video = await watchableVideo(req, res, user);
     if (!video) return;
 
@@ -925,6 +1015,7 @@ app.post(
   wrap(async (req, res) => {
     const user = await currentUser(req);
     if (!user) return res.status(401).json({ error: 'Sign in to comment.' });
+    if (refusedForTimeout(user, res)) return;
     const video = await watchableVideo(req, res, user);
     if (!video) return;
 
@@ -1216,7 +1307,8 @@ app.post(
     return superchatCheckout(user, {
       videoId,
       amountCents: req.body?.amountCents,
-      message: filterText(textField(req.body?.message)).slice(0, 200),
+      // A timed-out member can still support the stream, but their words don't go in the chat.
+      message: user.timeoutUntil ? '' : filterText(textField(req.body?.message)).slice(0, 200),
       returnTo: req.body?.returnTo,
       site: baseURL,
       embedded: Boolean(req.body?.embedded),
@@ -1409,6 +1501,7 @@ app.get(
         failedImports: Number(attention.rows[0].failed_imports),
         queuedImports: Number(attention.rows[0].queued_imports),
         drafts: videos.filter((v) => v.draft).length,
+        newFeedback: await newFeedbackCount(),
       },
       members: {
         total: Number(attention.rows[0].members),
@@ -1558,9 +1651,78 @@ app.post(
     member: await banMember(req.user, req.params.id, textField(req.body?.reason)),
   })),
 );
+app.post(
+  '/api/studio/members/:id/timeout',
+  memberRoute(async (req) => ({
+    member: await timeoutMember(req.user, req.params.id, {
+      length: req.body?.length,
+      until: req.body?.until,
+      reason: textField(req.body?.reason),
+    }),
+  })),
+);
+app.delete(
+  '/api/studio/members/:id/timeout',
+  memberRoute(async (req) => ({ member: await endTimeout(req.user, req.params.id) })),
+);
 app.delete(
   '/api/studio/members/:id/ban',
   memberRoute(async (req) => ({ member: await unbanMember(req.user, req.params.id) })),
+);
+
+// Studio → Email → the list (MBJ-107): how many people asked for news, and the list as a CSV to send from.
+app.get(
+  '/api/studio/email-list',
+  wrap(async (_req, res) => res.json(await emailListSummary())),
+);
+app.get(
+  '/api/studio/email-list.csv',
+  wrap(async (req, res) => {
+    req.log.info({ by: req.user.id }, 'email list exported');
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="madebyjimbob-email-list-${new Date().toISOString().slice(0, 10)}.csv"`,
+      'Cache-Control': 'no-store',
+    });
+    res.send(`\ufeff${await emailListCsv()}`); // the mark at the start makes Excel read accents right
+  }),
+);
+
+// Studio → Feedback (MBJ-819): what testers sent, by status; mark each seen or done; open its screenshot.
+app.get(
+  '/api/studio/feedback',
+  wrap(async (req, res) => {
+    const status = FEEDBACK_STATUSES.includes(req.query.status) ? req.query.status : 'new';
+    res.json({ feedback: await listFeedback(status) });
+  }),
+);
+app.post(
+  '/api/studio/feedback/:id',
+  wrap(async (req, res) => {
+    if (!isId(req.params.id)) return res.status(404).json({ error: 'No such feedback.' });
+    try {
+      res.json(await setFeedbackStatus(req.user, req.params.id, req.body?.status));
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  }),
+);
+app.get(
+  '/api/studio/feedback/:id/screenshot',
+  wrap(async (req, res) => {
+    const shot = isId(req.params.id) ? await feedbackScreenshot(req.params.id) : null;
+    if (!shot) return res.status(404).json({ error: 'No screenshot.' });
+    // Sent by a member: shown as a picture only, never run as a page.
+    res.set({
+      'Content-Type': shot.type,
+      'Content-Disposition': 'inline',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
+      'Cache-Control': 'private, max-age=3600',
+    });
+    res.send(shot.bytes);
+  }),
 );
 
 // Studio email: whether sending is on, the templates (preview and send a test), and recent sends.

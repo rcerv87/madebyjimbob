@@ -52,6 +52,7 @@ npm run captions:fetch         # save finished Stream captions into transcripts 
 npm run import:playlists -- <playlist or channel URL>   # YouTube playlists (order kept)
 npm run import:worker          # import helper: runs imports queued in Studio → Add videos and lists channels for From the channel (`-- --local` for local)
 npm run set-role -- <username> admin [--live]   # Studio access by account
+npm run import:newsletter -- <customers.csv> [--live]   # Shopify's newsletter list into the email list
 node tools/library-uploader/build.mjs --ffmpeg <folder>   # build the Library Uploader zip for JimBob's PC
 node tools/library-uploader/publish.mjs        # put that zip in the bucket; Studio → Library uploader offers it
 npm run migrate:create -- <name>   # new SQL migration in server/migrations/
@@ -105,6 +106,12 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   `POST /api/account/username`). Google's tokens are never stored.
 - Draft videos (`videos.draft`): hidden from everyone but Studio accounts. `canWatch()` and `watchableVideo()` in
   `app.js` enforce it; any new query that lists videos to the public needs `NOT v.draft`.
+- Timeouts (MBJ-705): `users.timeout_until`; `refusedForTimeout()` in `app.js` guards chat and comment posts. Anything
+  new that lets a member post needs the same check. "This stream" timeouts are lifted in `saveReplay()`.
+- Email list (MBJ-107): `server/src/emailList.js`. News emails go only to the list it builds (opted in, confirmed,
+  not banned, bounced or unsubscribed), each with its `unsubscribeUrl()`. Account emails are separate (`sendEmail()`).
+- Watched state (MBJ-814) is worked out in the browser from watch progress (`watchState()` in `web/src/progress.js`);
+  there's no watched flag in the database. Marking watched sets the position to the end.
 - Members and bans (MBJ-705): `server/src/members.js`. Role changes and bans go through it so they're logged in
   `mod_actions`. A ban deletes the member's sessions and `auth.js` refuses new ones; there's no per-request ban check.
 - Deleting accounts: `server/src/deletion.js`. A request waits 30 days (signing in cancels it); an hourly job in

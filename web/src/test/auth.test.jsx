@@ -34,7 +34,7 @@ describe('sign-in dialog', () => {
     type('Email or username', 'Fan');
     type('Password', 'password1234');
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-    await waitFor(() => expect(onSignedIn).toHaveBeenCalledWith(me.user));
+    await waitFor(() => expect(onSignedIn).toHaveBeenCalledWith(me.user, { isNew: false }));
     expect(sentTo('/auth/sign-in/username')).toEqual([{ username: 'Fan', password: 'password1234' }]);
 
     type('Email or username', 'fan@example.com');

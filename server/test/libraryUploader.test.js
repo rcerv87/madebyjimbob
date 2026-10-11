@@ -200,7 +200,7 @@ describe('videos that were never on YouTube', () => {
 
 describe('starting again after a restart', () => {
   test('the Startup file opens the Start file minimized, and does nothing if the folder is gone', () => {
-    const bat = 'D:\Tools\MADEbyJIMBOB Library Uploader\Start MADEbyJIMBOB Library Uploader.bat';
+    const bat = 'D:\\Tools\\MADEbyJIMBOB Library Uploader\\Start MADEbyJIMBOB Library Uploader.bat';
     const lines = startupScript(bat).split('\r\n');
     assert.equal(lines[0], '@echo off');
     assert.equal(lines.at(-2), `if exist "${bat}" start "MADEbyJIMBOB Library Uploader" /min "${bat}"`);

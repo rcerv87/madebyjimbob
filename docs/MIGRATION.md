@@ -183,6 +183,10 @@ Then on Render → `madebyjimbob` → Environment, replace `STRIPE_SECRET_KEY`, 
   Payment methods; then cancel and refund in Stripe. The webhook events arrive (site shows the membership, the super chat).
 - [ ] In Ruben's Stripe account: cancel anything left, refund the tests, and roll or delete the old keys and webhook.
 
+### Settings with nothing to move
+`FEEDBACK` (beta feedback, MBJ-819): leave unset during the beta; set it to `off` on Render when the beta ends.
+The email list (MBJ-107) lives in the site's own database, so it moves with the database (step 7).
+
 ### 10. Google sign-in
 Nothing moves: a Google sign-in is tied to the member's Google account, so a new OAuth client in JimBob's Google
 account works for everyone who already joined that way.

@@ -5,6 +5,8 @@ import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SignInDialog, { googleError } from './components/SignInDialog.jsx';
 import PickUsername from './components/PickUsername.jsx';
+import FeedbackDialog from './components/FeedbackDialog.jsx';
+import { WelcomeDialog } from './components/WelcomeSteps.jsx';
 import AccountNotice from './components/AccountNotice.jsx';
 import Home from './pages/Home.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -36,6 +38,11 @@ import { useKeepPlaying } from './keepPlaying.js';
 export default function App() {
   const [user, setUser] = useState(null);
   const [signingIn, setSigningIn] = useState(false);
+  // What the site offers right now (from /api/me): Send feedback during the beta.
+  const [options, setOptions] = useState({});
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  // Right after signing up (MBJ-115): a short, skippable welcome on top of the page they were on.
+  const [welcoming, setWelcoming] = useState(false);
   // Google sent them back with a problem (?auth=google&error=<code>): say so in the sign-in dialog, once.
   const [signInError] = useState(() => {
     const p = new URLSearchParams(window.location.search);
@@ -52,7 +59,10 @@ export default function App() {
   const refreshUser = useCallback((u) => {
     if (u !== undefined) return setUser(u);
     api('/me')
-      .then((d) => setUser(d.user))
+      .then((d) => {
+        setUser(d.user);
+        setOptions(d.options || {});
+      })
       .catch(() => {});
   }, []);
   useEffect(() => {
@@ -76,6 +86,7 @@ export default function App() {
   return (
     <div className={`shell ${navOpen ? 'nav-open' : ''}`}>
       <TopBar
+        onFeedback={options.feedback ? () => setFeedbackOpen(true) : undefined}
         user={user}
         notes={notes}
         onSignIn={() => setSigningIn('signin')}
@@ -119,15 +130,29 @@ export default function App() {
       </main>
       <NotificationToast notes={notes} />
       <IosInstallHint />
-      {user?.needsUsername && <PickUsername user={user} onDone={() => refreshUser()} />}
+      {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
+      {user?.needsUsername && (
+        // Joined through Google: the welcome follows once they have their username.
+        <PickUsername
+          user={user}
+          onDone={() => {
+            refreshUser();
+            setWelcoming(true);
+          }}
+        />
+      )}
+      {welcoming && user && !user.needsUsername && (
+        <WelcomeDialog user={user} onClose={() => setWelcoming(false)} />
+      )}
       {signingIn && (
         <SignInDialog
           initialMode={signingIn}
           initialError={signInError}
           onClose={() => setSigningIn(false)}
-          onSignedIn={(u) => {
+          onSignedIn={(u, { isNew } = {}) => {
             setUser(u);
             setSigningIn(false);
+            if (isNew) setWelcoming(true);
           }}
         />
       )}

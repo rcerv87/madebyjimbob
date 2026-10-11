@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import useTitle from '../useTitle.js';
 import VideoCard from '../components/VideoCard.jsx';
 import LibraryTabs from '../components/LibraryTabs.jsx';
 import BrandHero from '../components/BrandHero.jsx';
 import LiveBanner from '../components/LiveBanner.jsx';
+import { stateOf, bingeQueue } from '../progress.js';
 
 // Filter chips: start from everything, narrow by type or members-only. Kept in the URL so a
 // filtered view can be shared or bookmarked.
@@ -17,6 +18,14 @@ const CHIPS = [
   { key: 'members', label: 'Members only' },
 ];
 
+// A second row of chips (MBJ-814): what you haven't watched, what you started, what you finished. Worked out in
+// the browser from where you stopped in each video.
+const WATCH_CHIPS = [
+  { key: 'unwatched', label: 'Unwatched' },
+  { key: 'progress', label: 'In progress' },
+  { key: 'watched', label: 'Watched' },
+];
+
 export default function Home() {
   const [params, setParams] = useSearchParams();
   useTitle(null);
@@ -25,6 +34,7 @@ export default function Home() {
   const q = params.get('q') || '';
   const sort = params.get('sort') || 'new';
   const chip = params.get('members') === '1' ? 'members' : params.get('kind') || 'all';
+  const watch = WATCH_CHIPS.some((c) => c.key === params.get('watch')) ? params.get('watch') : null;
 
   // Late answers for an earlier filter are dropped, so quick chip taps can't show the wrong list.
   useEffect(() => {
@@ -57,6 +67,18 @@ export default function Home() {
       kind: key === 'all' || key === 'members' ? null : key,
       members: key === 'members' ? '1' : null,
     });
+
+  // Each video's state once, then the counts and the list the chips ask for.
+  const all = data?.videos || [];
+  const states = new Map(all.map((v) => [v.id, stateOf(v)]));
+  const watchCounts = { unwatched: 0, progress: 0, watched: 0 };
+  for (const s of states.values()) watchCounts[s] += 1;
+  const shown = watch ? all.filter((v) => states.get(v.id) === watch) : all;
+  const inProgress = all.filter((v) => states.get(v.id) === 'progress');
+  const queue = bingeQueue(all, { newestFirst: sort === 'new' });
+  const bingeHref = queue[0] && `/watch/${queue[0].id}?list=unwatched${sort === 'new' ? '&order=new' : ''}`;
+  // "Keep watching" sits on the plain Videos page, not on a search or a filtered view.
+  const plain = !q && !watch && chip === 'all';
 
   return (
     <div className="library">
@@ -92,10 +114,44 @@ export default function Home() {
         </label>
       </div>
 
+      {data && all.length > 0 && (
+        <div className="library-bar">
+          <div className="chips" role="group" aria-label="Filter by what you’ve watched">
+            {WATCH_CHIPS.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                className="chip"
+                aria-pressed={watch === c.key}
+                onClick={() => update({ watch: watch === c.key ? null : c.key })}
+              >
+                {c.label}
+                <span className="chip-count">{watchCounts[c.key]}</span>
+              </button>
+            ))}
+          </div>
+          {bingeHref && queue.length > 1 && (
+            <Link className="text-btn binge-link" to={bingeHref}>
+              ▶ Play all {queue.length} you haven’t finished
+            </Link>
+          )}
+        </div>
+      )}
+
+      {plain && inProgress.length > 0 && (
+        <section className="keep-watching" aria-label="Keep watching">
+          <h2>Keep watching</h2>
+          <div className="grid">
+            {inProgress.slice(0, 4).map((v) => (
+              <VideoCard key={v.id} v={v} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {q && (
         <p className="muted results-for">
-          {data ? `${data.videos.length} result${data.videos.length === 1 ? '' : 's'}` : 'Searching'} for “{q}
-          ”{' · '}
+          {data ? `${shown.length} result${shown.length === 1 ? '' : 's'}` : 'Searching'} for “{q}”{' · '}
           <button type="button" className="text-btn" onClick={() => update({ q: null })}>
             Clear search
           </button>
@@ -113,12 +169,12 @@ export default function Home() {
           </p>
         </div>
       )}
-      {data && data.videos.length === 0 && (data.counts?.all > 0 || q) && (
+      {data && shown.length === 0 && (data.counts?.all > 0 || q) && (
         <p className="muted page-msg">Nothing matches. Try another filter or search.</p>
       )}
-      {data && data.videos.length > 0 && (
+      {data && shown.length > 0 && (
         <section className="grid">
-          {data.videos.map((v) => (
+          {shown.map((v) => (
             <VideoCard key={v.id} v={v} />
           ))}
         </section>

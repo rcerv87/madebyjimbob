@@ -58,6 +58,9 @@ const authSecret =
     .createHash('sha256')
     .update(`mbj-auth:${process.env.DATABASE_URL || ''}`)
     .digest('hex');
+// A signature only this site can make, for links that work without signing in (unsubscribe).
+export const signValue = (text) =>
+  crypto.createHmac('sha256', authSecret).update(String(text)).digest('base64url');
 export const baseURL = (
   process.env.SITE_URL ||
   process.env.RENDER_EXTERNAL_URL ||
@@ -159,6 +162,8 @@ export const auth = betterAuth({
       xp: { type: 'number', required: false, defaultValue: 0, input: false },
       // 'admin' opens Studio (npm run set-role); never settable by the user.
       role: { type: 'string', required: false, defaultValue: 'viewer', input: false },
+      // Set by Studio → Members: until then the member can't chat or comment (they can still watch and like).
+      timeoutUntil: { type: 'date', required: false, input: false, fieldName: 'timeout_until' },
       // False for someone who joined through Google until they pick their own username.
       usernameChosen: {
         type: 'boolean',
@@ -363,6 +368,9 @@ export function publicUser(u) {
     tier: isAdmin ? 'premium' : u.tier || 'free',
     xp: u.xp ?? 0,
     isAdmin,
+    // Timed out (MBJ-705): when it ends, or null. The chat and comment boxes say so; the server refuses posts.
+    timeoutUntil:
+      u.timeoutUntil && new Date(u.timeoutUntil) > new Date() ? new Date(u.timeoutUntil).toISOString() : null,
     // Joined through Google and still on the made-up username: the site asks them to pick one.
     needsUsername: u.usernameChosen === false,
     email: hasEmail ? u.email : null,

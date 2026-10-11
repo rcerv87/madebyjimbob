@@ -4589,3 +4589,93 @@ a.text-btn {
   flex-basis: 100%;
   margin: 0;
 }
+
+/* ---------- send feedback ---------- */
+.auth-dialog textarea {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+.feedback-preview {
+  max-height: 160px;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  object-fit: contain;
+  align-self: flex-start;
+}
+
+/* ---------- news emails ---------- */
+.news-emails {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.news-emails label.check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- unwatched filter and keep watching ---------- */
+.binge-link {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.keep-watching h2 {
+  font-size: 1.05rem;
+  margin: 4px 0 10px;
+}
+.keep-watching {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* ---------- welcome steps ---------- */
+.welcome-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.welcome-steps li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.welcome-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  font-size: 0.8rem;
+}
+.welcome-steps li.done .welcome-mark {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.welcome-steps li.skipped strong {
+  color: var(--muted);
+  font-weight: 500;
+}
+.welcome-steps p {
+  margin: 2px 0 0;
+}
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}

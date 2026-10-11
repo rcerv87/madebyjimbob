@@ -4,6 +4,7 @@ import { api, timeAgo, TIER_LABEL } from '../api.js';
 import { PushPrompt } from '../notifications.jsx';
 import { usePush } from '../push.js';
 import useTitle from '../useTitle.js';
+import { WelcomeChecklist } from '../components/WelcomeSteps.jsx';
 import { PERKS, goTo } from '../membership.js';
 import { FAVORITE_COLORS } from '../favorites.js';
 import EmbeddedPay from '../components/EmbeddedPay.jsx';
@@ -31,6 +32,7 @@ export default function Account({ session, onUserChanged }) {
     <div className="account-page">
       <h1>Account settings</h1>
       {emailResult && <EmailResult result={emailResult} onClose={() => setParams({}, { replace: true })} />}
+      <WelcomeChecklist user={user} />
       <ProfileSection user={user} />
       <LinkedAccountsSection onUserChanged={onUserChanged} />
       <SecuritySection user={user} onUserChanged={onUserChanged} />
@@ -452,6 +454,41 @@ function Activity() {
 // Only replies to your comments notify (chat and @mentions don't, since 2026-10-03); direct messages will join them.
 const TYPES = [['reply', 'Someone replies to your comment']];
 
+// News by email (MBJ-107): the member's own switch. It only reaches a confirmed address.
+function NewsEmails() {
+  const [state, setState] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api('/account/marketing')
+      .then(setState)
+      .catch(() => {});
+  }, []);
+  if (!state) return null;
+  const toggle = async () => {
+    setError('');
+    try {
+      setState(await api('/account/marketing', { method: 'PUT', body: { on: !state.on } }));
+    } catch (err) {
+      setError(`Couldn’t save: ${err.message}`);
+    }
+  };
+  return (
+    <div className="news-emails">
+      <label className="check">
+        <input type="checkbox" checked={state.on} onChange={toggle} />
+        Email me news from JimBob (new streams, art, and merch)
+      </label>
+      {state.on && state.needsEmail && (
+        <p className="muted small">Add an email address above to start getting them.</p>
+      )}
+      {state.on && state.needsConfirm && (
+        <p className="muted small">Confirm your email address to start getting them.</p>
+      )}
+      {error && <p className="error small">{error}</p>}
+    </div>
+  );
+}
+
 function NotificationsSection() {
   const [prefs, setPrefs] = useState(null);
   const [error, setError] = useState('');
@@ -515,6 +552,7 @@ function NotificationsSection() {
       <p className="muted small">
         Push reaches the devices where you turned it on. We don’t email notifications.
       </p>
+      <NewsEmails />
       <PushPrompt push={push} />
       {error && <p className="error small">{error}</p>}
     </section>

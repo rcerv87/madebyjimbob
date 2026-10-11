@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import MemberBadge from './MemberBadge.jsx';
 import NameCard from './NameCard.jsx';
 import { favoriteMap } from '../favorites.js';
-import { api, compact, count, formatTime, splitTimestamps, timeAgo } from '../api.js';
+import { api, compact, count, formatTime, splitTimestamps, timeAgo, timeoutNote } from '../api.js';
 
 // YouTube-style comments under the video: imported YouTube comments and native ones, one level of
 // threads. Every reply records the exact comment it answers and quotes it, so long threads keep
@@ -144,6 +144,7 @@ function CommentThread({ c, videoId, session, getTimeMs, onSeek, onReply, startO
   const moderation = session.user
     ? {
         me: session.user.username,
+        staff: Boolean(session.user.isAdmin),
         onChanged: session.refreshUser,
         premium: session.user.tier === 'premium',
         favorites: favoriteMap(session.user),
@@ -359,7 +360,8 @@ function CommentForm({
         value={text}
         rows={active ? 3 : 1}
         maxLength={2000}
-        placeholder={session.user ? placeholder : 'Sign in to comment'}
+        placeholder={timeoutNote(session.user) || (session.user ? placeholder : 'Sign in to comment')}
+        disabled={Boolean(timeoutNote(session.user))}
         aria-label={placeholder}
         autoFocus={autoFocus}
         onFocus={(e) => {

@@ -20,6 +20,7 @@ import {
   MAX_FAVORITES,
 } from './favorites.js';
 import { linksFor, requestLink, PLATFORMS } from './links.js';
+import { marketingState, setMarketing } from './emailList.js';
 
 export const NOTIFICATION_TYPES = ['mention', 'reply'];
 export const NOTIFICATION_CHANNELS = ['site', 'push'];
@@ -78,6 +79,54 @@ router.post(
       db.release();
     }
     res.json({ username: name });
+  }),
+);
+
+// Welcome steps (MBJ-115): what a new member has done, worked out from their account, and whether they hid the
+// checklist. Skipping a single step is remembered in the browser only.
+router.get(
+  '/welcome',
+  requireUser,
+  wrap(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT u.email_verified, u.tier, u.welcome_dismissed_at,
+         EXISTS (SELECT 1 FROM push_subscriptions p WHERE p.user_id = u.id) AS push_on,
+         EXISTS (SELECT 1 FROM linked_accounts l WHERE l.user_id = u.id AND l.platform = 'youtube') AS youtube
+       FROM users u WHERE u.id = $1`,
+      [req.user.id],
+    );
+    const u = rows[0];
+    res.json({
+      emailConfirmed: Boolean(u.email_verified),
+      pushOn: u.push_on,
+      youtubeLinked: u.youtube, // asked for or confirmed: either way they've done their part
+      member: u.tier !== 'free',
+      dismissed: Boolean(u.welcome_dismissed_at),
+    });
+  }),
+);
+router.post(
+  '/welcome/dismiss',
+  requireUser,
+  wrap(async (req, res) => {
+    await pool.query('UPDATE users SET welcome_dismissed_at = now() WHERE id = $1', [req.user.id]);
+    res.json({ ok: true });
+  }),
+);
+
+// News by email (MBJ-107): whether this member asked for it. `{ on, source? }` turns it on or off; `source` is
+// "signup" when the box was ticked while creating the account.
+router.get(
+  '/marketing',
+  requireUser,
+  wrap(async (req, res) => res.json(await marketingState(req.user.id))),
+);
+router.put(
+  '/marketing',
+  requireUser,
+  wrap(async (req, res) => {
+    if (typeof req.body?.on !== 'boolean') return res.status(400).json({ error: 'on is true or false.' });
+    res.json(await setMarketing(req.user.id, req.body.on, req.body.source));
   }),
 );
 
