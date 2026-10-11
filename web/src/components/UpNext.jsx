@@ -44,7 +44,10 @@ export default function UpNext({ queue, index, playlist, autoplay, onAutoplay, h
       <section className="up-next playlist-panel" aria-label="Playlist">
         <header>
           <div>
-            <Link to={`/playlist/${playlist.id}`} className="up-next-title">
+            <Link
+              to={playlist.virtual ? '/?watch=unwatched' : `/playlist/${playlist.id}`}
+              className="up-next-title"
+            >
               {playlist.title}
             </Link>
             <span className="muted small">

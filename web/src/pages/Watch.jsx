@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api, count, formatTime, timeAgo, TIER_LABEL } from '../api.js';
 import { createClock, useClock } from '../clock.js';
-import { readLocal, resumePoint, saveProgress, viewerId } from '../progress.js';
+import { readLocal, resumePoint, saveProgress, viewerId, bingeQueue, watchingAgain } from '../progress.js';
+import WatchedButton from '../components/WatchedButton.jsx';
 import Player from '../components/Player.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
 import Comments from '../components/Comments.jsx';
@@ -36,28 +37,41 @@ export default function Watch({ session, background = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const listId = params.get('list');
-  // Up next: the playlist being played (?list=), otherwise the channel, newest first.
+  // Up next: the playlist being played (?list=), everything not watched yet (?list=unwatched, MBJ-814),
+  // otherwise the channel, newest first.
+  const newestFirst = params.get('order') === 'new';
   const [queue, setQueue] = useState({ items: [], playlist: null });
   const [autoplay, setAutoplay] = useState(readAutoplay);
   const [ending, setEnding] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    const load = listId
-      ? api(`/playlists/${listId}`).then((d) => ({ items: d.videos, playlist: d.playlist }))
-      : api('/videos').then((d) => ({ items: d.videos, playlist: null }));
+    const load =
+      listId === 'unwatched'
+        ? // Worked out once, when the queue starts: videos don't drop out of it as they're finished.
+          api('/videos').then((d) => ({
+            items: bingeQueue(d.videos, { newestFirst, keepId: id }),
+            playlist: { id: 'unwatched', title: 'Not watched yet', virtual: true },
+          }))
+        : listId
+          ? api(`/playlists/${listId}`).then((d) => ({ items: d.videos, playlist: d.playlist }))
+          : api('/videos').then((d) => ({ items: d.videos, playlist: null }));
     load
       .then((q) => !cancelled && setQueue(q))
       .catch(() => !cancelled && setQueue({ items: [], playlist: null }));
     return () => {
       cancelled = true;
     };
-  }, [listId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the queue is built once per list, not per video
+  }, [listId, newestFirst]);
 
   const index = queue.items.findIndex((v) => String(v.id) === String(id));
   const next = index >= 0 ? queue.items[index + 1] : null;
   const previous = index > 0 ? queue.items[index - 1] : null;
-  const hrefFor = useCallback((v) => `/watch/${v.id}${listId ? `?list=${listId}` : ''}`, [listId]);
+  const hrefFor = useCallback(
+    (v) => `/watch/${v.id}${listId ? `?list=${listId}${newestFirst ? '&order=new' : ''}` : ''}`,
+    [listId, newestFirst],
+  );
   // Keep Listen only on when moving to the next item.
   const go = useCallback(
     (v, listening = false) => {
@@ -122,6 +136,7 @@ export default function Watch({ session, background = false }) {
 
   // Save the position every few seconds while watching, and right away when leaving the page.
   useEffect(() => {
+    watchingAgain(id); // a mark made by hand earlier no longer holds the position
     const saveNow = () => {
       const v = playerRef.current;
       if (v && v.currentTime > 0) saveProgress(id, v.currentTime * 1000);
@@ -227,6 +242,7 @@ export default function Watch({ session, background = false }) {
               <LikeButtons videoId={video.id} likes={video.likes} myVote={video.myVote} session={session} />
             )}
             <ShareButton title={video.title} path={`/watch/${video.id}`} getTimeMs={getTimeMs} />
+            {!video.locked && <WatchedButton video={video} />}
           </div>
         </div>
         <div className={`description ${expanded ? 'open' : ''}`} onClick={() => setExpanded(true)}>

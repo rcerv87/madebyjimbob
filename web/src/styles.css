@@ -4621,3 +4621,17 @@ a.text-btn {
   align-items: center;
   gap: 8px;
 }
+
+/* ---------- unwatched filter and keep watching ---------- */
+.binge-link {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.keep-watching h2 {
+  font-size: 1.05rem;
+  margin: 4px 0 10px;
+}
+.keep-watching {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
