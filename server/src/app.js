@@ -76,6 +76,7 @@ import {
   newFeedbackCount,
   FEEDBACK_STATUSES,
 } from './feedback.js';
+import { emailListSummary, emailListCsv, unsubscribe, validUnsubscribe } from './emailList.js';
 import { favoritesOf, canFavorite } from './favorites.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
@@ -360,6 +361,50 @@ app.get(
     }
     // What the site offers right now, for everyone: Send feedback is on during the beta (FEEDBACK=off ends it).
     res.json({ user, options: { feedback: feedbackEnabled() } });
+  }),
+);
+
+// Unsubscribe from news emails (MBJ-107), from the link in an email: no sign-in. Opening the link asks first (mail
+// scanners open links); pressing the button, or a mail app's one-click unsubscribe (a POST), does it.
+const unsubscribePage = (title, body) =>
+  `<!doctype html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" /><title>${title} · MADEbyJIMBOB</title><style>body{font-family:system-ui,sans-serif;background:#161a22;color:#e8eaed;display:grid;place-items:center;min-height:100vh;margin:0}main{max-width:420px;padding:24px;text-align:center}button{background:#27717a;color:#fff;border:0;border-radius:8px;padding:10px 18px;font-size:1rem;cursor:pointer}a{color:#7fd3dc}</style></head><body><main><h1>${title}</h1>${body}</main></body></html>`;
+const escapeHtml = (s) =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  );
+app.all(
+  '/api/unsubscribe',
+  wrap(async (req, res) => {
+    const email = textField(req.query.e).trim().toLowerCase();
+    const token = textField(req.query.t);
+    if (!validUnsubscribe(email, token)) {
+      return res
+        .status(400)
+        .send(
+          unsubscribePage(
+            'That link didn’t work',
+            '<p>It may have been cut off. Open the link from the email again, or turn off news emails in Account settings.</p>',
+          ),
+        );
+    }
+    if (req.method === 'POST') {
+      await unsubscribe(email);
+      return res.send(
+        unsubscribePage(
+          'You’re unsubscribed',
+          `<p>${escapeHtml(email)} won’t get news emails from MADEbyJIMBOB. Account emails (like password resets) still arrive.</p><p><a href="/">Back to the site</a></p>`,
+        ),
+      );
+    }
+    if (req.method !== 'GET') return res.status(405).end();
+    const action = `/api/unsubscribe?e=${encodeURIComponent(email)}&t=${encodeURIComponent(token)}`;
+    res.send(
+      unsubscribePage(
+        'Stop news emails?',
+        `<p>${escapeHtml(email)} will stop getting news emails from MADEbyJIMBOB.</p><form method="post" action="${escapeHtml(action)}"><button>Unsubscribe</button></form>`,
+      ),
+    );
   }),
 );
 
@@ -1623,6 +1668,24 @@ app.delete(
 app.delete(
   '/api/studio/members/:id/ban',
   memberRoute(async (req) => ({ member: await unbanMember(req.user, req.params.id) })),
+);
+
+// Studio → Email → the list (MBJ-107): how many people asked for news, and the list as a CSV to send from.
+app.get(
+  '/api/studio/email-list',
+  wrap(async (_req, res) => res.json(await emailListSummary())),
+);
+app.get(
+  '/api/studio/email-list.csv',
+  wrap(async (req, res) => {
+    req.log.info({ by: req.user.id }, 'email list exported');
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="madebyjimbob-email-list-${new Date().toISOString().slice(0, 10)}.csv"`,
+      'Cache-Control': 'no-store',
+    });
+    res.send(`\ufeff${await emailListCsv()}`); // the mark at the start makes Excel read accents right
+  }),
 );
 
 // Studio → Feedback (MBJ-819): what testers sent, by status; mark each seen or done; open its screenshot.

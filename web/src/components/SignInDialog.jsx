@@ -27,6 +27,7 @@ export default function SignInDialog({ onClose, onSignedIn, initialMode = 'signi
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [oldEnough, setOldEnough] = useState(false);
+  const [wantsNews, setWantsNews] = useState(false);
   const [error, setError] = useState(initialError);
   const [sentTo, setSentTo] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,6 +63,11 @@ export default function SignInDialog({ onClose, onSignedIn, initialMode = 'signi
             callbackURL: '/?verified=1',
           },
         });
+        // Asked for news while signing up (MBJ-107). The account exists either way, so a hiccup here isn't an error.
+        if (wantsNews)
+          await api('/account/marketing', { method: 'PUT', body: { on: true, source: 'signup' } }).catch(
+            () => {},
+          );
       } else {
         const id = login.trim();
         if (id.includes('@')) {
@@ -215,6 +221,10 @@ export default function SignInDialog({ onClose, onSignedIn, initialMode = 'signi
             <label className="check">
               <input type="checkbox" checked={oldEnough} onChange={(e) => setOldEnough(e.target.checked)} />
               I’m 13 or older
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={wantsNews} onChange={(e) => setWantsNews(e.target.checked)} />
+              Email me news from JimBob (new streams, art, and merch). Unsubscribe any time.
             </label>
           </>
         )}

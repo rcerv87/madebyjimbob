@@ -4608,3 +4608,16 @@ a.text-btn {
   object-fit: contain;
   align-self: flex-start;
 }
+
+/* ---------- news emails ---------- */
+.news-emails {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.news-emails label.check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}

@@ -58,6 +58,9 @@ const authSecret =
     .createHash('sha256')
     .update(`mbj-auth:${process.env.DATABASE_URL || ''}`)
     .digest('hex');
+// A signature only this site can make, for links that work without signing in (unsubscribe).
+export const signValue = (text) =>
+  crypto.createHmac('sha256', authSecret).update(String(text)).digest('base64url');
 export const baseURL = (
   process.env.SITE_URL ||
   process.env.RENDER_EXTERNAL_URL ||

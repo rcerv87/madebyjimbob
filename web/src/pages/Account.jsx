@@ -452,6 +452,41 @@ function Activity() {
 // Only replies to your comments notify (chat and @mentions don't, since 2026-10-03); direct messages will join them.
 const TYPES = [['reply', 'Someone replies to your comment']];
 
+// News by email (MBJ-107): the member's own switch. It only reaches a confirmed address.
+function NewsEmails() {
+  const [state, setState] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api('/account/marketing')
+      .then(setState)
+      .catch(() => {});
+  }, []);
+  if (!state) return null;
+  const toggle = async () => {
+    setError('');
+    try {
+      setState(await api('/account/marketing', { method: 'PUT', body: { on: !state.on } }));
+    } catch (err) {
+      setError(`Couldn’t save: ${err.message}`);
+    }
+  };
+  return (
+    <div className="news-emails">
+      <label className="check">
+        <input type="checkbox" checked={state.on} onChange={toggle} />
+        Email me news from JimBob (new streams, art, and merch)
+      </label>
+      {state.on && state.needsEmail && (
+        <p className="muted small">Add an email address above to start getting them.</p>
+      )}
+      {state.on && state.needsConfirm && (
+        <p className="muted small">Confirm your email address to start getting them.</p>
+      )}
+      {error && <p className="error small">{error}</p>}
+    </div>
+  );
+}
+
 function NotificationsSection() {
   const [prefs, setPrefs] = useState(null);
   const [error, setError] = useState('');
@@ -515,6 +550,7 @@ function NotificationsSection() {
       <p className="muted small">
         Push reaches the devices where you turned it on. We don’t email notifications.
       </p>
+      <NewsEmails />
       <PushPrompt push={push} />
       {error && <p className="error small">{error}</p>}
     </section>

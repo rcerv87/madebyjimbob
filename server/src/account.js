@@ -20,6 +20,7 @@ import {
   MAX_FAVORITES,
 } from './favorites.js';
 import { linksFor, requestLink, PLATFORMS } from './links.js';
+import { marketingState, setMarketing } from './emailList.js';
 
 export const NOTIFICATION_TYPES = ['mention', 'reply'];
 export const NOTIFICATION_CHANNELS = ['site', 'push'];
@@ -78,6 +79,22 @@ router.post(
       db.release();
     }
     res.json({ username: name });
+  }),
+);
+
+// News by email (MBJ-107): whether this member asked for it. `{ on, source? }` turns it on or off; `source` is
+// "signup" when the box was ticked while creating the account.
+router.get(
+  '/marketing',
+  requireUser,
+  wrap(async (req, res) => res.json(await marketingState(req.user.id))),
+);
+router.put(
+  '/marketing',
+  requireUser,
+  wrap(async (req, res) => {
+    if (typeof req.body?.on !== 'boolean') return res.status(400).json({ error: 'on is true or false.' });
+    res.json(await setMarketing(req.user.id, req.body.on, req.body.source));
   }),
 );
 

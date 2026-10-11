@@ -24,6 +24,7 @@ export default function StudioEmail() {
   const [to, setTo] = useState('');
   const [note, setNote] = useState(null);
   const [error, setError] = useState('');
+  const [list, setList] = useState(null);
 
   const load = () =>
     api('/studio/email')
@@ -31,6 +32,9 @@ export default function StudioEmail() {
       .catch((e) => setError(e.message));
   useEffect(() => {
     load();
+    api('/studio/email-list')
+      .then(setList)
+      .catch(() => {});
   }, []);
   useEffect(() => {
     setPreview(null);
@@ -56,68 +60,96 @@ export default function StudioEmail() {
   };
 
   return (
-    <section className="panel studio-email">
-      <h2>Account email</h2>
-      {error && <p className="error small">{error}</p>}
-      {info && (
-        <p className={`small ${info.enabled ? '' : 'muted'}`}>
-          {info.enabled
-            ? `On: sending as ${info.from}.`
-            : 'Off: nothing is sent until RESEND_API_KEY and EMAIL_FROM are set on the server.'}
-          {info.suppressed > 0 && ` ${info.suppressed} address(es) blocked after bounces or spam reports.`}
-        </p>
-      )}
-      <form className="email-test" onSubmit={sendTest}>
-        <select value={template} onChange={(e) => setTemplate(e.target.value)} aria-label="Email template">
-          {(info?.templates || []).map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <input
-          type="email"
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-          placeholder="Send a test to…"
-          aria-label="Test email address"
-          required
-        />
-        <button className="primary-btn">Send test</button>
-      </form>
-      {note && <p className={`small ${note.ok ? '' : 'error'}`}>{note.text}</p>}
-      {preview && (
-        <>
-          <p className="small email-subject">
-            <span className="muted">Subject:</span> {preview.subject}
+    <>
+      <section className="panel studio-email">
+        <h2>Email list</h2>
+        {list ? (
+          <>
+            <p>
+              <strong>{list.total}</strong> {list.total === 1 ? 'person has' : 'people have'} asked for news
+              from JimBob: {list.members} with a site account
+              {list.imported > 0 ? `, ${list.imported} from an imported list` : ''}.
+              {list.waitingToConfirm > 0 &&
+                ` ${list.waitingToConfirm} more said yes but haven’t confirmed their email yet.`}
+            </p>
+            <p>
+              <a className="primary-btn" href="/api/studio/email-list.csv" download>
+                Download the list (CSV)
+              </a>
+            </p>
+            <p className="muted small">
+              Each row has its own unsubscribe link: put it in every email you send to the list. People who
+              unsubscribed, bounced, or reported spam are already left out. Download a fresh copy before each
+              send.
+            </p>
+          </>
+        ) : (
+          <p className="muted small">Loading the list…</p>
+        )}
+      </section>
+      <section className="panel studio-email">
+        <h2>Account email</h2>
+        {error && <p className="error small">{error}</p>}
+        {info && (
+          <p className={`small ${info.enabled ? '' : 'muted'}`}>
+            {info.enabled
+              ? `On: sending as ${info.from}.`
+              : 'Off: nothing is sent until RESEND_API_KEY and EMAIL_FROM are set on the server.'}
+            {info.suppressed > 0 && ` ${info.suppressed} address(es) blocked after bounces or spam reports.`}
           </p>
-          <iframe className="email-preview" title="Email preview" sandbox="" srcDoc={preview.html} />
-        </>
-      )}
-      {info?.recent.length > 0 && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>To</th>
-                <th>Email</th>
-                <th>Result</th>
-                <th>When</th>
-              </tr>
-            </thead>
-            <tbody>
-              {info.recent.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.to}</td>
-                  <td>{info.templates.find((t) => t.id === r.template)?.label || r.template}</td>
-                  <td title={r.error || undefined}>{STATUS_LABEL[r.status] || r.status}</td>
-                  <td>{timeAgo(r.createdAt)}</td>
+        )}
+        <form className="email-test" onSubmit={sendTest}>
+          <select value={template} onChange={(e) => setTemplate(e.target.value)} aria-label="Email template">
+            {(info?.templates || []).map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+          <input
+            type="email"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            placeholder="Send a test to…"
+            aria-label="Test email address"
+            required
+          />
+          <button className="primary-btn">Send test</button>
+        </form>
+        {note && <p className={`small ${note.ok ? '' : 'error'}`}>{note.text}</p>}
+        {preview && (
+          <>
+            <p className="small email-subject">
+              <span className="muted">Subject:</span> {preview.subject}
+            </p>
+            <iframe className="email-preview" title="Email preview" sandbox="" srcDoc={preview.html} />
+          </>
+        )}
+        {info?.recent.length > 0 && (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>To</th>
+                  <th>Email</th>
+                  <th>Result</th>
+                  <th>When</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+              </thead>
+              <tbody>
+                {info.recent.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.to}</td>
+                    <td>{info.templates.find((t) => t.id === r.template)?.label || r.template}</td>
+                    <td title={r.error || undefined}>{STATUS_LABEL[r.status] || r.status}</td>
+                    <td>{timeAgo(r.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </>
   );
 }
