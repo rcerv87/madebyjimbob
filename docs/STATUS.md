@@ -283,7 +283,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   chatters), Live (go live + super chats), Videos (content table + playlists), Add videos, Members (list + linked
   accounts), Reports, Email. Each tab has its own address (`/studio/members` …), so refresh and shared links work;
   tabs show a count when something is waiting (open reports, link requests, failed imports), and only the open tab
-  loads its data. A Money tab (members and revenue) comes with MBJ-703.
+  loads its data. A Money tab (members and revenue) comes with MBJ-703; editing emails and sending to groups from the Email tab is MBJ-709.
 - **Studio → Members (MBJ-705, first part, 2026-10-10):** every account, most recently active first, with search
   (username, name, or a whole email), filters (mods and admins, new this week, banned, membership), a role switch
   (member, mod, admin; admins open Studio), and ban with a reason / unban. A ban signs the member out everywhere and

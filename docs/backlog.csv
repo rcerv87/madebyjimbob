@@ -426,6 +426,15 @@ MBJ-705,User management in Studio,Studio & analytics,Phase 1 — VOD platform,Mu
 - Highlight a user: VIP/featured badge and name color in chat and comments (e.g. regulars, guests, supporters); remove it any time
 - Change role (viewer, mod, admin) and, for support cases, tier; private staff notes on the user
 - Every action logged in mod_actions with who did it; bans and highlights apply live over WebSocket","MBJ-102, MBJ-204"
+MBJ-709,Email editor and sends to groups,Studio & analytics,Phase 1 — VOD platform,Should,L,To do,"As JimBob, I want to edit the site's emails and write one-off emails to groups of members from Studio, without a developer.","- Studio → Email lists every account email (welcome, verify, password reset, receipts…); edit its subject and wording with a live preview, send yourself a test, and reset to the original
+- Required parts can't be removed (the action link in a reset or verify email, the unsubscribe link in anything that isn't about the account); saving says what's missing
+- Write a one-off email (subject, text, images, a button) from a blank page or a saved layout; save as a draft; duplicate an earlier one
+- Choose who gets it: everyone who opted in (MBJ-107), by membership (Free, Plus, Premium), new this month, founding members, mods, or a hand-picked list; shows how many people before sending
+- Send now or schedule a date and time; a confirm step shows the audience size and a preview; a scheduled send can be cancelled
+- Only members who opted in get news emails, every one carries an unsubscribe link, and bounced or complained addresses are skipped (the existing suppression list)
+- After sending: delivered, opened, clicked, bounced and unsubscribed counts per email, and each send is in the email log
+- Sent in batches within the provider's limits (Resend, ADR-012), with the cost per send shown before a large one
+- Ruben, 2026-10-10","MBJ-107, MBJ-114, MBJ-705"
 MBJ-801,Videos dashboard with filters,Library & community,Phase 1 — VOD platform,Must,M,Done,"As a viewer, I want to find videos by type and search, starting from everything.","- Video types from import: regular, short, past live (vertical + short = short; was_live = live)
 - Filter chips: All, Videos, Shorts, Live, Members only; search and sort (newest, most viewed)
 - Members-only items show which tier unlocks them; access still enforced on the server",

@@ -98,6 +98,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-706 | Pick videos from the channel to import | Studio & analytics | 1 | Must | M | MBJ-701 |
 | MBJ-707 | Retitle queue in Studio | Studio & analytics | 1 | Must | M | MBJ-614, MBJ-616, MBJ-701 |
 | MBJ-708 | Push new titles back to YouTube (optional) | Studio & analytics | 1 | Could | S | MBJ-707, MBJ-615 |
+| MBJ-709 | Email editor and sends to groups | Studio & analytics | 1 | Should | L | MBJ-107, MBJ-114, MBJ-705 |
 | MBJ-801 | Videos dashboard with filters | Library & community | 1 | Must | M | — |
 | MBJ-802 | Playlists | Library & community | 1 | Must | M | MBJ-801 |
 | MBJ-803 | Up next and autoplay | Library & community | 1 | Must | S | MBJ-802 |
@@ -1455,6 +1456,23 @@ Acceptance criteria:
 - [ ] Highlight a user: VIP/featured badge and name color in chat and comments (e.g. regulars, guests, supporters); remove it any time
 - [ ] Change role (viewer, mod, admin) and, for support cases, tier; private staff notes on the user
 - [ ] Every action logged in mod_actions with who did it; bans and highlights apply live over WebSocket
+
+### MBJ-709 — Email editor and sends to groups
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-107, MBJ-114, MBJ-705
+
+As JimBob, I want to edit the site's emails and write one-off emails to groups of members from Studio, without a developer.
+
+Acceptance criteria:
+- [ ] Studio → Email lists every account email (welcome, verify, password reset, receipts…); edit its subject and wording with a live preview, send yourself a test, and reset to the original
+- [ ] Required parts can't be removed (the action link in a reset or verify email, the unsubscribe link in anything that isn't about the account); saving says what's missing
+- [ ] Write a one-off email (subject, text, images, a button) from a blank page or a saved layout; save as a draft; duplicate an earlier one
+- [ ] Choose who gets it: everyone who opted in (MBJ-107), by membership (Free, Plus, Premium), new this month, founding members, mods, or a hand-picked list; shows how many people before sending
+- [ ] Send now or schedule a date and time; a confirm step shows the audience size and a preview; a scheduled send can be cancelled
+- [ ] Only members who opted in get news emails, every one carries an unsubscribe link, and bounced or complained addresses are skipped (the existing suppression list)
+- [ ] After sending: delivered, opened, clicked, bounced and unsubscribed counts per email, and each send is in the email log
+- [ ] Sent in batches within the provider's limits (Resend, ADR-012), with the cost per send shown before a large one
+- [ ] Ruben, 2026-10-10
 
 ## Epic 8xx — Library & community
 
