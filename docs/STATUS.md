@@ -39,6 +39,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
      (`node tools/library-uploader/publish.mjs`). The download needs Render's `LIBRARY_R2_*` to point at the same
      bucket as the local `.env` (the wizard says so if it can't find the file).
   3. Keep the import helper running on Ruben's PC so new videos get their chat and comments.
+  - **Restarts and power cuts (2026-10-10):** the program asks once whether to start with Windows (a file in the
+    person's Startup folder, no admin rights); then it comes back by itself, minimized, when JimBob logs in. Finished
+    videos are kept, the one in progress starts over. "Stop starting automatically" / "Start automatically with
+    Windows" in the uploader folder change it. A second copy refuses to run while one is already going.
   - **Videos that were never on YouTube (2026-10-10):** files in a `Not on YouTube` folder inside the library
     folder (the program makes it) upload as new site-only videos. They arrive as **drafts** in Studio → Videos
     (title from the file name, dated when the file was made), hidden from everyone but Studio accounts until

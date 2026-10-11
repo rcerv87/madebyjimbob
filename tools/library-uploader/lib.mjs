@@ -95,6 +95,23 @@ export const titleFromName = (name) =>
     .trim()
     .slice(0, 200) || 'Untitled video';
 
+// Starting with Windows: a small file in the person's Startup folder that opens the uploader's Start file,
+// minimized, when they log in. It does nothing if the uploader folder was moved or deleted.
+export const STARTUP_FILE = 'MADEbyJIMBOB Library Uploader.cmd';
+export const startupScript = (startBat) =>
+  [
+    '@echo off',
+    'chcp 65001 >nul',
+    `if exist "${startBat}" start "MADEbyJIMBOB Library Uploader" /min "${startBat}"`,
+    '',
+  ].join('\r\n');
+
+// Is the uploader that wrote this lock still running? (`alive` says whether a process id exists.)
+export function lockHeld(text, alive, ownPid) {
+  const pid = Number.parseInt(String(text || '').trim(), 10);
+  return Number.isInteger(pid) && pid > 0 && pid !== ownPid && alive(pid);
+}
+
 // The uploader's id for a source file: the zip part (or folder path), the entry, and its size.
 export const fileKey = (container, entry, size) => `${container}|${entry}|${size}`;
 

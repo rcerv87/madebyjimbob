@@ -18,6 +18,8 @@ import {
   VIDEO,
   isSiteOnly,
   titleFromName,
+  startupScript,
+  lockHeld,
 } from '../../tools/library-uploader/lib.mjs';
 
 // A small zip, stored or deflated, the way Takeout writes them.
@@ -193,5 +195,24 @@ describe('videos that were never on YouTube', () => {
     );
     assert.equal(titleFromName('a/b/clip.MKV'), 'clip');
     assert.equal(titleFromName('___.mp4'), 'Untitled video');
+  });
+});
+
+describe('starting again after a restart', () => {
+  test('the Startup file opens the Start file minimized, and does nothing if the folder is gone', () => {
+    const bat = 'D:\Tools\MADEbyJIMBOB Library Uploader\Start MADEbyJIMBOB Library Uploader.bat';
+    const lines = startupScript(bat).split('\r\n');
+    assert.equal(lines[0], '@echo off');
+    assert.equal(lines.at(-2), `if exist "${bat}" start "MADEbyJIMBOB Library Uploader" /min "${bat}"`);
+  });
+
+  test('only one uploader runs at a time; a lock left by a power cut is ignored', () => {
+    const running = new Set([4321]);
+    const alive = (pid) => running.has(pid);
+    assert.equal(lockHeld('4321', alive, 999), true, 'another window is running it');
+    assert.equal(lockHeld('4321', alive, 4321), false, 'our own lock');
+    assert.equal(lockHeld('7777', alive, 999), false, 'that process is gone (power cut)');
+    assert.equal(lockHeld('', alive, 999), false);
+    assert.equal(lockHeld('not a number', alive, 999), false);
   });
 });

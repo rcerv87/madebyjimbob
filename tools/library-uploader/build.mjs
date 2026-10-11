@@ -44,6 +44,8 @@ fs.writeFileSync(
     'cd /d "%~dp0app"',
     ':run',
     'node.exe uploader.mjs %*',
+    // 3: another window is already running it. Nothing to restart.
+    'if %errorlevel%==3 exit',
     'echo.',
     'echo The uploader stopped. Starting it again in 30 seconds (close this window to stop it).',
     'timeout /t 30 >nul',
@@ -51,6 +53,15 @@ fs.writeFileSync(
     '',
   ].join('\r\n'),
 );
+// Double-click helpers to change starting with Windows later (the uploader asks once, the first time).
+for (const [file, onOff] of [
+  ['Start automatically with Windows.bat', 'on'],
+  ['Stop starting automatically.bat', 'off'],
+])
+  fs.writeFileSync(
+    path.join(out, file),
+    ['@echo off', 'cd /d "%~dp0app"', `node.exe uploader.mjs --autostart ${onOff}`, 'pause', ''].join('\r\n'),
+  );
 fs.writeFileSync(
   path.join(out, 'READ ME.txt'),
   [
@@ -64,6 +75,10 @@ fs.writeFileSync(
     '4. New files dropped in the folder later are picked up too (it checks every 10 minutes).',
     '5. Videos that were never on YouTube: put them in the "Not on YouTube" folder inside "MADEbyJIMBOB Library"',
     '   (the program makes it). They upload as drafts; give them a title and publish them in Studio → Videos.',
+    '',
+    'After a restart or a power cut it starts again by itself when you log in to Windows (it asks about this the',
+    'first time). To change that later, double-click "Stop starting automatically" or "Start automatically with',
+    'Windows" in this folder.',
     '',
     'Videos it cannot match to a YouTube video are listed in "needs-review.txt" in the folder. Send that to Ruben.',
     'Keep the drive: it is your full-quality backup.',
