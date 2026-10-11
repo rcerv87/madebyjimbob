@@ -105,6 +105,7 @@ they get `isAdmin: true` and see every tier.
 | POST | `/studio/members/:id/role` | admin | `{ role: viewer\|mod\|admin }` → `{ member }`. 409 for your own account or a banned member |
 | POST | `/studio/members/:id/ban` | admin | `{ reason }` (required, only staff see it) → `{ member }`. Signs the member out everywhere; sign-in then answers 403 `ACCOUNT_BANNED`. 409 for yourself, mods and admins |
 | DELETE | `/studio/members/:id/ban` | admin | Unban → `{ member }` |
+| GET | `/studio/library/uploader` | admin | Studio → Library uploader: `{ storageReady, download: { url (signed, 1 hour), sizeBytes, updatedAt } \| null, username, hasPassword, progress: { done, uploading, lastFinishedAt, lastTitle } }`. `download` is null until the program is published to the bucket (`node tools/library-uploader/publish.mjs`) |
 | GET | `/studio/links` | admin | `{ links }`: requests waiting first (YouTube ones with `messagesSeen`, how much that handle has posted), then every confirmed link, with the member's `username` |
 | POST | `/studio/links/:id/approve` | admin | Confirms a request (409 if that account is linked to another member) |
 | DELETE | `/studio/links/:id` | admin | Turns down or unlinks |

@@ -10,7 +10,12 @@ function fakeFetch(url, opts = {}) {
   const u = new URL(String(url));
   if (u.hostname !== 'jb.r2.cloudflarestorage.com') return realFetch(url, opts);
   const key = decodeURIComponent(u.pathname.replace('/madebyjimbob-live/', ''));
-  return Promise.resolve(new Response(null, { status: r2.has(key) ? 200 : 404 }));
+  return Promise.resolve(
+    new Response(null, {
+      status: r2.has(key) ? 200 : 404,
+      headers: { 'content-length': '163000000', 'last-modified': 'Sat, 10 Oct 2026 12:00:00 GMT' },
+    }),
+  );
 }
 
 let call;
@@ -33,6 +38,37 @@ after(async () => {
 });
 
 const post = (path, token, body) => call(path, { method: 'POST', token, body });
+
+describe('Studio → Library uploader', () => {
+  test('admins get a download link once the program is published, and see how the upload is going', async () => {
+    const admin = await signIn(call, 'test_admin');
+    const viewer = await signIn(call, 'wizard_viewer');
+    assert.equal((await call('/studio/library/uploader', { token: viewer })).status, 403);
+
+    const before = (await call('/studio/library/uploader', { token: admin })).data;
+    assert.equal(before.storageReady, true);
+    assert.equal(before.download, null, 'not published yet');
+    assert.equal(before.username, 'test_admin');
+    assert.equal(before.hasPassword, true);
+    assert.deepEqual(before.progress, { done: 0, uploading: 0, lastFinishedAt: null, lastTitle: null });
+
+    r2.add('tools/MADEbyJIMBOB-Library-Uploader.zip');
+    await pool.query(
+      `INSERT INTO library_uploads (youtube_id, file_key, title, status, finished_at)
+       VALUES ('WIZARD00001', 'wiz-1', 'First stream', 'done', now()), ('WIZARD00002', 'wiz-2', 'Second', 'uploading', NULL)`,
+    );
+    const now = (await call('/studio/library/uploader', { token: admin })).data;
+    const url = new URL(now.download.url);
+    assert.equal(url.pathname, '/madebyjimbob-live/tools/MADEbyJIMBOB-Library-Uploader.zip');
+    assert.equal(url.searchParams.get('X-Amz-Expires'), '3600', 'the link lasts an hour');
+    assert.equal(now.download.sizeBytes, 163000000);
+    assert.equal(now.download.updatedAt, '2026-10-10T12:00:00.000Z');
+    assert.equal(now.progress.done, 1);
+    assert.equal(now.progress.uploading, 1);
+    assert.equal(now.progress.lastTitle, 'First stream');
+    await pool.query(`DELETE FROM library_uploads WHERE file_key IN ('wiz-1', 'wiz-2')`);
+  });
+});
 
 describe('Library Uploader (MBJ-818)', () => {
   test('only Studio accounts; upload links only for the video’s own files', async () => {

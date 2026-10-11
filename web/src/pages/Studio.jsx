@@ -9,6 +9,7 @@ import StudioMembers from '../components/StudioMembers.jsx';
 import StudioSuperchats from '../components/StudioSuperchats.jsx';
 import StudioLive from '../components/StudioLive.jsx';
 import StudioImports from '../components/StudioImports.jsx';
+import StudioUploader from '../components/StudioUploader.jsx';
 import StudioVideoActions from '../components/StudioVideoActions.jsx';
 import useTitle from '../useTitle.js';
 
@@ -18,6 +19,7 @@ const TABS = [
   ['live', 'Live'],
   ['videos', 'Videos'],
   ['add', 'Add videos'],
+  ['uploader', 'Library uploader'],
   ['members', 'Members'],
   ['reports', 'Reports'],
   ['email', 'Email'],
@@ -193,6 +195,8 @@ export default function Studio({ user }) {
       )}
 
       {tab === 'add' && <StudioImports onImported={load} />}
+
+      {tab === 'uploader' && <StudioUploader />}
 
       {tab === 'members' && (
         <>
