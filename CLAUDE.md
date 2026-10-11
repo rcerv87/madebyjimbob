@@ -52,6 +52,8 @@ npm run captions:fetch         # save finished Stream captions into transcripts 
 npm run import:playlists -- <playlist or channel URL>   # YouTube playlists (order kept)
 npm run import:worker          # import helper: runs imports queued in Studio → Add videos and lists channels for From the channel (`-- --local` for local)
 npm run set-role -- <username> admin [--live]   # Studio access by account
+node tools/library-uploader/build.mjs --ffmpeg <folder>   # build the Library Uploader zip for JimBob's PC
+node tools/library-uploader/publish.mjs        # put that zip in the bucket; Studio → Library uploader offers it
 npm run migrate:create -- <name>   # new SQL migration in server/migrations/
 npm run format                 # Prettier; `format:check` to verify only
 npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only] [--no-comments]

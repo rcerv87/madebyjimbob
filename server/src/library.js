@@ -127,6 +127,56 @@ export async function finishUpload(user, id, body) {
   return { videoId, importJobId: jobId, hlsUrl };
 }
 
+// Where the uploader program itself is kept, in the same bucket (put there by tools/library-uploader/publish.mjs).
+export const UPLOADER_KEY = 'tools/MADEbyJIMBOB-Library-Uploader.zip';
+
+// Studio → Library uploader: a one-hour download link for the program (when it's been published), whether this
+// account can sign in to it (it asks for a username and password, so a Google-only account needs a password
+// first), and how the upload is going.
+export async function uploaderStatus(user) {
+  const store = libraryStore();
+  let download = null;
+  if (store) {
+    const head = await s3Request(store, 'HEAD', UPLOADER_KEY).catch(() => null);
+    if (head) {
+      download = {
+        url: presign(store, 'GET', UPLOADER_KEY, 3600),
+        sizeBytes: Number(head.headers.get('content-length')) || null,
+        updatedAt: head.headers.get('last-modified')
+          ? new Date(head.headers.get('last-modified')).toISOString()
+          : null,
+      };
+    }
+  }
+  const [password, progress] = await Promise.all([
+    pool.query(
+      `SELECT 1 FROM accounts WHERE user_id = $1 AND provider_id = 'credential' AND password IS NOT NULL`,
+      [user.id],
+    ),
+    pool.query(
+      `SELECT count(*) FILTER (WHERE status = 'done') AS done,
+         count(*) FILTER (WHERE status = 'uploading') AS uploading,
+         max(finished_at) AS last_finished_at,
+         (SELECT title FROM library_uploads WHERE status = 'done' ORDER BY finished_at DESC NULLS LAST LIMIT 1)
+           AS last_title
+       FROM library_uploads`,
+    ),
+  ]);
+  const p = progress.rows[0];
+  return {
+    storageReady: Boolean(store),
+    download,
+    username: user.username,
+    hasPassword: password.rowCount > 0,
+    progress: {
+      done: Number(p.done),
+      uploading: Number(p.uploading),
+      lastFinishedAt: p.last_finished_at,
+      lastTitle: p.last_title,
+    },
+  };
+}
+
 // What's already uploaded, so a fresh install (or a second computer) skips it: { fileKeys: [...] } → { done: [...] }.
 export async function uploadedKeys(body) {
   const keys = Array.isArray(body?.fileKeys) ? body.fileKeys.map(String).slice(0, 2000) : [];

@@ -8,7 +8,14 @@ import { filterText, filterComment, extractMentions } from './moderation.js';
 import { playback, deleteFromStream, createDirectUpload, streamConfigured } from './stream.js';
 import { queueImports, listImports, jobRow, helperStatus, youtubeId } from './imports.js';
 import { checkReplacement } from './replacements.js';
-import { startUpload, signUpload, finishUpload, uploadedKeys, channelTitles } from './library.js';
+import {
+  startUpload,
+  signUpload,
+  finishUpload,
+  uploadedKeys,
+  channelTitles,
+  uploaderStatus,
+} from './library.js';
 import {
   liveConfigured,
   liveStatus,
@@ -1598,6 +1605,11 @@ const libraryRoute = (handler) =>
       throw err;
     }
   });
+// Studio → Library uploader: the program's download link and how the upload is going.
+app.get(
+  '/api/studio/library/uploader',
+  libraryRoute((req) => uploaderStatus(req.user)),
+);
 app.get(
   '/api/studio/library/channel',
   libraryRoute(() => channelTitles()),

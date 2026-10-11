@@ -30,9 +30,14 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   1. JimBob's Cloudflare: bucket `madebyjimbob-live`, CORS, the r2.dev public address (testing), and an Object Read &
      Write token for that bucket; then `LIBRARY_R2_ACCOUNT_ID`, `LIBRARY_R2_ACCESS_KEY_ID`,
      `LIBRARY_R2_SECRET_ACCESS_KEY`, `LIBRARY_R2_BUCKET`, `LIBRARY_R2_PUBLIC_URL` on Render (and in the local `.env`).
-  2. Build the folder: `node tools/library-uploader/build.mjs --ffmpeg <folder with ffmpeg.exe and ffprobe.exe>`
-     (→ `tools/library-uploader/dist/MADEbyJIMBOB Library Uploader.zip`, ~200 MB), copy it to JimBob's PC, unzip, and
-     put the "Start MADEbyJIMBOB Library Uploader" shortcut on his desktop. He signs in once with his site account.
+  2. **Done 2026-10-10:** the program is in the bucket and **Studio → Library uploader**
+     (`https://madebyjimbob.app/studio/uploader`) walks JimBob through it in five steps (what you need, download,
+     make the folder, start it, let it run) and shows how many videos are uploaded. Send him that link once his
+     account is an admin (Studio → Members) and has a password (the program asks for username and password, so a
+     Google-only account sets one with Forgot password first). After changing the program: rebuild
+     (`node tools/library-uploader/build.mjs --ffmpeg <folder with ffmpeg.exe and ffprobe.exe>`) and publish
+     (`node tools/library-uploader/publish.mjs`). The download needs Render's `LIBRARY_R2_*` to point at the same
+     bucket as the local `.env` (the wizard says so if it can't find the file).
   3. Keep the import helper running on Ruben's PC so new videos get their chat and comments.
   4. Before real viewers: connect `live.madebyjimbob.app` to JimBob's bucket (domain move, MIGRATION.md step 6).
 
@@ -294,7 +299,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 - Tiers enforced on the server for video, chat, comments, and the live WebSocket (the socket knows you from
   the session cookie).
 - **Studio has tabs (2026-10-10):** Overview (the numbers, a "Needs attention" list with links, a members snapshot, top
-  chatters), Live (go live + super chats), Videos (content table + playlists), Add videos, Members (list + linked
+  chatters), Live (go live + super chats), Videos (content table + playlists), Add videos, Library uploader, Members (list + linked
   accounts), Reports, Email. Each tab has its own address (`/studio/members` …), so refresh and shared links work;
   tabs show a count when something is waiting (open reports, link requests, failed imports), and only the open tab
   loads its data. A Money tab (members and revenue) comes with MBJ-703; editing emails and sending to groups from the Email tab is MBJ-709.
