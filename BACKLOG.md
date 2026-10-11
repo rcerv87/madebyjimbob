@@ -1452,7 +1452,11 @@ As JimBob or a mod, I want to find any member and act on them in one place.
 Acceptance criteria:
 - [ ] Users list with search and filters: tier, role, banned, highlighted, new this week; sort by activity
 - [ ] User page: profile, tier and membership, linked YouTube/Rumble names, chat and comment history, notifications sent, mod history
-- [ ] Ban (with reason; blocks sign-in, chat, and comments), time out for a set time, unban; hide all of a user's messages in one step
+- [ ] Ban (with reason; blocks sign-in, chat, and comments), unban; hide all of a user's messages in one step
+- [ ] Time out instead of banning (Ruben, 2026-10-10): the member stays signed in and can still watch and like, but can't chat, comment, or super chat a message until it ends
+- [ ] Time out length: this stream (ends when the stream does), 1 week, 2 weeks, or a custom end date and time; with a reason only staff see
+- [ ] The timed-out member sees why they can't post and when it ends, in the chat box and the comment box; it lifts by itself, and staff can end it early or extend it
+- [ ] Members list shows who is timed out and until when, with a Timed out filter; the same choice is offered from a report and from a message in chat
 - [ ] Highlight a user: VIP/featured badge and name color in chat and comments (e.g. regulars, guests, supporters); remove it any time
 - [ ] Change role (viewer, mod, admin) and, for support cases, tier; private staff notes on the user
 - [ ] Every action logged in mod_actions with who did it; bans and highlights apply live over WebSocket

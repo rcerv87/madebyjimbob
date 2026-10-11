@@ -605,7 +605,11 @@ S = [
  "As JimBob or a mod, I want to find any member and act on them in one place.",
  ["Users list with search and filters: tier, role, banned, highlighted, new this week; sort by activity",
   "User page: profile, tier and membership, linked YouTube/Rumble names, chat and comment history, notifications sent, mod history",
-  "Ban (with reason; blocks sign-in, chat, and comments), time out for a set time, unban; hide all of a user's messages in one step",
+  "Ban (with reason; blocks sign-in, chat, and comments), unban; hide all of a user's messages in one step",
+  "Time out instead of banning (Ruben, 2026-10-10): the member stays signed in and can still watch and like, but can't chat, comment, or super chat a message until it ends",
+  "Time out length: this stream (ends when the stream does), 1 week, 2 weeks, or a custom end date and time; with a reason only staff see",
+  "The timed-out member sees why they can't post and when it ends, in the chat box and the comment box; it lifts by itself, and staff can end it early or extend it",
+  "Members list shows who is timed out and until when, with a Timed out filter; the same choice is offered from a report and from a message in chat",
   "Highlight a user: VIP/featured badge and name color in chat and comments (e.g. regulars, guests, supporters); remove it any time",
   "Change role (viewer, mod, admin) and, for support cases, tier; private staff notes on the user",
   "Every action logged in mod_actions with who did it; bans and highlights apply live over WebSocket"], ["102", "204"]),
@@ -787,7 +791,7 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "00
 # 116: /@username page, name cards in chat and comments (View profile, Reply, Mention), sharing switches; bio/display name come with MBJ-117, badges with MBJ-602, banned-member view with MBJ-204.
 # 706: From the channel in Studio (helper lists with yt-dlp; API key path ready), filters, select all, members-only badge, "You already have this".
 # 102: users.role + npm run set-role (admin opens Studio); roles changed in Studio → Members (with MBJ-705); mod role use and /api/mod/* remain (MBJ-204).
-# 705: list, search, filters (staff, new, banned, tier), role change, ban with reason / unban, mod_actions log. Remain: member page with history, timeouts, hide all messages, highlight, staff notes, tier override, live over WebSocket (with MBJ-204).
+# 705: list, search, filters (staff, new, banned, tier), role change, ban with reason / unban, mod_actions log. Remain: member page with history, timeouts (this stream / 1 week / 2 weeks / custom date; can still watch and like), hide all messages, highlight, staff notes, tier override, live over WebSocket (with MBJ-204).
 # 110: device list and sign out any device (in /account) done; Google/Apple/X/Facebook, magic link, passkeys, merging accounts remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 

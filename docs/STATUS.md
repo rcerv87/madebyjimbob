@@ -288,7 +288,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   (username, name, or a whole email), filters (mods and admins, new this week, banned, membership), a role switch
   (member, mod, admin; admins open Studio), and ban with a reason / unban. A ban signs the member out everywhere and
   refuses sign-in, so chat and comments stop too. Every action is in the log under the list (`mod_actions`).
-  Emails are masked. Still to come: a member's page with their history, timeouts, hide all their messages,
+  Emails are masked. Still to come: a member's page with their history, timeouts (can't post but can still watch and like; this stream, 1 week, 2 weeks, or a custom date), hide all their messages,
   highlight/VIP, staff notes, a tier override, and tools for mods (with MBJ-204).
 - Studio (accounts with the admin role, set in Studio → Members or with `npm run set-role`, or verified emails in `ADMIN_EMAILS`): totals,
   per-video stats, top chatters, set a video's tier, playlists, linked accounts, email, and (MBJ-701):
