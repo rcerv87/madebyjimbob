@@ -49,6 +49,7 @@ import accountRouter from './account.js';
 import { viewerKey, recordView } from './views.js';
 import { findProfile, profileFor } from './profiles.js';
 import { hasBlocked, hiddenBy, fileReport, listReports } from './blocks.js';
+import { listMembers, setRole, banMember, unbanMember, recentActions } from './members.js';
 import { favoritesOf, canFavorite } from './favorites.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
@@ -1471,6 +1472,45 @@ app.post(
     if (!rowCount) return res.status(404).json({ error: 'No such report.' });
     res.json({ ok: true });
   }),
+);
+
+// Studio → Members (MBJ-705): the member list with search and filters, role changes, ban and unban, and the log
+// of who did what. Emails are masked. Timeouts, highlights and hiding messages come with MBJ-204.
+const memberRoute = (handler) =>
+  wrap(async (req, res) => {
+    if (req.params.id && !isId(req.params.id)) return res.status(404).json({ error: 'No such member.' });
+    try {
+      res.json(await handler(req));
+    } catch (err) {
+      if ([400, 404, 409].includes(err.status)) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  });
+app.get(
+  '/api/studio/members',
+  memberRoute(async (req) => ({
+    ...(await listMembers({
+      q: textField(req.query.q),
+      tier: req.query.tier,
+      filter: req.query.filter,
+      offset: req.query.offset,
+    })),
+    actions: await recentActions(),
+  })),
+);
+app.post(
+  '/api/studio/members/:id/role',
+  memberRoute(async (req) => ({ member: await setRole(req.user, req.params.id, req.body?.role) })),
+);
+app.post(
+  '/api/studio/members/:id/ban',
+  memberRoute(async (req) => ({
+    member: await banMember(req.user, req.params.id, textField(req.body?.reason)),
+  })),
+);
+app.delete(
+  '/api/studio/members/:id/ban',
+  memberRoute(async (req) => ({ member: await unbanMember(req.user, req.params.id) })),
 );
 
 // Studio email: whether sending is on, the templates (preview and send a test), and recent sends.

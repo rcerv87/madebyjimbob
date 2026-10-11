@@ -95,6 +95,8 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   linked members are recognised); `import-youtube.js` runs `resolvePendingChannels()` at the end.
 - Server tests load the app only after rebuilding the test database (`startServer()` in `test/helpers.js`):
   Better Auth checks the database as soon as it loads, and racing the rebuild stalled requests.
+- Members and bans (MBJ-705): `server/src/members.js`. Role changes and bans go through it so they're logged in
+  `mod_actions`. A ban deletes the member's sessions and `auth.js` refuses new ones; there's no per-request ban check.
 - Deleting accounts: `server/src/deletion.js`. A request waits 30 days (signing in cancels it); an hourly job in
   the server process erases due accounts. New tables that reference `users` need `ON DELETE CASCADE` (or SET NULL
   for content that should stay as "Deleted user"), and new personal data belongs in `exportData()`.
@@ -135,7 +137,7 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 
 ## Known POC shortcuts (tracked in backlog)
 
-- Studio access: `users.role = 'admin'` (npm run set-role) or a verified email in `ADMIN_EMAILS`; mod tools and role management in Studio → MBJ-102
+- Studio access: `users.role = 'admin'` (Studio → Members, or npm run set-role) or a verified email in `ADMIN_EMAILS`; mods have no tools of their own yet → MBJ-204
 - Google/Apple sign-in, magic links, passkeys, and the device list aren't built yet → MBJ-110
 - Stream URLs unsigned → MBJ-103
 - In-memory rate limit → MBJ-205 (Redis)

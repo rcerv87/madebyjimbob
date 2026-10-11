@@ -153,7 +153,7 @@ export async function exportData(userId) {
     superchats,
   ] = await Promise.all([
     q(`SELECT id, username, display_name, email, email_verified, image, tier, xp, notification_prefs, created_at,
-         deletion_requested_at FROM users WHERE id = $1`),
+         deletion_requested_at, banned_at FROM users WHERE id = $1`),
     q(`SELECT c.id, c.video_id, v.title AS video_title, c.parent_id, c.reply_to_id, c.body, c.offset_ms,
          c.like_count, c.hidden, c.posted_at FROM comments c JOIN videos v ON v.id = c.video_id
        WHERE c.user_id = $1 ORDER BY c.posted_at`),

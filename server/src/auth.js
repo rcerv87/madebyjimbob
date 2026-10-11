@@ -220,6 +220,16 @@ export const auth = betterAuth({
     },
     session: {
       create: {
+        // A banned account (Studio → Members, MBJ-705) can't sign in; banning also deletes its sessions.
+        before: async (session) => {
+          const { rows } = await pool.query('SELECT banned_at FROM users WHERE id = $1', [session.userId]);
+          if (rows[0]?.banned_at) {
+            throw new APIError('FORBIDDEN', {
+              code: 'ACCOUNT_BANNED',
+              message: 'This account has been banned. If you think that’s a mistake, contact JimBob’s team.',
+            });
+          }
+        },
         // Every new session is a sign-in, except the ones sign-up and password changes make for you.
         after: async (session, ctx) => {
           const path = ctx?.path || '';

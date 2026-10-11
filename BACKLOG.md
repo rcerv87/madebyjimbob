@@ -1444,7 +1444,7 @@ Acceptance criteria:
 
 ### MBJ-705 — User management in Studio
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-102, MBJ-204
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-102, MBJ-204
 
 As JimBob or a mod, I want to find any member and act on them in one place.
 

@@ -5,6 +5,7 @@ import StudioPlaylists from '../components/StudioPlaylists.jsx';
 import StudioEmail from '../components/StudioEmail.jsx';
 import StudioLinks from '../components/StudioLinks.jsx';
 import StudioReports from '../components/StudioReports.jsx';
+import StudioMembers from '../components/StudioMembers.jsx';
 import StudioSuperchats from '../components/StudioSuperchats.jsx';
 import StudioLive from '../components/StudioLive.jsx';
 import StudioImports from '../components/StudioImports.jsx';
@@ -97,6 +98,7 @@ export default function Studio({ user }) {
       <StudioSuperchats />
       <StudioImports onImported={load} />
       <StudioReports />
+      <StudioMembers user={user} />
 
       <div className="studio-cols">
         <section className="panel">

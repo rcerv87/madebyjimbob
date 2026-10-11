@@ -98,6 +98,10 @@ they get `isAdmin: true` and see every tier.
 | PUT | `/studio/playlists/:id/items` | admin | `{ videoIds }` replaces the playlist's videos in that order |
 | GET | `/studio/reports?status=open\|resolved\|dismissed` | admin | `{ reports: [{ id, reporter, target, reason, details, excerpt, chatMessageId, commentId, videoId, offsetMs, reportsOnMember, status, createdAt }] }` |
 | POST | `/studio/reports/:id` | admin | `{ status: resolved\|dismissed\|open }` |
+| GET | `/studio/members?q=&tier=free\|plus\|premium&filter=all\|staff\|new\|banned&offset=` | admin | Studio → Members (MBJ-705): `{ members: [{ id, username, displayName, email (masked), emailVerified, tier, role, adminByEmail, bannedAt, banReason, createdAt, lastSeenAt, chatCount, commentCount }], total, offset, pageSize (50), actions }`, most recently active first. `q` matches part of a username or display name, or a whole email. `actions` is the last 20 log entries `{ id, action: role\|ban\|unban, actor, target, reason, createdAt }` |
+| POST | `/studio/members/:id/role` | admin | `{ role: viewer\|mod\|admin }` → `{ member }`. 409 for your own account or a banned member |
+| POST | `/studio/members/:id/ban` | admin | `{ reason }` (required, only staff see it) → `{ member }`. Signs the member out everywhere; sign-in then answers 403 `ACCOUNT_BANNED`. 409 for yourself, mods and admins |
+| DELETE | `/studio/members/:id/ban` | admin | Unban → `{ member }` |
 | GET | `/studio/links` | admin | `{ links }`: requests waiting first (YouTube ones with `messagesSeen`, how much that handle has posted), then every confirmed link, with the member's `username` |
 | POST | `/studio/links/:id/approve` | admin | Confirms a request (409 if that account is linked to another member) |
 | DELETE | `/studio/links/:id` | admin | Turns down or unlinks |
