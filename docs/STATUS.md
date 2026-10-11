@@ -39,13 +39,10 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
      (`node tools/library-uploader/publish.mjs`). The download needs Render's `LIBRARY_R2_*` to point at the same
      bucket as the local `.env` (the wizard says so if it can't find the file).
   3. Keep the import helper running on Ruben's PC so new videos get their chat and comments.
-  - **Which bucket (found 2026-10-10):** the live site didn't find the program in JimBob's bucket, so Render is
-    using its own `R2_*` bucket (Ruben's, `live.madebyjimbob.app`) for the library: `LIBRARY_R2_*` is missing or not
-    working there. The program is now published to both buckets and the site looks in both. Step 5 of the wizard
-    shows "Videos are stored at <address>": `pub-….r2.dev` means JimBob's bucket, `live.madebyjimbob.app` means
-    Ruben's. **Decide before JimBob starts a full upload**: set the five `LIBRARY_R2_*` values on Render (same as
-    the local `.env`) to put the library in JimBob's account from the start, or leave it and copy later
-    (MIGRATION.md step 5).
+  - **Which bucket (fixed 2026-10-10):** the wizard's download first failed because a `LIBRARY_R2_*` id on Render
+    was mistyped; Ruben corrected it, so the library goes to JimBob's bucket. Studio → Library uploader now shows a
+    red message when the server can't use the library storage, and step 5 shows "Videos are stored at <address>"
+    (`pub-….r2.dev` is JimBob's bucket). The program is published to both buckets and the site looks in both.
   - **Restarts and power cuts (2026-10-10):** the program asks once whether to start with Windows (a file in the
     person's Startup folder, no admin rights); then it comes back by itself, minimized, when JimBob logs in. Finished
     videos are kept, the one in progress starts over. "Stop starting automatically" / "Start automatically with
