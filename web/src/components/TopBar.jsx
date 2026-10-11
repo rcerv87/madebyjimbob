@@ -5,7 +5,7 @@ import { BRAND } from '../brand.js';
 import { Bell } from '../notifications.jsx';
 import { InstallButton } from '../install.jsx';
 
-export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu }) {
+export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu, onFeedback }) {
   const [params] = useSearchParams();
   const urlQ = params.get('q') || '';
   const [q, setQ] = useState(urlQ);
@@ -58,7 +58,7 @@ export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu }) {
                 Upgrade
               </Link>
             )}
-            <AccountMenu user={user} onSignOut={onSignOut} />
+            <AccountMenu user={user} onSignOut={onSignOut} onFeedback={onFeedback} />
             <button className="text-btn" onClick={onSignOut}>
               Sign out
             </button>
@@ -74,7 +74,7 @@ export default function TopBar({ user, notes, onSignIn, onSignOut, onMenu }) {
 }
 
 // The avatar opens who you're signed in as and Sign out (the only way to sign out on phones).
-function AccountMenu({ user, onSignOut }) {
+function AccountMenu({ user, onSignOut, onFeedback }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -113,6 +113,19 @@ function AccountMenu({ user, onSignOut }) {
           <Link to="/account" role="menuitem" className="account-menu-item" onClick={() => setOpen(false)}>
             Account settings
           </Link>
+          {onFeedback && (
+            <button
+              type="button"
+              role="menuitem"
+              className="account-menu-item"
+              onClick={() => {
+                setOpen(false);
+                onFeedback();
+              }}
+            >
+              Send feedback
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"

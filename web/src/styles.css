@@ -4589,3 +4589,22 @@ a.text-btn {
   flex-basis: 100%;
   margin: 0;
 }
+
+/* ---------- send feedback ---------- */
+.auth-dialog textarea {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+.feedback-preview {
+  max-height: 160px;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  object-fit: contain;
+  align-self: flex-start;
+}

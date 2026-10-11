@@ -67,6 +67,15 @@ import {
   endTimeout,
   recentActions,
 } from './members.js';
+import {
+  feedbackEnabled,
+  sendFeedback,
+  listFeedback,
+  setFeedbackStatus,
+  feedbackScreenshot,
+  newFeedbackCount,
+  FEEDBACK_STATUSES,
+} from './feedback.js';
 import { favoritesOf, canFavorite } from './favorites.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
@@ -130,15 +139,16 @@ app.post('/api/auth/change-email', async (req, res, next) => {
 });
 // Sign-up, sign-in, sign-out, email verification, password reset (Better Auth reads its own body).
 app.all('/api/auth/*', toNodeHandler(auth));
-app.use(
-  express.json({
-    limit: '50kb',
-    // Webhook signatures are over the exact bytes received.
-    verify: (req, _res, buf) => {
-      if (req.url.startsWith('/api/webhooks/')) req.rawBody = buf;
-    },
-  }),
-);
+const smallJson = express.json({
+  limit: '50kb',
+  // Webhook signatures are over the exact bytes received.
+  verify: (req, _res, buf) => {
+    if (req.url.startsWith('/api/webhooks/')) req.rawBody = buf;
+  },
+});
+// Feedback can carry a screenshot (shrunk in the browser), so it alone may be bigger.
+const feedbackJson = express.json({ limit: '3mb' });
+app.use((req, res, next) => (req.path === '/api/feedback' ? feedbackJson : smallJson)(req, res, next));
 
 // ---------- helpers ----------
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -348,7 +358,23 @@ app.get(
       // Favorites highlight only while the member is Premium (MBJ-220); kept, but not sent, otherwise.
       user.favorites = canFavorite(user) ? await favoritesOf(user.id) : [];
     }
-    res.json({ user });
+    // What the site offers right now, for everyone: Send feedback is on during the beta (FEEDBACK=off ends it).
+    res.json({ user, options: { feedback: feedbackEnabled() } });
+  }),
+);
+
+// Send feedback (MBJ-819): { note, page, videoId, offsetMs, screen, screenshot (a data URL, optional) }.
+app.post(
+  '/api/feedback',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to send feedback.' });
+    try {
+      res.json(await sendFeedback(user, req.body, req.headers['user-agent']));
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
   }),
 );
 
@@ -1430,6 +1456,7 @@ app.get(
         failedImports: Number(attention.rows[0].failed_imports),
         queuedImports: Number(attention.rows[0].queued_imports),
         drafts: videos.filter((v) => v.draft).length,
+        newFeedback: await newFeedbackCount(),
       },
       members: {
         total: Number(attention.rows[0].members),
@@ -1596,6 +1623,43 @@ app.delete(
 app.delete(
   '/api/studio/members/:id/ban',
   memberRoute(async (req) => ({ member: await unbanMember(req.user, req.params.id) })),
+);
+
+// Studio → Feedback (MBJ-819): what testers sent, by status; mark each seen or done; open its screenshot.
+app.get(
+  '/api/studio/feedback',
+  wrap(async (req, res) => {
+    const status = FEEDBACK_STATUSES.includes(req.query.status) ? req.query.status : 'new';
+    res.json({ feedback: await listFeedback(status) });
+  }),
+);
+app.post(
+  '/api/studio/feedback/:id',
+  wrap(async (req, res) => {
+    if (!isId(req.params.id)) return res.status(404).json({ error: 'No such feedback.' });
+    try {
+      res.json(await setFeedbackStatus(req.user, req.params.id, req.body?.status));
+    } catch (err) {
+      if (err.status) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  }),
+);
+app.get(
+  '/api/studio/feedback/:id/screenshot',
+  wrap(async (req, res) => {
+    const shot = isId(req.params.id) ? await feedbackScreenshot(req.params.id) : null;
+    if (!shot) return res.status(404).json({ error: 'No screenshot.' });
+    // Sent by a member: shown as a picture only, never run as a page.
+    res.set({
+      'Content-Type': shot.type,
+      'Content-Disposition': 'inline',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
+      'Cache-Control': 'private, max-age=3600',
+    });
+    res.send(shot.bytes);
+  }),
 );
 
 // Studio email: whether sending is on, the templates (preview and send a test), and recent sends.

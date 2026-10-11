@@ -151,6 +151,7 @@ export async function exportData(userId) {
     favorites,
     memberships,
     superchats,
+    feedback,
   ] = await Promise.all([
     q(`SELECT id, username, display_name, email, email_verified, image, tier, xp, notification_prefs, created_at,
          deletion_requested_at, banned_at FROM users WHERE id = $1`),
@@ -178,6 +179,8 @@ export async function exportData(userId) {
          FROM subscriptions WHERE user_id = $1 ORDER BY created_at`),
     q(`SELECT s.video_id, v.title AS video_title, s.amount_cents, s.currency, s.message, s.status, s.created_at,
          s.paid_at FROM superchats s JOIN videos v ON v.id = s.video_id WHERE s.user_id = $1 ORDER BY s.created_at`),
+    q(`SELECT note, page, video_id, offset_ms, user_agent, screen, screenshot IS NOT NULL AS had_screenshot, status,
+         created_at FROM feedback WHERE user_id = $1 ORDER BY created_at`),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -196,5 +199,6 @@ export async function exportData(userId) {
     // Card details and receipts stay with Stripe (Account settings → Manage billing).
     memberships,
     superchats,
+    feedback,
   };
 }

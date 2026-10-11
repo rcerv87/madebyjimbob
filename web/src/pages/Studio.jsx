@@ -11,6 +11,7 @@ import StudioLive from '../components/StudioLive.jsx';
 import StudioImports from '../components/StudioImports.jsx';
 import StudioUploader from '../components/StudioUploader.jsx';
 import StudioDrafts from '../components/StudioDrafts.jsx';
+import StudioFeedback from '../components/StudioFeedback.jsx';
 import StudioVideoActions from '../components/StudioVideoActions.jsx';
 import useTitle from '../useTitle.js';
 
@@ -23,6 +24,7 @@ const TABS = [
   ['uploader', 'Library uploader'],
   ['members', 'Members'],
   ['reports', 'Reports'],
+  ['feedback', 'Feedback'],
   ['email', 'Email'],
 ];
 
@@ -110,11 +112,18 @@ export default function Studio({ user }) {
       'members',
       `${count(a.pendingLinks, 'linked-account request')} waiting for a yes or no`,
     ],
+    a.newFeedback > 0 && ['feedback', `${count(a.newFeedback, 'new feedback note')} from testers`],
     a.drafts > 0 && ['videos', `${count(a.drafts, 'draft video')} to title and publish`],
     a.failedImports > 0 && ['add', `${count(a.failedImports, 'import')} failed`],
     a.queuedImports > 0 && ['add', `${count(a.queuedImports, 'import')} in the queue`],
   ].filter(Boolean);
-  const badge = { reports: a.openReports, members: a.pendingLinks, add: a.failedImports, videos: a.drafts };
+  const badge = {
+    reports: a.openReports,
+    members: a.pendingLinks,
+    add: a.failedImports,
+    videos: a.drafts,
+    feedback: a.newFeedback,
+  };
 
   return (
     <div className="studio">
@@ -211,6 +220,8 @@ export default function Studio({ user }) {
       )}
 
       {tab === 'reports' && <StudioReports />}
+
+      {tab === 'feedback' && <StudioFeedback />}
 
       {tab === 'email' && <StudioEmail />}
 

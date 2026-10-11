@@ -5,6 +5,7 @@ import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import SignInDialog, { googleError } from './components/SignInDialog.jsx';
 import PickUsername from './components/PickUsername.jsx';
+import FeedbackDialog from './components/FeedbackDialog.jsx';
 import AccountNotice from './components/AccountNotice.jsx';
 import Home from './pages/Home.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -36,6 +37,9 @@ import { useKeepPlaying } from './keepPlaying.js';
 export default function App() {
   const [user, setUser] = useState(null);
   const [signingIn, setSigningIn] = useState(false);
+  // What the site offers right now (from /api/me): Send feedback during the beta.
+  const [options, setOptions] = useState({});
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   // Google sent them back with a problem (?auth=google&error=<code>): say so in the sign-in dialog, once.
   const [signInError] = useState(() => {
     const p = new URLSearchParams(window.location.search);
@@ -52,7 +56,10 @@ export default function App() {
   const refreshUser = useCallback((u) => {
     if (u !== undefined) return setUser(u);
     api('/me')
-      .then((d) => setUser(d.user))
+      .then((d) => {
+        setUser(d.user);
+        setOptions(d.options || {});
+      })
       .catch(() => {});
   }, []);
   useEffect(() => {
@@ -76,6 +83,7 @@ export default function App() {
   return (
     <div className={`shell ${navOpen ? 'nav-open' : ''}`}>
       <TopBar
+        onFeedback={options.feedback ? () => setFeedbackOpen(true) : undefined}
         user={user}
         notes={notes}
         onSignIn={() => setSigningIn('signin')}
@@ -119,6 +127,7 @@ export default function App() {
       </main>
       <NotificationToast notes={notes} />
       <IosInstallHint />
+      {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
       {user?.needsUsername && <PickUsername user={user} onDone={() => refreshUser()} />}
       {signingIn && (
         <SignInDialog
