@@ -95,6 +95,8 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   linked members are recognised); `import-youtube.js` runs `resolvePendingChannels()` at the end.
 - Server tests load the app only after rebuilding the test database (`startServer()` in `test/helpers.js`):
   Better Auth checks the database as soon as it loads, and racing the rebuild stalled requests.
+- Studio is tabbed (`web/src/pages/Studio.jsx`, `TABS`): each section lives at `/studio/<id>`. A new tab needs its id in
+  `TABS` and in the `/studio/...` pattern in `server/src/pages.js`, or a refresh on it is a 404.
 - Members and bans (MBJ-705): `server/src/members.js`. Role changes and bans go through it so they're logged in
   `mod_actions`. A ban deletes the member's sessions and `auth.js` refuses new ones; there's no per-request ban check.
 - Deleting accounts: `server/src/deletion.js`. A request waits 30 days (signing in cancels it); an hourly job in

@@ -93,7 +93,7 @@ export default function App() {
             <Route path="/shop" element={<Shop />} />
             <Route path="/art" element={<Art />} />
             <Route path="/watch/:id" element={null} />
-            <Route path="/studio" element={<Studio user={user} />} />
+            <Route path="/studio/*" element={<Studio user={user} />} />
             <Route path="/live" element={<Live session={session} />} />
             <Route path="/membership" element={<Membership session={session} />} />
             <Route path="/membership/welcome" element={<MembershipWelcome session={session} />} />

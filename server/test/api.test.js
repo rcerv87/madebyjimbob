@@ -157,6 +157,18 @@ describe('studio', () => {
     const overview = await call('/studio/overview', { token: admin });
     assert.equal(overview.status, 200);
     assert.ok(overview.data.totals.videos >= 1);
+    assert.deepEqual(Object.keys(overview.data.attention), [
+      'openReports',
+      'pendingLinks',
+      'failedImports',
+      'queuedImports',
+    ]);
+    assert.ok(overview.data.members.total >= 1);
+    assert.equal(overview.data.attention.openReports, 0);
+    assert.ok(
+      overview.data.videos.some((v) => String(v.id) === String(id)),
+      'the video list is still the videos',
+    );
     const bad = await call(`/studio/videos/${id}`, {
       method: 'PATCH',
       token: admin,

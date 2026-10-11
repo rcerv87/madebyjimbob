@@ -1338,7 +1338,16 @@ app.get(
   '/api/studio/overview',
   wrap(async (_req, res) => {
     // Totals add up the per-video rows; only unique chatters needs its own pass over the chat.
-    const [perVideo, chatters, topChatters] = await Promise.all([
+    const [attention, perVideo, chatters, topChatters] = await Promise.all([
+      // What the Overview tab points at: things waiting on someone, and how the membership is doing.
+      pool.query(`
+      SELECT (SELECT count(*) FROM reports WHERE status = 'open') AS open_reports,
+        (SELECT count(*) FROM linked_accounts WHERE status = 'pending') AS pending_links,
+        (SELECT count(*) FROM import_jobs WHERE status = 'failed') AS failed_imports,
+        (SELECT count(*) FROM import_jobs WHERE status IN ('queued', 'running')) AS queued_imports,
+        (SELECT count(*) FROM users) AS members,
+        (SELECT count(*) FROM users WHERE created_at > now() - interval '7 days') AS new_members,
+        (SELECT count(*) FROM users WHERE tier <> 'free') AS paying_members`),
       pool.query(`
       SELECT v.id, v.title, v.published_at, v.views, v.min_tier, v.duration_s, v.replacement_stream_uid,
         count(c.*) FILTER (WHERE c.source = 'youtube') AS youtube_msgs,
@@ -1377,6 +1386,17 @@ app.get(
         nativeMsgs: sum('nativeMsgs'),
         paidMsgs: sum('paidMsgs'),
         chatters: Number(chatters.rows[0].n),
+      },
+      attention: {
+        openReports: Number(attention.rows[0].open_reports),
+        pendingLinks: Number(attention.rows[0].pending_links),
+        failedImports: Number(attention.rows[0].failed_imports),
+        queuedImports: Number(attention.rows[0].queued_imports),
+      },
+      members: {
+        total: Number(attention.rows[0].members),
+        newThisWeek: Number(attention.rows[0].new_members),
+        paying: Number(attention.rows[0].paying_members),
       },
       videos,
       topChatters: topChatters.rows.map((r) => ({

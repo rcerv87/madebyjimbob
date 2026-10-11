@@ -78,6 +78,10 @@ test('noindex everywhere until ALLOW_INDEXING=true; Studio always', async () => 
     assert.equal(open.headers.get('x-robots-tag'), null);
     assert.equal(meta(open.html, 'name', 'robots'), undefined);
     assert.equal((await get('/studio')).headers.get('x-robots-tag'), 'noindex');
+    const tab = await get('/studio/members');
+    assert.equal(tab.status, 200, 'Studio tabs are real pages (a refresh works)');
+    assert.equal(tab.headers.get('x-robots-tag'), 'noindex');
+    assert.equal((await get('/studio/nope')).status, 404);
   } finally {
     delete process.env.ALLOW_INDEXING;
   }

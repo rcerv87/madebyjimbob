@@ -69,7 +69,8 @@ export async function pageMeta(pathname) {
   if (p === '/shop') return page('Shop', "Books, shirts, stickers, and art prints from JimBob's store.");
   if (p === '/art')
     return page('Art', "JimBob's illustrations and comics: originals, prints, and digital art.");
-  if (p === '/studio') return { ...page('Studio'), noindex: true };
+  if (/^\/studio(\/(live|videos|add|members|reports|email))?$/.test(p))
+    return { ...page('Studio'), noindex: true };
   if (p === '/live') return page('JimBob live', 'Watch JimBob live on MADEbyJIMBOB.');
   if (p === '/superchat')
     return page(
