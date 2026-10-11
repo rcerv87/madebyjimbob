@@ -162,6 +162,7 @@ describe('studio', () => {
       'pendingLinks',
       'failedImports',
       'queuedImports',
+      'drafts',
     ]);
     assert.ok(overview.data.members.total >= 1);
     assert.equal(overview.data.attention.openReports, 0);

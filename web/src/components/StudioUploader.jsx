@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, count, timeAgo } from '../api.js';
 
 const FOLDER = 'MADEbyJIMBOB Library';
+const SITE_ONLY = 'Not on YouTube';
 const STEPS = ['Before you start', 'Get the program', 'Make the folder', 'Start it', 'Let it run'];
 const STEP_KEY = 'mbj-uploader-step';
 
@@ -67,10 +69,11 @@ export default function StudioUploader() {
 
   return (
     <section className="panel studio-uploader">
-      <h2>Put your YouTube library on the site</h2>
+      <h2>Put your video library on the site</h2>
       <p className="muted">
-        A small program for your Windows PC reads your Google Takeout download and uploads every video here.
-        You set it up once and it runs by itself. Nothing is installed.
+        A small program for your Windows PC reads your video files (your Google Takeout download, recordings
+        you already have, and videos that were never on YouTube) and uploads them here. You set it up once and
+        it runs by itself. Nothing is installed.
       </p>
 
       <ol className="wizard-steps" aria-label="Steps">
@@ -106,8 +109,14 @@ export default function StudioUploader() {
                 <strong>A Windows PC</strong> you can leave on. A full library takes days, not hours.
               </li>
               <li>
-                <strong>Your Google Takeout download</strong> of your YouTube videos. Leave the .zip files
-                exactly as Google gave them to you. Don’t unzip them.
+                <strong>Your video files.</strong> For YouTube videos, your Google Takeout download is the
+                easy way: leave the .zip files exactly as Google gave them to you, don’t unzip them. Video
+                files you already have (OBS recordings, old exports) work too.
+              </li>
+              <li>
+                <strong>Videos that were never on YouTube are welcome.</strong> They upload as drafts that
+                only you see, and you give each a title and publish it here in Studio. Step 3 shows where to
+                put them.
               </li>
               <li>
                 <strong>Free space</strong> on the drive that holds them. The program needs working room.
@@ -182,7 +191,13 @@ export default function StudioUploader() {
                 </button>
               </li>
               <li>
-                Move all of your Takeout .zip files into that folder. OBS recordings of streams can go in too.
+                Move all of your Takeout .zip files into that folder. Video files of things that are on your
+                YouTube channel (OBS recordings of streams, for example) can go in too.
+              </li>
+              <li>
+                <strong>Videos that were never on YouTube:</strong> put them in a folder named{' '}
+                <code className="wizard-code">{SITE_ONLY}</code> inside that one. The program makes this
+                folder the first time it runs, so you can also add them after step 4.
               </li>
             </ol>
             <p className="muted small">
@@ -206,7 +221,7 @@ export default function StudioUploader() {
               <li>
                 A black window opens and asks for your username{status ? ` (${status.username})` : ''} and
                 password for this site. Type each one and press <strong>Enter</strong>. It only asks the first
-                time. Nothing shows while you type the password; that’s normal.
+                time. Dots show instead of your password as you type.
               </li>
               <li>
                 If it asks where the folder is, type its location (for example E:\{FOLDER}) and press{' '}
@@ -223,6 +238,12 @@ export default function StudioUploader() {
                 <>
                   <strong>{count(p.done, 'video')} uploaded</strong>
                   {p.uploading > 0 && <span> · {count(p.uploading, 'video')} in progress</span>}
+                  {p.drafts > 0 && (
+                    <span>
+                      {' '}
+                      · <Link to="/studio/videos">{count(p.drafts, 'draft')} to publish</Link>
+                    </span>
+                  )}
                   {p.lastFinishedAt && (
                     <span className="muted small">
                       {' '}
@@ -253,8 +274,14 @@ export default function StudioUploader() {
               </li>
               <li>New files you add to the folder later are found within 10 minutes.</li>
               <li>
-                If a file called <strong>needs-review.txt</strong> appears in the folder, send it to Ruben:
-                those are videos it couldn’t match to a YouTube video.
+                Videos from your <strong>{SITE_ONLY}</strong> folder arrive as drafts. Open{' '}
+                <Link to="/studio/videos">Studio → Videos</Link>, give each a title, choose who can watch, and
+                press Publish.
+              </li>
+              <li>
+                If a file called <strong>needs-review.txt</strong> appears in the folder, it lists videos the
+                program couldn’t match to a YouTube video, so it skipped them. Never on YouTube? Move them
+                into <strong>{SITE_ONLY}</strong>. Otherwise send the list to Ruben.
               </li>
               <li>
                 <strong>Keep your Takeout files.</strong> They’re your full-quality backup.

@@ -15,6 +15,8 @@ import {
   uploadedKeys,
   channelTitles,
   uploaderStatus,
+  siteOnlyUploadOf,
+  deleteSiteOnlyFiles,
 } from './library.js';
 import {
   liveConfigured,
@@ -135,7 +137,9 @@ const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).cat
 // The signed-in user (session cookie, or `Authorization: Bearer` for tests and apps), or null.
 const currentUser = (req) => sessionUser(req.headers);
 
-const canWatch = (user, video) => TIER_RANK[user?.tier || 'free'] >= TIER_RANK[video.min_tier];
+// Drafts (uploaded but not published yet) are only for Studio accounts.
+const canWatch = (user, video) =>
+  (!video.draft || Boolean(user?.isAdmin)) && TIER_RANK[user?.tier || 'free'] >= TIER_RANK[video.min_tier];
 
 // A database id from a URL or body: digits only, and short enough for BIGINT.
 const isId = (value) => /^\d{1,18}$/.test(String(value));
@@ -148,7 +152,7 @@ const textField = (value) => (typeof value === 'string' ? value : '');
 async function findVideo(id) {
   if (!isId(id)) return null;
   const { rows } = await pool.query(
-    'SELECT id, title, min_tier, duration_s, live_recording_id FROM videos WHERE id = $1',
+    'SELECT id, title, min_tier, duration_s, live_recording_id, draft FROM videos WHERE id = $1',
     [id],
   );
   return rows[0] || null;
@@ -157,7 +161,7 @@ async function findVideo(id) {
 // Loads the video and checks the viewer's tier; sends the error response and returns null on failure.
 async function watchableVideo(req, res, user) {
   const video = await findVideo(req.params.id);
-  if (!video) {
+  if (!video || (video.draft && !user?.isAdmin)) {
     res.status(404).json({ error: 'Video not found.' });
     return null;
   }
@@ -397,7 +401,8 @@ app.get(
       pool.query(
         `SELECT ${CARD_COLUMNS}, wp.position_ms AS progress_ms
          FROM videos v LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = $2
-         WHERE ${search} AND ($3::text IS NULL OR v.kind = $3) AND (NOT $4 OR v.min_tier <> 'free')
+         WHERE ${search} AND NOT v.draft AND ($3::text IS NULL OR v.kind = $3)
+           AND (NOT $4 OR v.min_tier <> 'free')
          ORDER BY ${order}`,
         [pattern, user?.id ?? null, kind, members],
       ),
@@ -407,7 +412,7 @@ app.get(
            count(*) FILTER (WHERE kind = 'short') AS short,
            count(*) FILTER (WHERE kind = 'live') AS live,
            count(*) FILTER (WHERE min_tier <> 'free') AS members
-         FROM videos v WHERE ${search}`,
+         FROM videos v WHERE ${search} AND NOT v.draft`,
         [pattern],
       ),
     ]);
@@ -429,7 +434,7 @@ app.get(
 // A playlist item matches a video by id (made in Studio) or by YouTube id (imported; the video may
 // arrive later). Viewers only see items whose video is on the site.
 const PLAYLIST_VIDEOS = `playlist_items pi
-  JOIN videos v ON v.id = pi.video_id OR (pi.video_id IS NULL AND v.youtube_id = pi.youtube_id)`;
+  JOIN videos v ON (v.id = pi.video_id OR (pi.video_id IS NULL AND v.youtube_id = pi.youtube_id)) AND NOT v.draft`;
 
 function playlistCard(r) {
   return {
@@ -504,7 +509,7 @@ app.get(
       currentUser(req),
     ]);
     const v = rows[0];
-    if (!v) return res.status(404).json({ error: 'Video not found.' });
+    if (!v || (v.draft && !user?.isAdmin)) return res.status(404).json({ error: 'Video not found.' });
     const allowed = canWatch(user, v);
     const [progress, votes] = await Promise.all([
       user
@@ -1359,7 +1364,7 @@ app.get(
         (SELECT count(*) FROM users WHERE created_at > now() - interval '7 days') AS new_members,
         (SELECT count(*) FROM users WHERE tier <> 'free') AS paying_members`),
       pool.query(`
-      SELECT v.id, v.title, v.published_at, v.views, v.min_tier, v.duration_s, v.replacement_stream_uid,
+      SELECT v.id, v.title, v.published_at, v.views, v.min_tier, v.duration_s, v.replacement_stream_uid, v.draft,
         count(c.*) FILTER (WHERE c.source = 'youtube') AS youtube_msgs,
         count(c.*) FILTER (WHERE c.source = 'native')  AS native_msgs,
         count(c.*) FILTER (WHERE c.kind = 'paid')      AS paid_msgs,
@@ -1380,6 +1385,7 @@ app.get(
       views: r.views,
       minTier: r.min_tier,
       replacing: Boolean(r.replacement_stream_uid),
+      draft: r.draft,
       durationS: r.duration_s,
       youtubeMsgs: Number(r.youtube_msgs),
       nativeMsgs: Number(r.native_msgs),
@@ -1390,7 +1396,7 @@ app.get(
     const sum = (key) => videos.reduce((n, v) => n + v[key], 0);
     res.json({
       totals: {
-        videos: videos.length,
+        videos: videos.filter((v) => !v.draft).length,
         views: sum('views'),
         youtubeMsgs: sum('youtubeMsgs'),
         nativeMsgs: sum('nativeMsgs'),
@@ -1402,6 +1408,7 @@ app.get(
         pendingLinks: Number(attention.rows[0].pending_links),
         failedImports: Number(attention.rows[0].failed_imports),
         queuedImports: Number(attention.rows[0].queued_imports),
+        drafts: videos.filter((v) => v.draft).length,
       },
       members: {
         total: Number(attention.rows[0].members),
@@ -1422,10 +1429,23 @@ app.get(
 app.patch(
   '/api/studio/videos/:id',
   wrap(async (req, res) => {
-    const { minTier } = req.body;
-    if (!isTier(minTier)) return res.status(400).json({ error: 'Unknown tier.' });
+    // Any of: who can watch, the title, and draft (false publishes it; a first publish without a date gets today).
+    const { minTier, title, draft } = req.body;
+    if (minTier !== undefined && !isTier(minTier)) return res.status(400).json({ error: 'Unknown tier.' });
+    const newTitle = title === undefined ? null : textField(title).trim().slice(0, 300);
+    if (title !== undefined && !newTitle) return res.status(400).json({ error: 'Give the video a title.' });
+    if (draft !== undefined && typeof draft !== 'boolean')
+      return res.status(400).json({ error: 'draft is true or false.' });
+    if (minTier === undefined && title === undefined && draft === undefined)
+      return res.status(400).json({ error: 'Nothing to change.' });
     const { rowCount } = isId(req.params.id)
-      ? await pool.query('UPDATE videos SET min_tier = $1 WHERE id = $2', [minTier, req.params.id])
+      ? await pool.query(
+          `UPDATE videos SET min_tier = COALESCE($2, min_tier), title = COALESCE($3, title),
+             draft = COALESCE($4, draft),
+             published_at = CASE WHEN $4 IS FALSE THEN COALESCE(published_at, now()) ELSE published_at END
+           WHERE id = $1`,
+          [req.params.id, minTier ?? null, newTitle, draft ?? null],
+        )
       : { rowCount: 0 };
     if (!rowCount) return res.status(404).json({ error: 'Video not found.' });
     res.json({ ok: true });
@@ -1656,8 +1676,15 @@ app.delete(
       'UPDATE playlist_items SET video_id = NULL WHERE video_id = $1 AND youtube_id IS NOT NULL',
       [video.id],
     );
+    // A video that came from the "Not on YouTube" folder: found before the row goes (the link is by video id).
+    const siteOnly = await siteOnlyUploadOf(video.id);
     await pool.query('DELETE FROM videos WHERE id = $1', [video.id]);
     req.log.info({ videoId: video.id, title: video.title }, 'video deleted');
+    if (req.body?.removeFromStream !== false && siteOnly) {
+      deleteSiteOnlyFiles(video.id, siteOnly)
+        .then((n) => logger.info({ videoId: video.id, files: n }, 'site-only video files deleted'))
+        .catch((err) => logger.warn({ err, videoId: video.id }, 'deleting site-only video files failed'));
+    }
     let stream = { deleted: false, reason: 'kept' };
     if (req.body?.removeFromStream !== false && uid) {
       const { rowCount: shared } = await pool.query('SELECT 1 FROM videos WHERE stream_uid = $1', [uid]);

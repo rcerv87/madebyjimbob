@@ -76,8 +76,8 @@ they get `isAdmin: true` and see every tier.
 | GET | `/push/key` | — | `{ publicKey }` (null when push isn't configured) |
 | POST | `/push/subscribe` | required | `{ subscription }` from `PushManager.subscribe()`; 503 when push isn't configured |
 | DELETE | `/push/subscribe` | required | `{ endpoint }` |
-| GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded), plus what the Overview tab shows: `attention { openReports, pendingLinks, failedImports, queuedImports }` and `members { total, newThisWeek, paying }` |
-| PATCH | `/studio/videos/:id` | admin | `{ minTier }` |
+| GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded), plus what the Overview tab shows: `attention { openReports, pendingLinks, failedImports, queuedImports, drafts }` (each video row also has `draft`) and `members { total, newThisWeek, paying }` |
+| PATCH | `/studio/videos/:id` | admin | Any of `{ minTier, title, draft }`. `draft: false` publishes a draft (a first publish without a date gets today's). 400 with nothing to change, an empty title, or an unknown tier |
 | DELETE | `/studio/videos/:id` | admin | `{ removeFromStream? }` (default true). Deletes the video and its chat, comments, likes, progress, and notifications; keeps its spots in imported YouTube playlists (unlinked). Returns `{ ok, streamUid, stream: { deleted, reason } }`; `reason` is `not-configured` (no Cloudflare keys on the server), `shared` (another video uses the file), or a Cloudflare error |
 | POST | `/studio/videos/:id/replacement` | admin | `{ size, name }` → `{ uploadUrl, uid }`: a one-time Cloudflare tus URL the browser uploads the new file to directly (pieces of 50 MB). 503 without Cloudflare keys |
 | GET | `/studio/videos/:id/replacement` | admin | `{ state: none \| queued \| inprogress \| error \| swapped, pct? }`. Once Cloudflare has processed the file it's swapped in (chat and comments kept, length updated) and the old file deleted |
@@ -105,7 +105,9 @@ they get `isAdmin: true` and see every tier.
 | POST | `/studio/members/:id/role` | admin | `{ role: viewer\|mod\|admin }` → `{ member }`. 409 for your own account or a banned member |
 | POST | `/studio/members/:id/ban` | admin | `{ reason }` (required, only staff see it) → `{ member }`. Signs the member out everywhere; sign-in then answers 403 `ACCOUNT_BANNED`. 409 for yourself, mods and admins |
 | DELETE | `/studio/members/:id/ban` | admin | Unban → `{ member }` |
-| GET | `/studio/library/uploader` | admin | Studio → Library uploader: `{ storageReady, download: { url (signed, 1 hour), sizeBytes, updatedAt } \| null, username, hasPassword, progress: { done, uploading, lastFinishedAt, lastTitle } }`. `download` is null until the program is published to the bucket (`node tools/library-uploader/publish.mjs`) |
+| POST | `/studio/library/uploads` | admin | Library Uploader: start a video. `{ youtubeId, fileKey, title, sizeBytes }` for a YouTube video, or `{ siteOnly: true, fileKey, title, sizeBytes, recordedAt? }` for one that was never on YouTube → `{ uploadId, prefix, done }` (`done`: already uploaded, skip it). A site-only file's `prefix` is `library/site-<hash of fileKey>`. 409 if that file is already uploading as a YouTube video |
+| POST | `/studio/library/uploads/:id/finish` | admin | `{ durationS }` → `{ videoId, importJobId, hlsUrl, draft? }`. A YouTube video switches to the R2 copy or is queued for the import helper; a site-only one becomes a new video with `draft: true` (hidden until published in Studio → Videos) |
+| GET | `/studio/library/uploader` | admin | Studio → Library uploader: `{ storageReady, download: { url (signed, 1 hour), sizeBytes, updatedAt } \| null, username, hasPassword, progress: { done, uploading, lastFinishedAt, lastTitle, drafts } }`. `download` is null until the program is published to the bucket (`node tools/library-uploader/publish.mjs`) |
 | GET | `/studio/links` | admin | `{ links }`: requests waiting first (YouTube ones with `messagesSeen`, how much that handle has posted), then every confirmed link, with the member's `username` |
 | POST | `/studio/links/:id/approve` | admin | Confirms a request (409 if that account is linked to another member) |
 | DELETE | `/studio/links/:id` | admin | Turns down or unlinks |

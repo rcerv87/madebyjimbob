@@ -10,6 +10,7 @@ import StudioSuperchats from '../components/StudioSuperchats.jsx';
 import StudioLive from '../components/StudioLive.jsx';
 import StudioImports from '../components/StudioImports.jsx';
 import StudioUploader from '../components/StudioUploader.jsx';
+import StudioDrafts from '../components/StudioDrafts.jsx';
 import StudioVideoActions from '../components/StudioVideoActions.jsx';
 import useTitle from '../useTitle.js';
 
@@ -97,6 +98,9 @@ export default function Studio({ user }) {
   if (error) return <p className="error page-msg">{error}</p>;
   if (!data) return <p className="muted page-msg">Loading Studio…</p>;
   const t = data.totals;
+  // Drafts (from the uploader's "Not on YouTube" folder) have their own panel until they're published.
+  const drafts = data.videos.filter((v) => v.draft);
+  const videos = data.videos.filter((v) => !v.draft);
   const a = data.attention || {};
   const m = data.members;
   // What's waiting on someone, each with the tab that deals with it.
@@ -106,10 +110,11 @@ export default function Studio({ user }) {
       'members',
       `${count(a.pendingLinks, 'linked-account request')} waiting for a yes or no`,
     ],
+    a.drafts > 0 && ['videos', `${count(a.drafts, 'draft video')} to title and publish`],
     a.failedImports > 0 && ['add', `${count(a.failedImports, 'import')} failed`],
     a.queuedImports > 0 && ['add', `${count(a.queuedImports, 'import')} in the queue`],
   ].filter(Boolean);
-  const badge = { reports: a.openReports, members: a.pendingLinks, add: a.failedImports };
+  const badge = { reports: a.openReports, members: a.pendingLinks, add: a.failedImports, videos: a.drafts };
 
   return (
     <div className="studio">
@@ -211,6 +216,7 @@ export default function Studio({ user }) {
 
       {tab === 'videos' && (
         <>
+          <StudioDrafts drafts={drafts} onChanged={load} />
           <section className="panel studio-content">
             <h2>Content</h2>
             {saveError && <p className="error small">{saveError}</p>}
@@ -284,9 +290,9 @@ export default function Studio({ user }) {
                       <input
                         type="checkbox"
                         aria-label="Select all videos"
-                        checked={data.videos.length > 0 && picked.size === data.videos.length}
+                        checked={videos.length > 0 && picked.size === videos.length}
                         onChange={(e) =>
-                          setPicked(e.target.checked ? new Set(data.videos.map((v) => v.id)) : new Set())
+                          setPicked(e.target.checked ? new Set(videos.map((v) => v.id)) : new Set())
                         }
                       />
                     </th>
@@ -302,7 +308,7 @@ export default function Studio({ user }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.videos.map((v) => (
+                  {videos.map((v) => (
                     <tr key={v.id} className={picked.has(v.id) ? 'picked' : undefined}>
                       <td>
                         <input
@@ -343,7 +349,7 @@ export default function Studio({ user }) {
             </div>
           </section>
 
-          <StudioPlaylists allVideos={data.videos} />
+          <StudioPlaylists allVideos={videos} />
         </>
       )}
     </div>

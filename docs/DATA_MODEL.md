@@ -75,6 +75,7 @@ One-time tokens (email verification, password reset, email change).
 | title, description | text | |
 | duration_s | int | |
 | published_at | timestamptz | |
+| draft | boolean | true for a video uploaded from the Library Uploader's "Not on YouTube" folder until it's published in Studio → Videos; drafts are hidden from lists, playlists, search, link previews, chat and comments for everyone but Studio accounts (MBJ-818) |
 | min_tier | text | access level |
 | kind | text | `video \| short \| live`; set on import (was live → live; vertical and ≤ 3 min → short) |
 | replacement_stream_uid, replacement_started_at | text, timestamptz | Studio → Replace video: the new file on Stream, swapped into `stream_uid` once Cloudflare has processed it |

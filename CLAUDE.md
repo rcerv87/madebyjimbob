@@ -103,6 +103,8 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   and `GOOGLE_CLIENT_SECRET` are set. A user created without a username (a Google sign-up) gets one from
   `suggestUsername()` and `username_chosen = false`; the site then asks once (`PickUsername.jsx`,
   `POST /api/account/username`). Google's tokens are never stored.
+- Draft videos (`videos.draft`): hidden from everyone but Studio accounts. `canWatch()` and `watchableVideo()` in
+  `app.js` enforce it; any new query that lists videos to the public needs `NOT v.draft`.
 - Members and bans (MBJ-705): `server/src/members.js`. Role changes and bans go through it so they're logged in
   `mod_actions`. A ban deletes the member's sessions and `auth.js` refuses new ones; there's no per-request ban check.
 - Deleting accounts: `server/src/deletion.js`. A request waits 30 days (signing in cancels it); an hourly job in
