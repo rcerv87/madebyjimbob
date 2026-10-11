@@ -7,10 +7,11 @@ import crypto from 'crypto';
 import { pool } from './db.js';
 import { presign, s3Request, s3List } from '../live-recorder/r2put.mjs';
 
-// Where the library goes: LIBRARY_R2_* (JimBob's bucket), else the site's own R2 settings.
-export function libraryStore() {
+// One bucket's settings from the environment, or null when any is missing. `names` are the prefixes to try for
+// each setting, in order.
+function storeFrom(names) {
   const e = process.env;
-  const pick = (name) => (e[`LIBRARY_R2_${name}`] || e[`R2_${name}`] || '').trim();
+  const pick = (name) => (names.map((n) => e[`${n}${name}`]).find(Boolean) || '').trim();
   const account = pick('ACCOUNT_ID');
   const accessKey = pick('ACCESS_KEY_ID');
   const secret = pick('SECRET_ACCESS_KEY');
@@ -25,6 +26,20 @@ export function libraryStore() {
     region: 'auto',
     publicUrl,
   };
+}
+
+// Where the library goes: LIBRARY_R2_* (JimBob's bucket), else the site's own R2 settings.
+export const libraryStore = () => storeFrom(['LIBRARY_R2_', 'R2_']);
+// Every bucket the site is set up with (the library's, then its own), without repeats. The uploader program is
+// looked for in each, so the download works whichever one a server happens to have.
+export function allStores() {
+  const seen = new Set();
+  return [libraryStore(), storeFrom(['R2_'])].filter((s) => {
+    const key = s && `${s.endpoint}/${s.bucket}`;
+    if (!s || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export const PREFIX = 'library';
@@ -204,16 +219,17 @@ export const UPLOADER_KEY = 'tools/MADEbyJIMBOB-Library-Uploader.zip';
 export async function uploaderStatus(user) {
   const store = libraryStore();
   let download = null;
-  if (store) {
-    const head = await s3Request(store, 'HEAD', UPLOADER_KEY).catch(() => null);
+  for (const place of allStores()) {
+    const head = await s3Request(place, 'HEAD', UPLOADER_KEY).catch(() => null);
     if (head) {
       download = {
-        url: presign(store, 'GET', UPLOADER_KEY, 3600),
+        url: presign(place, 'GET', UPLOADER_KEY, 3600),
         sizeBytes: Number(head.headers.get('content-length')) || null,
         updatedAt: head.headers.get('last-modified')
           ? new Date(head.headers.get('last-modified')).toISOString()
           : null,
       };
+      break;
     }
   }
   const [password, progress] = await Promise.all([
@@ -234,6 +250,8 @@ export async function uploaderStatus(user) {
   const p = progress.rows[0];
   return {
     storageReady: Boolean(store),
+    // Where uploaded videos are served from (a public address, no secret): shows which bucket this server uses.
+    storageHost: store ? new URL(store.publicUrl).host : null,
     download,
     username: user.username,
     hasPassword: password.rowCount > 0,

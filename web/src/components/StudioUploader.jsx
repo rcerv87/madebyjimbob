@@ -297,6 +297,7 @@ export default function StudioUploader() {
                 <strong>Keep your Takeout files.</strong> They’re your full-quality backup.
               </li>
             </ul>
+            {status?.storageHost && <p className="muted small">Videos are stored at {status.storageHost}.</p>}
             <details className="wizard-help">
               <summary>If something goes wrong</summary>
               <ul className="wizard-list">

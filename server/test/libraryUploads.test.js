@@ -47,6 +47,7 @@ describe('Studio → Library uploader', () => {
 
     const before = (await call('/studio/library/uploader', { token: admin })).data;
     assert.equal(before.storageReady, true);
+    assert.equal(before.storageHost, 'pub-jb.r2.dev');
     assert.equal(before.download, null, 'not published yet');
     assert.equal(before.username, 'test_admin');
     assert.equal(before.hasPassword, true);
