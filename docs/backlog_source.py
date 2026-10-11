@@ -755,7 +755,7 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress", "312": "Done", "218": "In progress", "222": "In progress", "104": "In progress", "105": "Done", "109": "In progress", "818": "In progress"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress", "312": "Done", "218": "In progress", "222": "In progress", "104": "In progress", "105": "Done", "109": "In progress", "818": "In progress", "705": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.
@@ -775,7 +775,8 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "00
 # 119: block/mute from name cards and profiles (hidden in chat and comments, no notifications, blocked can't reply), staff can't be blocked, reports with reasons to Studio → Reports; hiding/banning from a report waits for MBJ-204.
 # 116: /@username page, name cards in chat and comments (View profile, Reply, Mention), sharing switches; bio/display name come with MBJ-117, badges with MBJ-602, banned-member view with MBJ-204.
 # 706: From the channel in Studio (helper lists with yt-dlp; API key path ready), filters, select all, members-only badge, "You already have this".
-# 102: users.role + npm run set-role (admin opens Studio); mod role use, Studio role management, /api/mod/* remain.
+# 102: users.role + npm run set-role (admin opens Studio); roles changed in Studio → Members (with MBJ-705); mod role use and /api/mod/* remain (MBJ-204).
+# 705: list, search, filters (staff, new, banned, tier), role change, ban with reason / unban, mod_actions log. Remain: member page with history, timeouts, hide all messages, highlight, staff notes, tier override, live over WebSocket (with MBJ-204).
 # 110: device list and sign out any device (in /account) done; Google/Apple/X/Facebook, magic link, passkeys, merging accounts remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 

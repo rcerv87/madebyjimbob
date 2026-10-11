@@ -420,7 +420,7 @@ MBJ-702,Chat analytics,Studio & analytics,Phase 5 — Engagement,Should,M,To do,
 - Top questions and per-stream sentiment summary",MBJ-102
 MBJ-703,Members and revenue dashboard,Studio & analytics,Phase 1 — VOD platform,Should,M,To do,"As JimBob, I want to see who pays and how much I earn.","- Active members by tier, churn, MRR, tip totals by source","MBJ-104, MBJ-102"
 MBJ-704,Data export,Studio & analytics,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want a copy of everything that's mine.","- CSV export of chat (per video or all), members, and tips",MBJ-102
-MBJ-705,User management in Studio,Studio & analytics,Phase 1 — VOD platform,Must,M,To do,"As JimBob or a mod, I want to find any member and act on them in one place.","- Users list with search and filters: tier, role, banned, highlighted, new this week; sort by activity
+MBJ-705,User management in Studio,Studio & analytics,Phase 1 — VOD platform,Must,M,In progress,"As JimBob or a mod, I want to find any member and act on them in one place.","- Users list with search and filters: tier, role, banned, highlighted, new this week; sort by activity
 - User page: profile, tier and membership, linked YouTube/Rumble names, chat and comment history, notifications sent, mod history
 - Ban (with reason; blocks sign-in, chat, and comments), time out for a set time, unban; hide all of a user's messages in one step
 - Highlight a user: VIP/featured badge and name color in chat and comments (e.g. regulars, guests, supporters); remove it any time

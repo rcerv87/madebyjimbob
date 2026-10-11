@@ -18,7 +18,8 @@ columns are added by the story noted.
 | tier | text | `free | plus | premium` — derived from entitlements after MBJ-104; never settable by the user |
 | youtube_channel_id | text | set when user links YouTube (MBJ-305) |
 | xp | int | never settable by the user |
-| role | text | `viewer \| mod \| admin`; admin opens Studio (`npm run set-role`), never settable by the user |
+| role | text | `viewer \| mod \| admin`; admin opens Studio (Studio → Members, or `npm run set-role`), never settable by the user |
+| banned_at, ban_reason, banned_by | timestamptz, text, bigint → users (set null) | set by Studio → Members (MBJ-705); while `banned_at` is set the account has no sessions and can't sign in |
 | deletion_requested_at | timestamptz | set by Delete my account; erased 30 days later unless they sign in (MBJ-118) |
 | delete_content | boolean | also blank and hide their chat and comments when erased |
 | profile_show_chat, profile_indexable | boolean | public profile: show chat messages; let search engines list it (MBJ-116) |
@@ -318,6 +319,20 @@ Premium lapses (they just aren't sent to the web app until the member is Premium
 | color | text | `red orange yellow lime green teal blue indigo purple pink` |
 | created_at | timestamptz | |
 
+### mod_actions
+The log of what staff did to whom (MBJ-705); shown in Studio → Members. Hiding messages and timeouts (MBJ-204) will write here too.
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| actor_id | bigint → users | set null |
+| target_user_id | bigint → users | cascade (erased with the account) |
+| target_author_channel_id | text | a YouTube or Rumble author without a site account (MBJ-204) |
+| message_id | bigint | the chat message acted on (MBJ-204) |
+| action | text | `role \| ban \| unban` for now |
+| duration_s | int | timeouts (MBJ-204) |
+| reason | text | the ban reason, or `viewer → admin` for a role change |
+| created_at | timestamptz | |
+
 ### reports
 | column | type | notes |
 |---|---|---|
@@ -368,10 +383,8 @@ One row per server Go Live created.
 |---|---|
 | `videos.status` (`processing | live | archived | ready`), `videos.source` (`stream | youtube | owned`), `videos.live_started_at`, `videos.offset_adjust_ms` | MBJ-301 |
 | `entitlements (user_id, tier, provider, provider_ref, expires_at)` | MBJ-104 |
-| `users.role` (`viewer | mod | admin`) | MBJ-102 |
 | `chat_votes (message_id, user_id, created_at)` | MBJ-203 |
 | `chat_messages.amount_cents, currency, pinned_until` | MBJ-207 |
-| `mod_actions (id, actor_id, target_user_id, target_author_channel_id, message_id, action, duration_s, reason, created_at)` | MBJ-204 |
 | `room_settings (video_id, mode, slow_mode_s)` | MBJ-204 |
 | `banned_terms (term)` | MBJ-206 |
 | `ingest_cursors (video_id, source, page_token, updated_at)` | MBJ-302 |

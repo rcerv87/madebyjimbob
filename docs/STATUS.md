@@ -1,6 +1,6 @@
 # MadeByJimBob — status
 
-Last updated: 2026-10-04 (system map in `docs/ARCHITECTURE.md`; meeting summary on the strategy meeting page). Update this file when a story ships or a decision is made.
+Last updated: 2026-10-10 (system map in `docs/ARCHITECTURE.md`; meeting summary on the strategy meeting page). Update this file when a story ships or a decision is made.
 Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlog_source.py`).
 
 ## At a glance
@@ -279,7 +279,13 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   Studio → Account email to preview each one and send a test. Off until the Resend keys are on Render.
 - Tiers enforced on the server for video, chat, comments, and the live WebSocket (the socket knows you from
   the session cookie).
-- Studio (accounts with the admin role, `npm run set-role`, or verified emails in `ADMIN_EMAILS`): totals,
+- **Studio → Members (MBJ-705, first part, 2026-10-10):** every account, most recently active first, with search
+  (username, name, or a whole email), filters (mods and admins, new this week, banned, membership), a role switch
+  (member, mod, admin; admins open Studio), and ban with a reason / unban. A ban signs the member out everywhere and
+  refuses sign-in, so chat and comments stop too. Every action is in the log under the list (`mod_actions`).
+  Emails are masked. Still to come: a member's page with their history, timeouts, hide all their messages,
+  highlight/VIP, staff notes, a tier override, and tools for mods (with MBJ-204).
+- Studio (accounts with the admin role, set in Studio → Members or with `npm run set-role`, or verified emails in `ADMIN_EMAILS`): totals,
   per-video stats, top chatters, set a video's tier, playlists, linked accounts, email, and (MBJ-701):
   - **Add videos**: paste YouTube links; the import helper on Ruben's PC (`npm run import:worker`) imports each
     (video, chat replay, comments) and Studio shows its progress.
