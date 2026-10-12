@@ -71,7 +71,10 @@ export async function hidingFrom(recipientIds, actorId) {
 }
 
 // Throws 'bad-reason', 'not-found'. Reports a member, optionally about one of their chat messages or comments.
-export async function fileReport(reporterId, { username, chatMessageId, commentId, reason, details }) {
+export async function fileReport(
+  reporterId,
+  { username, chatMessageId, commentId, noteId, reason, details },
+) {
   if (!REPORT_REASONS.includes(reason)) throw new Error('bad-reason');
   let target = null;
   let excerpt = null;
@@ -94,6 +97,16 @@ export async function fileReport(reporterId, { username, chatMessageId, commentI
     commentRow = rows[0].id;
     excerpt = rows[0].body;
     target = { id: rows[0].user_id, username: rows[0].author_name };
+  } else if (noteId) {
+    // A note on a video (MBJ-217): the report keeps what it said and where, since notes have no column here.
+    const { rows } = await pool.query(
+      `SELECT n.user_id, n.body, n.video_id, n.offset_ms, u.username FROM video_notes n
+       JOIN users u ON u.id = n.user_id WHERE n.id = $1 AND NOT n.hidden`,
+      [noteId],
+    );
+    if (!rows[0]) throw new Error('not-found');
+    excerpt = `Note on video ${rows[0].video_id} at ${Math.floor(rows[0].offset_ms / 1000)}s: ${rows[0].body}`;
+    target = { id: rows[0].user_id, username: rows[0].username };
   }
   if (username) {
     const u = await userByName(username);
