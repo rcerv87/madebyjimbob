@@ -60,6 +60,10 @@ channel. Videos not imported yet are remembered and appear once they are. Re-run
 
 Re-running is safe: chat and comments are de-duplicated by YouTube ID (comment like counts refresh).
 
+Newsletter list: `npm run import:newsletter -- <customers.csv>` brings the people who accepted email marketing in
+Shopify (Customers → Export) into the site's email list; add `--live` for the live database. Studio → Email
+exports the list.
+
 Captions: once Stream has processed a video, run `npm run captions:fetch -- --generate` to request English
 auto-captions, and run `npm run captions:fetch` again later to save them into the database. The player shows
 a CC button automatically once a video has captions.

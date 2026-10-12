@@ -155,6 +155,22 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   Play button (never muted). Phones pause `<video>` when locked; Listen only switches to `<audio>`, and the player does that on its own
   when a phone locks mid-video (back to video on unlock).
 
+- Edit files with the Edit and Write tools, or a Python script saved with the Write tool that opens files with
+  `io.open(path, encoding='utf-8', newline='')`. Shell heredocs mangle backslashes, quotes and non-ASCII text on this
+  PC, and a write that fails on encoding leaves the file empty (restore it with `git checkout -- <file>`).
+- Run server tests with `npm test` or `node --test --test-concurrency=1 <files>`: the files share one test database,
+  so running several at once gives false failures.
+- Chain release commands with `&&`, so a failing test stops the commit and merge.
+- Browser checks cover every page a change touches at phone size, not only the new component.
+- The storage bucket's CORS allows the site's addresses and `http://localhost:3000`, not `127.0.0.1`: check playback
+  locally through `localhost`.
+- The local `.env` points at the same buckets as the live site. Anything a local test uploads is real; name storage
+  paths from the content (a hash, a YouTube id), never from local database ids, and delete what a test made.
+- The web `api()` helper replaces every 429 answer with its own "Too many tries" text. Answer 409 with a message when
+  the member should read the reason.
+- Text a test finds by role and name: a label with a count badge reads as "Reports 2" in some cases and "Reports2" in
+  others; match with a pattern.
+
 ## Known POC shortcuts (tracked in backlog)
 
 - Studio access: `users.role = 'admin'` (Studio → Members, or npm run set-role) or a verified email in `ADMIN_EMAILS`; mods have no tools of their own yet → MBJ-204

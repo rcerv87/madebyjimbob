@@ -1,22 +1,76 @@
 # MadeByJimBob — status
 
-Last updated: 2026-10-10 (system map in `docs/ARCHITECTURE.md`; meeting summary on the strategy meeting page). Update this file when a story ships or a decision is made.
+Last updated: 2026-10-11 (system map in `docs/ARCHITECTURE.md`; meeting summary on the strategy meeting page). Update this file when a story ships or a decision is made.
 Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlog_source.py`).
 
 ## At a glance
 
 | | |
 |---|---|
-| Live site | https://madebyjimbob.onrender.com (Render: web service + Postgres; deploys on every push to `main`) |
+| Live site | https://madebyjimbob.app (Render: web service + Postgres; deploys on every push to `main`). Pages on madebyjimbob.onrender.com redirect there; the API answers on both |
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
-| Video | Cloudflare R2 behind `live.madebyjimbob.app` for live, replays and the library (ADR-010); Cloudflare Stream Starter ($5/mo) only for the first imports |
-| Content | 4 videos (2 past live streams, 2 videos), 7,308 live-chat messages, 2,204 YouTube comments, 4 caption tracks / 43,435-word transcripts, JimBob's 9 YouTube playlists (252 entries; videos appear as they're imported) |
-| Quality | 344 automated tests (202 server, 142 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 116 stories; 30 done, 19 in progress |
+| Video | Cloudflare R2 (ADR-010). Live streams and replays: Ruben's bucket behind `live.madebyjimbob.app`. The YouTube library: JimBob's bucket (`LIBRARY_R2_*`, its r2.dev address for now), filled by the Library Uploader. Cloudflare Stream Starter ($5/mo) only for the first imports |
+| Content | Checked 2026-10-11: 7 videos (4 of them live replays), 16,525 chat messages, 3,660 comments, JimBob's 9 YouTube playlists, 9 accounts. Nothing uploaded through the Library Uploader yet |
+| Quality | 440 automated tests (250 server, 190 web), lint, formatting, CI on GitHub; migrations run before each deploy |
+| Backlog | 125 stories; 32 done, 24 in progress |
+
+## Where things stand (2026-10-11)
+
+Read this first; the sections below have the detail.
+
+**Built on 2026-10-10 and 2026-10-11 (all live):**
+- **Studio has tabs:** Overview (numbers and a "Needs attention" list), Live, Videos, Add videos, Library uploader,
+  Members, Reports, Feedback, Email.
+- **Studio → Members** (MBJ-705): search, filters, roles (make someone an admin here), ban, and timeouts.
+- **Studio → Library uploader** (MBJ-818): the program for JimBob's PC as a download with a five-step walk-through,
+  videos that were never on YouTube (a `Not on YouTube` folder → drafts in Studio → Videos), starting again by itself
+  after a restart, and a warning when the server can't use the library storage.
+- **Sign in with Google** (MBJ-110): the keys are on Render and the button shows.
+- **Five quick wins:** timeouts, Send feedback + Studio → Feedback (MBJ-819), the email list with opt-in, CSV export
+  and unsubscribe links (MBJ-107), the Unwatched filter and binge queue (MBJ-814), welcome steps (MBJ-115).
+- **Notes and moment reactions** (MBJ-217, MBJ-613, first part): the hotspot strip under the player, one-tap
+  reactions, drag to mark a stretch, members' notes.
+
+**Next for Ruben, in order:**
+1. **Get JimBob uploading.** He creates an account (email and password) and sends his username → Studio → Members →
+   switch him to **Admin** → send him `https://madebyjimbob.app/studio/uploader`. Keep the Import Helper open on this
+   PC. Have him try one or two videos first.
+2. **Test on your phone:** notes and reactions on a long stream (dragging a stretch with a finger is untested), and
+   one sign-in with Google. Delete the test notes afterwards.
+3. **Stripe in JimBob's account** before any real member pays (`docs/MIGRATION.md` step 9). Payments run through
+   Ruben's account until then.
+4. **Bring in the Shopify newsletter list:** Shopify → Customers → Export (CSV), then
+   `npm run import:newsletter -- <file> --live`.
+5. **JimBob creates the R2 account token** for his bucket (`docs/MIGRATION.md` step 5); the library currently uses a
+   token tied to Ruben's access.
+6. **Still open from before:** `VAPID_PRIVATE_KEY` on Render for phone push (still off), roll the Cloudflare API
+   token, the GitHub branch rule, JimBob's OK on his art.
+7. **When the beta ends:** set `FEEDBACK=off` on Render.
+
+**Built but not yet tried for real:**
+- The 2026-10-11 features were walked through in Chrome on the local copy, not signed in on the live site.
+- A real Google sign-in (new member, existing member, banned member).
+- Dragging on the hotspot strip with a finger (tested with a mouse).
+- A "this stream" timeout during a live stream.
+- The uploader on JimBob's PC, and its restart after a real reboot.
+
+**Left to build from this work:**
+- Members: a page per member with their history, highlights/VIP, staff notes, hide all of someone's messages, tools
+  for mods (MBJ-705, MBJ-204).
+- Reactions and notes: skip the boring stretches / play the best parts, a per-video chart in Studio, notes and
+  reactions on the live page, feeding hotspots to the AI notes (MBJ-613); a free "follow" so notes highlight for
+  everyone, not only Premium favorites (MBJ-217).
+- Email: edit the templates and send to groups from Studio (MBJ-709).
+- Videos that were never on YouTube: edit the description and thumbnail; match a `needs-review.txt` file to its
+  YouTube video from Studio.
+- Mark as watched from a card on the Videos page (it's on the video's page only).
+- Welcome steps: an avatar (needs Edit profile, MBJ-117) and live alerts.
+- Sign-in: Apple, X, Facebook, magic link, passkeys, linking YouTube through Google (MBJ-110).
+- A Money tab in Studio: members and revenue over time (MBJ-703).
 
 ## Waiting on Ruben
 
-- **Move the site to madebyjimbob.app (code ready 2026-10-05):** 1) Render → madebyjimbob → Settings → Custom Domains:
+- **Done: the site is on madebyjimbob.app** (checked 2026-10-11: madebyjimbob.onrender.com pages redirect there). The steps, for the record: 1) Render → madebyjimbob → Settings → Custom Domains:
   add `madebyjimbob.app` and `www.madebyjimbob.app`; 2) Cloudflare (Ruben's account) → madebyjimbob.app → DNS: the
   records Render shows, **DNS only** (grey cloud); 3) once Render says Verified and the certificate is issued, set
   `SITE_URL=https://madebyjimbob.app` on Render (pages on the onrender.com address then redirect; the API, webhooks
@@ -57,7 +111,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
     a YouTube video from Studio.
   4. Before real viewers: connect `live.madebyjimbob.app` to JimBob's bucket (domain move, MIGRATION.md step 6).
 
-- **Sign in with Google (MBJ-110, built 2026-10-10): needs the Google keys.** The button appears in the sign-in
+- **Sign in with Google (MBJ-110, built 2026-10-10): the keys are on Render** (checked 2026-10-11: the button shows and Google is told to come back to `https://madebyjimbob.app/api/auth/callback/google`). **Left: one real sign-in with a Google account.** The setup, for the record: the button appears in the sign-in
   dialog once `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are on Render. Left for Ruben (about 10 minutes, $0):
   1. console.cloud.google.com → project picker → **New project** "MADEbyJIMBOB" → Create, and select it.
   2. Menu → **APIs & Services → OAuth consent screen** (Google Auth Platform) → **Get started**: app name
@@ -78,7 +132,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   2. **Product catalog → Add product**: "Plus" with a recurring monthly price (and a yearly one if offered), then
      "Premium" the same. Open each price and copy its id (`price_…`).
   3. **Developers → API keys**: copy the **Secret key** (`sk_test_…`).
-  4. **Developers → Webhooks → Add endpoint**: URL `https://madebyjimbob.onrender.com/api/webhooks/stripe`; events
+  4. **Developers → Webhooks → Add endpoint**: URL `https://madebyjimbob.app/api/webhooks/stripe`; events
      `checkout.session.completed`, `checkout.session.expired`, `customer.subscription.created`,
      `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`. Copy the **Signing secret**
      (`whsec_…`).
@@ -128,13 +182,13 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   3. Resend email records on madebyjimbob.app (item 7).
   4. Bot accounts `loadbot_1`–`5` and `chat_tester` exist on the live site for chat tests: keep or delete?
 
-1. **Turn on phone push on the live site** (checked 2026-10-04: still off, `/api/push/key` is empty): Render → `madebyjimbob` → Environment → add `VAPID_PRIVATE_KEY`
+1. **Turn on phone push on the live site** (checked 2026-10-11: still off, `/api/push/key` is empty): Render → `madebyjimbob` → Environment → add `VAPID_PRIVATE_KEY`
    with the value from your local `.env` (same name). Save; Render redeploys. The in-site bell works without it.
 2. **Roll the Cloudflare API token** (it was pasted in chat): Cloudflare → My Profile → API Tokens → ⋯ → Roll,
    then update `CF_API_TOKEN` in `.env`.
 3. **Done (2026-10-03): R2 for the full library** (ADR-010). Waiting on JimBob's Takeout export to import it.
 4. **GitHub branch rule:** Settings → Branches → rule for `main` → require the **CI / check** status (finishes MBJ-005).
-5. **Domain:** beta runs on **madebyjimbob.app** (bought, on Cloudflare since 2026-10-03; the site itself still answers on onrender.com). Later,
+5. **Domain:** beta runs on **madebyjimbob.app** (the site has been there since 2026-10-05; onrender.com pages redirect). Later,
    JimBob chooses the final address: madebyjimbob.com with the store at shop.madebyjimbob.com (recommended), or
    watch.madebyjimbob.com. The switch checklist is in `docs/adr/011-domain-and-store.md` ("Beta address").
 6. **JimBob's OK** on using his avatar, banner art, and store products in the platform before the link goes wide.
@@ -159,6 +213,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
    3. Open the confirmation email and tap **Confirm email** (needs item 7 done first). Studio then appears.
    Locally: put your email in `ADMIN_EMAILS` in `.env` (the line is there, empty).
    Already done another way: `rcervantes` has `role = admin` on the live site (`npm run set-role -- <username> admin --live`).
+   Since 2026-10-10 an admin can make anyone an admin in **Studio → Members**, no command needed.
 9. **Cloudflare keys on Render** (needed for Replace video, Add videos → From files, and for Delete to remove the file):
    1. First roll the token (item 2) since the old one was pasted in chat; put the new one in your local `.env`.
    2. Render → `madebyjimbob` → **Environment** → add `CF_ACCOUNT_ID` and `CF_API_TOKEN` (same values as `.env`).
@@ -429,13 +484,31 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | 2026-10-03 | Chat history and conversation tools start as moderator/admin tools (MBJ-218, 224) |
 | 2026-10-04 | Super chats colored by amount (yellow $2, green $5, blue $10, red $20, gold $50+); the $ beside Send keeps the typed text; no character limits and no paying for longer messages |
 | 2026-10-04 | End stream only after OBS has stopped; the server waits for the recorder to finish uploading (up to 15 minutes) before it's deleted |
+| 2026-10-10 | Studio is organized in tabs, each at its own address; Reports is its own tab; the communications tab is called Email until posts or push announcements land there |
+| 2026-10-10 | Admins are made in Studio → Members; mods are marked as staff but have no tools until MBJ-204; mods and admins can't be banned or timed out |
+| 2026-10-10 | Signing in with Google joins an existing account only when its email is confirmed; a new member picks their username once; Google's tokens are never stored |
+| 2026-10-10 | The YouTube library goes into JimBob's Cloudflare bucket from the start (`LIBRARY_R2_*`), through the uploader on his PC; the program is offered in Studio, not by email |
+| 2026-10-10 | Videos that were never on YouTube upload only from a `Not on YouTube` folder, as drafts JimBob publishes; other unmatched files are listed, not uploaded (avoids duplicate drafts of retitled YouTube videos) |
+| 2026-10-10 | The uploader starts with Windows if JimBob says yes the first time (his Startup folder; no admin rights) |
+| 2026-10-11 | A timeout lets the member watch and like but not post: this stream, 1 week, 2 weeks, or a date; the member sees when it ends, not why |
+| 2026-10-11 | News emails are opt-in (unticked box), go only to confirmed addresses, and every one carries an unsubscribe link |
+| 2026-10-11 | Watched / in progress / unwatched is worked out from where the viewer stopped; there is no separate watched flag |
+| 2026-10-11 | The hotspot strip is its own bar under the player (Ruben: "good design decision"); the player keeps the browser's built-in controls |
+| 2026-10-11 | Reactions count fairly: signed-in only, one per kind per person per minute, stretches up to 30 minutes, and one person's marks past 30 minutes of a video count for less |
 
 ## Known limits (fine for a demo, not for launch)
 
-- No Google/Apple sign-in, magic links, or passkeys yet (MBJ-110). Someone could sign up with another person's
-  email before they do; that address then stays unverified and the owner can't use it until we remove the
-  account (fix planned with MBJ-110's "merge an existing account").
-- No payments: everyone is Free unless an admin changes a video to Free (MBJ-104). Keep videos Free until then.
+- No Apple sign-in, magic links, or passkeys yet (Google is built; MBJ-110). Someone could sign up with another
+  person's email before they do; that address then stays unverified, Google sign-in is refused for it, and the owner
+  can't use it until we remove the account (fix planned with MBJ-110's "merge an existing account").
+- Payments run through Ruben's Stripe account until JimBob's is set up (`docs/MIGRATION.md` step 9). Customers and
+  subscriptions can't be moved between Stripe accounts, so do that before real members pay.
+- A ban signs the member out and stops new sign-ins; a stream already open on their screen keeps playing.
+- Watched and "Mark as watched" need a video with a recorded length.
+- Notes and moment reactions work on replays, not yet on the live page.
+- Videos that were never on YouTube have no chat or comment history, and their description and thumbnail can't be
+  edited yet.
+- The email list can be exported, not yet mailed from the site (MBJ-709).
 - Paid-video links aren't signed; a copied Stream link plays for anyone (MBJ-103).
 - Account erasure runs hourly inside the web server; with more than one server it needs a single scheduled job.
   A deleted member's username becomes free again right away.
@@ -468,10 +541,10 @@ reach 30 days around 2026-11-02.
    them to Google/Apple/Outlook or subscribe to a feed, and get reminders.
 4. **Navigation bar** — top nav for every section, bottom tab bar on phones and in the app (MBJ-810);
    **social links and sharing** with link previews (MBJ-809).
-5. **Studio: manage users** (add from links/channel/files, replace, delete are done; edit and unpublish remain, MBJ-701); find members, ban/time out, highlight regulars and guests, roles, staff notes (MBJ-705, with the
+5. **Studio: manage users** (2026-10-11: the Members tab with search, roles, ban and timeouts is live; a member's history page, highlights, staff notes and mod tools remain) (add from links/channel/files, replace, delete are done; edit and unpublish remain, MBJ-701); find members, ban/time out, highlight regulars and guests, roles, staff notes (MBJ-705, with the
    chat moderation tools in MBJ-204). Can start on today's admin list before real roles (MBJ-102).
 6. **Posts** — text, images, polls with threaded comments (MBJ-804).
-7. **Unwatched filter and binge queue** (MBJ-814) — quick win on top of saved watch progress: Unwatched / In
+7. **Done 2026-10-11: Unwatched filter and binge queue** (MBJ-814) — quick win on top of saved watch progress: Unwatched / In
    progress / Watched chips and an automatic playlist of everything you haven't finished.
 8. **Gamification** — XP, levels, and activity badges for heavy chatters and commenters (MBJ-601, 602),
    watch-time rewards such as a free t-shirt after a set number of hours, delivered as a Shopify code (MBJ-611),
@@ -484,7 +557,7 @@ reach 30 days around 2026-11-02.
 9. **AI stream notes** — a facilitator-style notes page per stream: summary, sections, who said what, key
    exchanges, super chats and Bob Chats with answers, questions and promises (MBJ-605); speaker labels (MBJ-608);
    tags for topics and people with browse pages (MBJ-609); search inside streams (MBJ-610). Transcripts for all
-   4 videos are already stored. Together with **ratings, moment reactions, and hotspots** (MBJ-613): thumbs
+   4 videos are already stored. Together with **ratings, moment reactions, and hotspots** (MBJ-613; first part live 2026-10-11 as a strip under the player, with member notes, MBJ-217): thumbs
    up/down, tag a moment or a stretch as funny/interesting/boring, and a minute-by-minute heatmap over the
    progress bar.
 10. **SEO before launch** — per-page titles, descriptions, and link previews filled in by the server, crawlable
@@ -590,3 +663,8 @@ with headless Chrome driven over the DevTools protocol (screenshots and DOM chec
 via device emulation (a plain headless window can't go below ~500px wide, which fakes overflow). Then push,
 wait for the new bundle hash on the live site, re-run any data imports against the live database, and spot
 check live endpoints. Update this file and the backlog `STATUS` dict with every release.
+
+Learned on 2026-10-10 and 2026-10-11: look at every page a change touches at phone size, not only the new part (a
+third button next to Like and Share squeezed the video title on phones for a day); check video playback locally
+through `http://localhost:3000` (the storage bucket refuses `127.0.0.1`); and remember that a local test that
+uploads video writes to the real bucket, so delete what it made.
