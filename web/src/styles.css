@@ -3513,9 +3513,20 @@ a.text-btn {
   }
   .watch-head,
   .description,
+  .moments,
   .resume-note {
     margin-left: 12px;
     margin-right: 12px;
+  }
+  /* The title gets the full width; Like, Share and Mark as watched go on their own line under it. */
+  .watch-head {
+    flex-direction: column;
+    gap: 0;
+  }
+  .watch-actions {
+    margin-top: 0;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
   }
   .chat {
     margin: 0 12px;
@@ -4678,4 +4689,193 @@ a.text-btn {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 14px;
+}
+
+/* ---------- moments: hotspot strip, reactions, notes ---------- */
+.moments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Top and bottom only: phones add side margins (see the narrow-screen rules). */
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+.moments-strip {
+  position: relative;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--raised);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.moments-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.moments-bars span {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.moments-selection {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  border: 2px solid var(--text);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+  pointer-events: none;
+}
+.moments-pin {
+  position: absolute;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 2px var(--bg);
+  pointer-events: none;
+}
+.moments-pin.stretch {
+  margin-left: 0;
+  height: 4px;
+  top: -3px;
+  border-radius: 2px;
+  min-width: 6px;
+}
+.moments-playhead {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+  pointer-events: none;
+}
+.moments-tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 3;
+}
+.moments-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.moments-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.moments-react {
+  padding: 4px 10px;
+  font-size: 0.82rem;
+}
+.moments-hint {
+  margin: 0;
+}
+.moments-note-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+.moments-note-form label:first-child {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.moments-note-form input:not([type='checkbox']) {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.moments-note-form label.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+}
+.moments-notes summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.moments-notes summary label.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+}
+.moments-notes ol {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.moments-notes li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+.moments-notes li.flash {
+  background: var(--raised);
+}
+.moments-time {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.moments-note-text {
+  flex: 1 1 200px;
+  overflow-wrap: anywhere;
+}
+.moments-note-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+/* Notes from members you favorited carry their color. */
+.moments-notes li[class*='hl-'] {
+  border-left-color: var(--hl);
+  background: var(--hl-bg);
+}
+.moments-pin[class*='hl-'] {
+  background: var(--hl);
 }

@@ -104,6 +104,9 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   and `GOOGLE_CLIENT_SECRET` are set. A user created without a username (a Google sign-up) gets one from
   `suggestUsername()` and `username_chosen = false`; the site then asks once (`PickUsername.jsx`,
   `POST /api/account/username`). Google's tokens are never stored.
+- Notes and moment reactions (MBJ-217, MBJ-613): `server/src/moments.js` and `web/src/components/Moments.jsx`. The
+  player uses the browser's own controls, so the hotspot strip is its own bar under the player, not on the
+  progress bar. Per-minute totals are cached for 30 seconds per video.
 - Draft videos (`videos.draft`): hidden from everyone but Studio accounts. `canWatch()` and `watchableVideo()` in
   `app.js` enforce it; any new query that lists videos to the public needs `NOT v.draft`.
 - Timeouts (MBJ-705): `users.timeout_until`; `refusedForTimeout()` in `app.js` guards chat and comment posts. Anything

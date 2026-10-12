@@ -167,7 +167,7 @@ MBJ-215,Link YouTube and Rumble names to a profile,Chat & moderation,Phase 1 —
 - Linked YouTube messages show the site name and tier badge; @mentions of the YouTube handle notify the member",MBJ-202
 MBJ-216,Count one view per viewer,Chat & moderation,Phase 1 — VOD platform,Should,S,Done,"As JimBob, I want view counts I can trust.","- A view counts once per viewer per video per day (account, or browser for signed-out)
 - Refreshes and resumed sessions don't add views",
-MBJ-217,Member notes on videos (annotations),Chat & moderation,Phase 1 — VOD platform,Should,M,To do,"As a member, I want to pin a note to a moment in a video (e.g. ""this is where JimBob really goes off, 5:06"") so others can jump to it; as a viewer, I want to see the notes of people I follow first.","- Add a note at the current moment (or a stretch from-to) with a short text; it shows as a marker on the timeline and in a Notes list beside the video
+MBJ-217,Member notes on videos (annotations),Chat & moderation,Phase 1 — VOD platform,Should,M,In progress,"As a member, I want to pin a note to a moment in a video (e.g. ""this is where JimBob really goes off, 5:06"") so others can jump to it; as a viewer, I want to see the notes of people I follow first.","- Add a note at the current moment (or a stretch from-to) with a short text; it shows as a marker on the timeline and in a Notes list beside the video
 - Tap a note or marker to jump there; notes from favorited members are highlighted and listed first, with a Favorites only switch
 - Favorite (follow) a member from their name card or profile; a member's profile lists their notes across videos
 - Notes are public by default, can be private (just for me), and follow the same moderation, block/mute, and report rules as comments

@@ -71,6 +71,10 @@ they get `isAdmin: true` and see every tier.
 | POST | `/videos/:id/view` | optional | `{ viewer? }` (the web app's random browser id) → `{ ok, counted }`. Counts once per viewer per video per UTC day: the account when signed in, else the browser id, else a daily hash of address + browser (MBJ-216) |
 | GET | `/videos/:id/chat?from=&to=` | optional | Chat window by `offset_ms` (max 3,000). 403 if the viewer's tier can't watch the video |
 | GET | `/videos/:id/comments/:commentId` | optional | The whole thread containing that comment: `{ comment }` with `replies` |
+| GET | `/videos/:id/moments` | optional | The strip under the player (MBJ-217, MBJ-613): `{ minutes, chat: [messages per minute], reactions: [{ minute, kind, score, people }], kinds, notes: [{ id, offsetMs, endMs, body, private, author, profile, memberTier, mine, createdAt }], mine: [{ id, kind, offsetMs, endMs }] }`. `score` is the weighted count (a member's marks past 30 minutes on one video count for less); notes are public ones plus the viewer's own private ones; tier-gated |
+| POST | `/videos/:id/notes` | required | `{ text (up to 280), offsetMs, endMs? (a stretch, up to 30 min), private? }` → `{ note }`. Filtered like comments; 50 per member per video; 403 while timed out |
+| DELETE | `/notes/:id` | required | Your own note is deleted; a Studio account takes anyone's down (hidden, kept) |
+| POST | `/videos/:id/reactions` | required | `{ kind: funny\|interesting\|fire\|boring\|cringe, offsetMs, endMs? }` → `{ reaction }`, or `{ removed: id }` when that kind was already given in that minute (a tap again takes it back). One per kind per person per minute |
 | POST | `/videos/:id/vote` | required | `{ value: 1 \| -1 \| 0 }` (0 clears) → `{ likes, myVote }`; tier-gated. Video detail includes `likes` and `myVote`; dislikes only appear in `/studio/overview` |
 | PUT | `/videos/:id/progress` | required | `{ positionMs }`: save where the viewer is (resume on any device) |
 | GET | `/videos/:id/chat?afterId=` | optional | Messages with `id > afterId`, ordered by id (max 3,000). Used to catch up after a WebSocket reconnect |

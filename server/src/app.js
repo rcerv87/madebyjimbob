@@ -77,6 +77,7 @@ import {
   FEEDBACK_STATUSES,
 } from './feedback.js';
 import { emailListSummary, emailListCsv, unsubscribe, validUnsubscribe } from './emailList.js';
+import { listNotes, addNote, removeNote, toggleReaction, myReactions, heat, REACTIONS } from './moments.js';
 import { favoritesOf, canFavorite } from './favorites.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
@@ -448,11 +449,15 @@ app.post(
       return res.status(429).json({ error: 'That’s a lot of reports. Try again in an hour.' });
     recent.push(now);
     reportTries.set(user.id, recent);
-    const { username, chatMessageId, commentId, reason, details } = req.body || {};
-    if ((chatMessageId && !isId(chatMessageId)) || (commentId && !isId(commentId)))
+    const { username, chatMessageId, commentId, noteId, reason, details } = req.body || {};
+    if (
+      (chatMessageId && !isId(chatMessageId)) ||
+      (commentId && !isId(commentId)) ||
+      (noteId && !isId(noteId))
+    )
       return res.status(400).json({ error: 'That message can’t be reported.' });
     try {
-      const id = await fileReport(user.id, { username, chatMessageId, commentId, reason, details });
+      const id = await fileReport(user.id, { username, chatMessageId, commentId, noteId, reason, details });
       res.json({ ok: true, id });
     } catch (err) {
       if (err.message === 'bad-reason')
@@ -516,6 +521,70 @@ app.get(
         members: Number(c.members),
       },
     });
+  }),
+);
+
+// ---------- notes and moment reactions (MBJ-217, MBJ-613) ----------
+const momentRoute = (handler) =>
+  wrap(async (req, res) => {
+    try {
+      const out = await handler(req, res);
+      if (out !== undefined) res.json(out);
+    } catch (err) {
+      if ([400, 403, 404, 409].includes(err.status))
+        return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  });
+
+// What the strip under the player draws: chat and reactions per minute, the notes, and the viewer's own reactions.
+app.get(
+  '/api/videos/:id/moments',
+  momentRoute(async (req, res) => {
+    const user = await currentUser(req);
+    const video = await watchableVideo(req, res, user);
+    if (!video) return undefined;
+    const [picture, notes, mine] = await Promise.all([
+      heat(video),
+      listNotes(video.id, user?.id ?? null),
+      myReactions(video.id, user?.id),
+    ]);
+    return { ...picture, kinds: REACTIONS, notes, mine };
+  }),
+);
+
+// { text, offsetMs, endMs?, private? } → { note }. A timed-out member can't post notes either.
+app.post(
+  '/api/videos/:id/notes',
+  momentRoute(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return void res.status(401).json({ error: 'Sign in to add a note.' });
+    if (refusedForTimeout(user, res)) return undefined;
+    const video = await watchableVideo(req, res, user);
+    if (!video) return undefined;
+    return { note: await addNote(user, video, req.body) };
+  }),
+);
+app.delete(
+  '/api/notes/:id',
+  momentRoute(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return void res.status(401).json({ error: 'Sign in first.' });
+    if (!isId(req.params.id)) return void res.status(404).json({ error: 'That note is gone.' });
+    const { ok } = await removeNote(user, req.params.id);
+    return { ok };
+  }),
+);
+
+// { kind, offsetMs, endMs? } → { reaction } or, for the same kind in the same minute again, { removed: id }.
+app.post(
+  '/api/videos/:id/reactions',
+  momentRoute(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return void res.status(401).json({ error: 'Sign in to react.' });
+    const video = await watchableVideo(req, res, user);
+    if (!video) return undefined;
+    return toggleReaction(user, video, req.body);
   }),
 );
 

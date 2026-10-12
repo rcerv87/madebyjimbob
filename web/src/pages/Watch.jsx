@@ -4,6 +4,7 @@ import { api, count, formatTime, timeAgo, TIER_LABEL } from '../api.js';
 import { createClock, useClock } from '../clock.js';
 import { readLocal, resumePoint, saveProgress, viewerId, bingeQueue, watchingAgain } from '../progress.js';
 import WatchedButton from '../components/WatchedButton.jsx';
+import Moments from '../components/Moments.jsx';
 import Player from '../components/Player.jsx';
 import ChatPanel from '../components/ChatPanel.jsx';
 import Comments from '../components/Comments.jsx';
@@ -235,6 +236,7 @@ export default function Watch({ session, background = false }) {
             </button>
           </p>
         )}
+        {!video.locked && <Moments video={video} clock={clock} onSeek={seek} session={session} />}
         <div className="watch-head">
           <h1 className="watch-title">{video.title}</h1>
           <div className="watch-actions">

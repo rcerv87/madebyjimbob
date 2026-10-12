@@ -20,7 +20,7 @@ export default function NameCard({
   actions = [],
   onPlainClick,
   moderation,
-  about = {}, // { chatMessageId } or { commentId }: what a report is about
+  about = {}, // { chatMessageId }, { commentId } or { noteId }: what a report is about
   menu = false,
   children,
   highlight, // { color, takenBy: { color: name }, onPick(color | null) }: chat's highlight colors
@@ -331,8 +331,8 @@ export function ReportDialog({ username, about = {}, onClose }) {
         ) : (
           <>
             <p className="muted small">
-              {about.chatMessageId || about.commentId
-                ? 'About this message. Only the moderators see reports.'
+              {about.chatMessageId || about.commentId || about.noteId
+                ? `About this ${about.noteId ? 'note' : 'message'}. Only the moderators see reports.`
                 : 'Only the moderators see reports.'}
             </p>
             <label>

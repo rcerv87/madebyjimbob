@@ -152,6 +152,8 @@ export async function exportData(userId) {
     memberships,
     superchats,
     feedback,
+    notes,
+    reactions,
   ] = await Promise.all([
     q(`SELECT id, username, display_name, email, email_verified, image, tier, xp, notification_prefs, created_at,
          deletion_requested_at, banned_at FROM users WHERE id = $1`),
@@ -181,6 +183,10 @@ export async function exportData(userId) {
          s.paid_at FROM superchats s JOIN videos v ON v.id = s.video_id WHERE s.user_id = $1 ORDER BY s.created_at`),
     q(`SELECT note, page, video_id, offset_ms, user_agent, screen, screenshot IS NOT NULL AS had_screenshot, status,
          created_at FROM feedback WHERE user_id = $1 ORDER BY created_at`),
+    q(`SELECT n.video_id, v.title AS video_title, n.offset_ms, n.end_ms, n.body, n.private, n.hidden, n.created_at
+         FROM video_notes n JOIN videos v ON v.id = n.video_id WHERE n.user_id = $1 ORDER BY n.created_at`),
+    q(`SELECT r.video_id, v.title AS video_title, r.kind, r.offset_ms, r.end_ms, r.created_at
+         FROM moment_reactions r JOIN videos v ON v.id = r.video_id WHERE r.user_id = $1 ORDER BY r.created_at`),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -200,5 +206,7 @@ export async function exportData(userId) {
     memberships,
     superchats,
     feedback,
+    videoNotes: notes,
+    momentReactions: reactions,
   };
 }

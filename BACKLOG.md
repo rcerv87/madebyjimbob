@@ -692,7 +692,7 @@ Acceptance criteria:
 
 ### MBJ-217 — Member notes on videos (annotations)
 
-**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-119
+**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-119
 
 As a member, I want to pin a note to a moment in a video (e.g. "this is where JimBob really goes off, 5:06") so others can jump to it; as a viewer, I want to see the notes of people I follow first.
 

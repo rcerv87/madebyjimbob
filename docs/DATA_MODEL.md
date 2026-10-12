@@ -324,6 +324,31 @@ Premium lapses (they just aren't sent to the web app until the member is Premium
 | color | text | `red orange yellow lime green teal blue indigo purple pink` |
 | created_at | timestamptz | |
 
+### video_notes
+Members' notes pinned to a moment or stretch of a video (MBJ-217).
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| video_id | bigint → videos | cascade |
+| user_id | bigint → users | cascade |
+| offset_ms, end_ms | bigint | the moment; `end_ms` set for a stretch |
+| body | text | up to 280 characters, filtered like comments |
+| private | boolean | just for its writer |
+| hidden | boolean | taken down by staff |
+| created_at | timestamptz | |
+
+### moment_reactions
+One-tap reactions to a moment or stretch (MBJ-613); added up per minute for the hotspot strip.
+| column | type | notes |
+|---|---|---|
+| id | bigserial PK | |
+| video_id | bigint → videos | cascade |
+| user_id | bigint → users | cascade |
+| kind | text | `funny \| interesting \| fire \| boring \| cringe` |
+| offset_ms, end_ms | bigint | `end_ms` set for a stretch (counts in every minute it covers) |
+| minute | int | `floor(offset_ms / 60000)`; unique with video, user and kind |
+| created_at | timestamptz | |
+
 ### feedback
 Notes from beta testers (MBJ-819), listed in Studio → Feedback; in the member's data export.
 | column | type | notes |

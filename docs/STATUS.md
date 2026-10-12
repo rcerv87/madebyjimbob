@@ -314,6 +314,16 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
   Studio → Account email to preview each one and send a test. Off until the Resend keys are on Render.
 - Tiers enforced on the server for video, chat, comments, and the live WebSocket (the socket knows you from
   the session cookie).
+- **Notes and moment reactions, first part (MBJ-217, MBJ-613, 2026-10-11):** under the player on every video, a
+  strip of the whole video minute by minute, colored by the leading reaction (Funny, Interesting, Fire, Boring,
+  Cringe) and by how busy chat was; tap it to jump, drag across it to pick a stretch. One-tap reactions for the
+  moment or the stretch (tap again to take back). Members add notes at a moment or stretch, public or just for
+  them; notes show as pins on the strip and in a list (favorites first, Favorites only switch, muted and blocked
+  members left out, Report and Take down), and on the writer's profile. Fair counting: signed-in only, one per
+  kind per person per minute, stretches up to 30 minutes, heavy marking by one person counts for less.
+  **Still to come:** skip the boring stretches / play the best parts, the per-video chart in Studio, notes and
+  reactions on the live page (rewind), and feeding hotspots to the AI notes. Also fixed: the title on a video's
+  page was squeezed on phones by the action buttons.
 - **Five quick wins (2026-10-11):**
   - **Timeouts** (MBJ-705): Studio → Members → Time out… for this stream, 1 week, 2 weeks or until a date, with a
     reason only staff see. The member stays signed in and can watch and like; the chat and comment boxes say when

@@ -127,6 +127,27 @@ export default function Profile({ session }) {
       )}
       {reporting && <ReportDialog username={profile.username} onClose={() => setReporting(false)} />}
 
+      {profile.notes?.length > 0 && (
+        <section className="panel">
+          <h2>Notes on videos</h2>
+          <ul className="profile-activity">
+            {profile.notes.map((n) => (
+              <li key={n.id}>
+                <Link
+                  to={`/watch/${n.videoId}?t=${Math.floor(n.offsetMs / 1000)}`}
+                  className="profile-activity-where"
+                >
+                  {n.videoTitle} · {formatTime(n.offsetMs / 1000)}
+                  {n.endMs ? ` to ${formatTime(n.endMs / 1000)}` : ''}
+                </Link>
+                <p>{n.body}</p>
+                <span className="muted small">{timeAgo(n.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="panel">
         <h2>Comments</h2>
         {profile.comments.length === 0 && <p className="muted small">No comments yet.</p>}

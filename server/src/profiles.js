@@ -1,6 +1,7 @@
 // Public profiles (MBJ-116): /@username shows who a member is and what they've said in public. Anyone can view
 // one. Activity on videos the viewer can't watch (above their tier) is left out, the same as on the videos.
 import { pool } from './db.js';
+import { notesBy } from './moments.js';
 
 const TIER_RANK = { free: 0, plus: 1, premium: 2 };
 const RECENT = 20;
@@ -18,7 +19,7 @@ export async function findProfile(username) {
 export async function profileFor(user, viewerTier = 'free') {
   const rank = TIER_RANK[viewerTier] ?? 0;
   const tiers = Object.keys(TIER_RANK).filter((t) => TIER_RANK[t] <= rank);
-  const [links, comments, chat, counts] = await Promise.all([
+  const [links, comments, chat, counts, notes] = await Promise.all([
     pool.query(
       `SELECT platform, handle FROM linked_accounts WHERE user_id = $1 AND status = 'verified' ORDER BY platform`,
       [user.id],
@@ -45,8 +46,11 @@ export async function profileFor(user, viewerTier = 'free') {
               (SELECT count(*)::int FROM chat_messages WHERE user_id = $1 AND NOT hidden) AS chat`,
       [user.id],
     ),
+    notesBy(user.id, tiers),
   ]);
   return {
+    // Their public notes on videos (MBJ-217), newest first.
+    notes,
     username: user.username,
     displayName: user.display_name || user.username,
     image: user.image,
