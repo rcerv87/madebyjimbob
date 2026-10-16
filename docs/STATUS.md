@@ -20,7 +20,8 @@ The iPhone and Android apps wrap this web app with Capacitor (ADR-014, replacing
 works and how to build is in `docs/MOBILE.md`. **Built:** the `mobile/` project (app id `com.madebyjimbob.app`), the
 web app's app mode (it calls the live site and signs in with a token inside an app), the server allowing the apps'
 origins, icons and launch screens from JimBob's art. **Checked in the Android emulator:** sign-up, welcome steps, a
-video playing, chat, watch progress, notes, sign-out; the website is unchanged. **Not yet:** an iPhone build (needs
+video playing, chat, watch progress, notes, sign-out; and a build pointed at the live site plays its videos in 720p. The
+website is unchanged. **Not yet:** an iPhone build (needs
 a Mac), a real phone, native push, background audio, buying inside the apps.
 
 **Next for Ruben:**
@@ -28,8 +29,9 @@ a Mac), a real phone, native push, background audio, buying inside the apps.
    needs the Apple Developer account first (step 3).
 2. **Let the apps load replays from R2** (about 2 minutes per bucket): Cloudflare → R2 → `madebyjimbob-live` →
    Settings → CORS policy → Edit → add `"capacitor://localhost"` and `"https://localhost"` to `AllowedOrigins` →
-   Save. Do the same on JimBob's library bucket (in his Cloudflare account). Without it, Cloudflare Stream videos
-   play in the apps but replays and library videos on R2 don't.
+   Save. Do the same on JimBob's library bucket (in his Cloudflare account). Today every video on the live site is
+   on Cloudflare Stream and plays in the apps (checked 2026-10-15); without this step, replays of streams on the
+   site and JimBob's uploaded library won't.
 3. **Developer accounts** ($99/year Apple, $25 once Google), ideally in JimBob's name: `docs/MIGRATION.md` step 11.
 4. **Decide buying inside the apps** before the store release (ADR-014, MBJ-406). My recommendation: sell nothing
    in the apps at first; members join on the website and their membership works in the apps.
