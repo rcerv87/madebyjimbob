@@ -116,13 +116,14 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-817 | Friends of the channel | Library & community | 1 | Should | S | — |
 | MBJ-819 | Beta feedback inside the site | Library & community | 1 | Should | S | MBJ-101 |
 | MBJ-820 | MVP end-to-end test with JimBob and beta testers | Library & community | 1 | Must | S | MBJ-114, MBJ-102, MBJ-104, MBJ-109, MBJ-310 |
-| MBJ-401 | Expo app scaffold | Mobile apps | 2 | Must | L | MBJ-004, MBJ-101 |
-| MBJ-402 | Mobile player and gestures | Mobile apps | 2 | Must | M | MBJ-401 |
-| MBJ-403 | Background audio, lock screen, PiP | Mobile apps | 2 | Must | M | MBJ-402 |
-| MBJ-404 | Mobile chat | Mobile apps | 2 | Must | M | MBJ-401 |
-| MBJ-405 | Push notifications | Mobile apps | 2 | Should | M | MBJ-401, MBJ-202 |
-| MBJ-406 | In-app subscriptions and tips | Mobile apps | 2 | Must | L | MBJ-104, MBJ-401 |
-| MBJ-407 | Store release | Mobile apps | 2 | Must | M | MBJ-403, MBJ-406 |
+| MBJ-401 | App shell: the web app wrapped for iPhone and Android | Mobile apps | 2 | Must | M | MBJ-101 |
+| MBJ-402 | Player in the apps | Mobile apps | 2 | Should | S | MBJ-401 |
+| MBJ-403 | Background audio, lock screen, PiP | Mobile apps | 2 | Must | M | MBJ-401 |
+| MBJ-404 | Chat in the apps | Mobile apps | 2 | Must | S | MBJ-401 |
+| MBJ-405 | Native push notifications | Mobile apps | 2 | Should | M | MBJ-401, MBJ-202 |
+| MBJ-406 | Buying inside the apps | Mobile apps | 2 | Must | L | MBJ-104, MBJ-401 |
+| MBJ-407 | Store release | Mobile apps | 2 | Must | M | MBJ-403, MBJ-405, MBJ-406 |
+| MBJ-408 | Links that open the app | Mobile apps | 2 | Should | S | MBJ-401 |
 | MBJ-808 | Art section | Library & community | 2 | Should | S | MBJ-807 |
 | MBJ-205 | Redis pub/sub and rate limits | Chat & moderation | 3 | Should | M | MBJ-001 |
 | MBJ-223 | Pop-out chat and "show on stream" overlay for OBS | Chat & moderation | 3 | Should | M | MBJ-310, MBJ-109 |
@@ -1008,84 +1009,96 @@ Acceptance criteria:
 
 ## Epic 4xx — Mobile apps
 
-iOS and Android with background audio, PiP, gestures, and IAP.
+iOS and Android apps wrapping the web app (Capacitor, ADR-014): background audio, push, store release.
 
-### MBJ-401 — Expo app scaffold
+### MBJ-401 — App shell: the web app wrapped for iPhone and Android
 
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-004, MBJ-101
+**Status:** In progress · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-101
 
-As a viewer, I want the platform as a phone app.
-
-Acceptance criteria:
-- [ ] `mobile/` Expo app in the workspace using `packages/shared`
-- [ ] Sign-in, Home, Watch, Account screens
-- [ ] Runs on iOS simulator and Android emulator
-
-### MBJ-402 — Mobile player and gestures
-
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-401
-
-As a mobile viewer, I want YouTube-quality player controls.
+As a viewer, I want the platform as a phone app from the stores.
 
 Acceptance criteria:
-- [ ] expo-video HLS playback
-- [ ] Double-tap left/right ±10s with visual feedback
-- [ ] Long-press 2× while held
-- [ ] Pinch to zoom (1×–3×)
+- [ ] `mobile/` Capacitor project wrapping the web build (ADR-014); app id com.madebyjimbob.app
+- [ ] The same pages work inside the apps: API and WebSocket on the live site, Bearer token sign-in, share links with the site's address, outside pages (checkout, the store) in the phone's browser
+- [ ] Android builds on Ruben's PC and runs in the emulator and on a phone
+- [ ] The iPhone project builds on a Mac (a cloud build service) and runs in the simulator and on an iPhone
+- [ ] App icon and launch screen from JimBob's art; status bar and notch handled
+
+### MBJ-402 — Player in the apps
+
+**Status:** To do · **Phase 2 — Mobile** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-401
+
+As a phone viewer, I want the player to feel native.
+
+Acceptance criteria:
+- [ ] Double-tap ±10s, long-press 2× and Listen only work in both apps as on the web
+- [ ] Fullscreen turns to landscape; AirPlay on iPhone; Chromecast later
 
 ### MBJ-403 — Background audio, lock screen, PiP
 
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-402
+**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-401
 
 As a passive listener, I want to lock my phone and keep listening.
 
 Acceptance criteria:
-- [ ] Audio continues with screen locked and app backgrounded
-- [ ] Lock-screen/notification controls with title and artwork
-- [ ] PiP starts automatically when leaving the app while playing
-- [ ] Listen-only toggle hides video
+- [ ] Audio continues with the screen locked and the app in the background (iPhone audio background mode, Android media service)
+- [ ] Lock-screen and notification controls with title and artwork
+- [ ] Picture-in-picture when leaving the app while a video plays
+- [ ] Listen only works as on the web
 
-### MBJ-404 — Mobile chat
+### MBJ-404 — Chat in the apps
 
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-401
+**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-401
 
-As a mobile viewer, I want to read and post chat.
+As a phone viewer, I want to read and post chat.
 
 Acceptance criteria:
-- [ ] Chat panel synced to playback (replay) and live mode
-- [ ] Catch-up fetch after returning from background
+- [ ] Chat synced to playback (replay) and live
+- [ ] Coming back from the background catches up (messages since the last one) and reconnects
 
-### MBJ-405 — Push notifications
+### MBJ-405 — Native push notifications
 
 **Status:** To do · **Phase 2 — Mobile** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-401, MBJ-202
 
-As a member, I want to know when JimBob goes live or someone mentions me.
+As a member, I want to know when JimBob goes live or someone replies to me, on my phone.
 
 Acceptance criteria:
-- [ ] Expo push for: live now, @mentions, tip replies
-- [ ] Per-type opt-out in Account
+- [ ] FCM on Android and APNs on iPhone, sent by the server's notifyFor() next to Web Push
+- [ ] The same notification types and per-type settings as the website
+- [ ] Tapping one opens the app at that moment
 
-### MBJ-406 — In-app subscriptions and tips
+### MBJ-406 — Buying inside the apps
 
 **Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** L · **Depends on:** MBJ-104, MBJ-401
 
-As a mobile viewer, I want to subscribe and tip in the app.
+As a phone viewer, I want to join or send a super chat from the app.
 
 Acceptance criteria:
-- [ ] RevenueCat offerings for Plus and Premium on iOS and Android
-- [ ] Consumable tip products
-- [ ] Entitlements shared with web purchases
+- [ ] Decide per store (ADR-014): nothing sold in the apps (join on the website), the stores' payments (RevenueCat, entitlements shared with web purchases), or an outside-purchase link where the store allows it
+- [ ] Build the chosen way; memberships bought anywhere work everywhere
 
 ### MBJ-407 — Store release
 
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-403, MBJ-406
+**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-403, MBJ-405, MBJ-406
 
 As JimBob, I want the app in both stores.
 
 Acceptance criteria:
-- [ ] EAS Build/Submit configured
+- [ ] Apple Developer and Google Play accounts (JimBob's)
+- [ ] Release signing: Play upload key, Apple certificates through a cloud Mac build
 - [ ] TestFlight and Play internal testing live
-- [ ] Store listings and privacy disclosures complete
+- [ ] Sign in with Apple if Google sign-in is in the iPhone app
+- [ ] Store listings, screenshots, privacy labels and data safety forms complete
+
+### MBJ-408 — Links that open the app
+
+**Status:** To do · **Phase 2 — Mobile** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-401
+
+As a member with the app, I want shared links and notifications to open the app, not the browser.
+
+Acceptance criteria:
+- [ ] The site serves apple-app-site-association and assetlinks.json
+- [ ] Video, profile and notification links open the app when it's installed
 
 ## Epic 5xx — Owned live & audio
 

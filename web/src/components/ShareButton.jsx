@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatTime } from '../api.js';
+import { siteUrl } from '../native.js';
 
 // Copy a link to a video (optionally at the current moment), or use the phone's share sheet.
 export async function copyText(text) {
@@ -27,7 +28,7 @@ export default function ShareButton({ title, path, getTimeMs }) {
   const [atMs, setAtMs] = useState(0);
   const wrapRef = useRef(null);
 
-  const base = `${location.origin}${path}`;
+  const base = siteUrl(path);
   const atSec = Math.floor(atMs / 1000);
   const atUrl = `${base}${path.includes('?') ? '&' : '?'}t=${atSec}`;
 

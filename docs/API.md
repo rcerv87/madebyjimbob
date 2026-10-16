@@ -3,7 +3,11 @@
 Base path `/api`. JSON in and out. Errors: `{ "error": "Human-readable message." }` with a 4xx/5xx status. Every response has an `X-Request-Id` header (a safe incoming one is reused); 500 errors quote it so reports can be matched to logs. Malformed JSON bodies are 400, bodies over 50 KB are 413.
 Auth (MBJ-101): Better Auth under `/auth/*`. The web app uses the `mbj.session_token` httpOnly cookie; apps and tests can send
 `Authorization: Bearer <token>` with the token from the `set-auth-token` response header of sign-up/sign-in. State-changing
-auth requests need an `Origin` header (browsers send it). Admins are users with `role = 'admin'` (set with `npm run set-role`) or whose **verified** email is in `ADMIN_EMAILS`;
+auth requests need an `Origin` header (browsers send it).
+Phone apps (ADR-014): their pages run at `capacitor://localhost` (iPhone) and `https://localhost` (Android). `/api` answers
+those origins with CORS (methods, `Content-Type` and `Authorization` allowed, `set-auth-token` readable, no credentials;
+`APP_ORIGINS` adds more), Better Auth trusts them, and the apps always use the Bearer token. The WebSocket takes the
+same token in its first message: `{ type: "auth", token }` or `{ type: "join", videoId, token }`. Admins are users with `role = 'admin'` (set with `npm run set-role`) or whose **verified** email is in `ADMIN_EMAILS`;
 they get `isAdmin: true` and see every tier.
 
 ## Current

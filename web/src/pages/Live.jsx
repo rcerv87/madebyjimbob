@@ -8,6 +8,7 @@ import { createClock, useClock } from '../clock.js';
 import ChatPanel from '../components/ChatPanel.jsx';
 import SuperchatForm, { DRAFT_KEY } from '../components/SuperchatForm.jsx';
 import { useSearchParams } from 'react-router-dom';
+import { mediaUrl } from '../native.js';
 
 // How far behind live the live feed itself runs (seconds); jumps closer than this to live just play live.
 const LIVE_EDGE_S = 8;
@@ -794,7 +795,7 @@ export default function Live({ session }) {
           </div>
         )}
         {live.online && live.hls ? (
-          <LivePlayer src={live.hls} dvr={live.dvr} clock={clock} seekRef={seekRef} />
+          <LivePlayer src={mediaUrl(live.hls)} dvr={live.dvr} clock={clock} seekRef={seekRef} />
         ) : (
           <div className="page-msg">
             <h2>JimBob isn’t live right now</h2>

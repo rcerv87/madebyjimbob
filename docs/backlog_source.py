@@ -9,7 +9,7 @@ EPICS = {
     "1": ("Accounts & memberships", "Real users, tiers, payments, and server-enforced access."),
     "2": ("Chat & moderation", "The core chat experience and the tools to keep it usable."),
     "3": ("Live via YouTube", "Watch live in-platform with YouTube/Rumble chat merged in, then auto-archive."),
-    "4": ("Mobile apps", "iOS and Android with background audio, PiP, gestures, and IAP."),
+    "4": ("Mobile apps", "iOS and Android apps wrapping the web app (Capacitor, ADR-014): background audio, push, store release."),
     "5": ("Owned live & audio", "Platform-independent live, audio-only, and podcast feeds."),
     "6": ("Engagement & AI", "XP, badges, captions, recaps, call-ins."),
     "7": ("Studio & analytics", "Creator tools and audience insight."),
@@ -417,31 +417,41 @@ S = [
   "Decided 2026-10-03 (JimBob): older streams keep 720p and below; full HD kept for LIVE_HD_DAYS (default 30), a setting"], ["310"]),
 
 # ---------------- 4 Mobile ----------------
-("401", 2, "Must", "L", "Expo app scaffold",
- "As a viewer, I want the platform as a phone app.",
- ["`mobile/` Expo app in the workspace using `packages/shared`", "Sign-in, Home, Watch, Account screens",
-  "Runs on iOS simulator and Android emulator"], ["004", "101"]),
-("402", 2, "Must", "M", "Mobile player and gestures",
- "As a mobile viewer, I want YouTube-quality player controls.",
- ["expo-video HLS playback", "Double-tap left/right ±10s with visual feedback", "Long-press 2× while held",
-  "Pinch to zoom (1×–3×)"], ["401"]),
+("401", 2, "Must", "M", "App shell: the web app wrapped for iPhone and Android",
+ "As a viewer, I want the platform as a phone app from the stores.",
+ ["`mobile/` Capacitor project wrapping the web build (ADR-014); app id com.madebyjimbob.app",
+  "The same pages work inside the apps: API and WebSocket on the live site, Bearer token sign-in, share links with the site's address, outside pages (checkout, the store) in the phone's browser",
+  "Android builds on Ruben's PC and runs in the emulator and on a phone",
+  "The iPhone project builds on a Mac (a cloud build service) and runs in the simulator and on an iPhone",
+  "App icon and launch screen from JimBob's art; status bar and notch handled"], ["101"]),
+("402", 2, "Should", "S", "Player in the apps",
+ "As a phone viewer, I want the player to feel native.",
+ ["Double-tap ±10s, long-press 2× and Listen only work in both apps as on the web",
+  "Fullscreen turns to landscape; AirPlay on iPhone; Chromecast later"], ["401"]),
 ("403", 2, "Must", "M", "Background audio, lock screen, PiP",
  "As a passive listener, I want to lock my phone and keep listening.",
- ["Audio continues with screen locked and app backgrounded", "Lock-screen/notification controls with title and artwork",
-  "PiP starts automatically when leaving the app while playing", "Listen-only toggle hides video"], ["402"]),
-("404", 2, "Must", "M", "Mobile chat",
- "As a mobile viewer, I want to read and post chat.",
- ["Chat panel synced to playback (replay) and live mode", "Catch-up fetch after returning from background"], ["401"]),
-("405", 2, "Should", "M", "Push notifications",
- "As a member, I want to know when JimBob goes live or someone mentions me.",
- ["Expo push for: live now, @mentions, tip replies", "Per-type opt-out in Account"], ["401", "202"]),
-("406", 2, "Must", "L", "In-app subscriptions and tips",
- "As a mobile viewer, I want to subscribe and tip in the app.",
- ["RevenueCat offerings for Plus and Premium on iOS and Android", "Consumable tip products",
-  "Entitlements shared with web purchases"], ["104", "401"]),
+ ["Audio continues with the screen locked and the app in the background (iPhone audio background mode, Android media service)",
+  "Lock-screen and notification controls with title and artwork",
+  "Picture-in-picture when leaving the app while a video plays", "Listen only works as on the web"], ["401"]),
+("404", 2, "Must", "S", "Chat in the apps",
+ "As a phone viewer, I want to read and post chat.",
+ ["Chat synced to playback (replay) and live", "Coming back from the background catches up (messages since the last one) and reconnects"], ["401"]),
+("405", 2, "Should", "M", "Native push notifications",
+ "As a member, I want to know when JimBob goes live or someone replies to me, on my phone.",
+ ["FCM on Android and APNs on iPhone, sent by the server's notifyFor() next to Web Push",
+  "The same notification types and per-type settings as the website", "Tapping one opens the app at that moment"], ["401", "202"]),
+("406", 2, "Must", "L", "Buying inside the apps",
+ "As a phone viewer, I want to join or send a super chat from the app.",
+ ["Decide per store (ADR-014): nothing sold in the apps (join on the website), the stores' payments (RevenueCat, entitlements shared with web purchases), or an outside-purchase link where the store allows it",
+  "Build the chosen way; memberships bought anywhere work everywhere"], ["104", "401"]),
 ("407", 2, "Must", "M", "Store release",
  "As JimBob, I want the app in both stores.",
- ["EAS Build/Submit configured", "TestFlight and Play internal testing live", "Store listings and privacy disclosures complete"], ["403", "406"]),
+ ["Apple Developer and Google Play accounts (JimBob's)", "Release signing: Play upload key, Apple certificates through a cloud Mac build",
+  "TestFlight and Play internal testing live", "Sign in with Apple if Google sign-in is in the iPhone app",
+  "Store listings, screenshots, privacy labels and data safety forms complete"], ["403", "405", "406"]),
+("408", 2, "Should", "S", "Links that open the app",
+ "As a member with the app, I want shared links and notifications to open the app, not the browser.",
+ ["The site serves apple-app-site-association and assetlinks.json", "Video, profile and notification links open the app when it's installed"], ["401"]),
 
 # ---------------- 5 Owned live & audio ----------------
 ("501", 4, "Must", "L", "Owned live ingest to R2",
@@ -770,7 +780,7 @@ SPRINTS = [
 STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress", "312": "Done", "218": "In progress", "222": "In progress", "104": "In progress", "105": "Done", "109": "In progress", "818": "In progress", "705": "In progress", "819": "Done", "814": "Done", "107": "In progress", "115": "In progress", "217": "In progress"}
+          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress", "312": "Done", "218": "In progress", "222": "In progress", "104": "In progress", "105": "Done", "109": "In progress", "818": "In progress", "705": "In progress", "819": "Done", "814": "Done", "107": "In progress", "115": "In progress", "217": "In progress", "401": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.
@@ -793,6 +803,7 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "00
 # 102: users.role + npm run set-role (admin opens Studio); roles changed in Studio → Members (with MBJ-705); mod role use and /api/mod/* remain (MBJ-204).
 # 217: notes at a moment or stretch (public or private), pins on the strip, list with favorites first and a Favorites only switch, profile list, report / take down, same filter and block rules as comments. Remain: notes on the live page (rewind).
 # 613: thumbs; one-tap moment reactions and drag-to-mark stretches; the hotspot strip (reactions + chat per minute, tap to jump); fair counting. Remain: skip-boring and best-parts modes, Studio per-video chart, feeding AI notes.
+# 401: Capacitor project (ADR-014), app mode in the web app (live site, token sign-in, outside pages in the browser), Android builds on the PC and runs in the emulator, icons and launch screens. Remain: an Android phone test; the iPhone build on a Mac and an iPhone test.
 # 705: list, search, filters (staff, new, banned, tier), role change, ban with reason / unban, mod_actions log. timeouts (this stream / 1 week / 2 weeks / custom date; can still watch and like; shown to the member; Timed out filter; links from reports and name cards). Remain: member page with history, hide all messages, highlight, staff notes, tier override, live over WebSocket (with MBJ-204).
 # 107: opt-in at sign-up and in Account settings, CSV export with unsubscribe links, unsubscribe page, Shopify importer (npm run import:newsletter). Remain: Ruben runs the Shopify import.
 # 814: chips with counts, Keep watching, binge queue, Mark as watched on the video page; marking from a card's menu on the Videos page not done.

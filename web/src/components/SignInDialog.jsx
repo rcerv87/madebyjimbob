@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { isNativeApp } from '../native.js';
 
 const TITLES = { signin: 'Sign in', signup: 'Create your account', forgot: 'Reset your password' };
 
@@ -112,7 +113,8 @@ export default function SignInDialog({ onClose, onSignedIn, initialMode = 'signi
       <form className="dialog auth-dialog" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
         <h2>{TITLES[mode]}</h2>
 
-        {google && mode !== 'forgot' && (
+        {/* Google refuses sign-in inside an app's web view; the apps get their own sign-in later (MBJ-110). */}
+        {google && mode !== 'forgot' && !isNativeApp() && (
           <>
             <button type="button" className="google-btn" onClick={withGoogle} disabled={busy}>
               <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">

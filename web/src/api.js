@@ -1,4 +1,7 @@
-// Signed-in state lives in an httpOnly session cookie (MBJ-101) that the browser sends with every request.
+import { apiUrl, authHeaders, isNativeApp, setAppToken } from './native.js';
+
+// Signed-in state lives in an httpOnly session cookie (MBJ-101) that the browser sends with every request;
+// inside the phone apps, in a Bearer token kept on the phone (native.js).
 let signedIn = false;
 export const setSignedIn = (value) => {
   signedIn = Boolean(value);
@@ -25,11 +28,14 @@ const AUTH_MESSAGES = {
 };
 
 export async function api(path, { method = 'GET', body } = {}) {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(apiUrl(path), {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: body ? JSON.stringify(body) : undefined,
   });
+  // In an app, signing in (or up) hands back the token to send from now on.
+  const token = isNativeApp() && res.headers.get('set-auth-token');
+  if (token) setAppToken(token);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (res.status === 429) throw new Error('Too many tries. Wait a minute, then try again.');

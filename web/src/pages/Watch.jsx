@@ -12,6 +12,7 @@ import UpNext, { EndScreen, readAutoplay } from '../components/UpNext.jsx';
 import ShareButton from '../components/ShareButton.jsx';
 import LikeButtons from '../components/LikeButtons.jsx';
 import useTitle from '../useTitle.js';
+import { mediaUrl } from '../native.js';
 
 const SAVE_EVERY_MS = 10_000;
 
@@ -207,8 +208,8 @@ export default function Watch({ session, background = false }) {
           <div className="player-wrap">
             <Player
               key={video.id}
-              src={video.hls}
-              poster={video.thumbnail}
+              src={mediaUrl(video.hls)}
+              poster={mediaUrl(video.thumbnail)}
               title={video.title}
               startMs={startMs}
               startInListen={Boolean(location.state?.listen)}

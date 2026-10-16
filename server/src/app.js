@@ -35,7 +35,7 @@ import { logger, httpLogger } from './logger.js';
 import { COLLECTIONS, collectionProducts, artPieces, shopUrl } from './shop.js';
 import { pageMeta, renderPage } from './pages.js';
 import { toNodeHandler } from 'better-auth/node';
-import { auth, sessionUser, ADMIN_EMAILS, baseURL, googleEnabled } from './auth.js';
+import { auth, sessionUser, ADMIN_EMAILS, baseURL, googleEnabled, APP_ORIGINS } from './auth.js';
 import {
   billingConfigured,
   plans,
@@ -109,6 +109,23 @@ const app = express();
 // Behind Render's proxy: trust X-Forwarded-Proto so page URLs (link previews, canonical) use https.
 app.set('trust proxy', 1);
 app.use(httpLogger);
+// The phone apps call the API from their own origin (ADR-014). They send a Bearer token, so no cookies are
+// allowed across; the sign-in token comes back in the set-auth-token header, which the app has to be able to read.
+const appOrigins = new Set(APP_ORIGINS);
+app.use('/api', (req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || !appOrigins.has(origin)) return next();
+  res.set({
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    'Access-Control-Expose-Headers': 'set-auth-token',
+    'Access-Control-Max-Age': '600',
+  });
+  res.vary('Origin');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 // One address for the site: once SITE_URL is set (https://madebyjimbob.app), pages opened on the onrender.com
 // address move there for good. The API (webhooks from Stripe and Resend, Render's health check, open tabs) still
 // answers on the old address.

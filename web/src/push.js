@@ -4,9 +4,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api.js';
 import { isIOS, isStandalone } from './device.js';
+import { isNativeApp } from './native.js';
 
+// Inside the phone apps, notifications come through the phones' own push (MBJ-405), not Web Push.
 const supported = () =>
   typeof window !== 'undefined' &&
+  !isNativeApp() &&
   'serviceWorker' in navigator &&
   'PushManager' in window &&
   'Notification' in window;

@@ -34,7 +34,8 @@ Rumble, and native messages, tiered memberships (Free / Plus / Premium), and eng
 - `server/` Node 20+ (22 on Render), Express, `ws`, `pg`, `node-pg-migrate`, `pino`, `web-push` (ESM).
   Serves the API, WebSockets, and the built web app.
 - `web/` React 18 + Vite + react-router + hls.js. Installable PWA (`web/public/manifest.webmanifest`, `sw.js`).
-- Store apps: not started. Decide Capacitor (wrap this web app) vs Expo (ADR-008) before MBJ-401.
+- `mobile/` Capacitor 8 wraps the web build for iPhone and Android (ADR-014, `docs/MOBILE.md`); app id
+  `com.madebyjimbob.app`. Android builds on this PC with Android Studio's Java; iPhone builds need a Mac.
 - Account email via Resend (ADR-012). Postgres on Render. Video on Cloudflare Stream (R2 proposed, ADR-010). Shop and Art read JimBob's Shopify
   store (ADR-011). Deploy via `render.yaml`.
 
@@ -55,6 +56,7 @@ npm run set-role -- <username> admin [--live]   # Studio access by account
 npm run import:newsletter -- <customers.csv> [--live]   # Shopify's newsletter list into the email list
 node tools/library-uploader/build.mjs --ffmpeg <folder>   # build the Library Uploader zip for JimBob's PC
 node tools/library-uploader/publish.mjs        # put that zip in the bucket; Studio → Library uploader offers it
+npx cap sync android (in mobile/), then ./gradlew assembleDebug (in mobile/android)   # Android test build; see docs/MOBILE.md
 npm run migrate:create -- <name>   # new SQL migration in server/migrations/
 npm run format                 # Prettier; `format:check` to verify only
 npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only] [--no-comments]
@@ -107,6 +109,10 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - Notes and moment reactions (MBJ-217, MBJ-613): `server/src/moments.js` and `web/src/components/Moments.jsx`. The
   player uses the browser's own controls, so the hotspot strip is its own bar under the player, not on the
   progress bar. Per-minute totals are cached for 30 seconds per video.
+- Phone apps (ADR-014): the same build runs in the apps; `web/src/native.js` decides at runtime. In an app the API, the
+  WebSocket, share links and `/…` media addresses use the live site's address, sign-in is a Bearer token kept on the
+  phone, and outside pages open in the phone's browser. Any new `fetch`, `new WebSocket`, `/api` link or relative
+  media address goes through `apiUrl()`, `socketUrl()`, `siteUrl()` or `mediaUrl()`, with `authHeaders()`.
 - Draft videos (`videos.draft`): hidden from everyone but Studio accounts. `canWatch()` and `watchableVideo()` in
   `app.js` enforce it; any new query that lists videos to the public needs `NOT v.draft`.
 - Timeouts (MBJ-705): `users.timeout_until`; `refusedForTimeout()` in `app.js` guards chat and comment posts. Anything

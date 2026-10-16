@@ -4,6 +4,7 @@ import { api, TIER_LABEL } from '../api.js';
 import { PERKS, TIERS, money, goTo } from '../membership.js';
 import useTitle from '../useTitle.js';
 import EmbeddedPay from '../components/EmbeddedPay.jsx';
+import { isNativeApp } from '../native.js';
 
 // The membership page (MBJ-105): what each tier includes, its price (from Stripe), and Join, which opens Stripe's
 // checkout and comes back to where the viewer was (?return=, e.g. a locked video), with ?tier= picked.
@@ -39,7 +40,8 @@ export default function Membership({ session }) {
     setBusy(tier);
     try {
       // With Stripe's publishable key the checkout opens inside this page; otherwise on Stripe's own page.
-      const embedded = Boolean(data?.publishableKey);
+      // In the phone apps, checkout opens in the phone's browser instead of inside the app.
+      const embedded = Boolean(data?.publishableKey) && !isNativeApp();
       const r = await api('/membership/checkout', {
         method: 'POST',
         body: { tier, interval: priceOf(tier)?.interval || interval, returnTo, embedded },

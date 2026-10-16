@@ -29,6 +29,7 @@ Keep it current: when a new service or setting is added, add it here.
 | **GitHub** | The code (`rcerv87/madebyjimbob`, private) | Ruben | none | Easy |
 | **Google Cloud** | YouTube Data API key (channel list) | Ruben | `YOUTUBE_API_KEY` | Easy |
 | **Shopify** | JimBob's store, read publicly | JimBob already | `SHOP_URL` | none |
+| **Apple Developer, Google Play** | The phone apps (ADR-014): signing, TestFlight, store listings | Not created yet | none on Render (app id `com.madebyjimbob.app` in `mobile/capacitor.config.json`) | Create in JimBob's name before the first store release; see step 11 |
 | **Google Cloud** | Sign in with Google (MBJ-110): one OAuth client; no cost, no data kept at Google | Ruben's Google account until JimBob's project exists | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Make a new client in JimBob's Google account and swap the two settings. Members keep signing in: they're matched by their Google account, not by the client. See step 10 |
 | **Stripe** | Memberships and super chats (ADR-013): customers, subscriptions, saved cards, prices, payouts | **Ruben's account in live mode since 2026-10-05** (real-money tests); moves to JimBob's before launch | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` | New account: nothing moves (customers, subscriptions and saved cards stay in Ruben's). See step 9 |
 | **Apple / Google developer accounts** | Phone apps | Ruben (by choice) | — | Apps can be transferred between developer accounts later |
@@ -186,6 +187,17 @@ Then on Render → `madebyjimbob` → Environment, replace `STRIPE_SECRET_KEY`, 
 ### Settings with nothing to move
 `FEEDBACK` (beta feedback, MBJ-819): leave unset during the beta; set it to `off` on Render when the beta ends.
 The email list (MBJ-107) lives in the site's own database, so it moves with the database (step 7).
+
+### 11. Phone apps (Apple and Google)
+The apps' id is `com.madebyjimbob.app` (ADR-014) and can never change once an app is in a store.
+- [ ] **Apple Developer Program** ($99/year) in JimBob's name, or his company's (needs a D-U-N-S number, free, takes
+  days). The account holder's name shows as the seller in the App Store.
+- [ ] **Google Play Console** ($25 once) in the same name; Google asks for ID verification.
+- [ ] Invite Ruben to both (Apple: App Store Connect → Users → Admin; Google: Users and permissions → Admin).
+- [ ] If the beta apps were published from Ruben's accounts first: Apple → App Store Connect → the app → App
+  Information → Transfer App; Google → Play Console → transfer request. Both keep the reviews and installs.
+- [ ] Each R2 bucket's CORS policy allows `capacitor://localhost` and `https://localhost` (otherwise replays don't play
+  in the Android app).
 
 ### 10. Google sign-in
 Nothing moves: a Google sign-in is tied to the member's Google account, so a new OAuth client in JimBob's Google

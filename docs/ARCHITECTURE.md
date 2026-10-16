@@ -14,8 +14,8 @@
 Solid lines are running; dashed ones aren't switched on yet. Source: `docs/system-map.svg` (hand-drawn SVG; edit the
 coordinates there).
 
-Planned and not shown: YouTube/Rumble live chat merged in (MBJ-301), the OBS super chat overlay (MBJ-223), store apps
-(ADR-008), a second web instance with Redis (MBJ-205). A styled version of this map is on the strategy meeting page.
+Planned and not shown: YouTube/Rumble live chat merged in (MBJ-301), the OBS super chat overlay (MBJ-223), the phone
+apps' native features (ADR-014), a second web instance with Redis (MBJ-205). A styled version of this map is on the strategy meeting page.
 
 ## Components
 
@@ -30,7 +30,7 @@ Planned and not shown: YouTube/Rumble live chat merged in (MBJ-301), the OBS sup
 | Payments | Stripe Checkout + Customer Portal (REST, no SDK) | Memberships and super chats; `users.tier` from subscriptions (ADR-013) |
 | Email | Resend | Account email (built, not switched on; ADR-012) |
 | Import | Import Helper on Ruben's PC (yt-dlp, ffmpeg) | YouTube video, chat replay and comments in; uploads to Stream |
-| Mobile (planned) | Wrap the web app or Expo (ADR-008) | Store apps with background audio and downloads |
+| Mobile | Capacitor 8 wrapping the web build (`mobile/`, ADR-014) | iPhone and Android apps: the same pages, signed in with a Bearer token; native push, background audio and store release to come |
 
 ## Phases
 
@@ -38,7 +38,7 @@ Planned and not shown: YouTube/Rumble live chat merged in (MBJ-301), the OBS sup
 |---|---|---|
 | **0 — Foundation** | Make the POC a safe base to build on | Tests, lint, CI, migrations, TypeScript decision |
 | **1 — VOD platform** | Launchable stored-video product | Real auth, tiers + Stripe, signed URLs, moderation, upvotes, Studio auth |
-| **2 — Mobile** | App store presence | Expo app with player, background audio, PiP, gestures, IAP |
+| **2 — Mobile** | App store presence | The web app wrapped with Capacitor; background audio, PiP, native push, store release (ADR-014) |
 | **3 — Live via YouTube** | Watch live in-platform with unified chat | Live detection, chat ingest worker, posting to YouTube, Rumble ingest, auto-archive to Stream |
 | **4 — Owned live + audio** | Platform independence | Owned ingest to R2, audio-only rendition, podcast feeds |
 | **5 — Engagement** | Community stickiness | XP/levels/badges, recaps, analytics, call-ins, native tips |

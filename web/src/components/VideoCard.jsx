@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatTime, timeAgo, count, TIER_LABEL } from '../api.js';
 import { readLocal } from '../progress.js';
+import { mediaUrl } from '../native.js';
 
 const KIND_LABEL = { short: 'Short', live: 'Streamed' };
 
@@ -16,7 +17,7 @@ export default function VideoCard({ v, to, position }) {
     <Link to={to || `/watch/${v.id}`} className="card">
       <div className="thumb">
         {v.thumbnail && !noThumb ? (
-          <img src={v.thumbnail} alt="" loading="lazy" onError={() => setNoThumb(true)} />
+          <img src={mediaUrl(v.thumbnail)} alt="" loading="lazy" onError={() => setNoThumb(true)} />
         ) : (
           <div className="thumb-empty">{noThumb ? 'No preview' : 'Processing'}</div>
         )}
