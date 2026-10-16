@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { isIOS } from '../device.js';
+import {
+  mediaControlsAvailable,
+  setMediaInfo,
+  clearMediaInfo,
+  setMediaAction,
+  setMediaPlaying,
+  setMediaPosition,
+} from '../mediaControls.js';
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
 
@@ -9,15 +17,6 @@ const isAppleMobile = isIOS();
 
 // Phones pause <video> when the screen locks; desktop browsers keep playing it in background tabs.
 const isPhone = () => isAppleMobile || /Android/i.test(navigator.userAgent);
-
-// Lock-screen controls; older browsers throw for actions they don't know (e.g. nexttrack).
-function setMediaAction(action, handler) {
-  try {
-    navigator.mediaSession.setActionHandler(action, handler);
-  } catch {
-    /* not supported here */
-  }
-}
 
 // Use Safari's own HLS on Apple mobile; hls.js wherever Media Source Extensions exist (Chrome, Edge,
 // Firefox, desktop Safari), since other browsers' native HLS varies a lot (Chrome's is new).
@@ -264,18 +263,14 @@ export default function Player({
   // Lock-screen / notification controls act on whichever player is active. They're removed when the
   // player goes, so a leftover ⏭ can't act on a page the viewer has left.
   useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title,
-      artist: 'JimBob',
-      artwork: poster ? [{ src: poster, sizes: '640x360', type: 'image/jpeg' }] : [],
-    });
+    if (!mediaControlsAvailable()) return;
+    setMediaInfo({ title, artist: 'JimBob', artwork: poster });
     setMediaAction('seekbackward', () => actions.current.seek(-10));
     setMediaAction('seekforward', () => actions.current.seek(10));
     setMediaAction('play', () => active()?.play());
     setMediaAction('pause', () => active()?.pause());
     return () => {
-      navigator.mediaSession.metadata = null;
+      clearMediaInfo();
       for (const action of ['seekbackward', 'seekforward', 'play', 'pause']) setMediaAction(action, null);
     };
   }, [title, poster]);
@@ -284,7 +279,7 @@ export default function Player({
   const hasNext = Boolean(onNext);
   const hasPrevious = Boolean(onPrevious);
   useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
+    if (!mediaControlsAvailable()) return;
     setMediaAction('nexttrack', hasNext ? () => tracks.current.onNext?.(listenRef.current) : null);
     setMediaAction(
       'previoustrack',
@@ -393,9 +388,20 @@ export default function Player({
         controls={!listenOnly}
         playsInline
         onTimeUpdate={reportTime}
-        onSeeked={reportTime}
-        onPlay={() => setNeedsTap(false)}
-        onPause={onVideoPause}
+        onSeeked={(e) => {
+          reportTime(e);
+          setMediaPosition(e.currentTarget);
+        }}
+        onPlay={(e) => {
+          setNeedsTap(false);
+          setMediaPlaying(true);
+          setMediaPosition(e.currentTarget);
+        }}
+        onPause={() => {
+          onVideoPause();
+          setMediaPlaying(false);
+        }}
+        onRateChange={(e) => setMediaPosition(e.currentTarget)}
         onEnded={() => !listenRef.current && onEnded?.(false)}
       />
       {playError && (
@@ -423,7 +429,16 @@ export default function Player({
         preload="none"
         hidden={!listenOnly}
         onTimeUpdate={reportTime}
-        onSeeked={reportTime}
+        onSeeked={(e) => {
+          reportTime(e);
+          setMediaPosition(e.currentTarget);
+        }}
+        onPlay={(e) => {
+          setMediaPlaying(true);
+          setMediaPosition(e.currentTarget);
+        }}
+        onPause={() => setMediaPlaying(false)}
+        onRateChange={(e) => setMediaPosition(e.currentTarget)}
         onEnded={() => listenRef.current && onEnded?.(true)}
       />
       {ripple && (

@@ -1036,7 +1036,7 @@ Acceptance criteria:
 
 ### MBJ-403 — Background audio, lock screen, PiP
 
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-401
+**Status:** In progress · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-401
 
 As a passive listener, I want to lock my phone and keep listening.
 
@@ -1079,7 +1079,7 @@ Acceptance criteria:
 
 ### MBJ-407 — Store release
 
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-403, MBJ-405, MBJ-406
+**Status:** In progress · **Phase 2 — Mobile** · **Priority:** Must · **Size:** M · **Depends on:** MBJ-403, MBJ-405, MBJ-406
 
 As JimBob, I want the app in both stores.
 

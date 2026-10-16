@@ -11,8 +11,16 @@ Capacitor settings (`capacitor.config.json`), the Android project (`mobile/andro
   and top bar fit Android 15's edge-to-edge screens. App icon and launch screen use JimBob's art.
 - **iPhone:** the project is generated (Swift Package Manager, no CocoaPods) but has never been built: that needs a
   Mac. Untested: everything on iOS.
-- Not in the apps yet: native push, background audio with the screen locked, the share sheet, links that open the
-  app, Google sign-in (MBJ-403, 405, 110).
+- **Android background audio and lock-screen controls (MBJ-403, 2026-10-15):** while something plays, Android shows a
+  media card (title, JimBob, play/pause, progress, previous/next when there's somewhere to go) and runs a media
+  service so the app isn't closed in the background. Checked in the emulator: home screen and a minute with the screen
+  off keep playing, the card's pause and play work, the video comes back on return. Through `web/src/mediaControls.js`
+  and the `@capgo/capacitor-media-session` plugin (Android only; the website and the iPhone app use the browser's
+  Media Session).
+- **Android store build (MBJ-407, 2026-10-15):** release builds are signed with the upload key; `bundleRelease` makes
+  the `.aab` Google Play takes. See "Release builds" below.
+- Not in the apps yet: native push, the share sheet, links that open the app, Google sign-in (MBJ-405, 408, 110), and
+  the iPhone side of background audio.
 
 ## How the apps differ from the website
 
@@ -53,6 +61,27 @@ page: `adb forward tcp:9250 localabstract:webview_devtools_remote_<pid>`, then `
 **On a phone:** copy `app-debug.apk` to the phone and open it (Android asks to allow installing from that app), or with
 USB debugging on, `adb install -r app-debug.apk`. A debug build is for testing only; the Play Store needs a signed
 release build (`./gradlew bundleRelease` with the upload key, MBJ-407).
+
+## Release builds (Google Play)
+
+The **upload key** signs every build sent to Google Play. It lives outside the repo:
+`C:\Users\office\.madebyjimbob-keys\android-upload-key.jks`, with its passwords in `keystore.properties` in the same
+folder (a copy sits in `mobile/android/keystore.properties`, which git ignores). **Back up both files** somewhere
+private (a password manager or a private cloud folder; never email, never the repo). With Play App Signing, Google
+keeps the key that signs the app people install, so a lost upload key can be replaced through Play support, but it
+takes days.
+
+```bash
+npm run build && cd mobile && npx cap sync android && cd android
+./gradlew bundleRelease           # → app/build/outputs/bundle/release/app-release.aab
+```
+
+Raise `versionCode` in `mobile/android/app/build.gradle` for every upload (and `versionName`, which people see).
+Upload key fingerprint (SHA-256, public): `90:0D:10:83:10:C7:D6:B1:2D:03:9D:12:8D:77:2A:78:96:13:AD:D7:80:F8:1B:01:42:4E:38:B2:51:8D:36:B6`.
+
+**Google Play's rule for new personal developer accounts:** before an app can go to production, it needs a closed
+test with at least 12 testers who stay opted in for 14 days in a row. Organization accounts (a business, with a free
+D-U-N-S number) skip that. Check the current rule when creating the account.
 
 ## Building for iPhone
 
