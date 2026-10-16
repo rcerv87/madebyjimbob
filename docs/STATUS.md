@@ -24,7 +24,14 @@ video playing, chat, watch progress, notes, sign-out; and a build pointed at the
 website is unchanged. **Not yet:** an iPhone build (needs
 a Mac), a real phone, native push, background audio, buying inside the apps.
 
+**Android, 2026-10-15:** background audio and lock-screen controls work (emulator: home screen and a minute with the
+screen off keep playing; the media card's pause and play work), and the store build is ready: a signed `.aab` from
+`./gradlew bundleRelease`, with the upload key in `C:\Users\office\.madebyjimbob-keys\` (**back it up**,
+`docs/MOBILE.md` "Release builds"). Google Play's first upload waits on the Play Console account.
+
 **Next for Ruben:**
+0. **Back up the Android upload key** (both files in `C:\Users\office\.madebyjimbob-keys\`) to a password manager or a
+   private cloud folder.
 1. **Which phone do you test on?** Android: a test build can go on it today (copy the `.apk` file over). iPhone: it
    needs the Apple Developer account first (step 3).
 2. **Let the apps load replays from R2** (about 2 minutes per bucket): Cloudflare → R2 → `madebyjimbob-live` →
@@ -33,6 +40,9 @@ a Mac), a real phone, native push, background audio, buying inside the apps.
    on Cloudflare Stream and plays in the apps (checked 2026-10-15); without this step, replays of streams on the
    site and JimBob's uploaded library won't.
 3. **Developer accounts** ($99/year Apple, $25 once Google), ideally in JimBob's name: `docs/MIGRATION.md` step 11.
+   Google Play: a new **personal** account must run a closed test with 12+ testers for 14 days before going public;
+   an **organization** account (a business with a free D-U-N-S number) doesn't. Recommendation: an organization account
+   if JimBob has a business; otherwise line up 12 testers from his community.
 4. **Decide buying inside the apps** before the store release (ADR-014, MBJ-406). My recommendation: sell nothing
    in the apps at first; members join on the website and their membership works in the apps.
 

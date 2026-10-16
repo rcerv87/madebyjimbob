@@ -294,7 +294,7 @@ MBJ-401,App shell: the web app wrapped for iPhone and Android,Mobile apps,Phase 
 - App icon and launch screen from JimBob's art; status bar and notch handled",MBJ-101
 MBJ-402,Player in the apps,Mobile apps,Phase 2 — Mobile,Should,S,To do,"As a phone viewer, I want the player to feel native.","- Double-tap ±10s, long-press 2× and Listen only work in both apps as on the web
 - Fullscreen turns to landscape; AirPlay on iPhone; Chromecast later",MBJ-401
-MBJ-403,"Background audio, lock screen, PiP",Mobile apps,Phase 2 — Mobile,Must,M,To do,"As a passive listener, I want to lock my phone and keep listening.","- Audio continues with the screen locked and the app in the background (iPhone audio background mode, Android media service)
+MBJ-403,"Background audio, lock screen, PiP",Mobile apps,Phase 2 — Mobile,Must,M,In progress,"As a passive listener, I want to lock my phone and keep listening.","- Audio continues with the screen locked and the app in the background (iPhone audio background mode, Android media service)
 - Lock-screen and notification controls with title and artwork
 - Picture-in-picture when leaving the app while a video plays
 - Listen only works as on the web",MBJ-401
@@ -305,7 +305,7 @@ MBJ-405,Native push notifications,Mobile apps,Phase 2 — Mobile,Should,M,To do,
 - Tapping one opens the app at that moment","MBJ-401, MBJ-202"
 MBJ-406,Buying inside the apps,Mobile apps,Phase 2 — Mobile,Must,L,To do,"As a phone viewer, I want to join or send a super chat from the app.","- Decide per store (ADR-014): nothing sold in the apps (join on the website), the stores' payments (RevenueCat, entitlements shared with web purchases), or an outside-purchase link where the store allows it
 - Build the chosen way; memberships bought anywhere work everywhere","MBJ-104, MBJ-401"
-MBJ-407,Store release,Mobile apps,Phase 2 — Mobile,Must,M,To do,"As JimBob, I want the app in both stores.","- Apple Developer and Google Play accounts (JimBob's)
+MBJ-407,Store release,Mobile apps,Phase 2 — Mobile,Must,M,In progress,"As JimBob, I want the app in both stores.","- Apple Developer and Google Play accounts (JimBob's)
 - Release signing: Play upload key, Apple certificates through a cloud Mac build
 - TestFlight and Play internal testing live
 - Sign in with Apple if Google sign-in is in the iPhone app

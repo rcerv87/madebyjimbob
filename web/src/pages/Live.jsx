@@ -9,6 +9,13 @@ import ChatPanel from '../components/ChatPanel.jsx';
 import SuperchatForm, { DRAFT_KEY } from '../components/SuperchatForm.jsx';
 import { useSearchParams } from 'react-router-dom';
 import { mediaUrl } from '../native.js';
+import {
+  mediaControlsAvailable,
+  setMediaInfo,
+  clearMediaInfo,
+  setMediaAction,
+  setMediaPlaying,
+} from '../mediaControls.js';
 
 // How far behind live the live feed itself runs (seconds); jumps closer than this to live just play live.
 const LIVE_EDGE_S = 8;
@@ -35,14 +42,6 @@ const hms = (s) => {
 
 // Phones pause <video> when the screen locks but keep an audio player going.
 const isPhone = () => isIOS() || /Android/i.test(navigator.userAgent);
-
-function setMediaAction(action, handler) {
-  try {
-    navigator.mediaSession.setActionHandler(action, handler);
-  } catch {
-    /* not supported here */
-  }
-}
 
 // /live (ADR-004, MBJ-310): JimBob's stream on the platform's own server. Plays the low-delay live feed; rewinding
 // switches to the recording of the whole stream so far, and Back to LIVE switches back. Listen (or locking the phone)
@@ -285,15 +284,15 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
 
   // Lock-screen controls act on whichever player is on.
   useEffect(() => {
-    if (!('mediaSession' in navigator)) return undefined;
-    navigator.mediaSession.metadata = new MediaMetadata({ title: 'JimBob live', artist: 'MADEbyJIMBOB' });
+    if (!mediaControlsAvailable()) return undefined;
+    setMediaInfo({ title: 'JimBob live', artist: 'MADEbyJIMBOB' });
     const active = () => (listeningRef.current ? audioRef.current : ref.current);
     setMediaAction('play', () => active()?.play());
     setMediaAction('pause', () => active()?.pause());
     setMediaAction('seekbackward', () => seek(posRef.current - 10));
     setMediaAction('seekforward', () => seek(posRef.current + 10));
     return () => {
-      navigator.mediaSession.metadata = null;
+      clearMediaInfo();
       for (const a of ['play', 'pause', 'seekbackward', 'seekforward']) setMediaAction(a, null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -522,11 +521,15 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
             : undefined
         }
         aria-label="JimBob live"
-        onPause={onVideoPause}
+        onPause={() => {
+          onVideoPause();
+          setMediaPlaying(false);
+        }}
         // Only one player ever makes sound: playing the video stops the listening player, and the other way round.
         onPlay={() => {
           if (listeningRef.current) ref.current?.pause();
           else audioRef.current?.pause();
+          setMediaPlaying(true);
         }}
         hidden={listening}
       />
@@ -536,7 +539,9 @@ function LivePlayer({ src, dvr, clock, seekRef }) {
         onPlay={() => {
           if (!listeningRef.current) audioRef.current?.pause();
           else ref.current?.pause();
+          setMediaPlaying(true);
         }}
+        onPause={() => setMediaPlaying(false)}
       />
       {dvr && !listening && (
         <div

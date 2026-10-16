@@ -198,6 +198,9 @@ The apps' id is `com.madebyjimbob.app` (ADR-014) and can never change once an ap
   Information → Transfer App; Google → Play Console → transfer request. Both keep the reviews and installs.
 - [ ] Each R2 bucket's CORS policy allows `capacitor://localhost` and `https://localhost` (otherwise replays don't play
   in the Android app).
+- [ ] The Android **upload key** (`C:\Users\office\.madebyjimbob-keys\` on Ruben's PC, `docs/MOBILE.md`) goes with
+  whoever builds the app; Google Play's own app signing key stays with Google. Hand over both files privately, or
+  ask Play support to register a new upload key for the new builder.
 
 ### 10. Google sign-in
 Nothing moves: a Google sign-in is tied to the member's Google account, so a new OAuth client in JimBob's Google

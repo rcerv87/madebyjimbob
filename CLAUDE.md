@@ -113,6 +113,10 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   WebSocket, share links and `/…` media addresses use the live site's address, sign-in is a Bearer token kept on the
   phone, and outside pages open in the phone's browser. Any new `fetch`, `new WebSocket`, `/api` link or relative
   media address goes through `apiUrl()`, `socketUrl()`, `siteUrl()` or `mediaUrl()`, with `authHeaders()`.
+- Lock-screen controls go through `web/src/mediaControls.js` (browser Media Session on the website and iPhone; the
+  `@capgo/capacitor-media-session` plugin in the Android app, which also keeps Android's media service running while
+  something plays). Players report play and pause to it; a pause counts after 2 s so the video-to-sound swap on lock
+  doesn't stop the service.
 - Draft videos (`videos.draft`): hidden from everyone but Studio accounts. `canWatch()` and `watchableVideo()` in
   `app.js` enforce it; any new query that lists videos to the public needs `NOT v.draft`.
 - Timeouts (MBJ-705): `users.timeout_until`; `refusedForTimeout()` in `app.js` guards chat and comment posts. Anything
@@ -174,6 +178,11 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   paths from the content (a hash, a YouTube id), never from local database ids, and delete what a test made.
 - The web `api()` helper replaces every 429 answer with its own "Too many tries" text. Answer 409 with a message when
   the member should read the reason.
+- Never hand a Capacitor plugin object through a promise (`import(...).then((m) => m.Plugin)`): plugins answer to any
+  method name, `then` included, so the promise calls the app for "then" and nothing arrives. Wrap it (`[m.Plugin]`) or
+  destructure after `await import(...)`.
+- The Android upload key and its passwords are in `C:\Users\office\.madebyjimbob-keys\` (and a git-ignored
+  `mobile/android/keystore.properties`). Never print, copy into the repo, or replace them.
 - Text a test finds by role and name: a label with a count badge reads as "Reports 2" in some cases and "Reports2" in
   others; match with a pattern.
 
