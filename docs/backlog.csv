@@ -287,27 +287,31 @@ MBJ-313,Stream latency modes: Normal and Low latency,Live via YouTube,Phase 3 �
 MBJ-312,Archive keeps 1080p only for recent streams,Live via YouTube,Phase 3 — Live via YouTube,Should,S,Done,"As JimBob, I want the archive to stay cheap as years of streams pile up.","- Live streams are kept in R2 with 1080p, 720p, 360p and audio (~4.7 GB per streamed hour, ~+$8/month each month at ~110 hours)
 - After a set time (e.g. 30 days, a setting) the 1080p copy is deleted from R2 and the replay's playlist drops it; 720p, 360p and audio stay (~1.6 GB per hour, ~+$2.60/month each month)
 - Decided 2026-10-03 (JimBob): older streams keep 720p and below; full HD kept for LIVE_HD_DAYS (default 30), a setting",MBJ-310
-MBJ-401,Expo app scaffold,Mobile apps,Phase 2 — Mobile,Must,L,To do,"As a viewer, I want the platform as a phone app.","- `mobile/` Expo app in the workspace using `packages/shared`
-- Sign-in, Home, Watch, Account screens
-- Runs on iOS simulator and Android emulator","MBJ-004, MBJ-101"
-MBJ-402,Mobile player and gestures,Mobile apps,Phase 2 — Mobile,Must,M,To do,"As a mobile viewer, I want YouTube-quality player controls.","- expo-video HLS playback
-- Double-tap left/right ±10s with visual feedback
-- Long-press 2× while held
-- Pinch to zoom (1×–3×)",MBJ-401
-MBJ-403,"Background audio, lock screen, PiP",Mobile apps,Phase 2 — Mobile,Must,M,To do,"As a passive listener, I want to lock my phone and keep listening.","- Audio continues with screen locked and app backgrounded
-- Lock-screen/notification controls with title and artwork
-- PiP starts automatically when leaving the app while playing
-- Listen-only toggle hides video",MBJ-402
-MBJ-404,Mobile chat,Mobile apps,Phase 2 — Mobile,Must,M,To do,"As a mobile viewer, I want to read and post chat.","- Chat panel synced to playback (replay) and live mode
-- Catch-up fetch after returning from background",MBJ-401
-MBJ-405,Push notifications,Mobile apps,Phase 2 — Mobile,Should,M,To do,"As a member, I want to know when JimBob goes live or someone mentions me.","- Expo push for: live now, @mentions, tip replies
-- Per-type opt-out in Account","MBJ-401, MBJ-202"
-MBJ-406,In-app subscriptions and tips,Mobile apps,Phase 2 — Mobile,Must,L,To do,"As a mobile viewer, I want to subscribe and tip in the app.","- RevenueCat offerings for Plus and Premium on iOS and Android
-- Consumable tip products
-- Entitlements shared with web purchases","MBJ-104, MBJ-401"
-MBJ-407,Store release,Mobile apps,Phase 2 — Mobile,Must,M,To do,"As JimBob, I want the app in both stores.","- EAS Build/Submit configured
+MBJ-401,App shell: the web app wrapped for iPhone and Android,Mobile apps,Phase 2 — Mobile,Must,M,In progress,"As a viewer, I want the platform as a phone app from the stores.","- `mobile/` Capacitor project wrapping the web build (ADR-014); app id com.madebyjimbob.app
+- The same pages work inside the apps: API and WebSocket on the live site, Bearer token sign-in, share links with the site's address, outside pages (checkout, the store) in the phone's browser
+- Android builds on Ruben's PC and runs in the emulator and on a phone
+- The iPhone project builds on a Mac (a cloud build service) and runs in the simulator and on an iPhone
+- App icon and launch screen from JimBob's art; status bar and notch handled",MBJ-101
+MBJ-402,Player in the apps,Mobile apps,Phase 2 — Mobile,Should,S,To do,"As a phone viewer, I want the player to feel native.","- Double-tap ±10s, long-press 2× and Listen only work in both apps as on the web
+- Fullscreen turns to landscape; AirPlay on iPhone; Chromecast later",MBJ-401
+MBJ-403,"Background audio, lock screen, PiP",Mobile apps,Phase 2 — Mobile,Must,M,To do,"As a passive listener, I want to lock my phone and keep listening.","- Audio continues with the screen locked and the app in the background (iPhone audio background mode, Android media service)
+- Lock-screen and notification controls with title and artwork
+- Picture-in-picture when leaving the app while a video plays
+- Listen only works as on the web",MBJ-401
+MBJ-404,Chat in the apps,Mobile apps,Phase 2 — Mobile,Must,S,To do,"As a phone viewer, I want to read and post chat.","- Chat synced to playback (replay) and live
+- Coming back from the background catches up (messages since the last one) and reconnects",MBJ-401
+MBJ-405,Native push notifications,Mobile apps,Phase 2 — Mobile,Should,M,To do,"As a member, I want to know when JimBob goes live or someone replies to me, on my phone.","- FCM on Android and APNs on iPhone, sent by the server's notifyFor() next to Web Push
+- The same notification types and per-type settings as the website
+- Tapping one opens the app at that moment","MBJ-401, MBJ-202"
+MBJ-406,Buying inside the apps,Mobile apps,Phase 2 — Mobile,Must,L,To do,"As a phone viewer, I want to join or send a super chat from the app.","- Decide per store (ADR-014): nothing sold in the apps (join on the website), the stores' payments (RevenueCat, entitlements shared with web purchases), or an outside-purchase link where the store allows it
+- Build the chosen way; memberships bought anywhere work everywhere","MBJ-104, MBJ-401"
+MBJ-407,Store release,Mobile apps,Phase 2 — Mobile,Must,M,To do,"As JimBob, I want the app in both stores.","- Apple Developer and Google Play accounts (JimBob's)
+- Release signing: Play upload key, Apple certificates through a cloud Mac build
 - TestFlight and Play internal testing live
-- Store listings and privacy disclosures complete","MBJ-403, MBJ-406"
+- Sign in with Apple if Google sign-in is in the iPhone app
+- Store listings, screenshots, privacy labels and data safety forms complete","MBJ-403, MBJ-405, MBJ-406"
+MBJ-408,Links that open the app,Mobile apps,Phase 2 — Mobile,Should,S,To do,"As a member with the app, I want shared links and notifications to open the app, not the browser.","- The site serves apple-app-site-association and assetlinks.json
+- Video, profile and notification links open the app when it's installed",MBJ-401
 MBJ-501,Owned live ingest to R2,Owned live & audio,Phase 4 — Owned live + audio,Must,L,To do,"As JimBob, I want a live stream no platform can shut off.","- MediaMTX on a VPS accepts RTMP/SRT from OBS
 - ffmpeg outputs 720p/480p + audio-only HLS to R2
 - Served via a Cloudflare domain; plays in web and mobile

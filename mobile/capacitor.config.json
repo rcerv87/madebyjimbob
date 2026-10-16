@@ -1,0 +1,21 @@
+{
+  "appId": "com.madebyjimbob.app",
+  "appName": "MADEbyJIMBOB",
+  "webDir": "../web/dist",
+  "backgroundColor": "#161a21",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "never"
+  },
+  "plugins": {
+    "SystemBars": {
+      "style": "DARK",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}

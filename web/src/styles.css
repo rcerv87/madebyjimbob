@@ -13,6 +13,9 @@
   --yt: #e8453c;
   --danger: #ff7a70;
   --top: 60px;
+  /* The top bar's full height: on an iPhone notch or an Android status bar (Home Screen app, phone apps) it grows
+     by the space the system takes. */
+  --top-bar: calc(var(--top) + env(safe-area-inset-top, 0px));
   --side: 76px;
   --radius: 10px;
   font-family: 'Barlow', system-ui, sans-serif;
@@ -79,7 +82,7 @@ code {
   position: sticky;
   top: 0;
   z-index: 20;
-  height: var(--top);
+  height: var(--top-bar);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -253,7 +256,7 @@ button.avatar[aria-expanded='true'] {
 
 .sidebar {
   position: fixed;
-  top: var(--top);
+  top: var(--top-bar);
   left: 0;
   bottom: 0;
   width: var(--side);
@@ -285,7 +288,7 @@ button.avatar[aria-expanded='true'] {
 .main {
   margin-left: var(--side);
   padding: 24px;
-  min-height: calc(100vh - var(--top));
+  min-height: calc(100vh - var(--top-bar));
 }
 
 /* ---------- home grid ---------- */
@@ -2264,9 +2267,9 @@ button.comment-author:hover {
   flex-direction: column;
   border: 1px solid var(--line);
   border-radius: 12px;
-  height: calc(100vh - var(--top) - 48px);
+  height: calc(100vh - var(--top-bar) - 48px);
   position: sticky;
-  top: calc(var(--top) + 24px);
+  top: calc(var(--top-bar) + 24px);
   overflow: hidden;
 }
 .chat-head {
@@ -2850,7 +2853,7 @@ button.quote:hover {
   border-radius: 12px;
   padding: 12px 14px 4px;
   margin-bottom: 24px;
-  scroll-margin-top: calc(var(--top) + 12px);
+  scroll-margin-top: calc(var(--top-bar) + 12px);
 }
 .comment-focus-head {
   display: flex;

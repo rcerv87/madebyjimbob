@@ -1,6 +1,7 @@
 // Where the viewer stopped in each video. Kept in this browser for everyone, and on the account
 // (PUT /api/videos/:id/progress) when signed in, so it follows them to other devices.
 import { isSignedIn } from './api.js';
+import { apiUrl, authHeaders } from './native.js';
 
 const key = (videoId) => `mbjb_progress_${videoId}`;
 
@@ -30,10 +31,10 @@ export function saveProgress(videoId, positionMs, { mark = false } = {}) {
   }
   if (!isSignedIn()) return;
   // keepalive lets the save finish even when the tab is closing.
-  fetch(`/api/videos/${videoId}/progress`, {
+  fetch(apiUrl(`/videos/${videoId}/progress`), {
     method: 'PUT',
     keepalive: true,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ positionMs: ms }),
   }).catch(() => {});
 }

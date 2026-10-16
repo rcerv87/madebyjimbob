@@ -6,6 +6,7 @@ import ChatOptions from './ChatOptions.jsx';
 import { favoriteMap } from '../favorites.js';
 import { useSearchParams } from 'react-router-dom';
 import { api, formatTime, timeoutNote } from '../api.js';
+import { socketAuth, socketUrl } from '../native.js';
 
 const WINDOW_MS = 120_000;
 const VISIBLE = 150;
@@ -183,14 +184,13 @@ export default function ChatPanel({
 
   // Realtime: messages and timestamped comments other viewers post while watching
   useEffect(() => {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     let ws;
     let retry;
     let reconnecting = false;
     const connect = () => {
-      ws = new WebSocket(`${proto}://${location.host}/ws`);
+      ws = new WebSocket(socketUrl());
       ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'join', videoId }));
+        ws.send(JSON.stringify({ type: 'join', videoId, ...socketAuth() }));
         // Catch up on anything posted while the socket was down.
         if (reconnecting && lastId.current) {
           api(`/videos/${videoId}/chat?afterId=${lastId.current}`)

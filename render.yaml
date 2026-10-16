@@ -49,6 +49,9 @@ services:
       # Beta feedback (MBJ-819): on unless this is "off".
       - key: FEEDBACK
         sync: false
+      # Extra origins the phone apps may call the API from (ADR-014); usually unset.
+      - key: APP_ORIGINS
+        sync: false
       # Account email (ADR-012). Set all four by hand in Render → madebyjimbob → Environment.
       - key: RESEND_API_KEY
         sync: false

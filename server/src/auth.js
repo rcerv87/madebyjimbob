@@ -49,6 +49,18 @@ async function verifyLegacy(password, stored) {
 
 const onRender = Boolean(process.env.RENDER);
 
+// The phone apps (ADR-014) load the site's pages from the phone itself, so their requests come from these
+// origins: capacitor://localhost on iPhone, https://localhost on Android. They sign in with a Bearer token, never
+// a cookie. APP_ORIGINS adds more (comma-separated), e.g. for a test build.
+export const APP_ORIGINS = [
+  'capacitor://localhost',
+  'https://localhost',
+  ...(process.env.APP_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
+];
+
 // Signs session cookies. Render generates BETTER_AUTH_SECRET (render.yaml); if it's ever missing, fall back to a
 // stable value derived from the database URL (secret, and the same on every restart) rather than a default.
 export const usingFallbackSecret = !process.env.BETTER_AUTH_SECRET;
@@ -138,9 +150,12 @@ export const auth = betterAuth({
   },
   // The site's own origin is always trusted, and on Render its onrender.com address too (tabs opened there before the
   // move to SITE_URL keep working); on a developer's machine, any localhost port (Vite, tests).
-  trustedOrigins: onRender
-    ? [process.env.RENDER_EXTERNAL_URL].filter(Boolean)
-    : ['http://localhost:*', 'http://127.0.0.1:*'],
+  trustedOrigins: [
+    ...(onRender
+      ? [process.env.RENDER_EXTERNAL_URL].filter(Boolean)
+      : ['http://localhost:*', 'http://127.0.0.1:*']),
+    ...APP_ORIGINS,
+  ],
   advanced: {
     cookiePrefix: 'mbj',
     useSecureCookies: baseURL.startsWith('https://'),

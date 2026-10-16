@@ -34,6 +34,7 @@ const Superchat = lazyPage(() => import('./pages/Superchat.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 import { useKeepPlaying } from './keepPlaying.js';
+import { onAppResume, setAppToken } from './native.js';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -60,6 +61,8 @@ export default function App() {
     if (u !== undefined) return setUser(u);
     api('/me')
       .then((d) => {
+        // In an app, a token the site no longer knows (signed out elsewhere, password changed) is dropped.
+        if (!d.user) setAppToken(null);
         setUser(d.user);
         setOptions(d.options || {});
       })
@@ -68,10 +71,20 @@ export default function App() {
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
+  // In the phone apps: coming back from the browser (after paying, say) refreshes who this is.
+  useEffect(() => {
+    let stop = () => {};
+    onAppResume(() => refreshUser()).then((s) => {
+      stop = s;
+    });
+    return () => stop();
+  }, [refreshUser]);
   useEffect(() => setSignedIn(Boolean(user)), [user]);
 
   const signOut = () => {
-    api('/auth/sign-out', { method: 'POST' }).catch(() => {});
+    api('/auth/sign-out', { method: 'POST' })
+      .catch(() => {})
+      .finally(() => setAppToken(null));
     setUser(null);
   };
   // requireSignIn() or requireSignIn('signup' | 'forgot'); also safe as a click handler.

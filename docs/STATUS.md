@@ -1,6 +1,6 @@
 # MadeByJimBob — status
 
-Last updated: 2026-10-11 (system map in `docs/ARCHITECTURE.md`; meeting summary on the strategy meeting page). Update this file when a story ships or a decision is made.
+Last updated: 2026-10-15 (system map in `docs/ARCHITECTURE.md`; meeting summary on the strategy meeting page). Update this file when a story ships or a decision is made.
 Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlog_source.py`).
 
 ## At a glance
@@ -13,6 +13,26 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Content | Checked 2026-10-11: 7 videos (4 of them live replays), 16,525 chat messages, 3,660 comments, JimBob's 9 YouTube playlists, 9 accounts. Nothing uploaded through the Library Uploader yet |
 | Quality | 440 automated tests (250 server, 190 web), lint, formatting, CI on GitHub; migrations run before each deploy |
 | Backlog | 125 stories; 32 done, 24 in progress |
+
+## Phone apps (started 2026-10-15)
+
+The iPhone and Android apps wrap this web app with Capacitor (ADR-014, replacing the Expo plan in ADR-008); how it
+works and how to build is in `docs/MOBILE.md`. **Built:** the `mobile/` project (app id `com.madebyjimbob.app`), the
+web app's app mode (it calls the live site and signs in with a token inside an app), the server allowing the apps'
+origins, icons and launch screens from JimBob's art. **Checked in the Android emulator:** sign-up, welcome steps, a
+video playing, chat, watch progress, notes, sign-out; the website is unchanged. **Not yet:** an iPhone build (needs
+a Mac), a real phone, native push, background audio, buying inside the apps.
+
+**Next for Ruben:**
+1. **Which phone do you test on?** Android: a test build can go on it today (copy the `.apk` file over). iPhone: it
+   needs the Apple Developer account first (step 3).
+2. **Let the apps load replays from R2** (about 2 minutes per bucket): Cloudflare → R2 → `madebyjimbob-live` →
+   Settings → CORS policy → Edit → add `"capacitor://localhost"` and `"https://localhost"` to `AllowedOrigins` →
+   Save. Do the same on JimBob's library bucket (in his Cloudflare account). Without it, Cloudflare Stream videos
+   play in the apps but replays and library videos on R2 don't.
+3. **Developer accounts** ($99/year Apple, $25 once Google), ideally in JimBob's name: `docs/MIGRATION.md` step 11.
+4. **Decide buying inside the apps** before the store release (ADR-014, MBJ-406). My recommendation: sell nothing
+   in the apps at first; members join on the website and their membership works in the apps.
 
 ## Where things stand (2026-10-11)
 
@@ -533,9 +553,9 @@ stay; a stream that only had 1080p keeps it). ~4.7 GB per streamed hour becomes 
 reach 30 days around 2026-11-02.
 1. **Turn on email** once madebyjimbob.app is verified in Resend (Waiting on Ruben #5, #7, #8); then check the first
    real sign-up, confirmation, and password reset.
-2. **Phone apps for Android and iPhone** (MBJ-401 on): decide how to build them (wrap this web app vs a native
-   app) and how iPhone builds happen from a Windows PC (a cloud build service); Apple and Google developer
-   accounts.
+2. **Phone apps for Android and iPhone** (MBJ-401 on, started 2026-10-15 with Capacitor, ADR-014): next the iPhone
+   build through a cloud Mac, background audio (MBJ-403), native push (MBJ-405), links that open the app (MBJ-408),
+   then the store release (MBJ-407) with Apple and Google developer accounts.
 3. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805); with the **schedule
    calendar** (MBJ-813): JimBob enters streams and debates in Studio, viewers see them in their time zone, add
    them to Google/Apple/Outlook or subscribe to a feed, and get reminders.
@@ -573,7 +593,7 @@ reach 30 days around 2026-11-02.
 13. **Library move** — R2 (MBJ-506) and the rest of the Takeout import (MBJ-806: match OBS recordings by date/length,
     unattended overnight run), after the ADR-010 decision. Stream storage past 1,000 min is ~$5/month per 1,000 min.
 14. **Art section** (MBJ-808) — scope to confirm: JimBob's artwork and builds, or brand art.
-15. **Store apps** — decide Capacitor (wrap this app) vs Expo (ADR-008), then MBJ-401+.
+15. **Store apps** — decided 2026-10-15: Capacitor (ADR-014); see item 2.
 16. **Live via YouTube** — detection, merged live chat, auto-archive (MBJ-301+).
     Then **owned live** (ADR-004, update of 2026-10-01): Owncast on a Hetzner CPX31 that Studio/app **Go Live**
     creates and deletes on demand (~$15/month), segments on R2, sent at the same time as YouTube and Rumble.

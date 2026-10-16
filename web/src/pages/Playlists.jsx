@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api, count, formatTime } from '../api.js';
 import useTitle from '../useTitle.js';
 import LibraryTabs from '../components/LibraryTabs.jsx';
+import { mediaUrl } from '../native.js';
 
 export default function Playlists() {
   const [playlists, setPlaylists] = useState(null);
@@ -34,7 +35,7 @@ export default function Playlists() {
             <Link key={p.id} to={`/playlist/${p.id}`} className="card playlist-card">
               <div className="thumb stacked">
                 {p.thumbnail ? (
-                  <img src={p.thumbnail} alt="" loading="lazy" />
+                  <img src={mediaUrl(p.thumbnail)} alt="" loading="lazy" />
                 ) : (
                   <div className="thumb-empty" />
                 )}

@@ -1,6 +1,6 @@
 # ADR-008: Expo for iOS and Android
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-014 (2026-10-15: the apps wrap the web app with Capacitor)
 - **Date:** 2026-09-29
 
 ## Context

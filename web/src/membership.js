@@ -1,3 +1,4 @@
+import { openOutside } from './native.js';
 // What each tier includes (MBJ-104/105): the membership page and Account settings show this table.
 // Each row: [perk, Free, Plus, Premium], where true = included, false = not, a string = a short note.
 export const PERKS = [
@@ -24,5 +25,6 @@ export function money(cents, currency = 'usd') {
   }).format(value);
 }
 
-// Sends the viewer to Stripe's page (checkout, billing, or a super chat). Replaceable in tests.
-export const goTo = { url: (u) => window.location.assign(u) };
+// Sends the viewer to Stripe's page (checkout, billing, or a super chat): in the phone apps, in the phone's
+// browser (paying happens on the website there). Replaceable in tests.
+export const goTo = { url: (u) => openOutside(u) };

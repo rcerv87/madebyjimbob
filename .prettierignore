@@ -5,3 +5,5 @@ package-lock.json
 server/tmp
 *.md
 docs/
+mobile/android
+mobile/ios

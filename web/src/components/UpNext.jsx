@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatTime } from '../api.js';
+import { mediaUrl } from '../native.js';
 
 const AUTOPLAY_KEY = 'mbjb_autoplay';
 
@@ -97,7 +98,7 @@ function QueueItem({ v, n, href, current }) {
     <Link to={href} className="queue-item" aria-current={current ? 'true' : undefined}>
       {n !== undefined && <span className="queue-n">{current ? '▶' : n}</span>}
       <span className="queue-thumb">
-        {v.thumbnail ? <img src={v.thumbnail} alt="" loading="lazy" /> : null}
+        {v.thumbnail ? <img src={mediaUrl(v.thumbnail)} alt="" loading="lazy" /> : null}
         {v.durationS ? <span className="duration">{formatTime(v.durationS)}</span> : null}
       </span>
       <span className="queue-title">{v.title}</span>

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { isIOS, isStandalone } from './device.js';
+import { isNativeApp } from './native.js';
 
 const DISMISS_KEY = 'mbjb_install_hint_dismissed';
 
 export function registerServiceWorker() {
-  if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return;
+  // The phone apps have their own pages on the phone: no service worker there.
+  if (!('serviceWorker' in navigator) || !import.meta.env.PROD || isNativeApp()) return;
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
 

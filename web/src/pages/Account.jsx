@@ -8,6 +8,7 @@ import { WelcomeChecklist } from '../components/WelcomeSteps.jsx';
 import { PERKS, goTo } from '../membership.js';
 import { FAVORITE_COLORS } from '../favorites.js';
 import EmbeddedPay from '../components/EmbeddedPay.jsx';
+import { isNativeApp } from '../native.js';
 
 // Account settings (MBJ-106): profile, sign-in and security, notifications, membership, privacy.
 export default function Account({ session, onUserChanged }) {
@@ -594,7 +595,7 @@ function PaymentMethodsSection() {
     try {
       const r = await api('/billing/cards', {
         method: 'POST',
-        body: { embedded: Boolean(config.publishableKey) },
+        body: { embedded: Boolean(config.publishableKey) && !isNativeApp() },
       });
       if (r.clientSecret) setAdding(r.clientSecret);
       else goTo.url(r.url);
@@ -811,9 +812,14 @@ function PrivacySection({ onUserChanged }) {
               file.
             </p>
           </div>
-          <a className="text-btn" href="/api/account/export" download>
-            Download
-          </a>
+          {isNativeApp() ? (
+            // A download needs the browser: the app's sign-in doesn't travel with a plain link.
+            <span className="muted small">Download it from madebyjimbob.app in a browser.</span>
+          ) : (
+            <a className="text-btn" href="/api/account/export" download>
+              Download
+            </a>
+          )}
         </div>
       </div>
       <div className="setting">

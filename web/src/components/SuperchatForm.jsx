@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api.js';
 import { money, goTo } from '../membership.js';
 import EmbeddedPay from './EmbeddedPay.jsx';
+import { isNativeApp } from '../native.js';
 
 const AMOUNTS = [200, 500, 1000, 2000, 5000, 10000];
 // Where the message waits while the viewer is on Stripe's own page (only when the checkout can't open in the page),
@@ -48,7 +49,7 @@ export default function SuperchatForm({
           amountCents: amount,
           message: message.trim(),
           returnTo,
-          ...(publishableKey && { embedded: true }),
+          ...(publishableKey && !isNativeApp() && { embedded: true }),
         },
       });
       if (r.clientSecret) {

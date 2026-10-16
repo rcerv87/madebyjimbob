@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "server",
-    "web"
+    "web",
+    "mobile"
   ],
   "engines": {
     "node": ">=20"

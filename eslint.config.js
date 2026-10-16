@@ -5,7 +5,16 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-config-prettier';
 
 export default [
-  { ignores: ['**/node_modules/**', '**/dist/**', 'server/tmp/**', '.localdb/**'] },
+  {
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'server/tmp/**',
+      '.localdb/**',
+      'mobile/android/**',
+      'mobile/ios/**',
+    ],
+  },
   js.configs.recommended,
   { rules: { 'no-unused-vars': ['error', { argsIgnorePattern: '^_' }] } },
   {

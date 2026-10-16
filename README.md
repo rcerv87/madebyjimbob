@@ -91,6 +91,11 @@ Tiers can't be picked at sign-up. To try a paid tier locally, set it on your acc
 
 Tests: create a second, disposable database (e.g. `createdb ... madebyjimbob_test`), set `DATABASE_URL_TEST`, then `npm test`.
 
+## 5. Phone apps
+
+`mobile/` wraps this web app for iPhone and Android with Capacitor (ADR-014). How to build and test them (Android
+on this PC and its emulator; iPhone needs a Mac) is in `docs/MOBILE.md`.
+
 ## How chat sync works
 
 Every message stores `offset_ms`, its position in the video. YouTube's replay file already
