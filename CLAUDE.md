@@ -74,6 +74,11 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 2. Branch: `mbj-<id>-<short-slug>` (e.g. `mbj-105-chat-upvotes`).
 3. Implement to the acceptance criteria exactly. If a criterion is unclear or conflicts with the docs, stop and ask rather than guessing.
 4. Add or update tests for the behavior you changed.
+   **Every change covers the website, the Android app and the iPhone app** (Ruben, 2026-10-16). The apps run the same
+   web build, so web changes reach both; anything native (plugins, `AndroidManifest.xml`, `Info.plist`, entitlements,
+   store settings, keys) is done for both platforms in the same change. Check the website in headless Chrome and the
+   Android app in the emulator. The iPhone app can't be built on this PC yet: write its side anyway and add whatever
+   is unchecked there to "iPhone: still to do or check" in `docs/STATUS.md`.
 5. Update docs in the same change:
    - new/changed endpoint or WS message → `docs/API.md`
    - schema change → migration + `docs/DATA_MODEL.md`
@@ -179,6 +184,11 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   locally through `localhost`.
 - The local `.env` points at the same buckets as the live site. Anything a local test uploads is real; name storage
   paths from the content (a hash, a YouTube id), never from local database ids, and delete what a test made.
+- It also has the live site's Hetzner token. Live servers carry `mbj-site` (Render's service id, or `local-<computer>`)
+  and each copy of the site lists and cleans up only its own; before that label, a local server's clean-up deleted the
+  live site's server seconds after Go Live (2026-10-16). For local checks that don't need live streaming, start the
+  server with `HETZNER_API_TOKEN=` (and `R2_ACCOUNT_ID=` / `B2_ENDPOINT=` to keep its storage jobs off the real
+  buckets).
 - The web `api()` helper replaces every 429 answer with its own "Too many tries" text. Answer 409 with a message when
   the member should read the reason.
 - Pages that open the phone apps from a link are listed in two places that must match: `APP_LINK_PATHS` in
