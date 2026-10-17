@@ -37,7 +37,9 @@ the Apple account. **Privacy policy and terms (2026-10-16):** `/privacy` and `/t
 menu and the sign-up box; Google's sign-in branding page and the app stores need them. They describe what the site
 really collects and who processes it, with **hello@madebyjimbob.app** as the contact (Cloudflare Email Routing on the
 domain). They're a plain-language starting point, not legal advice: JimBob (or a lawyer) should read both before the
-store release, and add his business name and state if he has one.
+store release, and add his business name and state if he has one. **Google sign-in in the Android app (2026-10-16):**
+the phone's own account picker; Ruben made the two Android OAuth clients (upload key and debug key), and both builds
+signed in to the live site in the emulator. App 0.1.1 is on Ruben's Drive (MADEbyJIMBOB folder).
 
 **Rule (Ruben, 2026-10-16): everything is done for the website, Android and iPhone.** The apps run the same web
 build, so site changes reach both; native pieces must be done for both.
