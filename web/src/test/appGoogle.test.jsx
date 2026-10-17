@@ -67,7 +67,7 @@ describe('Sign in with Google in the apps', () => {
       'initialize',
       { google: { webClientId: OPTIONS.googleClientId, mode: 'online' } },
     ]);
-    expect(calls[1]).toEqual(['login', { provider: 'google', options: { scopes: ['email', 'profile'] } }]);
+    expect(calls[1]).toEqual(['login', { provider: 'google', options: {} }]);
     expect(sent).toContainEqual([
       'POST',
       '/auth/sign-in/social',

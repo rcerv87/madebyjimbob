@@ -178,7 +178,8 @@ export async function appGoogleIdToken(options) {
   }
   let res;
   try {
-    res = await p.login({ provider: 'google', options: { scopes: ['email', 'profile'] } });
+    // Name, email and the ID token are the default; asking for scopes needs a changed Android activity.
+    res = await p.login({ provider: 'google', options: {} });
   } catch (err) {
     if (/cancel/i.test(`${err?.code || ''} ${err?.message || ''}`)) throw new Error('cancelled');
     throw err;
