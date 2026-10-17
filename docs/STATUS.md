@@ -33,7 +33,11 @@ links to the site's videos, playlists, live, posts and profiles open the app at 
 Android's share sheet. **Notifications in the Android app (MBJ-405)** work: replies arrive as phone notifications
 through Firebase (project `madebyjimbob-e9aea`, set up by Ruben 2026-10-16, key on Render and in the local `.env`) and
 tapping one opens the thread. Checked end to end in the emulator; next is Ruben's own phone. The iPhone side waits on
-the Apple account.
+the Apple account. **Privacy policy and terms (2026-10-16):** `/privacy` and `/terms` are live, linked from the side
+menu and the sign-up box; Google's sign-in branding page and the app stores need them. They describe what the site
+really collects and who processes it, with **hello@madebyjimbob.app** as the contact (Cloudflare Email Routing on the
+domain). They're a plain-language starting point, not legal advice: JimBob (or a lawyer) should read both before the
+store release, and add his business name and state if he has one.
 
 **Next for Ruben:**
 0. **Back up the Android upload key** (both files in `C:\Users\office\.madebyjimbob-keys\`) to a password manager or a

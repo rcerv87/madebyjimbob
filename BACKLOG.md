@@ -125,6 +125,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-407 | Store release | Mobile apps | 2 | Must | M | MBJ-403, MBJ-405, MBJ-406 |
 | MBJ-408 | Links that open the app | Mobile apps | 2 | Should | S | MBJ-401 |
 | MBJ-409 | Go live from the phone app (no OBS) | Mobile apps | 2 | Should | L | MBJ-401, MBJ-310 |
+| MBJ-410 | Install app on the website gets the phone apps | Mobile apps | 2 | Should | S | MBJ-407, MBJ-408 |
 | MBJ-808 | Art section | Library & community | 2 | Should | S | MBJ-807 |
 | MBJ-205 | Redis pub/sub and rate limits | Chat & moderation | 3 | Should | M | MBJ-001 |
 | MBJ-223 | Pop-out chat and "show on stream" overlay for OBS | Chat & moderation | 3 | Should | M | MBJ-310, MBJ-109 |
@@ -1119,6 +1120,21 @@ Acceptance criteria:
 - [ ] Android first; iPhone once the Apple account exists (camera and microphone permission wording; checked by Apple review)
 - [ ] No added monthly cost: the same Hetzner server as an OBS stream (~$0.12 an hour while on)
 - [ ] Asked for by Ruben, 2026-10-16, after starting a stream from the app
+
+### MBJ-410 — Install app on the website gets the phone apps
+
+**Status:** To do · **Phase 2 — Mobile** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-407, MBJ-408
+
+As a visitor on my phone, I want Install app to get me the real MADEbyJIMBOB app from my phone's store.
+
+Acceptance criteria:
+- [ ] On Android, Install app (the menu button and the install hint) opens the app's Google Play page; on iPhone and iPad, its App Store page
+- [ ] Phones that already have the app get Open in app instead (Android: the app link; iPhone: Safari's Smart App Banner)
+- [ ] Chrome on Android offers the Play app rather than adding the website to the home screen (the web manifest's related_applications with prefer_related_applications)
+- [ ] iPhone Safari shows Apple's Smart App Banner (apple-itunes-app meta tag) once the App Store id exists
+- [ ] On a computer: keep installing the website as an app, and show where to get the phone apps (store badges, or a QR code to scan with the phone)
+- [ ] Store addresses and ids are settings, so nothing changes until each store listing is live; until then Install app keeps working as today
+- [ ] Asked for by Ruben, 2026-10-16
 
 ## Epic 5xx — Owned live & audio
 

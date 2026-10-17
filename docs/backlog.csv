@@ -323,6 +323,13 @@ MBJ-409,Go live from the phone app (no OBS),Mobile apps,Phase 2 — Mobile,Shoul
 - Android first; iPhone once the Apple account exists (camera and microphone permission wording; checked by Apple review)
 - No added monthly cost: the same Hetzner server as an OBS stream (~$0.12 an hour while on)
 - Asked for by Ruben, 2026-10-16, after starting a stream from the app","MBJ-401, MBJ-310"
+MBJ-410,Install app on the website gets the phone apps,Mobile apps,Phase 2 — Mobile,Should,S,To do,"As a visitor on my phone, I want Install app to get me the real MADEbyJIMBOB app from my phone's store.","- On Android, Install app (the menu button and the install hint) opens the app's Google Play page; on iPhone and iPad, its App Store page
+- Phones that already have the app get Open in app instead (Android: the app link; iPhone: Safari's Smart App Banner)
+- Chrome on Android offers the Play app rather than adding the website to the home screen (the web manifest's related_applications with prefer_related_applications)
+- iPhone Safari shows Apple's Smart App Banner (apple-itunes-app meta tag) once the App Store id exists
+- On a computer: keep installing the website as an app, and show where to get the phone apps (store badges, or a QR code to scan with the phone)
+- Store addresses and ids are settings, so nothing changes until each store listing is live; until then Install app keeps working as today
+- Asked for by Ruben, 2026-10-16","MBJ-407, MBJ-408"
 MBJ-501,Owned live ingest to R2,Owned live & audio,Phase 4 — Owned live + audio,Must,L,To do,"As JimBob, I want a live stream no platform can shut off.","- MediaMTX on a VPS accepts RTMP/SRT from OBS
 - ffmpeg outputs 720p/480p + audio-only HLS to R2
 - Served via a Cloudflare domain; plays in web and mobile

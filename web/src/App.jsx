@@ -31,6 +31,8 @@ const MembershipWelcome = lazyPage(() =>
   import('./pages/Membership.jsx').then((m) => ({ default: m.MembershipWelcome })),
 );
 const Superchat = lazyPage(() => import('./pages/Superchat.jsx'));
+const Privacy = lazyPage(() => import('./pages/Privacy.jsx'));
+const Terms = lazyPage(() => import('./pages/Terms.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 import { useKeepPlaying } from './keepPlaying.js';
@@ -166,6 +168,8 @@ export default function App() {
             <Route path="/membership/welcome" element={<MembershipWelcome session={session} />} />
             <Route path="/superchat" element={<Superchat session={session} />} />
             <Route path="/reset-password" element={<ResetPassword session={session} />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/account" element={<Account session={session} onUserChanged={refreshUser} />} />
             {/* /@username profiles (MBJ-116); anything else here is a 404 page. */}
             <Route path="/:handle" element={<Profile session={session} />} />

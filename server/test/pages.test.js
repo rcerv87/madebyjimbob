@@ -61,6 +61,15 @@ test('section and playlist pages get their own titles; images are absolute', asy
   assert.match(home.html, /<title>MADEbyJIMBOB<\/title>/);
 });
 
+test('the privacy policy and terms are real public pages (Google sign-in and the app stores link to them)', async () => {
+  const privacy = await get('/privacy');
+  assert.equal(privacy.status, 200);
+  assert.match(privacy.html, /<title>Privacy policy · MADEbyJIMBOB<\/title>/);
+  const terms = await get('/terms');
+  assert.equal(terms.status, 200);
+  assert.match(terms.html, /<title>Terms of service · MADEbyJIMBOB<\/title>/);
+});
+
 test('unknown pages and missing videos are real 404s', async () => {
   assert.equal((await get('/nope')).status, 404);
   assert.equal((await get('/watch/999999')).status, 404);

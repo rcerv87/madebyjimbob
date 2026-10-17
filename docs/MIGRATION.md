@@ -185,6 +185,12 @@ Then on Render → `madebyjimbob` → Environment, replace `STRIPE_SECRET_KEY`, 
   Payment methods; then cancel and refund in Stripe. The webhook events arrive (site shows the membership, the super chat).
 - [ ] In Ruben's Stripe account: cancel anything left, refund the tests, and roll or delete the old keys and webhook.
 
+### Privacy policy and terms
+- [ ] `/privacy` and `/terms` name **hello@madebyjimbob.app** as the contact. Make sure that address forwards to an
+  inbox JimBob reads (Cloudflare → madebyjimbob.app → Email → Email Routing) when the domain moves to his account.
+- [ ] Add JimBob's business name (and state) to both pages once he has one, and update the list of service
+  providers in the privacy policy if any change.
+
 ### Settings with nothing to move
 `FEEDBACK` (beta feedback, MBJ-819): leave unset during the beta; set it to `off` on Render when the beta ends.
 The email list (MBJ-107) lives in the site's own database, so it moves with the database (step 7).

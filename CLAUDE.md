@@ -127,6 +127,9 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   there's no watched flag in the database. Marking watched sets the position to the end.
 - Members and bans (MBJ-705): `server/src/members.js`. Role changes and bans go through it so they're logged in
   `mod_actions`. A ban deletes the member's sessions and `auth.js` refuses new ones; there's no per-request ban check.
+- The privacy policy (`web/src/pages/Privacy.jsx`) lists what the site collects and every service that processes
+  it. A new kind of personal data, a new provider, or any tracker means updating it (and its date) in the same
+  change.
 - Deleting accounts: `server/src/deletion.js`. A request waits 30 days (signing in cancels it); an hourly job in
   the server process erases due accounts. New tables that reference `users` need `ON DELETE CASCADE` (or SET NULL
   for content that should stay as "Deleted user"), and new personal data belongs in `exportData()`.

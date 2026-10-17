@@ -465,6 +465,15 @@ S = [
   "Android first; iPhone once the Apple account exists (camera and microphone permission wording; checked by Apple review)",
   "No added monthly cost: the same Hetzner server as an OBS stream (~$0.12 an hour while on)",
   "Asked for by Ruben, 2026-10-16, after starting a stream from the app"], ["401", "310"]),
+("410", 2, "Should", "S", "Install app on the website gets the phone apps",
+ "As a visitor on my phone, I want Install app to get me the real MADEbyJIMBOB app from my phone's store.",
+ ["On Android, Install app (the menu button and the install hint) opens the app's Google Play page; on iPhone and iPad, its App Store page",
+  "Phones that already have the app get Open in app instead (Android: the app link; iPhone: Safari's Smart App Banner)",
+  "Chrome on Android offers the Play app rather than adding the website to the home screen (the web manifest's related_applications with prefer_related_applications)",
+  "iPhone Safari shows Apple's Smart App Banner (apple-itunes-app meta tag) once the App Store id exists",
+  "On a computer: keep installing the website as an app, and show where to get the phone apps (store badges, or a QR code to scan with the phone)",
+  "Store addresses and ids are settings, so nothing changes until each store listing is live; until then Install app keeps working as today",
+  "Asked for by Ruben, 2026-10-16"], ["407", "408"]),
 
 # ---------------- 5 Owned live & audio ----------------
 ("501", 4, "Must", "L", "Owned live ingest to R2",

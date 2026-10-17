@@ -1,5 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import SignInDialog from '../components/SignInDialog.jsx';
 import StudioEmail from '../components/StudioEmail.jsx';
 
@@ -24,7 +25,11 @@ async function signUp({ news }) {
     '/me': [200, { user: { id: 1, username: 'newbie' } }],
   });
   const onSignedIn = vi.fn();
-  render(<SignInDialog initialMode="signup" onClose={() => {}} onSignedIn={onSignedIn} />);
+  render(
+    <MemoryRouter>
+      <SignInDialog initialMode="signup" onClose={() => {}} onSignedIn={onSignedIn} />
+    </MemoryRouter>,
+  );
   fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
   fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'newbie' } });
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'a-long-password' } });
