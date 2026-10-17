@@ -52,6 +52,18 @@ S = [
  "As the product owner, I want to review changes before they reach JimBob's audience.",
  ["Separate Render service + database for staging deployed from `staging` branch", "Documented in README"], ["003"]),
 
+("009", 0, "Must", "M", "Backup and restore drill",
+ "As JimBob, I want proof that the site, its members and the whole library can come back if a service fails or an account is lost.",
+ ["What's backed up and where: the Postgres database (Render's backups plus a copy outside Render), the R2 buckets (live recordings and the library), settings",
+  "A written restore runbook in docs/, and a drill done on a schedule: restore the database to a scratch instance and play a video from a restored copy",
+  "The drill's date and result recorded in STATUS",
+  "Raised by the Council review, 2026-10-17"], []),
+("010", 0, "Should", "S", "Performance baseline and slow-request alerts",
+ "As the product owner, I want to know when the site gets slower, before members notice.",
+ ["Response times for the home page, a video page, /live, chat posting and Studio recorded before and after the full library import (starting from the 2026-10-17 scale check in STATUS)",
+  "Requests slower than a set limit are logged with what they were; repeated slowness reaches Ruben (email or Render alert)",
+  "Raised by the Council review, 2026-10-17"], []),
+
 # ---------------- 1 Accounts & memberships ----------------
 ("101", 1, "Must", "L", "Real authentication",
  "As a viewer, I want a real account so my identity, tier, and history are mine.",
@@ -690,6 +702,12 @@ S = [
   "No keys on his PC: he signs in with his site account once and the site hands out short-lived upload permission per file (presigned, multipart for big files)",
   "Picks up where it left off after a restart, sleep or lost connection; skips what's already uploaded; anything added to the folder later goes up too",
   "Build once JimBob's Cloudflare account and R2 bucket exist (MIGRATION.md step 5), so uploads land in his storage from the start"], ["506", "806"]),
+("821", 4, "Should", "S", "Import health for the full library",
+ "As Ruben, I want to see how the full-library import is going without asking the database.",
+ ["Studio shows imported videos and chat messages so far, against what's expected (Takeout's list, the channel's count)",
+  "Failures with their reason, retries, and what's still queued; a stuck import is flagged",
+  "Chat counts checked against the messages after a large import (recount-chat reports nothing to fix)",
+  "Raised by the Council review, 2026-10-17"], ["806", "818"]),
 ("820", 1, "Must", "S", "MVP end-to-end test with JimBob and beta testers",
  "As the product owner, I want one full run of the MVP on the live site, with JimBob running a stream and a few beta testers, before inviting more people.",
  ["Before: account email on (MBJ-114), JimBob registered with Studio access, test replays cleared, payments in the mode chosen for testers (test cards, or real money refunded after)",
@@ -799,10 +817,10 @@ SPRINTS = [
 ]
 
 # Story status lives here, not in BACKLOG.md (that file is regenerated). Example: {"001": "Done"}
-STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "006": "Done", "007": "Done",
+STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "Done", "006": "Done", "007": "Done",
           "201": "Done", "202": "Done", "210": "Done", "801": "Done", "802": "Done", "803": "Done", "807": "In progress", "808": "Done",
           "809": "In progress", "812": "Done", "815": "In progress", "613": "In progress", "211": "Done", "212": "Done", "213": "Done",
-          "214": "Done", "604": "In progress", "114": "In progress", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress", "312": "Done", "218": "In progress", "222": "In progress", "104": "In progress", "105": "Done", "109": "In progress", "818": "In progress", "705": "In progress", "819": "Done", "814": "Done", "107": "In progress", "115": "In progress", "217": "In progress", "401": "In progress", "403": "In progress", "407": "In progress", "408": "In progress", "405": "In progress"}
+          "214": "Done", "604": "In progress", "114": "Done", "101": "Done", "108": "In progress", "113": "Done", "106": "Done", "110": "In progress", "118": "Done", "215": "Done", "701": "In progress", "102": "In progress", "706": "Done", "216": "Done", "116": "Done", "119": "Done", "806": "In progress", "805": "In progress", "310": "In progress", "219": "Done", "220": "Done", "311": "In progress", "312": "Done", "218": "In progress", "222": "In progress", "104": "In progress", "105": "Done", "109": "In progress", "818": "In progress", "705": "In progress", "819": "Done", "814": "Done", "107": "Done", "115": "In progress", "217": "In progress", "401": "In progress", "403": "In progress", "407": "In progress", "408": "In progress", "405": "In progress"}
 # 202: @ suggestions, in-site notifications (bell, bubble, jump to moment); push is MBJ-214.
 # 214: live once VAPID_PRIVATE_KEY is set on Render.
 # 613: thumbs up/down shipped; moment reactions and hotspots remain.
@@ -830,6 +848,9 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "In progress", "00
 # 405: Android working (2026-10-16): device_tokens, POST/DELETE /api/push/device, Firebase HTTP v1 sender in fcm.js next to Web Push, app permission/channel/register/tap/sign-out, notification icon; Firebase project madebyjimbob-e9aea; checked end to end in the emulator. Remain: a check on Ruben's phone, iPhone (APNs key, Firebase iPhone SDK or direct APNs), a go-live notification type.
 # 407: Android release signing (upload key outside the repo) and a signed .aab. Remain: the store accounts, store listings, the 12-tester closed test if the Play account is personal, iPhone signing.
 # 408: Android done (assetlinks.json with the upload key, manifest app links, links open the page whether the app is closed or open; back button and share sheet too). Remain: Play's app signing key in ANDROID_CERT_SHA256 once in Play; iPhone (APPLE_TEAM_ID, entitlement).
+# 005: Done 2026-10-17 (the workflow runs every check); the GitHub branch rule is Ruben's (STATUS, Waiting on Ruben).
+# 107: Done 2026-10-17; left for Ruben: run the Shopify newsletter import (npm run import:newsletter).
+# 114: Done 2026-10-17: email sends from madebyjimbob.app (reset emails delivered); moving the domain's DNS to JimBob is MIGRATION step 6.
 # 705: list, search, filters (staff, new, banned, tier), role change, ban with reason / unban, mod_actions log. timeouts (this stream / 1 week / 2 weeks / custom date; can still watch and like; shown to the member; Timed out filter; links from reports and name cards). Remain: member page with history, hide all messages, highlight, staff notes, tier override, live over WebSocket (with MBJ-204).
 # 107: opt-in at sign-up and in Account settings, CSV export with unsubscribe links, unsubscribe page, Shopify importer (npm run import:newsletter). Remain: Ruben runs the Shopify import.
 # 814: chips with counts, Keep watching, binge queue, Mark as watched on the video page; marking from a card's menu on the Videos page not done.

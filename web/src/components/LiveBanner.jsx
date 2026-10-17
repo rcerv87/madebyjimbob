@@ -1,21 +1,47 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { onAppResume } from '../native.js';
 
-// A LIVE strip on the home page while JimBob is streaming on the platform (ADR-004).
+const EVERY_MS = 30_000;
+
+// A LIVE strip on the home page while JimBob is streaming on the platform (ADR-004). It asks every 30 seconds, only
+// while it can be seen: a background tab or a backgrounded app doesn't ask, and coming back asks right away.
 export default function LiveBanner() {
   const [online, setOnline] = useState(false);
   useEffect(() => {
-    let stop = false;
-    const load = () =>
+    let gone = false;
+    let asking = false;
+    let timer = null;
+    const hidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
+    const load = () => {
+      if (gone || asking || hidden()) return;
+      asking = true;
       api('/live')
-        .then((d) => !stop && setOnline(Boolean(d.online)))
-        .catch(() => {});
+        .then((d) => !gone && setOnline(Boolean(d.online)))
+        .catch(() => {})
+        .finally(() => {
+          asking = false;
+        });
+    };
+    const schedule = () => {
+      clearInterval(timer);
+      timer = hidden() ? null : setInterval(load, EVERY_MS);
+    };
+    const onVisibility = () => {
+      schedule();
+      load();
+    };
     load();
-    const t = setInterval(load, 30000);
+    schedule();
+    document.addEventListener('visibilitychange', onVisibility);
+    let stopResume = () => {};
+    onAppResume(onVisibility).then((stop) => (gone ? stop() : (stopResume = stop)));
     return () => {
-      stop = true;
-      clearInterval(t);
+      gone = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+      stopResume();
     };
   }, []);
   if (!online) return null;

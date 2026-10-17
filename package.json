@@ -25,6 +25,7 @@
     "import:playlists": "npm run import:playlists -w server --",
     "import:worker": "npm run import:worker -w server --",
     "set-role": "npm run set-role -w server --",
+    "recount-chat": "npm run recount-chat -w server --",
     "import:newsletter": "npm run import:newsletter -w server --"
   },
   "devDependencies": {

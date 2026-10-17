@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import Hls from 'hls.js';
+import { loadHls, mseSupported } from '../hlsLoader.js';
 import { isIOS } from '../device.js';
 import {
   mediaControlsAvailable,
@@ -22,30 +22,43 @@ const isPhone = () => isAppleMobile || /Android/i.test(navigator.userAgent);
 // Firefox, desktop Safari), since other browsers' native HLS varies a lot (Chrome's is new).
 function prefersNativeHls(el) {
   if (!el.canPlayType('application/vnd.apple.mpegurl')) return false;
-  return isAppleMobile || !Hls.isSupported();
+  return isAppleMobile || !mseSupported();
 }
 
 // Attaches an HLS stream to a <video> or <audio>. Calls onReady once playable; returns a cleanup.
 function attachHls(el, url, { onReady, onFatal }) {
-  if (!prefersNativeHls(el) && Hls.isSupported()) {
-    const hls = new Hls({ capLevelToPlayerSize: el.tagName === 'VIDEO' });
-    let mediaRecoveries = 0;
-    hls.on(Hls.Events.ERROR, (_event, data) => {
-      if (!data.fatal) return;
-      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-        hls.startLoad();
-      } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
-        mediaRecoveries += 1;
-        hls.recoverMediaError();
-      } else {
-        onFatal(data.details);
-        hls.destroy();
-      }
-    });
-    hls.on(Hls.Events.MANIFEST_PARSED, onReady);
-    hls.loadSource(url);
-    hls.attachMedia(el);
-    return () => hls.destroy();
+  if (!prefersNativeHls(el) && mseSupported()) {
+    // hls.js loads now (only here; see hlsLoader.js), so the cleanup may come before it's there.
+    let hls = null;
+    let gone = false;
+    loadHls()
+      .then((Hls) => {
+        if (gone) return;
+        hls = new Hls({ capLevelToPlayerSize: el.tagName === 'VIDEO' });
+        let mediaRecoveries = 0;
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (!data.fatal) return;
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
+            mediaRecoveries += 1;
+            hls.recoverMediaError();
+          } else {
+            onFatal(data.details);
+            hls.destroy();
+          }
+        });
+        hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+        hls.loadSource(url);
+        hls.attachMedia(el);
+      })
+      .catch(() => {
+        if (!gone) onFatal('player didn’t load');
+      });
+    return () => {
+      gone = true;
+      hls?.destroy();
+    };
   }
   if (el.canPlayType('application/vnd.apple.mpegurl')) {
     const onError = () => onFatal('');

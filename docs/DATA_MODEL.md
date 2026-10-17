@@ -83,7 +83,21 @@ One-time tokens (email verification, password reset, email change).
 | kind | text | `video \| short \| live`; set on import (was live → live; vertical and ≤ 3 min → short) |
 | replacement_stream_uid, replacement_started_at | text, timestamptz | Studio → Replace video: the new file on Stream, swapped into `stream_uid` once Cloudflare has processed it |
 | views | int | |
+| chat_count | int | visible (not hidden) chat messages, as of the last fold; the exact count is this plus the video's rows in `chat_count_deltas` (`CHAT_COUNT_SQL` in `server/src/chatCounts.js`) |
 | created_at | timestamptz | |
+
+### chat_count_deltas
+Pending changes to videos' chat counts (2026-10-17). Statement-level triggers on `chat_messages` add one row per
+video per statement: inserts and deletes of visible messages, and updates that hide, unhide, or move messages to
+another video (three triggers: Postgres allows transition tables only on single-event triggers without a column list).
+`chat_count_fold()` moves them into `videos.chat_count` every 30 seconds (`startChatCountJob()`). Keeping the count on
+the video row directly made people chatting at once wait in line for that row; plain inserts here don't. No foreign
+key (a deleted video's last deltas are dropped by the fold). Repair if a count ever drifts: `npm run recount-chat`
+(`-- --live` for the live site). Never `TRUNCATE chat_messages` (it skips the triggers); delete instead.
+| column | type | notes |
+|---|---|---|
+| video_id | bigint | indexed |
+| delta | int | + or − visible messages |
 
 ### chat_messages
 | column | type | notes |

@@ -13,7 +13,7 @@ MBJ-003,Database migrations,Foundation,Phase 0 — Foundation,Must,M,Done,"As th
 MBJ-004,TypeScript and shared package,Foundation,Phase 0 — Foundation,Should,L,To do,"As the developer, I want shared types across server, web, and mobile so contracts can't drift.","- `packages/shared` exports types for User, Video, ChatMessage, WS events, and a typed API client
 - Server and web compile with `tsc --noEmit` in CI
 - No behavior change; all tests pass","MBJ-001, MBJ-002"
-MBJ-005,CI pipeline,Foundation,Phase 0 — Foundation,Must,S,In progress,"As the developer, I want every PR checked before merge.","- GitHub Actions runs lint, test (with Postgres service), and build on PRs to main
+MBJ-005,CI pipeline,Foundation,Phase 0 — Foundation,Must,S,Done,"As the developer, I want every PR checked before merge.","- GitHub Actions runs lint, test (with Postgres service), and build on PRs to main
 - Status check required to merge","MBJ-001, MBJ-002"
 MBJ-006,Extract YouTube replay parser,Foundation,Phase 0 — Foundation,Must,S,Done,"As the developer, I want the chat replay parser as a tested module so live ingest can reuse it.","- Parser lives in `server/src/ingest/youtubeReplay.js` with pure functions
 - Fixture-based tests cover text, emoji, super chat, membership, negative offsets
@@ -22,6 +22,13 @@ MBJ-007,Structured logging,Foundation,Phase 0 — Foundation,Should,S,Done,"As t
 - Errors logged with stack; no secrets or tokens logged",
 MBJ-008,Staging environment,Foundation,Phase 0 — Foundation,Should,S,To do,"As the product owner, I want to review changes before they reach JimBob's audience.","- Separate Render service + database for staging deployed from `staging` branch
 - Documented in README",MBJ-003
+MBJ-009,Backup and restore drill,Foundation,Phase 0 — Foundation,Must,M,To do,"As JimBob, I want proof that the site, its members and the whole library can come back if a service fails or an account is lost.","- What's backed up and where: the Postgres database (Render's backups plus a copy outside Render), the R2 buckets (live recordings and the library), settings
+- A written restore runbook in docs/, and a drill done on a schedule: restore the database to a scratch instance and play a video from a restored copy
+- The drill's date and result recorded in STATUS
+- Raised by the Council review, 2026-10-17",
+MBJ-010,Performance baseline and slow-request alerts,Foundation,Phase 0 — Foundation,Should,S,To do,"As the product owner, I want to know when the site gets slower, before members notice.","- Response times for the home page, a video page, /live, chat posting and Studio recorded before and after the full library import (starting from the 2026-10-17 scale check in STATUS)
+- Requests slower than a set limit are logged with what they were; repeated slowness reaches Ruben (email or Render alert)
+- Raised by the Council review, 2026-10-17",
 MBJ-101,Real authentication,Accounts & memberships,Phase 1 — VOD platform,Must,L,Done,"As a viewer, I want a real account so my identity, tier, and history are mine.","- Self-hosted auth (ADR-006) with email + password (magic link, Google, and Apple sign-in are MBJ-110)
 - Users choose a unique username at signup (3–32 `[A-Za-z0-9_]`)
 - POC `/session` endpoint and `session_token` column removed
@@ -46,7 +53,7 @@ MBJ-106,Account settings,Accounts & memberships,Phase 1 — VOD platform,Must,M,
 - Notifications: per-type on/off for in-site, push, and email (replaces the scattered toggles)
 - Membership shows tier, renewal date, and manage/cancel once MBJ-104 lands; before that it shows Free and what paid tiers include
 - Account menu in the top bar links here; works at phone width",MBJ-101
-MBJ-107,Owned email list,Accounts & memberships,Phase 1 — VOD platform,Must,S,In progress,"As JimBob, I want my audience's contact info so no platform can take my audience away.","- Marketing opt-in checkbox at signup, stored with timestamp
+MBJ-107,Owned email list,Accounts & memberships,Phase 1 — VOD platform,Must,S,Done,"As JimBob, I want my audience's contact info so no platform can take my audience away.","- Marketing opt-in checkbox at signup, stored with timestamp
 - Admin can export opted-in users as CSV from Studio
 - Unsubscribe link handling documented
 - Start from the existing Shopify newsletter list (export from Shopify customers who accepted marketing)","MBJ-101, MBJ-102"
@@ -83,7 +90,7 @@ MBJ-113,Password reset and email change,Accounts & memberships,Phase 1 — VOD p
 - Change email: confirm with the password, verify the new address, and notify the old one with a link to undo within 7 days
 - Change password from Account settings (current password required)
 - Rate limits on reset and change requests; every change is logged for the member's security history","MBJ-101, MBJ-114"
-MBJ-114,Sending email (ADR),Accounts & memberships,Phase 1 — VOD platform,Must,S,In progress,"As JimBob, I want account emails to arrive from my own domain and not land in spam.","- Pick a transactional email provider and record it as an ADR with the monthly cost at 1k, 10k, and 50k members (compare Resend, Postmark, Amazon SES)
+MBJ-114,Sending email (ADR),Accounts & memberships,Phase 1 — VOD platform,Must,S,Done,"As JimBob, I want account emails to arrive from my own domain and not land in spam.","- Pick a transactional email provider and record it as an ADR with the monthly cost at 1k, 10k, and 50k members (compare Resend, Postmark, Amazon SES)
 - Sender on JimBob's domain (e.g. hello@) with SPF, DKIM, and DMARC set up
 - Plain branded templates: verify email, reset password, email changed, new sign-in, account deleted
 - Bounces and complaints recorded; bounced addresses stop getting mail
@@ -486,6 +493,10 @@ MBJ-818,Library Uploader: a folder on JimBob's PC goes to R2,Library & community
 - No keys on his PC: he signs in with his site account once and the site hands out short-lived upload permission per file (presigned, multipart for big files)
 - Picks up where it left off after a restart, sleep or lost connection; skips what's already uploaded; anything added to the folder later goes up too
 - Build once JimBob's Cloudflare account and R2 bucket exist (MIGRATION.md step 5), so uploads land in his storage from the start","MBJ-506, MBJ-806"
+MBJ-821,Import health for the full library,Library & community,Phase 4 — Owned live + audio,Should,S,To do,"As Ruben, I want to see how the full-library import is going without asking the database.","- Studio shows imported videos and chat messages so far, against what's expected (Takeout's list, the channel's count)
+- Failures with their reason, retries, and what's still queued; a stuck import is flagged
+- Chat counts checked against the messages after a large import (recount-chat reports nothing to fix)
+- Raised by the Council review, 2026-10-17","MBJ-806, MBJ-818"
 MBJ-820,MVP end-to-end test with JimBob and beta testers,Library & community,Phase 1 — VOD platform,Must,S,To do,"As the product owner, I want one full run of the MVP on the live site, with JimBob running a stream and a few beta testers, before inviting more people.","- Before: account email on (MBJ-114), JimBob registered with Studio access, test replays cleared, payments in the mode chosen for testers (test cards, or real money refunded after)
 - Testers: sign up and sign in on phone and computer; watch recorded videos with chat replay and comments; a members-only video asks to join
 - JimBob: Go Live in Studio, stream from his OBS through Restream to the site and YouTube, end the stream (OBS first), and the replay appears with its chat

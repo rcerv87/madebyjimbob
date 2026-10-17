@@ -41,12 +41,38 @@ store release, and add his business name and state if he has one. **Google sign-
 the phone's own account picker; Ruben made the two Android OAuth clients (upload key and debug key), and both builds
 signed in to the live site in the emulator. App 0.1.1 is on Ruben's Drive (MADEbyJIMBOB folder).
 
+**Efficiency pass (2026-10-17), ahead of the full library.** Reviewed by ChatGPT, Gemini and Grok (The Council)
+before building. Released together:
+- each video's chat count is kept instead of counted per request (`videos.chat_count` plus pending deltas, folded
+  every 30 s; `npm run recount-chat` repairs);
+- indexes for member lookups on chat and comments;
+- the Studio dashboard's chat numbers are kept for 2 minutes (Refresh recounts);
+- hls.js loads only where it's used (never on iPhone or Safari);
+- the home page's live banner checks only while it can be seen;
+- `/api/health` reports the deployed commit.
+
+Scale check on the test database (1,000,400 chat messages over 900 videos, 20 of them with 30,000 each; local
+Postgres 18) is the baseline to compare against once the library is in:
+
+| Measure | Before | After |
+|---|---|---|
+| Home page, 24 cards with chat counts | 115 ms | 0.9 ms |
+| Studio → Members, 50 rows | 4,166 ms | 2.4 ms |
+| Studio dashboard chat numbers, uncached | 866 ms per load | once per 2 min |
+| Importer-style batches of 500 | 22,007 msgs/s | 22,978 msgs/s (no slowdown) |
+| 50 people chatting on one video, insert p95 | 7.0 ms | 9.4 ms |
+
+The first design (updating the video's row on every message) deadlocked, then had a p95 of 2.3 s with 50 people
+chatting at once; the delta table fixed both.
+
 **Rule (Ruben, 2026-10-16): everything is done for the website, Android and iPhone.** The apps run the same web
 build, so site changes reach both; native pieces must be done for both.
 
 **iPhone: still to do or check** (built or working on Android; the iPhone app hasn't been built yet: needs a cloud Mac
 and the Apple Developer account):
 - Build it and run everything in it once (MBJ-401): sign-in, video, chat, live, notes, Studio.
+- The video library (hls.js) is never downloaded on iPhone (2026-10-17): on the first TestFlight build, check that no
+  `hls-*.js` file is requested while a video and /live play.
 - Background audio and lock-screen controls (MBJ-403): `UIBackgroundModes` audio is set (2026-10-16); the lock-screen
   card comes from the browser's Media Session in the web view. Check on a phone.
 - Notifications (MBJ-405): an APNs key in Firebase plus Firebase's iPhone SDK (or sending to Apple directly); the app
@@ -609,10 +635,16 @@ stay; a stream that only had 1080p keeps it). ~4.7 GB per streamed hour becomes 
 reach 30 days around 2026-11-02.
 1. **Turn on email** once madebyjimbob.app is verified in Resend (Waiting on Ruben #5, #7, #8); then check the first
    real sign-up, confirmation, and password reset.
-2. **Phone apps for Android and iPhone** (MBJ-401 on, started 2026-10-15 with Capacitor, ADR-014): next the iPhone
-   build through a cloud Mac, background audio (MBJ-403), native push (MBJ-405; Android working 2026-10-16, iPhone
-   remains), links that open the app (MBJ-408),
-   then the store release (MBJ-407) with Apple and Google developer accounts.
+2. **Phone apps for Android and iPhone** (MBJ-401 on, Capacitor, ADR-014; order agreed 2026-10-17 after the Council
+   review):
+   1. Both apps into internal testing (no App Review needed): iPhone through Codemagic to TestFlight, Android 0.1.1
+      to Play internal testing.
+   2. Store compliance before any review submission: hide Join, Upgrade and Super chat in both store apps (MBJ-406;
+      Shop and Art stay); confirm in-app account deletion, report, block and filters; privacy labels and Play's data
+      safety form.
+   3. MBJ-810 bottom navigation before the first review submission.
+   4. The iPhone halves: Sign in with Apple with Google, notifications (APNs), links that open the app, background audio.
+   5. "JimBob is live" notification on all three (MBJ-405 with MBJ-805).
 3. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805); with the **schedule
    calendar** (MBJ-813): JimBob enters streams and debates in Studio, viewers see them in their time zone, add
    them to Google/Apple/Outlook or subscribe to a feed, and get reminders.

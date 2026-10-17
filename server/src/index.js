@@ -1,6 +1,7 @@
 import { server, ADMIN_EMAILS } from './app.js';
 import { usingFallbackSecret } from './auth.js';
 import { startErasureJob } from './deletion.js';
+import { startChatCountJob } from './chatCounts.js';
 import { startLinkCheckJob } from './links.js';
 import { startViewCleanup } from './views.js';
 import { startReplacementJob } from './replacements.js';
@@ -16,6 +17,7 @@ if (usingFallbackSecret)
 server.listen(PORT, () => logger.info(`MadeByJimBob running on :${PORT}`));
 // Erases accounts whose 30-day deletion wait is over (MBJ-118).
 startErasureJob();
+startChatCountJob();
 // Fills in the channel for confirmed YouTube links once that handle shows up in an import (MBJ-215).
 startLinkCheckJob();
 // Forgets who viewed what after a day; only today's views are needed to count each viewer once (MBJ-216).
