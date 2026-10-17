@@ -2306,6 +2306,45 @@ app.use(
   }),
 );
 
+// Links that open the phone apps (MBJ-408): the site says which apps may open its pages. Android checks
+// assetlinks.json against the app's signing key (ANDROID_CERT_SHA256, comma-separated: the upload key now, Google
+// Play's app signing key once the app is in the Play Store); the iPhone checks apple-app-site-association (needs the
+// Apple team id, APPLE_TEAM_ID). The pages listed are the ones worth opening in the app.
+const APP_ID = 'com.madebyjimbob.app';
+export const APP_LINK_PATHS = [
+  '/watch/*',
+  '/playlist/*',
+  '/playlists',
+  '/live',
+  '/posts',
+  '/@*',
+  '/shop',
+  '/art',
+];
+const UPLOAD_KEY_SHA256 =
+  '90:0D:10:83:10:C7:D6:B1:2D:03:9D:12:8D:77:2A:78:96:13:AD:D7:80:F8:1B:01:42:4E:38:B2:51:8D:36:B6';
+app.get('/.well-known/assetlinks.json', (_req, res) => {
+  const fingerprints = (process.env.ANDROID_CERT_SHA256 || UPLOAD_KEY_SHA256)
+    .split(',')
+    .map((f) => f.trim().toUpperCase())
+    .filter(Boolean);
+  res.set('Cache-Control', 'public, max-age=3600').json([
+    {
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: { namespace: 'android_app', package_name: APP_ID, sha256_cert_fingerprints: fingerprints },
+    },
+  ]);
+});
+app.get(['/.well-known/apple-app-site-association', '/apple-app-site-association'], (_req, res) => {
+  const team = (process.env.APPLE_TEAM_ID || '').trim();
+  if (!team) return res.status(404).json({ error: 'The iPhone app isn’t set up yet.' });
+  res.set('Cache-Control', 'public, max-age=3600').json({
+    applinks: {
+      details: [{ appIDs: [`${team}.${APP_ID}`], components: APP_LINK_PATHS.map((p) => ({ '/': p })) }],
+    },
+  });
+});
+
 app.get('/robots.txt', (_req, res) =>
   res.type('text/plain').send('User-agent: *\nDisallow: /studio\nDisallow: /api/\n'),
 );

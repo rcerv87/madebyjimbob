@@ -1,5 +1,5 @@
-import { Suspense, useCallback, useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { api, setSignedIn } from './api.js';
 import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
@@ -34,7 +34,7 @@ const Superchat = lazyPage(() => import('./pages/Superchat.jsx'));
 import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 import { useKeepPlaying } from './keepPlaying.js';
-import { onAppResume, setAppToken } from './native.js';
+import { onAppLink, onAppResume, onBackButton, setAppToken } from './native.js';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -71,13 +71,35 @@ export default function App() {
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
+  // In the phone apps: a link to the site opens that page here, and the Android back button walks back through the
+  // app's pages before leaving it (MBJ-408).
+  // Registered once; the latest navigate is read through a ref (it changes on every page).
+  const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+  useEffect(() => {
+    let gone = false;
+    const stops = [];
+    const keep = (stop) => (gone ? stop() : stops.push(stop));
+    onAppLink((path) => navigateRef.current(path)).then(keep);
+    onBackButton(() => navigateRef.current('/', { replace: true })).then(keep);
+    return () => {
+      gone = true;
+      stops.forEach((stop) => stop());
+    };
+  }, []);
   // In the phone apps: coming back from the browser (after paying, say) refreshes who this is.
   useEffect(() => {
+    let gone = false;
     let stop = () => {};
     onAppResume(() => refreshUser()).then((s) => {
-      stop = s;
+      if (gone) s();
+      else stop = s;
     });
-    return () => stop();
+    return () => {
+      gone = true;
+      stop();
+    };
   }, [refreshUser]);
   useEffect(() => setSignedIn(Boolean(user)), [user]);
 

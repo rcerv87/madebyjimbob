@@ -1092,7 +1092,7 @@ Acceptance criteria:
 
 ### MBJ-408 — Links that open the app
 
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-401
+**Status:** In progress · **Phase 2 — Mobile** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-401
 
 As a member with the app, I want shared links and notifications to open the app, not the browser.
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatTime } from '../api.js';
-import { siteUrl } from '../native.js';
+import { canShareSheet, shareSheet, siteUrl } from '../native.js';
 
 // Copy a link to a video (optionally at the current moment), or use the phone's share sheet.
 export async function copyText(text) {
@@ -64,14 +64,14 @@ export default function ShareButton({ title, path, getTimeMs }) {
 
   const share = async (url) => {
     try {
-      await navigator.share({ title, url });
+      await shareSheet({ title, url });
       setOpen(false);
     } catch {
       /* the viewer closed the share sheet */
     }
   };
 
-  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const canShare = canShareSheet();
 
   return (
     <div className="share" ref={wrapRef}>

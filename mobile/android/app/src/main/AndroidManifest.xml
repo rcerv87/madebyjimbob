@@ -22,6 +22,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Links to these pages open the app when it's installed (MBJ-408); the site's
+                 /.well-known/assetlinks.json vouches for this app. Same pages as APP_LINK_PATHS on the server. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="madebyjimbob.app" />
+                <data android:pathPrefix="/watch/" />
+                <data android:pathPrefix="/playlist/" />
+                <data android:path="/playlists" />
+                <data android:path="/live" />
+                <data android:path="/posts" />
+                <data android:pathPrefix="/@" />
+                <data android:path="/shop" />
+                <data android:path="/art" />
+            </intent-filter>
+
         </activity>
 
         <provider
