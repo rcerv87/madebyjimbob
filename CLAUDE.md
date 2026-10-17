@@ -178,6 +178,8 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   paths from the content (a hash, a YouTube id), never from local database ids, and delete what a test made.
 - The web `api()` helper replaces every 429 answer with its own "Too many tries" text. Answer 409 with a message when
   the member should read the reason.
+- Pages that open the phone apps from a link are listed in two places that must match: `APP_LINK_PATHS` in
+  `server/src/app.js` and the Android manifest's app-link intent filter (`docs/MOBILE.md`).
 - Never hand a Capacitor plugin object through a promise (`import(...).then((m) => m.Plugin)`): plugins answer to any
   method name, `then` included, so the promise calls the app for "then" and nothing arrives. Wrap it (`[m.Plugin]`) or
   destructure after `await import(...)`.

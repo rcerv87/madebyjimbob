@@ -28,6 +28,9 @@ a Mac), a real phone, native push, background audio, buying inside the apps.
 screen off keep playing; the media card's pause and play work), and the store build is ready: a signed `.aab` from
 `./gradlew bundleRelease`, with the upload key in `C:\Users\office\.madebyjimbob-keys\` (**back it up**,
 `docs/MOBILE.md` "Release builds"). Google Play's first upload waits on the Play Console account.
+**2026-10-16:** the Android back button walks back through the app (closes menus first, leaves the app from home),
+links to the site's videos, playlists, live, posts and profiles open the app at that page, and Share opens
+Android's share sheet.
 
 **Next for Ruben:**
 0. **Back up the Android upload key** (both files in `C:\Users\office\.madebyjimbob-keys\`) to a password manager or a

@@ -310,7 +310,7 @@ MBJ-407,Store release,Mobile apps,Phase 2 — Mobile,Must,M,In progress,"As JimB
 - TestFlight and Play internal testing live
 - Sign in with Apple if Google sign-in is in the iPhone app
 - Store listings, screenshots, privacy labels and data safety forms complete","MBJ-403, MBJ-405, MBJ-406"
-MBJ-408,Links that open the app,Mobile apps,Phase 2 — Mobile,Should,S,To do,"As a member with the app, I want shared links and notifications to open the app, not the browser.","- The site serves apple-app-site-association and assetlinks.json
+MBJ-408,Links that open the app,Mobile apps,Phase 2 — Mobile,Should,S,In progress,"As a member with the app, I want shared links and notifications to open the app, not the browser.","- The site serves apple-app-site-association and assetlinks.json
 - Video, profile and notification links open the app when it's installed",MBJ-401
 MBJ-501,Owned live ingest to R2,Owned live & audio,Phase 4 — Owned live + audio,Must,L,To do,"As JimBob, I want a live stream no platform can shut off.","- MediaMTX on a VPS accepts RTMP/SRT from OBS
 - ffmpeg outputs 720p/480p + audio-only HLS to R2

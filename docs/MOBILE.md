@@ -19,8 +19,12 @@ Capacitor settings (`capacitor.config.json`), the Android project (`mobile/andro
   Media Session).
 - **Android store build (MBJ-407, 2026-10-15):** release builds are signed with the upload key; `bundleRelease` makes
   the `.aab` Google Play takes. See "Release builds" below.
-- Not in the apps yet: native push, the share sheet, links that open the app, Google sign-in (MBJ-405, 408, 110), and
-  the iPhone side of background audio.
+- **Android back button, links and share sheet (MBJ-408, 2026-10-16):** back closes an open menu or dialog, then goes
+  back a page, then home, and from home leaves the app (playback keeps going). Links to the site's video, playlist,
+  live, posts, profile, shop and art pages open the app when it's installed (the site's
+  `/.well-known/assetlinks.json` vouches for the app's signing key; Android checks it when the app is installed), at
+  that page, whether the app was closed or open. Share opens Android's own share sheet. Checked in the emulator.
+- Not in the apps yet: native push, Google sign-in (MBJ-405, 110), and the iPhone side of background audio and links.
 
 ## How the apps differ from the website
 
@@ -82,6 +86,17 @@ Upload key fingerprint (SHA-256, public): `90:0D:10:83:10:C7:D6:B1:2D:03:9D:12:8
 **Google Play's rule for new personal developer accounts:** before an app can go to production, it needs a closed
 test with at least 12 testers who stay opted in for 14 days in a row. Organization accounts (a business, with a free
 D-U-N-S number) skip that. Check the current rule when creating the account.
+
+## Links that open the app
+
+The pages are listed twice and must match: `APP_LINK_PATHS` in `server/src/app.js` (the iPhone file) and the
+`<intent-filter android:autoVerify="true">` in `mobile/android/app/src/main/AndroidManifest.xml`. Android only opens
+links in the app when the key that signed the installed app is in `/.well-known/assetlinks.json`: today that's the
+upload key (sideloaded release builds). Once the app is in Google Play, add **Play's app signing key** fingerprint
+(Play Console → Test and release → App integrity → App signing) to `ANDROID_CERT_SHA256` on Render, comma-separated
+with the upload key's. Debug builds aren't covered; open links in them with
+`adb shell am start -a android.intent.action.VIEW -d <url> com.madebyjimbob.app`. Check what Android decided:
+`adb shell pm get-app-links com.madebyjimbob.app`. The iPhone file appears once `APPLE_TEAM_ID` is set.
 
 ## Building for iPhone
 

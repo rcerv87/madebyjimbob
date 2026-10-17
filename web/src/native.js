@@ -74,3 +74,86 @@ export async function onAppResume(fn) {
   const handle = await App.addListener('resume', fn);
   return () => handle.remove();
 }
+
+// ---------- the phone's share sheet ----------
+
+// The phone's own share sheet: Capacitor's in the apps, the browser's (Web Share) on the website where it has one.
+export const canShareSheet = () =>
+  isNativeApp() || (typeof navigator !== 'undefined' && typeof navigator.share === 'function');
+export async function shareSheet({ title, url }) {
+  if (isNativeApp()) {
+    const { Share } = await import('@capacitor/share');
+    await Share.share({ title, url, dialogTitle: 'Share' });
+  } else await navigator.share({ title, url });
+}
+
+// ---------- links and the back button (MBJ-408) ----------
+
+const SITE_HOSTS = new Set([
+  'madebyjimbob.app',
+  'www.madebyjimbob.app',
+  'madebyjimbob.com',
+  'www.madebyjimbob.com',
+]);
+// "/watch/14?t=90" from a link to the site, or null for anything else.
+export function appLinkPath(url) {
+  try {
+    const u = new URL(url);
+    return SITE_HOSTS.has(u.host) || u.origin === new URL(SITE_URL).origin
+      ? `${u.pathname}${u.search}${u.hash}`
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+// A link to the site opened the app (tapped in a message, an email, a notification): `go(path)` shows that page.
+// Covers the app starting from the link and the app already open.
+let launchLinkUsed = false; // the link the app started from is followed once, not on every re-render
+export async function onAppLink(go) {
+  if (!isNativeApp()) return () => {};
+  const { App } = await import('@capacitor/app');
+  if (!launchLinkUsed) {
+    launchLinkUsed = true;
+    const launch = await App.getLaunchUrl().catch(() => null);
+    const first = launch?.url && appLinkPath(launch.url);
+    if (first && first !== `${location.pathname}${location.search}`) go(first);
+  }
+  const handle = await App.addListener('appUrlOpen', ({ url }) => {
+    const path = appLinkPath(url);
+    if (path) go(path);
+  });
+  return () => handle.remove();
+}
+
+// Something open on top of the page (a dialog, a menu, a name card): closes it and returns true.
+function closeWhatsOpen() {
+  const backdrop = document.querySelector('.dialog-backdrop');
+  if (backdrop) {
+    backdrop.click(); // a tap outside the dialog closes it
+    return true;
+  }
+  if (document.querySelector('[role=menu], [role=dialog], .art-viewer')) {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    return true;
+  }
+  return false;
+}
+
+// React Router numbers the app's history entries (history.state.idx): above 0 there's a page in the app to go back
+// to. The web view's own canGoBack doesn't count the app's page changes.
+const inAppHistory = () => (window.history.state?.idx ?? 0) > 0;
+
+// The Android back button: closes what's open, then goes back a page, then home, and from home leaves the app (it
+// keeps playing if something is). `home` shows the home page when there's no page to go back to.
+export async function onBackButton(home) {
+  if (!isNativeApp()) return () => {};
+  const { App } = await import('@capacitor/app');
+  const handle = await App.addListener('backButton', () => {
+    if (closeWhatsOpen()) return;
+    if (location.pathname === '/') App.minimizeApp();
+    else if (inAppHistory()) window.history.back();
+    else home();
+  });
+  return () => handle.remove();
+}
