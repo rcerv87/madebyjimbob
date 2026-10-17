@@ -30,7 +30,8 @@ Capacitor settings (`capacitor.config.json`), the Android project (`mobile/andro
   teal); tapping one opens the thread ("From your notification"); signing out stops them. Checked end to end in the
   emulator against the PC's server (permission prompt, notification with the app in the background, tap, sign-out),
   plus server tests with a stand-in Firebase; an app built without Firebase's file starts and hides the option.
-- Not in the apps yet: Google sign-in (MBJ-110), and the iPhone side of background audio, links and notifications.
+- Not in the apps yet: Google sign-in (MBJ-110), going live from the phone without OBS (MBJ-409, backlog), and the
+  iPhone side of background audio, links and notifications.
 
 ## How the apps differ from the website
 
