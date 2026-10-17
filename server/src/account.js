@@ -90,7 +90,8 @@ router.get(
   wrap(async (req, res) => {
     const { rows } = await pool.query(
       `SELECT u.email_verified, u.tier, u.welcome_dismissed_at,
-         EXISTS (SELECT 1 FROM push_subscriptions p WHERE p.user_id = u.id) AS push_on,
+         (EXISTS (SELECT 1 FROM push_subscriptions p WHERE p.user_id = u.id)
+           OR EXISTS (SELECT 1 FROM device_tokens d WHERE d.user_id = u.id)) AS push_on,
          EXISTS (SELECT 1 FROM linked_accounts l WHERE l.user_id = u.id AND l.platform = 'youtube') AS youtube
        FROM users u WHERE u.id = $1`,
       [req.user.id],

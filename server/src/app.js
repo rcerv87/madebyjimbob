@@ -78,6 +78,7 @@ import {
 } from './feedback.js';
 import { emailListSummary, emailListCsv, unsubscribe, validUnsubscribe } from './emailList.js';
 import { listNotes, addNote, removeNote, toggleReaction, myReactions, heat, REACTIONS } from './moments.js';
+import { fcmEnabled } from './fcm.js';
 import { favoritesOf, canFavorite } from './favorites.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
@@ -1250,7 +1251,43 @@ app.post(
 );
 
 // ---------- push notifications (Web Push) ----------
-app.get('/api/push/key', (_req, res) => res.json({ publicKey: vapidPublicKey }));
+// `native`: whether the phone apps can register for push (Firebase is set up on this server).
+app.get('/api/push/key', (_req, res) => res.json({ publicKey: vapidPublicKey, native: fcmEnabled() }));
+
+// The phone apps (MBJ-405): an install that turned on notifications registers its Firebase token for the signed-in
+// member. The same token from another account (someone else signed in on that phone) moves to the new account.
+app.post(
+  '/api/push/device',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in to turn on notifications.' });
+    if (!fcmEnabled())
+      return res.status(503).json({ error: 'Notifications for the app aren’t set up on this server yet.' });
+    const token = textField(req.body?.token).trim();
+    const platform = req.body?.platform;
+    if (!token || token.length > 4096 || !['android', 'ios'].includes(platform))
+      return res.status(400).json({ error: 'That device can’t be registered.' });
+    await pool.query(
+      `INSERT INTO device_tokens (user_id, platform, token) VALUES ($1, $2, $3)
+       ON CONFLICT (token) DO UPDATE SET user_id = EXCLUDED.user_id, platform = EXCLUDED.platform, last_seen_at = now()`,
+      [user.id, platform, token],
+    );
+    res.json({ ok: true });
+  }),
+);
+// Signing out on a phone (or turning notifications off there) forgets that install.
+app.delete(
+  '/api/push/device',
+  wrap(async (req, res) => {
+    const user = await currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Sign in first.' });
+    await pool.query('DELETE FROM device_tokens WHERE user_id = $1 AND token = $2', [
+      user.id,
+      textField(req.body?.token),
+    ]);
+    res.json({ ok: true });
+  }),
+);
 
 app.post(
   '/api/push/subscribe',

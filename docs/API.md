@@ -87,7 +87,9 @@ they get `isAdmin: true` and see every tier.
 | POST | `/videos/:id/comments` | required | `{ text, offsetMs?, replyToId? }` → `{ comment }`. `replyToId` can be any comment on the video; the reply joins its thread and quotes it. `offsetMs` puts the comment in the chat feed at that moment (broadcast as `comment`). Up to 2,000 chars, line breaks kept, banned words masked, one per 5s |
 | GET | `/notifications` | required | `{ unread, notifications }`: latest 30 mentions/replies, each `{ id, type: mention\|reply, where: chat\|comment, videoId, videoTitle, actor, excerpt, offsetMs, commentId, read, createdAt }` |
 | POST | `/notifications/read` | required | `{ ids? }`: mark those read, or all when omitted |
-| GET | `/push/key` | — | `{ publicKey }` (null when push isn't configured) |
+| GET | `/push/key` | — | `{ publicKey, native }`: the Web Push key (null when push isn't configured); `native` is true when the phone apps can register (Firebase is set up, MBJ-405) |
+| POST | `/push/device` | required | Phone apps: `{ token, platform: 'android' \| 'ios' }` (the Firebase token). The same token from another account moves to this one. 400 bad token or platform; 503 when Firebase isn't set up |
+| DELETE | `/push/device` | required | `{ token }`: this phone stops getting this account's notifications (sign-out) |
 | POST | `/push/subscribe` | required | `{ subscription }` from `PushManager.subscribe()`; 503 when push isn't configured |
 | DELETE | `/push/subscribe` | required | `{ endpoint }` |
 | GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded), plus what the Overview tab shows: `attention { openReports, pendingLinks, failedImports, queuedImports, drafts, newFeedback }` (each video row also has `draft`) and `members { total, newThisWeek, paying }` |

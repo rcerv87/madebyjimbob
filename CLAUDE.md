@@ -95,7 +95,7 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   (the `set-auth-token` header from sign-in). Tests sign up with `signIn(call, name, tier)` in `test/helpers.js`,
   which sets the tier in the database (users can't choose one). Better Auth refuses requests without an
   `Origin` header, so test clients send one.
-- Notifications: call `notifyFor()` from `server/src/notify.js` after saving anything that can mention or reply to someone; it stores, sends over WebSocket, and pushes.
+- Notifications: call `notifyFor()` from `server/src/notify.js` after saving anything that can mention or reply to someone; it stores, sends over WebSocket, and pushes (Web Push, and the phone apps through Firebase: `fcm.js`, `device_tokens`).
 - Linked accounts (MBJ-215): `server/src/links.js`. Imports must keep `author_channel_id` on YouTube rows (it's how
   linked members are recognised); `import-youtube.js` runs `resolvePendingChannels()` at the end.
 - Server tests load the app only after rebuilding the test database (`startServer()` in `test/helpers.js`):
@@ -183,6 +183,9 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - Never hand a Capacitor plugin object through a promise (`import(...).then((m) => m.Plugin)`): plugins answer to any
   method name, `then` included, so the promise calls the app for "then" and nothing arrives. Wrap it (`[m.Plugin]`) or
   destructure after `await import(...)`.
+- App notifications (MBJ-405) are on only in Android builds made with `mobile/android/app/google-services.json`
+  (`npm run android -w mobile` sets `VITE_NATIVE_PUSH=1` then). Never ask the push plugin for a token without it:
+  the app crashes. Server tests blank `FCM_SERVICE_ACCOUNT`; `push.test.js` points it at a stand-in Firebase.
 - The Android upload key and its passwords are in `C:\Users\office\.madebyjimbob-keys\` (and a git-ignored
   `mobile/android/keystore.properties`). Never print, copy into the repo, or replace them.
 - Text a test finds by role and name: a label with a count badge reads as "Reports 2" in some cases and "Reports2" in

@@ -33,6 +33,7 @@ Keep it current: when a new service or setting is added, add it here.
 | **Google Cloud** | Sign in with Google (MBJ-110): one OAuth client; no cost, no data kept at Google | Ruben's Google account until JimBob's project exists | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Make a new client in JimBob's Google account and swap the two settings. Members keep signing in: they're matched by their Google account, not by the client. See step 10 |
 | **Stripe** | Memberships and super chats (ADR-013): customers, subscriptions, saved cards, prices, payouts | **Ruben's account in live mode since 2026-10-05** (real-money tests); moves to JimBob's before launch | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` | New account: nothing moves (customers, subscriptions and saved cards stay in Ruben's). See step 9 |
 | **Apple / Google developer accounts** | Phone apps | Ruben (by choice) | — | Apps can be transferred between developer accounts later |
+| **Firebase** (Google) | Notifications in the phone apps (MBJ-405): sends them; no data kept beyond delivery; free | Ruben's Google account (once created) | `FCM_SERVICE_ACCOUNT`; `mobile/android/app/google-services.json` in the app | New project in JimBob's Google account, a new app build with its file, swap the setting. See step 11 |
 
 ## Before moving anything
 
@@ -201,6 +202,11 @@ The apps' id is `com.madebyjimbob.app` (ADR-014) and can never change once an ap
 - [ ] Render: `ANDROID_CERT_SHA256` = the upload key's fingerprint plus Play's app signing key's (Play Console → App
   integrity), comma-separated; `APPLE_TEAM_ID` = the Apple Developer team id. They make links open the apps
   (MBJ-408). A new developer account means new values.
+- [ ] **Firebase** (app notifications, MBJ-405): in JimBob's Google account, the steps in `docs/MOBILE.md`
+  "Notifications" (new project, Android app `com.madebyjimbob.app`, `google-services.json`, service account key).
+  Release an app update built with his `google-services.json` and set `FCM_SERVICE_ACCOUNT` on Render to his key at
+  the same time. Phones pick up the new project when the updated app starts (signed in); tokens from the old
+  project are deleted on their first failed send. Then delete Ruben's Firebase project.
 - [ ] The Android **upload key** (`C:\Users\office\.madebyjimbob-keys\` on Ruben's PC, `docs/MOBILE.md`) goes with
   whoever builds the app; Google Play's own app signing key stays with Google. Hand over both files privately, or
   ask Play support to register a new upload key for the new builder.

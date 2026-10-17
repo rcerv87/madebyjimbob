@@ -41,6 +41,9 @@ services:
         sync: false
       - key: VAPID_PRIVATE_KEY
         sync: false
+      # Notifications in the phone apps (MBJ-405): the Firebase service account key (the JSON file). Secret.
+      - key: FCM_SERVICE_ACCOUNT
+        sync: false
       # Sign in with Google (MBJ-110): the OAuth client's id and secret. Without both, the button is hidden.
       - key: GOOGLE_CLIENT_ID
         sync: false

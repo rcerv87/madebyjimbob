@@ -5,6 +5,8 @@
   "description": "The MADEbyJIMBOB phone apps: the web app wrapped with Capacitor (ADR-014)",
   "scripts": {
     "sync": "cap sync",
+    "android": "node scripts/build-android.mjs",
+    "android:release": "node scripts/build-android.mjs release",
     "open:android": "cap open android",
     "open:ios": "cap open ios"
   },
@@ -14,6 +16,7 @@
     "@capacitor/browser": "8.0.4",
     "@capacitor/core": "8.5.2",
     "@capacitor/ios": "8.5.2",
+    "@capacitor/push-notifications": "8.1.3",
     "@capacitor/share": "8.0.3",
     "@capgo/capacitor-media-session": "8.0.32"
   },

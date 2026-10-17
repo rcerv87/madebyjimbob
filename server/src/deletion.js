@@ -154,6 +154,7 @@ export async function exportData(userId) {
     feedback,
     notes,
     reactions,
+    appDevices,
   ] = await Promise.all([
     q(`SELECT id, username, display_name, email, email_verified, image, tier, xp, notification_prefs, created_at,
          deletion_requested_at, banned_at FROM users WHERE id = $1`),
@@ -187,6 +188,7 @@ export async function exportData(userId) {
          FROM video_notes n JOIN videos v ON v.id = n.video_id WHERE n.user_id = $1 ORDER BY n.created_at`),
     q(`SELECT r.video_id, v.title AS video_title, r.kind, r.offset_ms, r.end_ms, r.created_at
          FROM moment_reactions r JOIN videos v ON v.id = r.video_id WHERE r.user_id = $1 ORDER BY r.created_at`),
+    q(`SELECT platform, created_at, last_seen_at FROM device_tokens WHERE user_id = $1 ORDER BY created_at`),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -208,5 +210,7 @@ export async function exportData(userId) {
     feedback,
     videoNotes: notes,
     momentReactions: reactions,
+    // Phones with the app that turned on notifications (the tokens themselves are left out).
+    appNotificationDevices: appDevices,
   };
 }
