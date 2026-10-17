@@ -49,6 +49,9 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      # The iPhone app's Google client id (MBJ-110); unset until Sign in with Apple is ready too.
+      - key: GOOGLE_IOS_CLIENT_ID
+        sync: false
       # Beta feedback (MBJ-819): on unless this is "off".
       - key: FEEDBACK
         sync: false

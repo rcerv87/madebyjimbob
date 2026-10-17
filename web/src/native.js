@@ -146,6 +146,48 @@ const inAppHistory = () => (window.history.state?.idx ?? 0) > 0;
 
 // The Android back button: closes what's open, then goes back a page, then home, and from home leaves the app (it
 // keeps playing if something is). `home` shows the home page when there's no page to go back to.
+// Sign in with Google inside the apps (MBJ-110). Google refuses its sign-in page in an app's web view, so the phone's
+// own account picker (Android's Credential Manager, Google Sign-In on iPhone) hands back an ID token, which the server
+// checks with Google (POST /auth/sign-in/social with idToken). Android needs only the web client id (plus an Android
+// client for the app's signing key in the same Google Cloud project); iPhone also needs its own client id.
+let socialLogin;
+let socialReady = '';
+// In an array: a Capacitor plugin object is "thenable" and must never resolve a promise itself.
+const socialPlugin = () =>
+  (socialLogin ||= import('@capgo/capacitor-social-login').then((m) => [m.SocialLogin]));
+
+export const appGoogleAvailable = (options) =>
+  isNativeApp() &&
+  Boolean(
+    nativePlatform() === 'ios'
+      ? options?.googleIosClientId && options?.googleClientId
+      : options?.googleClientId,
+  );
+
+// The Google ID token for the account picked on the phone. Throws Error('cancelled') when the member backs out.
+export async function appGoogleIdToken(options) {
+  const [p] = await socialPlugin();
+  const ios = nativePlatform() === 'ios';
+  const settings = ios
+    ? { iOSClientId: options.googleIosClientId, iOSServerClientId: options.googleClientId, mode: 'online' }
+    : { webClientId: options.googleClientId, mode: 'online' };
+  const key = JSON.stringify(settings);
+  if (socialReady !== key) {
+    await p.initialize({ google: settings });
+    socialReady = key;
+  }
+  let res;
+  try {
+    res = await p.login({ provider: 'google', options: { scopes: ['email', 'profile'] } });
+  } catch (err) {
+    if (/cancel/i.test(`${err?.code || ''} ${err?.message || ''}`)) throw new Error('cancelled');
+    throw err;
+  }
+  const token = res?.result?.idToken;
+  if (!token) throw new Error('Google didn’t send a sign-in back.');
+  return token;
+}
+
 export async function onBackButton(home) {
   if (!isNativeApp()) return () => {};
   const { App } = await import('@capacitor/app');

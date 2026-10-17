@@ -357,8 +357,16 @@ app.get(
 );
 
 // ---------- account ----------
-// Which sign-in buttons to show (MBJ-110): Google appears once its keys are set.
-app.get('/api/sign-in-options', (_req, res) => res.json({ google: googleEnabled }));
+// Which sign-in buttons to show (MBJ-110): Google appears once its keys are set. The phone apps also get the client
+// ids (public) for the phone's own Google account picker: the web client's (Android, and the token's audience) and the
+// iPhone client's (GOOGLE_IOS_CLIENT_ID; until it's set the iPhone app doesn't offer Google).
+app.get('/api/sign-in-options', (_req, res) =>
+  res.json({
+    google: googleEnabled,
+    googleClientId: googleEnabled ? process.env.GOOGLE_CLIENT_ID : null,
+    googleIosClientId: (googleEnabled && process.env.GOOGLE_IOS_CLIENT_ID) || null,
+  }),
+);
 
 app.get(
   '/api/me',

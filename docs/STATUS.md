@@ -50,8 +50,8 @@ and the Apple Developer account):
 - Notifications (MBJ-405): an APNs key in Firebase plus Firebase's iPhone SDK (or sending to Apple directly); the app
   shows no notification option on iPhone until then.
 - Links that open the app (MBJ-408): `APPLE_TEAM_ID` on Render and the Associated Domains entitlement.
-- Google sign-in in the app (MBJ-110, being built for Android) needs an iOS client id, and Apple then requires Sign in
-  with Apple next to it.
+- Google sign-in in the app (MBJ-110, built for Android 2026-10-16) needs an iOS client id (`GOOGLE_IOS_CLIENT_ID` and the
+  URL scheme in Info.plist), and Apple then requires Sign in with Apple next to it.
 - Share sheet, the swipe-back gesture, the status bar and the notch: check on a phone.
 - Going live from the phone (MBJ-409, backlog): camera and microphone permission wording.
 

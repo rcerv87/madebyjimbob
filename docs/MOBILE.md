@@ -46,7 +46,7 @@ All of it goes through `web/src/native.js`; the same build runs in a browser and
 | Service worker, Web Push, Install app, iPhone "Add to Home Screen" hint | yes | no |
 | Notifications | Web Push | the phone's own, through Firebase (Android; MBJ-405) |
 | Checkout, billing, outside links | in the page | the phone's browser |
-| Continue with Google | yes | no (Google blocks it inside an app) |
+| Continue with Google | Google's page | the phone's own account picker (Android; iPhone once its client id is set, MBJ-110) |
 
 The server answers the apps' origins on `/api` (CORS; `APP_ORIGINS` adds more) and Better Auth trusts them.
 
@@ -151,6 +151,27 @@ Firebase needs; sign in, Account → Notifications → Turn on, then reply to th
 Firebase's iPhone SDK (`@capacitor-firebase/messaging`) with an APNs key uploaded to Firebase, or send to Apple
 directly with an APNs key. Both need the Apple Developer account. Until then the iPhone app shows no notification
 option.
+
+## Sign in with Google
+
+Google refuses its sign-in page inside an app's web view, so the apps use the phone's own Google account picker
+(`@capgo/capacitor-social-login`: Credential Manager on Android, Google Sign-In on iPhone; only Google and Apple are
+bundled, see `plugins.SocialLogin` in `capacitor.config.json`). The picker hands back an ID token, the app sends it to
+`POST /api/auth/sign-in/social` (`idToken`), and the server checks it with Google against the **web** client id, the
+same as the website's sign-in (new members pick a username once; Google's tokens aren't kept). The app learns the
+client ids from `/api/sign-in-options`.
+
+Google Cloud (the project with the web client in `GOOGLE_CLIENT_ID`) needs, for **Android**, an Android OAuth client
+per signing key, each with package `com.madebyjimbob.app` and that key's SHA-1: the upload key
+(`AB:DE:72:DE:08:47:FD:5E:0F:CC:DC:B2:6B:59:7C:76:6E:FE:CD:67`), the debug key on Ruben's PC
+(`A7:C1:23:75:5A:E5:2D:F6:C7:A4:34:54:43:8F:F8:FC:C1:20:8A:B2`), and Play's app signing key once the app is in Play.
+Nothing goes in the app or on Render for those. If sign-in fails with "Developer console is not set up correctly"
+(logcat: `GoogleProvider`), the SHA-1 of the installed build isn't registered.
+
+For **iPhone**: an iOS OAuth client (bundle id `com.madebyjimbob.app`); its id goes in `GOOGLE_IOS_CLIENT_ID` on Render
+and its "iOS URL scheme" (`com.googleusercontent.apps.…`) in `mobile/ios/App/App/Info.plist` under `CFBundleURLTypes`.
+Apple requires **Sign in with Apple** in any app that offers Google sign-in, so turn both on together (the add-on has
+Apple bundled already). Until `GOOGLE_IOS_CLIENT_ID` is set the iPhone app doesn't show Google.
 
 ## Building for iPhone
 

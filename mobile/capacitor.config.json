@@ -16,6 +16,15 @@
     "SystemBars": {
       "style": "DARK",
       "initialViewportFitValueHint": "cover"
+    },
+    "SocialLogin": {
+      "providers": {
+        "google": true,
+        "apple": true,
+        "facebook": false,
+        "twitter": false
+      },
+      "logLevel": 1
     }
   }
 }
