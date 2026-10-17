@@ -178,12 +178,31 @@ Apple bundled already). Until `GOOGLE_IOS_CLIENT_ID` is set the iPhone app doesn
 
 ## Building for iPhone
 
-Needs a Mac with Xcode, so from this Windows PC that means a cloud Mac:
-- **Codemagic** (free tier: 500 build minutes a month on Mac), or **GitHub Actions** macOS machines (private repos:
-  macOS minutes count 10× against the 2,000 free minutes, so roughly 20 builds a month).
-- An **Apple Developer account** ($99 a year) to sign builds and use TestFlight. Without it an iPhone build can't be
-  installed on a phone.
-- Open-on-a-Mac alternative: `npx cap open ios` in Xcode.
+iPhone builds need a Mac, so they run on **Codemagic** (a cloud Mac; free tier: 500 Mac build minutes a month, about
+20 builds) from `codemagic.yaml` at the repo root. The workflow `ios-testflight` runs by hand from codemagic.io:
+1. `npm ci`, then `npm run build` (the web app, talking to the live site);
+2. `npx cap sync ios`;
+3. signing: `app-store-connect fetch-signing-files com.madebyjimbob.app --type IOS_APP_STORE --create` makes the
+   Apple Distribution certificate and the App Store profile on the first build, then reuses them;
+4. sets the build number to Codemagic's `$BUILD_NUMBER`, builds the `.ipa`, and uploads it to TestFlight.
+
+What Codemagic holds:
+- the team integration **MADEbyJIMBOB ASC** (an App Store Connect API key with the App Manager role: Issuer ID, Key
+  ID and the `.p8` file);
+- the environment group **ios_signing** with `CERTIFICATE_PRIVATE_KEY` (secret).
+
+That key's file is `C:\Users\office\.madebyjimbob-keys\ios-distribution-certificate-key.pem`: back it up with the
+Android upload key. If it's lost, revoke the certificate in the Apple Developer site and the next build makes a new
+one with a new key.
+
+The iPhone project uses Swift Package Manager (no CocoaPods). `npx cap sync ios` rewrites
+`mobile/ios/App/CapApp-SPM/Package.swift` (commit it). The sign-in add-on's own hook drops the providers that are off
+in `capacitor.config.json` (Facebook, X). Version: `MARKETING_VERSION` in `mobile/ios/App/App.xcodeproj/project.pbxproj`
+(0.1.2, kept the same as Android's `versionName`). `ITSAppUsesNonExemptEncryption` is false in `Info.plist`: the app
+only uses standard HTTPS, so TestFlight doesn't ask about encryption on every build. Internal TestFlight testing (up
+to 100 people on the App Store Connect team) needs no App Review; external testers need Beta App Review.
+
+On a Mac instead: `npx cap open ios` in Xcode.
 
 ## Icons and launch screens
 

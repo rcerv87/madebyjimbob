@@ -83,6 +83,14 @@ and the Apple Developer account):
 - Share sheet, the swipe-back gesture, the status bar and the notch: check on a phone.
 - Going live from the phone (MBJ-409, backlog): camera and microphone permission wording.
 
+**Store work started 2026-10-17** (Ruben has the Apple Developer and Google Play accounts):
+- **iPhone:** builds in the cloud through Codemagic (`codemagic.yaml`, workflow `ios-testflight`) to TestFlight.
+  Signing is automatic: the first build makes the distribution certificate from the key in
+  `C:\Users\office\.madebyjimbob-keys\ios-distribution-certificate-key.pem`. The iPhone project now includes all
+  six add-ons.
+- **Android:** 0.1.2 (versionCode 3) bundle ready for Play internal testing.
+- **Both:** version 0.1.2.
+
 **Next for Ruben:**
 0. **Back up the Android upload key** (both files in `C:\Users\office\.madebyjimbob-keys\`) to a password manager or a
    private cloud folder.
