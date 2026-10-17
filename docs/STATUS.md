@@ -30,9 +30,10 @@ screen off keep playing; the media card's pause and play work), and the store bu
 `docs/MOBILE.md` "Release builds"). Google Play's first upload waits on the Play Console account.
 **2026-10-16:** the Android back button walks back through the app (closes menus first, leaves the app from home),
 links to the site's videos, playlists, live, posts and profiles open the app at that page, and Share opens
-Android's share sheet. **Notifications in the Android app (MBJ-405)** are built: replies arrive as phone
-notifications through Firebase and tapping one opens the reply. They switch on once the Firebase project exists (Next
-for Ruben, step 5); the iPhone side waits on the Apple account.
+Android's share sheet. **Notifications in the Android app (MBJ-405)** work: replies arrive as phone notifications
+through Firebase (project `madebyjimbob-e9aea`, set up by Ruben 2026-10-16, key on Render and in the local `.env`) and
+tapping one opens the thread. Checked end to end in the emulator; next is Ruben's own phone. The iPhone side waits on
+the Apple account.
 
 **Next for Ruben:**
 0. **Back up the Android upload key** (both files in `C:\Users\office\.madebyjimbob-keys\`) to a password manager or a
@@ -50,20 +51,20 @@ for Ruben, step 5); the iPhone side waits on the Apple account.
    if JimBob has a business; otherwise line up 12 testers from his community.
 4. **Decide buying inside the apps** before the store release (ADR-014, MBJ-406). My recommendation: sell nothing
    in the apps at first; members join on the website and their membership works in the apps.
-5. **Firebase for app notifications** ($0, about 10 minutes; `docs/MOBILE.md` "Notifications"):
+5. **Done 2026-10-16: Firebase for app notifications** ($0; `docs/MOBILE.md` "Notifications"). The steps, for the
+   record:
    1. Go to console.firebase.google.com and sign in with the Google account that should own it (Ruben's for the beta).
    2. **Create a project** → name `MADEbyJIMBOB` → Continue → turn **Google Analytics off** → Create project → Continue.
    3. On the project's page, click the **Android** icon (Add app) → Android package name `com.madebyjimbob.app`, app
       nickname `MADEbyJIMBOB` (leave SHA-1 empty) → **Register app** → **Download google-services.json** → save it as
       `C:\madebyjimbob\mobile\android\app\google-services.json` → Next → Next → Continue to console. (This file isn't
-      secret; it can go in the repo.)
+      secret, but git ignores it: GitHub flags the Google key inside. A copy sits next to the upload key.)
    4. Gear icon (top left) → **Project settings** → **Service accounts** tab → **Generate new private key** → Generate
       key. A `.json` file downloads: **this one is secret**. Move it to
       `C:\Users\office\.madebyjimbob-keys\firebase-service-account.json` (next to the Android upload key).
    5. Render → madebyjimbob → **Environment** → Add environment variable → key `FCM_SERVICE_ACCOUNT`, value: open that
       file in Notepad, Ctrl+A, Ctrl+C, paste → **Save, rebuild, and deploy**.
    6. For local tests, add the same to the local `.env` (or ask Claude to, from the file, without showing it).
-   Tell Claude when it's done: the next Android build turns notifications on, and the emulator check follows.
 
 ## Where things stand (2026-10-11)
 
@@ -585,8 +586,8 @@ reach 30 days around 2026-11-02.
 1. **Turn on email** once madebyjimbob.app is verified in Resend (Waiting on Ruben #5, #7, #8); then check the first
    real sign-up, confirmation, and password reset.
 2. **Phone apps for Android and iPhone** (MBJ-401 on, started 2026-10-15 with Capacitor, ADR-014): next the iPhone
-   build through a cloud Mac, background audio (MBJ-403), native push (MBJ-405; Android built 2026-10-16, waits on
-   Firebase), links that open the app (MBJ-408),
+   build through a cloud Mac, background audio (MBJ-403), native push (MBJ-405; Android working 2026-10-16, iPhone
+   remains), links that open the app (MBJ-408),
    then the store release (MBJ-407) with Apple and Google developer accounts.
 3. **Live indicator** — red ring and LIVE badge, Studio "Go live" switch (MBJ-805); with the **schedule
    calendar** (MBJ-813): JimBob enters streams and debates in Studio, viewers see them in their time zone, add
@@ -665,7 +666,7 @@ never written here: their values live only in `.env` (git-ignored) or Render's E
 | Resend | Account email (ADR-012) | Not set up yet (Waiting on Ruben #7). Keys go in Render env: `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `RESEND_WEBHOOK_SECRET` |
 | Hetzner | Ruben's account (2026-10-01), for the future live server (Owncast) | No servers yet, so nothing is billed. Estimate: US CPX31 (4 vCPU, 8 GB, $0.118/h) on only during streams, ~110 h/month ≈ $14 + ~$1 IPv4/snapshot ≈ $15/month; confirm with a 1-hour test (~12¢). CX33 ($10.59/mo, EU) if back in stock. Later an API token goes in `.env` (Console → Security → API tokens) |
 | Web Push | VAPID key pair | Generated 2026-09-29; both keys in local `.env` |
-| Firebase | Notifications in the phone apps (MBJ-405), free | Not created yet (Next for Ruben #5 under Phone apps). `FCM_SERVICE_ACCOUNT` on Render; `google-services.json` in `mobile/android/app/` |
+| Firebase | Notifications in the phone apps (MBJ-405), free | Project `madebyjimbob-e9aea` in Ruben's Google account (2026-10-16). Service account key in `C:\Users\office\.madebyjimbob-keys\` (secret), `FCM_SERVICE_ACCOUNT` on Render and in local `.env`; `google-services.json` in `mobile/android/app/` (git-ignored, copy in the keys folder) |
 
 ### Content on the site
 

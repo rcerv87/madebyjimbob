@@ -24,11 +24,12 @@ Capacitor settings (`capacitor.config.json`), the Android project (`mobile/andro
   live, posts, profile, shop and art pages open the app when it's installed (the site's
   `/.well-known/assetlinks.json` vouches for the app's signing key; Android checks it when the app is installed), at
   that page, whether the app was closed or open. Share opens Android's own share sheet. Checked in the emulator.
-- **Android notifications (MBJ-405, 2026-10-16):** built, and on once Firebase is set up ("Notifications" below):
-  Turn on asks Android for permission and registers the phone for the signed-in account; replies arrive as phone
-  notifications (channel "Replies and mentions"); tapping one opens the reply; signing out stops them. Checked:
-  server tests with a stand-in Firebase, and the app without Firebase's file starts and hides the option. The
-  end-to-end check on the emulator waits on the Firebase project.
+- **Android notifications (MBJ-405, 2026-10-16):** on (Firebase project `madebyjimbob-e9aea` in Ruben's Google
+  account; "Notifications" below). Turn on asks Android for permission and registers the phone for the signed-in
+  account; replies arrive as phone notifications (channel "Replies and mentions", a play-button icon in JimBob's
+  teal); tapping one opens the thread ("From your notification"); signing out stops them. Checked end to end in the
+  emulator against the PC's server (permission prompt, notification with the app in the background, tap, sign-out),
+  plus server tests with a stand-in Firebase; an app built without Firebase's file starts and hides the option.
 - Not in the apps yet: Google sign-in (MBJ-110), and the iPhone side of background audio, links and notifications.
 
 ## How the apps differ from the website
@@ -114,7 +115,8 @@ with the upload key's. Debug builds aren't covered; open links in them with
 ## Notifications (Firebase)
 
 Replies reach the apps through **Firebase Cloud Messaging** (free). The server sends them from `server/src/fcm.js`
-(Firebase's HTTP v1 API with the service account key in `FCM_SERVICE_ACCOUNT`, no Firebase SDK) next to Web Push,
+(Firebase's HTTP v1 API with the service account key in `FCM_SERVICE_ACCOUNT`, no Firebase SDK; base64 in the local
+`.env`, the JSON as is on Render) next to Web Push,
 from the same `notifyFor()`, with the same per-type settings. Each app install's token is in `device_tokens`; a
 token Firebase calls gone (uninstalled, replaced, or from an earlier Firebase project) is deleted. In the app,
 `web/src/push.js` asks for permission, makes the Android channel `activity` ("Replies and mentions"), registers,
@@ -133,7 +135,7 @@ calls Firebase unguarded and the app crashes.
 3. On the project's page, click the **Android** icon (Add app) → Android package name `com.madebyjimbob.app`, app
    nickname `MADEbyJIMBOB` (leave SHA-1 empty) → **Register app** → **Download google-services.json** → save it as
    `C:\madebyjimbob\mobile\android\app\google-services.json` → Next → Next → Continue to console. (This file isn't
-   secret; it can go in the repo.)
+   secret, but git ignores it: GitHub flags the Google key inside. A copy sits next to the upload key.)
 4. Gear icon (top left) → **Project settings** → **Service accounts** tab → **Generate new private key** → Generate
    key. A `.json` file downloads: **this one is secret**. Move it to
    `C:\Users\office\.madebyjimbob-keys\firebase-service-account.json` (next to the Android upload key).

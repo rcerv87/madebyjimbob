@@ -7,7 +7,15 @@ import { api, compact, count, formatTime, splitTimestamps, timeAgo, timeoutNote 
 // YouTube-style comments under the video: imported YouTube comments and native ones, one level of
 // threads. Every reply records the exact comment it answers and quotes it, so long threads keep
 // their context. Comments can carry a moment in the video, which also puts them in the chat feed.
-export default function Comments({ videoId, session, getTimeMs, onSeek, focusThreadId, onCloseFocus }) {
+export default function Comments({
+  videoId,
+  session,
+  getTimeMs,
+  onSeek,
+  focusThreadId,
+  focusLabel = 'Thread from the chat',
+  onCloseFocus,
+}) {
   const [sort, setSort] = useState('top');
   const [data, setData] = useState(null);
   const [focus, setFocus] = useState(null);
@@ -88,7 +96,7 @@ export default function Comments({ videoId, session, getTimeMs, onSeek, focusThr
       {focus && (
         <div className="comment-focus" ref={focusRef}>
           <div className="comment-focus-head">
-            <span>Thread from the chat</span>
+            <span>{focusLabel}</span>
             <button type="button" className="text-btn" onClick={onCloseFocus}>
               Close
             </button>

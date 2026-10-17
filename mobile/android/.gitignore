@@ -62,7 +62,8 @@ captures/
 .cxx/
 
 # Google Services (e.g. APIs or Firebase)
-# google-services.json
+# Not secret, but GitHub flags the key inside; a copy is kept with the upload key (docs/MOBILE.md).
+app/google-services.json
 
 # Freeline
 freeline.py
