@@ -1,10 +1,12 @@
 // Notifications: someone @mentioned you or replied to you, in chat or comments.
 // Stored in `notifications`, sent instantly to the recipient's open tabs (WebSocket), and pushed to
-// phones/browsers that turned on push (Web Push, when VAPID keys are configured).
+// phones/browsers that turned on push (Web Push, when VAPID keys are configured), and to the phone apps through
+// Firebase (MBJ-405, when FCM_SERVICE_ACCOUNT is set).
 import webpush from 'web-push';
 import { pool } from './db.js';
 import { logger } from './logger.js';
 import { hidingFrom } from './blocks.js';
+import { fcmEnabled, sendFcm } from './fcm.js';
 
 const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
 export const pushEnabled = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
@@ -66,7 +68,26 @@ export function notificationText(n) {
   return { title, body: `${n.videoTitle ? `${n.videoTitle}: ` : ''}${n.excerpt}` };
 }
 
+// The phone apps: every install of the member's that turned on notifications.
+async function pushToApps(userId, n) {
+  if (!fcmEnabled()) return;
+  const { rows } = await pool.query('SELECT id, token FROM device_tokens WHERE user_id = $1', [userId]);
+  const { title, body } = notificationText(n);
+  await Promise.all(
+    rows.map(async (d) => {
+      try {
+        const result = await sendFcm(d.token, { title, body, url: notificationUrl(n), tag: `n${n.id}` });
+        // The app was uninstalled or its token replaced: forget it.
+        if (result === 'gone') await pool.query('DELETE FROM device_tokens WHERE id = $1', [d.id]);
+      } catch (err) {
+        logger.warn({ err, userId }, 'app push failed');
+      }
+    }),
+  );
+}
+
 async function push(userId, n) {
+  await pushToApps(userId, n).catch((err) => logger.warn({ err }, 'app push failed'));
   if (!pushEnabled) return;
   const { rows } = await pool.query(
     'SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1',

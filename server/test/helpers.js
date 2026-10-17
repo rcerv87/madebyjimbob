@@ -30,6 +30,8 @@ process.env.LOG_LEVEL = process.env.LOG_LEVEL_TEST || 'silent';
 // Push off in tests (no real pushes), whatever the local .env has.
 process.env.VAPID_PUBLIC_KEY = '';
 process.env.VAPID_PRIVATE_KEY = '';
+// App push (Firebase) off too, unless a test points it at a stand-in (push.test.js).
+process.env.FCM_SERVICE_ACCOUNT = '';
 // Email off in tests (never real mail); email.test.js records sends with setTransport().
 // Live streaming off unless a test turns it on with a fake Hetzner (never the real one).
 process.env.OWNCAST_URL = '';

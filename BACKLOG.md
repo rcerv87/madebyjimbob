@@ -1058,7 +1058,7 @@ Acceptance criteria:
 
 ### MBJ-405 — Native push notifications
 
-**Status:** To do · **Phase 2 — Mobile** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-401, MBJ-202
+**Status:** In progress · **Phase 2 — Mobile** · **Priority:** Should · **Size:** M · **Depends on:** MBJ-401, MBJ-202
 
 As a member, I want to know when JimBob goes live or someone replies to me, on my phone.
 

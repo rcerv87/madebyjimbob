@@ -24,7 +24,12 @@ Capacitor settings (`capacitor.config.json`), the Android project (`mobile/andro
   live, posts, profile, shop and art pages open the app when it's installed (the site's
   `/.well-known/assetlinks.json` vouches for the app's signing key; Android checks it when the app is installed), at
   that page, whether the app was closed or open. Share opens Android's own share sheet. Checked in the emulator.
-- Not in the apps yet: native push, Google sign-in (MBJ-405, 110), and the iPhone side of background audio and links.
+- **Android notifications (MBJ-405, 2026-10-16):** built, and on once Firebase is set up ("Notifications" below):
+  Turn on asks Android for permission and registers the phone for the signed-in account; replies arrive as phone
+  notifications (channel "Replies and mentions"); tapping one opens the reply; signing out stops them. Checked:
+  server tests with a stand-in Firebase, and the app without Firebase's file starts and hides the option. The
+  end-to-end check on the emulator waits on the Firebase project.
+- Not in the apps yet: Google sign-in (MBJ-110), and the iPhone side of background audio, links and notifications.
 
 ## How the apps differ from the website
 
@@ -37,6 +42,7 @@ All of it goes through `web/src/native.js`; the same build runs in a browser and
 | Signed in with | session cookie | Bearer token from the `set-auth-token` header, kept on the phone |
 | Share links, `/…` video and thumbnail addresses | this address | the site's address |
 | Service worker, Web Push, Install app, iPhone "Add to Home Screen" hint | yes | no |
+| Notifications | Web Push | the phone's own, through Firebase (Android; MBJ-405) |
 | Checkout, billing, outside links | in the page | the phone's browser |
 | Continue with Google | yes | no (Google blocks it inside an app) |
 
@@ -48,7 +54,15 @@ Android Studio is installed, with its Java (`C:\Program Files\Android\Android St
 (`%LOCALAPPDATA%\Android\Sdk`, Android 35 and 36) and two emulators (Pixel 9 Pro, Pixel 4).
 
 ```bash
-npm run build                      # the web app (add VITE_SITE_URL=http://localhost:3000 for a local test build)
+npm run android -w mobile          # web app → Android project → app/build/outputs/apk/debug/app-debug.apk
+npm run android -w mobile -- --site http://localhost:3000   # a test build that talks to this PC's server
+```
+
+`mobile/scripts/build-android.mjs` does the three steps (and sets Java and the SDK); by hand they are:
+
+```bash
+npm run build                      # the web app (VITE_SITE_URL=http://localhost:3000 for a local test build;
+                                   # VITE_NATIVE_PUSH=1 when google-services.json is there)
 cd mobile && npx cap sync android  # copy it into the Android project
 cd android
 export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" ANDROID_HOME="$LOCALAPPDATA/Android/Sdk"
@@ -76,8 +90,7 @@ keeps the key that signs the app people install, so a lost upload key can be rep
 takes days.
 
 ```bash
-npm run build && cd mobile && npx cap sync android && cd android
-./gradlew bundleRelease           # → app/build/outputs/bundle/release/app-release.aab
+npm run android:release -w mobile  # → app/build/outputs/bundle/release/app-release.aab (and a signed .apk)
 ```
 
 Raise `versionCode` in `mobile/android/app/build.gradle` for every upload (and `versionName`, which people see).
@@ -97,6 +110,44 @@ upload key (sideloaded release builds). Once the app is in Google Play, add **Pl
 with the upload key's. Debug builds aren't covered; open links in them with
 `adb shell am start -a android.intent.action.VIEW -d <url> com.madebyjimbob.app`. Check what Android decided:
 `adb shell pm get-app-links com.madebyjimbob.app`. The iPhone file appears once `APPLE_TEAM_ID` is set.
+
+## Notifications (Firebase)
+
+Replies reach the apps through **Firebase Cloud Messaging** (free). The server sends them from `server/src/fcm.js`
+(Firebase's HTTP v1 API with the service account key in `FCM_SERVICE_ACCOUNT`, no Firebase SDK) next to Web Push,
+from the same `notifyFor()`, with the same per-type settings. Each app install's token is in `device_tokens`; a
+token Firebase calls gone (uninstalled, replaced, or from an earlier Firebase project) is deleted. In the app,
+`web/src/push.js` asks for permission, makes the Android channel `activity` ("Replies and mentions"), registers,
+re-registers on every start while signed in (tokens change; a phone moves to whoever signs in), opens a tapped
+notification's page, and forgets the phone on sign-out.
+
+Both sides switch on only when set up: the server when `FCM_SERVICE_ACCOUNT` is a service account key (`/api/push/key`
+answers `native: true`), the app when it was built with `mobile/android/app/google-services.json` (the build script
+then sets `VITE_NATIVE_PUSH=1`). An app built without that file must never ask Android for a token: the plugin
+calls Firebase unguarded and the app crashes.
+
+**Setting up Firebase** ($0; about 10 minutes):
+
+1. Go to console.firebase.google.com and sign in with the Google account that should own it (Ruben's for the beta).
+2. **Create a project** → name `MADEbyJIMBOB` → Continue → turn **Google Analytics off** → Create project → Continue.
+3. On the project's page, click the **Android** icon (Add app) → Android package name `com.madebyjimbob.app`, app
+   nickname `MADEbyJIMBOB` (leave SHA-1 empty) → **Register app** → **Download google-services.json** → save it as
+   `C:\madebyjimbob\mobile\android\app\google-services.json` → Next → Next → Continue to console. (This file isn't
+   secret; it can go in the repo.)
+4. Gear icon (top left) → **Project settings** → **Service accounts** tab → **Generate new private key** → Generate
+   key. A `.json` file downloads: **this one is secret**. Move it to
+   `C:\Users\office\.madebyjimbob-keys\firebase-service-account.json` (next to the Android upload key).
+5. Render → madebyjimbob → **Environment** → Add environment variable → key `FCM_SERVICE_ACCOUNT`, value: open that
+   file in Notepad, Ctrl+A, Ctrl+C, paste → **Save, rebuild, and deploy**.
+6. For local tests, add the same to the local `.env` (or ask Claude to, from the file, without showing it).
+
+Then rebuild the app (`npm run android -w mobile`). **Testing:** the Pixel 9 Pro emulator has Google Play, which
+Firebase needs; sign in, Account → Notifications → Turn on, then reply to that account's comment from the website.
+
+**iPhone (not built):** the plugin hands back Apple's token, which Firebase can't send to as it is. Either add
+Firebase's iPhone SDK (`@capacitor-firebase/messaging`) with an APNs key uploaded to Firebase, or send to Apple
+directly with an APNs key. Both need the Apple Developer account. Until then the iPhone app shows no notification
+option.
 
 ## Building for iPhone
 

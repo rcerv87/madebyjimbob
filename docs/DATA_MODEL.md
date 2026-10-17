@@ -176,6 +176,15 @@ Signed-out viewers keep their position in the browser (`localStorage`).
 | endpoint | text unique | from the browser's push service; deleted when it returns 404/410 |
 | p256dh, auth | text | encryption keys from the subscription |
 
+### device_tokens
+Phone app installs that turned on notifications (MBJ-405).
+| column | type | notes |
+|---|---|---|
+| user_id | FK users | cascade delete; the account signed in on that phone |
+| platform | text | `android` or `ios` |
+| token | text unique | Firebase Cloud Messaging token; moves to whoever registers it; deleted when Firebase says it's gone |
+| created_at, last_seen_at | timestamptz | last_seen_at is updated each time the app registers it (every start, signed in) |
+
 Comments are separate from `chat_messages`: they aren't tied to a playback position and they thread.
 
 ### transcripts

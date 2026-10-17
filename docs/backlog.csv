@@ -300,7 +300,7 @@ MBJ-403,"Background audio, lock screen, PiP",Mobile apps,Phase 2 — Mobile,Must
 - Listen only works as on the web",MBJ-401
 MBJ-404,Chat in the apps,Mobile apps,Phase 2 — Mobile,Must,S,To do,"As a phone viewer, I want to read and post chat.","- Chat synced to playback (replay) and live
 - Coming back from the background catches up (messages since the last one) and reconnects",MBJ-401
-MBJ-405,Native push notifications,Mobile apps,Phase 2 — Mobile,Should,M,To do,"As a member, I want to know when JimBob goes live or someone replies to me, on my phone.","- FCM on Android and APNs on iPhone, sent by the server's notifyFor() next to Web Push
+MBJ-405,Native push notifications,Mobile apps,Phase 2 — Mobile,Should,M,In progress,"As a member, I want to know when JimBob goes live or someone replies to me, on my phone.","- FCM on Android and APNs on iPhone, sent by the server's notifyFor() next to Web Push
 - The same notification types and per-type settings as the website
 - Tapping one opens the app at that moment","MBJ-401, MBJ-202"
 MBJ-406,Buying inside the apps,Mobile apps,Phase 2 — Mobile,Must,L,To do,"As a phone viewer, I want to join or send a super chat from the app.","- Decide per store (ADR-014): nothing sold in the apps (join on the website), the stores' payments (RevenueCat, entitlements shared with web purchases), or an outside-purchase link where the store allows it

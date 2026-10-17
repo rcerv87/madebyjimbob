@@ -35,6 +35,7 @@ import { useNotifications, NotificationToast } from './notifications.jsx';
 import { IosInstallHint } from './install.jsx';
 import { useKeepPlaying } from './keepPlaying.js';
 import { onAppLink, onAppResume, onBackButton, setAppToken } from './native.js';
+import { forgetAppPush, onNotificationTap, refreshAppPush } from './push.js';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -83,6 +84,8 @@ export default function App() {
     const keep = (stop) => (gone ? stop() : stops.push(stop));
     onAppLink((path) => navigateRef.current(path)).then(keep);
     onBackButton(() => navigateRef.current('/', { replace: true })).then(keep);
+    // A tapped notification opens the reply it's about (MBJ-405).
+    onNotificationTap((path) => navigateRef.current(path)).then(keep);
     return () => {
       gone = true;
       stops.forEach((stop) => stop());
@@ -102,9 +105,16 @@ export default function App() {
     };
   }, [refreshUser]);
   useEffect(() => setSignedIn(Boolean(user)), [user]);
+  // In the phone apps: once signed in, this phone gets that account's notifications (if they're allowed).
+  const userId = user?.id;
+  useEffect(() => {
+    if (userId) refreshAppPush();
+  }, [userId]);
 
   const signOut = () => {
-    api('/auth/sign-out', { method: 'POST' })
+    // The phone forgets this account's notifications first, while it's still signed in.
+    forgetAppPush()
+      .then(() => api('/auth/sign-out', { method: 'POST' }))
       .catch(() => {})
       .finally(() => setAppToken(null));
     setUser(null);
