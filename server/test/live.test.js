@@ -26,11 +26,19 @@ function fakeFetch(url, opts = {}) {
     if (method === 'POST' && u.pathname === '/v1/servers') {
       const body = JSON.parse(opts.body);
       hetzner.created.push(body);
-      const server = { id: 900 + hetzner.created.length, name: body.name };
+      const server = { id: 900 + hetzner.created.length, name: body.name, labels: body.labels || {} };
       hetzner.servers.push(server);
       return json(201, { server });
     }
-    if (method === 'GET' && u.pathname === '/v1/servers') return json(200, { servers: hetzner.servers });
+    if (method === 'GET' && u.pathname === '/v1/servers') {
+      // Like Hetzner: only servers with every label in the selector.
+      const wanted = (u.searchParams.get('label_selector') || '')
+        .split(',')
+        .filter(Boolean)
+        .map((pair) => pair.split('='));
+      const servers = hetzner.servers.filter((sv) => wanted.every(([k, v]) => sv.labels?.[k] === v));
+      return json(200, { servers });
+    }
     const del = u.pathname.match(/^\/v1\/servers\/(\d+)$/);
     if (method === 'DELETE' && del) {
       hetzner.servers = hetzner.servers.filter((s) => s.id !== Number(del[1]));
@@ -659,9 +667,23 @@ describe('Go Live (owned live, ADR-004)', () => {
     await tickLive();
     assert.deepEqual(hetzner.servers, [], 'over the cap even while streaming');
 
-    hetzner.servers.push({ id: 4242, name: 'forgotten' });
+    const ours = hetzner.created[0].labels;
+    assert.equal(ours.mbj, 'live');
+    assert.ok(ours['mbj-site'], 'labeled with the copy of the site that made it');
+    hetzner.servers.push({ id: 4242, name: 'forgotten', labels: { ...ours } });
+    // Another copy of the site sharing the Hetzner project (the live site, while this one runs on a PC): its server
+    // is never touched (2026-10-16: a PC's clean-up deleted the live site's server seconds after Go Live).
+    hetzner.servers.push({
+      id: 4343,
+      name: 'other site',
+      labels: { mbj: 'live', 'mbj-site': 'srv-the-live-site' },
+    });
     await tickLive();
-    assert.deepEqual(hetzner.servers, [], 'stray live server removed');
+    assert.deepEqual(
+      hetzner.servers.map((sv) => sv.id),
+      [4343],
+      'only this copy’s stray server removed',
+    );
   });
 });
 

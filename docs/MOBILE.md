@@ -173,6 +173,6 @@ art. The current source is 512 px; a 1024 px original would give a sharper App S
   as the seller; apps can be transferred later, but it's paperwork). See `docs/MIGRATION.md`.
 - The store rules in ADR-014: Sign in with Apple if Google sign-in comes to the iPhone app; a decision on buying
   inside the apps; native features so the app isn't "just a website"; privacy labels and data safety forms.
-- Each R2 bucket's CORS policy must allow `capacitor://localhost` and `https://localhost`.
+- Each R2 bucket's CORS policy allows `capacitor://localhost` and `https://localhost` (done 2026-10-16, both buckets).
 - Release signing: a Play upload key (kept safe; losing it is painful) and Apple certificates through the build
   service.

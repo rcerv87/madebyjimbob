@@ -105,8 +105,10 @@ follow when the site's `R2_*` settings switch to his account (copy `dvr/` across
 
 **R2 (live recordings, replays, the library):** move it early. It grows about half a terabyte every month JimBob
 streams on the site, so the copy takes longer the longer it waits (R2 doesn't charge for the downloads).
-1. JimBob's Cloudflare account: create bucket `madebyjimbob-live`, the same CORS policy (site origins, GET/HEAD), and
-   an API token with Object Read & Write on that bucket only.
+1. JimBob's Cloudflare account: create bucket `madebyjimbob-live` (done), the same CORS policy (done 2026-10-16:
+   `https://madebyjimbob.app`, `https://www.madebyjimbob.app`, `https://madebyjimbob.onrender.com`, `http://localhost:3000`, `capacitor://localhost`, `https://localhost`; GET and HEAD; headers `*`; max age 3600), and an API token with Object Read & Write on that bucket only. After any CORS change on a
+   bucket behind `live.madebyjimbob.app`, purge Cloudflare's cache (madebyjimbob.app → Caching → Purge Everything):
+   copies cached before the change keep the old answer.
 2. Copy: `rclone sync ruben-r2:madebyjimbob-live jimbob-r2:madebyjimbob-live --progress` (R2 doesn't charge for
    downloads).
 3. Connect the custom domain to the new bucket. Since the domain moves in step 6, either move the domain first and
@@ -141,7 +143,10 @@ Render can transfer services between workspaces: invite JimBob's workspace, tran
 1. JimBob's Render: create the database (same plan or larger) and the web service from this repo's `render.yaml`.
 2. Copy every setting from the old service (Render → Environment). `BETTER_AUTH_SECRET` must be **the same value**,
    or everyone is signed out (not harmful, just annoying).
-3. Maintenance notice on; stop the old service (or scale it to 0) so nothing writes.
+3. Maintenance notice on; stop the old service (or scale it to 0) so nothing writes. **No live stream during the
+   move:** live servers are labeled with the Render service that started them (`mbj-site`), so a server started by
+   the old service is never cleaned up by the new one. Check Hetzner → Servers afterwards and delete any leftover
+   `mbj-live-…` server.
 4. `pg_dump --no-owner --format=custom "$OLD_DATABASE_URL" -f mbj.dump` then
    `pg_restore --no-owner --dbname "$NEW_DATABASE_URL" mbj.dump`.
 5. Start the new service; check `/api/health`, sign in, a video, chat, Studio.
@@ -203,8 +208,8 @@ The apps' id is `com.madebyjimbob.app` (ADR-014) and can never change once an ap
 - [ ] Invite Ruben to both (Apple: App Store Connect → Users → Admin; Google: Users and permissions → Admin).
 - [ ] If the beta apps were published from Ruben's accounts first: Apple → App Store Connect → the app → App
   Information → Transfer App; Google → Play Console → transfer request. Both keep the reviews and installs.
-- [ ] Each R2 bucket's CORS policy allows `capacitor://localhost` and `https://localhost` (otherwise replays don't play
-  in the Android app).
+- [x] Each R2 bucket's CORS policy allows `capacitor://localhost` and `https://localhost` (done 2026-10-16 on both
+  `madebyjimbob-live` buckets).
 - [ ] Render: `ANDROID_CERT_SHA256` = the upload key's fingerprint plus Play's app signing key's (Play Console → App
   integrity), comma-separated; `APPLE_TEAM_ID` = the Apple Developer team id. They make links open the apps
   (MBJ-408). A new developer account means new values.

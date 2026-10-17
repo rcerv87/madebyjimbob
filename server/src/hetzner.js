@@ -1,7 +1,22 @@
 // A small Hetzner Cloud API client for the live server (ADR-004). Only what Go Live needs: servers and Primary IPs,
 // always tagged with the label mbj=live so cleanup never touches anything else in the project.
+import os from 'os';
+
 const API = 'https://api.hetzner.cloud/v1';
 export const LIVE_LABEL = 'mbj=live';
+
+// Which copy of the site a live server belongs to (label mbj-site). A copy running on a PC shares the Hetzner project
+// and token with the live site; its clean-up once deleted the live site's new server seconds after Go Live
+// (2026-10-16). Each copy now creates, lists and cleans up only its own: on Render the service's id, elsewhere the
+// computer's name.
+const labelValue = (v) =>
+  v
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, '-')
+    .slice(0, 63)
+    .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '') || 'local';
+export const siteLabel = () => labelValue(process.env.RENDER_SERVICE_ID || `local-${os.hostname()}`);
+const ownServers = () => `${LIVE_LABEL},mbj-site=${siteLabel()}`;
 
 export const hetznerConfigured = () => Boolean(process.env.HETZNER_API_TOKEN);
 
@@ -23,11 +38,14 @@ async function call(method, path, body) {
   return data;
 }
 
+// This copy's live servers only (never another copy's).
 export const listLiveServers = async () =>
-  (await call('GET', `/servers?label_selector=${encodeURIComponent(LIVE_LABEL)}`)).servers;
+  (await call('GET', `/servers?label_selector=${encodeURIComponent(ownServers())}`)).servers;
 
 export const createServer = (spec) =>
-  call('POST', '/servers', { ...spec, labels: { mbj: 'live' } }).then((d) => d.server);
+  call('POST', '/servers', { ...spec, labels: { mbj: 'live', 'mbj-site': siteLabel() } }).then(
+    (d) => d.server,
+  );
 
 export const getServer = (id) => call('GET', `/servers/${id}`).then((d) => d.server);
 

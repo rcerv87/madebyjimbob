@@ -39,16 +39,32 @@ really collects and who processes it, with **hello@madebyjimbob.app** as the con
 domain). They're a plain-language starting point, not legal advice: JimBob (or a lawyer) should read both before the
 store release, and add his business name and state if he has one.
 
+**Rule (Ruben, 2026-10-16): everything is done for the website, Android and iPhone.** The apps run the same web
+build, so site changes reach both; native pieces must be done for both.
+
+**iPhone: still to do or check** (built or working on Android; the iPhone app hasn't been built yet: needs a cloud Mac
+and the Apple Developer account):
+- Build it and run everything in it once (MBJ-401): sign-in, video, chat, live, notes, Studio.
+- Background audio and lock-screen controls (MBJ-403): `UIBackgroundModes` audio is set (2026-10-16); the lock-screen
+  card comes from the browser's Media Session in the web view. Check on a phone.
+- Notifications (MBJ-405): an APNs key in Firebase plus Firebase's iPhone SDK (or sending to Apple directly); the app
+  shows no notification option on iPhone until then.
+- Links that open the app (MBJ-408): `APPLE_TEAM_ID` on Render and the Associated Domains entitlement.
+- Google sign-in in the app (MBJ-110, being built for Android) needs an iOS client id, and Apple then requires Sign in
+  with Apple next to it.
+- Share sheet, the swipe-back gesture, the status bar and the notch: check on a phone.
+- Going live from the phone (MBJ-409, backlog): camera and microphone permission wording.
+
 **Next for Ruben:**
 0. **Back up the Android upload key** (both files in `C:\Users\office\.madebyjimbob-keys\`) to a password manager or a
    private cloud folder.
 1. **Which phone do you test on?** Android: a test build can go on it today (copy the `.apk` file over). iPhone: it
    needs the Apple Developer account first (step 3).
-2. **Let the apps load replays from R2** (about 2 minutes per bucket): Cloudflare → R2 → `madebyjimbob-live` →
-   Settings → CORS policy → Edit → add `"capacitor://localhost"` and `"https://localhost"` to `AllowedOrigins` →
-   Save. Do the same on JimBob's library bucket (in his Cloudflare account). Today every video on the live site is
-   on Cloudflare Stream and plays in the apps (checked 2026-10-15); without this step, replays of streams on the
-   site and JimBob's uploaded library won't.
+2. **Done 2026-10-16: the apps (and madebyjimbob.app) can load live video and replays from R2.** Both
+   `madebyjimbob-live` buckets (Ruben's, which live streams use, and JimBob's library one) allow `https://madebyjimbob.app`, `https://www.madebyjimbob.app`, `https://madebyjimbob.onrender.com`, `http://localhost:3000`, `capacitor://localhost`, `https://localhost`; GET and HEAD; headers `*`; max age 3600.
+   Ruben's bucket had never allowed `madebyjimbob.app`, so the first stream after the move to the domain showed a
+   broken player until this was fixed and Cloudflare's cache was purged (Caching → Purge Everything; old copies kept
+   the missing permission). Checked: the Oct 17 replay plays on madebyjimbob.app at phone size.
 3. **Developer accounts** ($99/year Apple, $25 once Google), ideally in JimBob's name: `docs/MIGRATION.md` step 11.
    Google Play: a new **personal** account must run a closed test with 12+ testers for 14 days before going public;
    an **organization** account (a business with a free D-U-N-S number) doesn't. Recommendation: an organization account
@@ -551,6 +567,8 @@ Read this first; the sections below have the detail.
 | 2026-10-11 | Watched / in progress / unwatched is worked out from where the viewer stopped; there is no separate watched flag |
 | 2026-10-11 | The hotspot strip is its own bar under the player (Ruben: "good design decision"); the player keeps the browser's built-in controls |
 | 2026-10-11 | Reactions count fairly: signed-in only, one per kind per person per minute, stretches up to 30 minutes, and one person's marks past 30 minutes of a video count for less |
+| 2026-10-16 | Each copy of the site manages only its own Hetzner live servers (label `mbj-site`), after a local copy's clean-up deleted the live site's new server |
+| 2026-10-16 | Live streams stay in Ruben's R2 bucket until madebyjimbob.app's DNS moves to JimBob's Cloudflare (a bucket's address must be on a domain in the same account); then the recordings copy over and `R2_*` switches (MIGRATION step 5) |
 
 ## Known limits (fine for a demo, not for launch)
 
