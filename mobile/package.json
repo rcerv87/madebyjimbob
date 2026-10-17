@@ -18,7 +18,8 @@
     "@capacitor/ios": "8.5.2",
     "@capacitor/push-notifications": "8.1.3",
     "@capacitor/share": "8.0.3",
-    "@capgo/capacitor-media-session": "8.0.32"
+    "@capgo/capacitor-media-session": "8.0.32",
+    "@capgo/capacitor-social-login": "8.5.19"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.2"

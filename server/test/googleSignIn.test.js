@@ -24,7 +24,11 @@ const me = async (token) => (await call('/me', { token })).data.user;
 const pick = (token, body) => call('/account/username', { method: 'POST', token, body });
 
 test('the Google button stays hidden until the Google keys are set', async () => {
-  assert.deepEqual((await call('/sign-in-options')).data, { google: false });
+  assert.deepEqual((await call('/sign-in-options')).data, {
+    google: false,
+    googleClientId: null,
+    googleIosClientId: null,
+  });
 });
 
 test('a made-up username comes from the name, never the email, and is always valid', async () => {

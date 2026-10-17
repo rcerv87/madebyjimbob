@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
-import { isNativeApp } from '../native.js';
+import { appGoogleAvailable, appGoogleIdToken, isNativeApp } from '../native.js';
 
 const TITLES = { signin: 'Sign in', signup: 'Create your account', forgot: 'Reset your password' };
 
@@ -15,15 +15,22 @@ export const GOOGLE_ERRORS = {
 };
 export const googleError = (code) =>
   GOOGLE_ERRORS[code] || 'Google sign-in didn’t go through. Please try again, or use your password.';
+// In the apps the server answers in words ("account not linked"); the same messages as the website's codes.
+const appGoogleError = (message) => {
+  const code = String(message || '').replace(/ /g, '_');
+  return GOOGLE_ERRORS[code] ? googleError(code) : message;
+};
 
 export default function SignInDialog({ onClose, onSignedIn, initialMode = 'signin', initialError = '' }) {
   const [mode, setMode] = useState(initialMode);
-  const [google, setGoogle] = useState(false);
+  const [options, setOptions] = useState({});
   useEffect(() => {
     api('/sign-in-options')
-      .then((o) => setGoogle(Boolean(o.google)))
+      .then(setOptions)
       .catch(() => {});
   }, []);
+  // The website sends people to Google's page; the apps use the phone's own account picker (MBJ-110).
+  const google = isNativeApp() ? appGoogleAvailable(options) : Boolean(options.google);
   const [login, setLogin] = useState(''); // email or username, for sign-in
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -87,8 +94,26 @@ export default function SignInDialog({ onClose, onSignedIn, initialMode = 'signi
     }
   };
 
+  // In the apps: pick a Google account on the phone, then the server checks Google's token and signs in (or up).
+  const withGoogleInApp = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      const token = await appGoogleIdToken(options);
+      await api('/auth/sign-in/social', { method: 'POST', body: { provider: 'google', idToken: { token } } });
+      const { user } = await api('/me');
+      // A Google sign-up hasn't picked a username yet (the site asks next).
+      onSignedIn(user, { isNew: Boolean(user?.needsUsername) });
+    } catch (err) {
+      if (err.message !== 'cancelled') setError(appGoogleError(err.message));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // Off to Google and back to this page; a problem comes back as ?auth=google&error=<code> (see App.jsx).
   const withGoogle = async () => {
+    if (isNativeApp()) return withGoogleInApp();
     setError('');
     try {
       setBusy(true);
@@ -114,8 +139,7 @@ export default function SignInDialog({ onClose, onSignedIn, initialMode = 'signi
       <form className="dialog auth-dialog" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
         <h2>{TITLES[mode]}</h2>
 
-        {/* Google refuses sign-in inside an app's web view; the apps get their own sign-in later (MBJ-110). */}
-        {google && mode !== 'forgot' && !isNativeApp() && (
+        {google && mode !== 'forgot' && (
           <>
             <button type="button" className="google-btn" onClick={withGoogle} disabled={busy}>
               <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">

@@ -231,8 +231,13 @@ account works for everyone who already joined that way.
   (one per address the site answers on; add the `.com` one when the domain moves).
 - [ ] **Audience → Publish app** (the name-and-email sign-in needs no Google review). Until published, only listed
   test users can sign in.
-- [ ] Render → Environment: replace `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, Save; sign in with Google once to
-  check; then delete the client in Ruben's project.
+- [ ] **Clients → Create client → Android**, package `com.madebyjimbob.app`, once per signing key (upload key, Play's
+  app signing key, and a debug key for test builds; SHA-1s in `docs/MOBILE.md` "Sign in with Google"). For the
+  iPhone app: **iOS**, bundle id `com.madebyjimbob.app`; its id goes in `GOOGLE_IOS_CLIENT_ID` and its URL scheme in
+  the iPhone app's `Info.plist` (an app update).
+- [ ] Render → Environment: replace `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (and `GOOGLE_IOS_CLIENT_ID`), Save;
+  sign in with Google once on the website and once in each app to check; then delete the clients in Ruben's project.
+  The apps read the client ids from the site, so Android needs no update for the new web client.
 
 ## After the move
 

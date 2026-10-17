@@ -31,6 +31,8 @@ window.HTMLMediaElement.prototype.play = () => Promise.resolve();
 window.HTMLMediaElement.prototype.pause = () => {};
 window.HTMLMediaElement.prototype.load = () => {};
 window.HTMLMediaElement.prototype.canPlayType = () => '';
+// Nor scrolling (the comment thread scrolls itself into view a frame after it opens).
+window.Element.prototype.scrollIntoView = () => {};
 
 // Route API calls to per-test handlers: mockApi({ '/videos': {...} }).
 globalThis.mockApi = (routes) => {

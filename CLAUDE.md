@@ -110,7 +110,9 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - Sign in with Google (MBJ-110): Better Auth's `socialProviders.google` in `auth.js`, on only when `GOOGLE_CLIENT_ID`
   and `GOOGLE_CLIENT_SECRET` are set. A user created without a username (a Google sign-up) gets one from
   `suggestUsername()` and `username_chosen = false`; the site then asks once (`PickUsername.jsx`,
-  `POST /api/account/username`). Google's tokens are never stored.
+  `POST /api/account/username`). Google's tokens are never stored. In the apps, the phone's account picker
+  (`appGoogleIdToken()` in `native.js`) hands an ID token to `POST /api/auth/sign-in/social`; Android needs an Android
+  OAuth client per signing key's SHA-1, iPhone its own client id plus Sign in with Apple (`docs/MOBILE.md`).
 - Notes and moment reactions (MBJ-217, MBJ-613): `server/src/moments.js` and `web/src/components/Moments.jsx`. The
   player uses the browser's own controls, so the hotspot strip is its own bar under the player, not on the
   progress bar. Per-minute totals are cached for 30 seconds per video.
