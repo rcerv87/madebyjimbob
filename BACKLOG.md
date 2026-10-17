@@ -124,6 +124,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-406 | Buying inside the apps | Mobile apps | 2 | Must | L | MBJ-104, MBJ-401 |
 | MBJ-407 | Store release | Mobile apps | 2 | Must | M | MBJ-403, MBJ-405, MBJ-406 |
 | MBJ-408 | Links that open the app | Mobile apps | 2 | Should | S | MBJ-401 |
+| MBJ-409 | Go live from the phone app (no OBS) | Mobile apps | 2 | Should | L | MBJ-401, MBJ-310 |
+| MBJ-410 | Install app on the website gets the phone apps | Mobile apps | 2 | Should | S | MBJ-407, MBJ-408 |
 | MBJ-808 | Art section | Library & community | 2 | Should | S | MBJ-807 |
 | MBJ-205 | Redis pub/sub and rate limits | Chat & moderation | 3 | Should | M | MBJ-001 |
 | MBJ-223 | Pop-out chat and "show on stream" overlay for OBS | Chat & moderation | 3 | Should | M | MBJ-310, MBJ-109 |
@@ -1099,6 +1101,40 @@ As a member with the app, I want shared links and notifications to open the app,
 Acceptance criteria:
 - [ ] The site serves apple-app-site-association and assetlinks.json
 - [ ] Video, profile and notification links open the app when it's installed
+
+### MBJ-409 — Go live from the phone app (no OBS)
+
+**Status:** To do · **Phase 2 — Mobile** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-401, MBJ-310
+
+As JimBob, I want to start a live stream straight from the app with my phone's camera, without a computer or OBS.
+
+Acceptance criteria:
+- [ ] Studio → Live in the app (Studio accounts only): Go live from this phone. It starts the streaming server if it's off, waits until it's ready, then shows a full-screen camera preview with a Start button
+- [ ] Front/back camera switch, mute the mic, portrait or landscape (fixed when the stream starts)
+- [ ] Quality for phone data: 720p at 30 fps, about 2.5–3.5 Mbps (roughly 1.1–1.6 GB of data an hour), lowered on its own on a weak connection; an upload health light (good / weak / reconnecting); after a drop it reconnects and the same recording carries on, as OBS reconnects do
+- [ ] While streaming: live chat over the preview (read and reply), viewer count, time live
+- [ ] The screen stays on while streaming; leaving the app or locking the phone asks first, since phones stop the camera in the background
+- [ ] End stream on the phone ends it the same way as an OBS stream: the recording becomes a replay with rewind, Listen and chat replay
+- [ ] Same way in as OBS: the phone sends to the live server's RTMP address with the stream key, which the server gives only to Studio accounts; OBS and the phone can't send at the same time
+- [ ] Recommended build: a small Capacitor plugin around RootEncoder (Android, Apache-2.0) and HaishinKit (iPhone, BSD) sending RTMP to the live server, so nothing changes on the server. Alternative: WebRTC (WHIP) from the page with MediaMTX on the live server passing it to Owncast: same web code, but an extra relay and camera quirks in iPhone web views
+- [ ] Android first; iPhone once the Apple account exists (camera and microphone permission wording; checked by Apple review)
+- [ ] No added monthly cost: the same Hetzner server as an OBS stream (~$0.12 an hour while on)
+- [ ] Asked for by Ruben, 2026-10-16, after starting a stream from the app
+
+### MBJ-410 — Install app on the website gets the phone apps
+
+**Status:** To do · **Phase 2 — Mobile** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-407, MBJ-408
+
+As a visitor on my phone, I want Install app to get me the real MADEbyJIMBOB app from my phone's store.
+
+Acceptance criteria:
+- [ ] On Android, Install app (the menu button and the install hint) opens the app's Google Play page; on iPhone and iPad, its App Store page
+- [ ] Phones that already have the app get Open in app instead (Android: the app link; iPhone: Safari's Smart App Banner)
+- [ ] Chrome on Android offers the Play app rather than adding the website to the home screen (the web manifest's related_applications with prefer_related_applications)
+- [ ] iPhone Safari shows Apple's Smart App Banner (apple-itunes-app meta tag) once the App Store id exists
+- [ ] On a computer: keep installing the website as an app, and show where to get the phone apps (store badges, or a QR code to scan with the phone)
+- [ ] Store addresses and ids are settings, so nothing changes until each store listing is live; until then Install app keeps working as today
+- [ ] Asked for by Ruben, 2026-10-16
 
 ## Epic 5xx — Owned live & audio
 

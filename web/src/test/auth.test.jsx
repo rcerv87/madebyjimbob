@@ -54,7 +54,11 @@ describe('sign-in dialog', () => {
   test('creating an account needs the 13+ box and sends email, username, and password', async () => {
     const sentTo = fakeApi({ 'POST /auth/sign-up/email': [200, {}], '/me': [200, me] });
     const onSignedIn = vi.fn();
-    render(<SignInDialog onClose={() => {}} onSignedIn={onSignedIn} initialMode="signup" />);
+    render(
+      <MemoryRouter>
+        <SignInDialog onClose={() => {}} onSignedIn={onSignedIn} initialMode="signup" />
+      </MemoryRouter>,
+    );
     type('Email', 'fan@example.com');
     type('Username', 'Fan');
     type('Password', 'password1234');

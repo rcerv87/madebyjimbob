@@ -35,6 +35,14 @@ export default function Sidebar({ isAdmin, onNavigate }) {
             <span>{l.label}</span>
           </NavLink>
         ))}
+      <div className="side-legal">
+        <NavLink to="/privacy" onClick={onNavigate}>
+          Privacy
+        </NavLink>
+        <NavLink to="/terms" onClick={onNavigate}>
+          Terms
+        </NavLink>
+      </div>
     </nav>
   );
 }

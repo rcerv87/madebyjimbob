@@ -84,6 +84,10 @@ export async function pageMeta(pathname) {
     );
   if (p === '/membership/welcome') return { ...page('Welcome'), noindex: true };
   if (p === '/reset-password') return { ...page('Reset password'), noindex: true };
+  if (p === '/privacy')
+    return page('Privacy policy', 'What MADEbyJIMBOB collects, why, who helps run it, and your choices.');
+  if (p === '/terms')
+    return page('Terms of service', 'The rules for using MADEbyJIMBOB, its memberships and apps.');
   if (p === '/account') return { ...page('Account settings'), noindex: true };
 
   // Profiles (MBJ-116): out of search unless the member allows it.

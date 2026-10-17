@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { isNativeApp } from '../native.js';
 
@@ -224,6 +225,17 @@ export default function SignInDialog({ onClose, onSignedIn, initialMode = 'signi
               <input type="checkbox" checked={oldEnough} onChange={(e) => setOldEnough(e.target.checked)} />
               I’m 13 or older
             </label>
+            <p className="muted small legal-note">
+              By creating an account you agree to the{' '}
+              <Link to="/terms" onClick={onClose}>
+                terms
+              </Link>{' '}
+              and{' '}
+              <Link to="/privacy" onClick={onClose}>
+                privacy policy
+              </Link>
+              .
+            </p>
             <label className="check">
               <input type="checkbox" checked={wantsNews} onChange={(e) => setWantsNews(e.target.checked)} />
               Email me news from JimBob (new streams, art, and merch). Unsubscribe any time.
