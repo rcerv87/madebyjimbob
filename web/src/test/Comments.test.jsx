@@ -87,4 +87,17 @@ describe('Comments', () => {
       expect(fetch.mock.calls.some(([url]) => String(url).includes('sort=new'))).toBe(true),
     );
   });
+
+  test('a thread opened from a notification says so (from the chat by default)', async () => {
+    mockApi({
+      '/videos/4/comments': { total: 0, nextOffset: null, comments: [] },
+      '/videos/4/comments/7': { comment: comment(7, { body: 'the thread' }) },
+    });
+    const { rerender } = render(<Comments videoId="4" session={signedIn} focusThreadId="7" />);
+    expect(await screen.findByText('Thread from the chat')).toBeTruthy();
+    rerender(
+      <Comments videoId="4" session={signedIn} focusThreadId="7" focusLabel="From your notification" />,
+    );
+    expect(await screen.findByText('From your notification')).toBeTruthy();
+  });
 });

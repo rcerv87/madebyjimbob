@@ -31,6 +31,8 @@ export default function Watch({ session, background = false }) {
   const [startMs, setStartMs] = useState(0);
   const [resumedFrom, setResumedFrom] = useState(null);
   const [focusThread, setFocusThread] = useState(null);
+  // Where the open thread came from: a comment linked in the chat, or a notification's link (?comment=).
+  const [focusFrom, setFocusFrom] = useState('chat');
   const [clock] = useState(createClock);
   const playerRef = useRef(null);
   const loadedId = useRef(null);
@@ -162,7 +164,10 @@ export default function Watch({ session, background = false }) {
     if (shownId && Number.isFinite(t) && t > 0 && playerRef.current) playerRef.current.currentTime = t;
   }, [tParam, shownId]);
   useEffect(() => {
-    if (shownId && commentParam) setFocusThread(commentParam);
+    if (shownId && commentParam) {
+      setFocusFrom('notification');
+      setFocusThread(commentParam);
+    }
   }, [commentParam, shownId]);
 
   const onTime = useCallback(
@@ -181,6 +186,10 @@ export default function Watch({ session, background = false }) {
   }, []);
   const getTimeMs = useCallback(() => Math.floor((playerRef.current?.currentTime || 0) * 1000), []);
   const closeThread = useCallback(() => setFocusThread(null), []);
+  const openThreadFromChat = useCallback((threadId) => {
+    setFocusFrom('chat');
+    setFocusThread(threadId);
+  }, []);
 
   if (error) return <p className="error page-msg">{error}</p>;
   if (!video) return <p className="muted page-msg">Loading…</p>;
@@ -273,7 +282,7 @@ export default function Watch({ session, background = false }) {
           videoId={video.id}
           getTimeMs={getTimeMs}
           onSeek={seek}
-          onOpenThread={setFocusThread}
+          onOpenThread={openThreadFromChat}
           session={session}
         />
       )}
@@ -285,6 +294,7 @@ export default function Watch({ session, background = false }) {
             getTimeMs={getTimeMs}
             onSeek={seek}
             focusThreadId={focusThread}
+            focusLabel={focusFrom === 'notification' ? 'From your notification' : 'Thread from the chat'}
             onCloseFocus={closeThread}
           />
         </div>

@@ -56,7 +56,7 @@ npm run set-role -- <username> admin [--live]   # Studio access by account
 npm run import:newsletter -- <customers.csv> [--live]   # Shopify's newsletter list into the email list
 node tools/library-uploader/build.mjs --ffmpeg <folder>   # build the Library Uploader zip for JimBob's PC
 node tools/library-uploader/publish.mjs        # put that zip in the bucket; Studio → Library uploader offers it
-npx cap sync android (in mobile/), then ./gradlew assembleDebug (in mobile/android)   # Android test build; see docs/MOBILE.md
+npm run android -w mobile [-- --site http://localhost:3000]   # Android test build (android:release for the store); docs/MOBILE.md
 npm run migrate:create -- <name>   # new SQL migration in server/migrations/
 npm run format                 # Prettier; `format:check` to verify only
 npm run import:youtube -- <url> [--tier plus] [--stream-uid <uid>] [--chat-only] [--no-comments]

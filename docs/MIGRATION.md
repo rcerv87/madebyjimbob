@@ -33,7 +33,7 @@ Keep it current: when a new service or setting is added, add it here.
 | **Google Cloud** | Sign in with Google (MBJ-110): one OAuth client; no cost, no data kept at Google | Ruben's Google account until JimBob's project exists | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Make a new client in JimBob's Google account and swap the two settings. Members keep signing in: they're matched by their Google account, not by the client. See step 10 |
 | **Stripe** | Memberships and super chats (ADR-013): customers, subscriptions, saved cards, prices, payouts | **Ruben's account in live mode since 2026-10-05** (real-money tests); moves to JimBob's before launch | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` | New account: nothing moves (customers, subscriptions and saved cards stay in Ruben's). See step 9 |
 | **Apple / Google developer accounts** | Phone apps | Ruben (by choice) | — | Apps can be transferred between developer accounts later |
-| **Firebase** (Google) | Notifications in the phone apps (MBJ-405): sends them; no data kept beyond delivery; free | Ruben's Google account (once created) | `FCM_SERVICE_ACCOUNT`; `mobile/android/app/google-services.json` in the app | New project in JimBob's Google account, a new app build with its file, swap the setting. See step 11 |
+| **Firebase** (Google) | Notifications in the phone apps (MBJ-405): sends them; no data kept beyond delivery; free | Ruben's Google account (project `madebyjimbob-e9aea`, 2026-10-16) | `FCM_SERVICE_ACCOUNT`; `mobile/android/app/google-services.json` in the app | New project in JimBob's Google account, a new app build with its file, swap the setting. See step 11 |
 
 ## Before moving anything
 
