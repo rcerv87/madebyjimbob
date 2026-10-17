@@ -92,7 +92,7 @@ they get `isAdmin: true` and see every tier.
 | DELETE | `/push/device` | required | `{ token }`: this phone stops getting this account's notifications (sign-out) |
 | POST | `/push/subscribe` | required | `{ subscription }` from `PushManager.subscribe()`; 503 when push isn't configured |
 | DELETE | `/push/subscribe` | required | `{ endpoint }` |
-| GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded), plus what the Overview tab shows: `attention { openReports, pendingLinks, failedImports, queuedImports, drafts, newFeedback }` (each video row also has `draft`) and `members { total, newThisWeek, paying }` |
+| GET | `/studio/overview` | admin | Totals, per-video stats, top chatters (hidden messages excluded), plus what the Overview tab shows: `attention { openReports, pendingLinks, failedImports, queuedImports, drafts, newFeedback }` (each video row also has `draft`) and `members { total, newThisWeek, paying }`. The chat numbers (per-video message counts, unique chatters, top chatters) are kept for 2 minutes; `chatCountedAt` says when they were counted, and `?fresh=1` recounts |
 | PATCH | `/studio/videos/:id` | admin | Any of `{ minTier, title, draft }`. `draft: false` publishes a draft (a first publish without a date gets today's). 400 with nothing to change, an empty title, or an unknown tier |
 | DELETE | `/studio/videos/:id` | admin | `{ removeFromStream? }` (default true). Deletes the video and its chat, comments, likes, progress, and notifications; keeps its spots in imported YouTube playlists (unlinked). Returns `{ ok, streamUid, stream: { deleted, reason } }`; `reason` is `not-configured` (no Cloudflare keys on the server), `shared` (another video uses the file), or a Cloudflare error |
 | POST | `/studio/videos/:id/replacement` | admin | `{ size, name }` → `{ uploadUrl, uid }`: a one-time Cloudflare tus URL the browser uploads the new file to directly (pieces of 50 MB). 503 without Cloudflare keys |
@@ -138,7 +138,7 @@ they get `isAdmin: true` and see every tier.
 | GET | `/studio/email/preview/:template` | admin | `{ subject, html, text }` rendered with sample data |
 | POST | `/studio/email/test` | admin | `{ to, template }` → `{ status: sent \| off \| suppressed \| failed }`: sends that template with sample data |
 | POST | `/webhooks/resend` | Resend signature | Bounce and spam-complaint events (Svix-signed: `svix-id`, `svix-timestamp`, `svix-signature`, checked against `RESEND_WEBHOOK_SECRET`, 5-minute window). Permanent bounces and complaints add the address to `email_suppressions`. 401 on a bad signature |
-| GET | `/health` | — | Liveness |
+| GET | `/health` | — | Liveness: `{ ok, version }`; `version` is the first 7 characters of the deployed commit (`RENDER_GIT_COMMIT`), null locally. Check it after every release |
 
 ### Comment shape
 ```json

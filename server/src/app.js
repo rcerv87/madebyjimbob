@@ -79,6 +79,7 @@ import {
 import { emailListSummary, emailListCsv, unsubscribe, validUnsubscribe } from './emailList.js';
 import { listNotes, addNote, removeNote, toggleReaction, myReactions, heat, REACTIONS } from './moments.js';
 import { fcmEnabled } from './fcm.js';
+import { CHAT_COUNT_SQL } from './chatCounts.js';
 import { favoritesOf, canFavorite } from './favorites.js';
 import { linkedHandles, linkRow, approveLink, findYouTubeChannel } from './links.js';
 import {
@@ -232,11 +233,10 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-const CHAT_COUNT =
-  '(SELECT count(*) FROM chat_messages c WHERE c.video_id = v.id AND NOT c.hidden) AS chat_count';
-// What a video card needs (not the description, which can be long), plus its chat count.
+// What a video card needs (not the description, which can be long), plus its chat count (kept, never counted per
+// request: see chatCounts.js).
 const CARD_COLUMNS = `v.id, v.title, v.kind, v.duration_s, v.published_at, v.min_tier, v.views, v.stream_uid, v.hls_url,
-    ${CHAT_COUNT}`;
+    ${CHAT_COUNT_SQL}`;
 
 function videoCard(v) {
   return {
@@ -689,7 +689,8 @@ app.get(
   wrap(async (req, res) => {
     if (!isId(req.params.id)) return res.status(404).json({ error: 'Video not found.' });
     const [{ rows }, user] = await Promise.all([
-      pool.query(`SELECT v.*, ${CHAT_COUNT} FROM videos v WHERE v.id = $1`, [req.params.id]),
+      // The exact count (kept + pending) replaces v.chat_count: a later column of the same name wins in pg's rows.
+      pool.query(`SELECT v.*, ${CHAT_COUNT_SQL} FROM videos v WHERE v.id = $1`, [req.params.id]),
       currentUser(req),
     ]);
     const v = rows[0];
@@ -1572,11 +1573,55 @@ app.post(
   }),
 );
 
+// The dashboard's chat numbers read every message, so they're kept for 2 minutes (STUDIO_CHAT_STATS_MS; tests set
+// 0) and requests that arrive together share one computation. ?fresh=1 (the dashboard's Refresh) recounts. The video
+// list and everything in "Needs attention" are always current.
+let chatStats = { at: 0, value: null, pending: null };
+function studioChatStats(fresh) {
+  const ttl = Number(process.env.STUDIO_CHAT_STATS_MS ?? 120_000);
+  if (!fresh && chatStats.value && Date.now() - chatStats.at < ttl) return Promise.resolve(chatStats.value);
+  if (chatStats.pending) return chatStats.pending;
+  const pending = Promise.all([
+    pool.query(`
+      SELECT video_id,
+        count(*) FILTER (WHERE source = 'youtube') AS youtube_msgs,
+        count(*) FILTER (WHERE source = 'native')  AS native_msgs,
+        count(*) FILTER (WHERE kind = 'paid')      AS paid_msgs
+      FROM chat_messages WHERE NOT hidden GROUP BY video_id`),
+    pool.query('SELECT count(DISTINCT author_name) AS n FROM chat_messages WHERE NOT hidden'),
+    pool.query(`
+      SELECT author_name, source, count(*) AS msgs, count(*) FILTER (WHERE kind = 'paid') AS paid
+      FROM chat_messages WHERE NOT hidden
+      GROUP BY author_name, source ORDER BY msgs DESC LIMIT 15`),
+  ])
+    .then(([perVideo, chatters, top]) => {
+      const value = {
+        at: new Date().toISOString(),
+        perVideo: new Map(perVideo.rows.map((r) => [String(r.video_id), r])),
+        chatters: Number(chatters.rows[0].n),
+        topChatters: top.rows.map((r) => ({
+          author: r.author_name,
+          source: r.source,
+          msgs: Number(r.msgs),
+          paid: Number(r.paid),
+        })),
+      };
+      chatStats = { at: Date.now(), value, pending: null };
+      return value;
+    })
+    .catch((err) => {
+      chatStats.pending = null;
+      throw err;
+    });
+  chatStats.pending = pending;
+  return pending;
+}
+
 app.get(
   '/api/studio/overview',
-  wrap(async (_req, res) => {
-    // Totals add up the per-video rows; only unique chatters needs its own pass over the chat.
-    const [attention, perVideo, chatters, topChatters] = await Promise.all([
+  wrap(async (req, res) => {
+    // Totals add up the per-video rows; the chat numbers come from studioChatStats().
+    const [attention, perVideo, chat] = await Promise.all([
       // What the Overview tab points at: things waiting on someone, and how the membership is doing.
       pool.query(`
       SELECT (SELECT count(*) FROM reports WHERE status = 'open') AS open_reports,
@@ -1588,19 +1633,12 @@ app.get(
         (SELECT count(*) FROM users WHERE tier <> 'free') AS paying_members`),
       pool.query(`
       SELECT v.id, v.title, v.published_at, v.views, v.min_tier, v.duration_s, v.replacement_stream_uid, v.draft,
-        count(c.*) FILTER (WHERE c.source = 'youtube') AS youtube_msgs,
-        count(c.*) FILTER (WHERE c.source = 'native')  AS native_msgs,
-        count(c.*) FILTER (WHERE c.kind = 'paid')      AS paid_msgs,
         (SELECT count(*) FROM video_votes vv WHERE vv.video_id = v.id AND vv.value = 1)  AS likes,
         (SELECT count(*) FROM video_votes vv WHERE vv.video_id = v.id AND vv.value = -1) AS dislikes
-      FROM videos v LEFT JOIN chat_messages c ON c.video_id = v.id AND NOT c.hidden
-      GROUP BY v.id ORDER BY v.published_at DESC NULLS LAST`),
-      pool.query('SELECT count(DISTINCT author_name) AS n FROM chat_messages WHERE NOT hidden'),
-      pool.query(`
-      SELECT author_name, source, count(*) AS msgs, count(*) FILTER (WHERE kind = 'paid') AS paid
-      FROM chat_messages WHERE NOT hidden
-      GROUP BY author_name, source ORDER BY msgs DESC LIMIT 15`),
+      FROM videos v ORDER BY v.published_at DESC NULLS LAST`),
+      studioChatStats(req.query.fresh === '1'),
     ]);
+    const msgs = (id, key) => Number(chat.perVideo.get(String(id))?.[key] || 0);
     const videos = perVideo.rows.map((r) => ({
       id: r.id,
       title: r.title,
@@ -1610,9 +1648,9 @@ app.get(
       replacing: Boolean(r.replacement_stream_uid),
       draft: r.draft,
       durationS: r.duration_s,
-      youtubeMsgs: Number(r.youtube_msgs),
-      nativeMsgs: Number(r.native_msgs),
-      paidMsgs: Number(r.paid_msgs),
+      youtubeMsgs: msgs(r.id, 'youtube_msgs'),
+      nativeMsgs: msgs(r.id, 'native_msgs'),
+      paidMsgs: msgs(r.id, 'paid_msgs'),
       likes: Number(r.likes),
       dislikes: Number(r.dislikes),
     }));
@@ -1624,8 +1662,10 @@ app.get(
         youtubeMsgs: sum('youtubeMsgs'),
         nativeMsgs: sum('nativeMsgs'),
         paidMsgs: sum('paidMsgs'),
-        chatters: Number(chatters.rows[0].n),
+        chatters: chat.chatters,
       },
+      // When the chat numbers above were counted.
+      chatCountedAt: chat.at,
       attention: {
         openReports: Number(attention.rows[0].open_reports),
         pendingLinks: Number(attention.rows[0].pending_links),
@@ -1640,12 +1680,7 @@ app.get(
         paying: Number(attention.rows[0].paying_members),
       },
       videos,
-      topChatters: topChatters.rows.map((r) => ({
-        author: r.author_name,
-        source: r.source,
-        msgs: Number(r.msgs),
-        paid: Number(r.paid),
-      })),
+      topChatters: chat.topChatters,
     });
   }),
 );
@@ -2328,7 +2363,10 @@ app.put(
 // ---------- account settings ----------
 app.use('/api/account', accountRouter);
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+// `version`: the commit Render deployed (RENDER_GIT_COMMIT), so a release can be confirmed live; null locally.
+app.get('/api/health', (_req, res) =>
+  res.json({ ok: true, version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || null }),
+);
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Unknown API endpoint.' }));
 

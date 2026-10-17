@@ -107,9 +107,13 @@ describe('Studio → replace or delete a video', () => {
       received += opts.body.size;
       return new Response(null, { status: 204, headers: { 'Upload-Offset': String(received) } });
     });
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // The dropped piece waits 2 s before its retry; run that wait instantly (waiting for real made this test cross
+    // the 5 s limit when the whole suite runs at once).
+    vi.useFakeTimers();
     const progress = [];
-    await tusUpload('https://upload.example/x', file, (p) => progress.push(p));
+    const upload = tusUpload('https://upload.example/x', file, (p) => progress.push(p));
+    await vi.runAllTimersAsync();
+    await upload;
     vi.useRealTimers();
     expect(received).toBe(120 * MB);
     expect(progress.at(-1)).toBe(1);

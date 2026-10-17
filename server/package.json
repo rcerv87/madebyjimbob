@@ -13,6 +13,7 @@
     "import:playlists": "node scripts/import-playlists.js",
     "import:worker": "node scripts/import-worker.js",
     "set-role": "node scripts/set-role.js",
+    "recount-chat": "node scripts/recount-chat.js",
     "import:newsletter": "node scripts/import-newsletter.js"
   },
   "dependencies": {

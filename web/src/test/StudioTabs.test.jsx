@@ -32,6 +32,21 @@ function open(path) {
 }
 
 describe('Studio tabs', () => {
+  test('the chat numbers say when they were counted, and Refresh recounts them', async () => {
+    overview.chatCountedAt = '2026-10-17T18:05:00.000Z';
+    const urls = [];
+    open('/studio');
+    const fetchMock = globalThis.fetch;
+    globalThis.fetch = vi.fn(async (url, init) => {
+      urls.push(String(url));
+      return fetchMock(url, init);
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Refresh' }));
+    expect(screen.getByText(/Chat numbers as of/)).toBeTruthy();
+    expect(urls).toContain('/api/studio/overview?fresh=1');
+    delete overview.chatCountedAt;
+  });
+
   test('Overview shows the numbers and what needs attention, without loading the other sections', async () => {
     const asked = open('/studio');
     expect(await screen.findByText('2 reports to look at')).toBeTruthy();

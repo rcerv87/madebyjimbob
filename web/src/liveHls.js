@@ -1,8 +1,24 @@
-import Hls from 'hls.js';
 import { isIOS } from './device.js';
+import { loadHls, mseSupported } from './hlsLoader.js';
 
-// iPhone/iPad: Safari's own HLS player is the one iOS keeps playing when the phone locks.
-const native = (el) => el.canPlayType('application/vnd.apple.mpegurl') && (isIOS() || !Hls.isSupported());
+// iPhone/iPad: Safari's own HLS player is the one iOS keeps playing when the phone locks. Everywhere else hls.js,
+// loaded only on that path (hlsLoader.js).
+const native = (el) => el.canPlayType('application/vnd.apple.mpegurl') && (isIOS() || !mseSupported());
+
+// Runs use(Hls) once hls.js has loaded; the returned cleanup also works before that.
+function withHls(use) {
+  let cleanup = null;
+  let gone = false;
+  loadHls()
+    .then((Hls) => {
+      if (!gone) cleanup = use(Hls);
+    })
+    .catch(() => {});
+  return () => {
+    gone = true;
+    cleanup?.();
+  };
+}
 
 // Plays a live HLS stream (ADR-004) and keeps trying: right after OBS connects, the site can say "live" a few
 // seconds before the first video reaches R2, and a stream can hiccup mid-show. Returns a cleanup function.
@@ -20,18 +36,29 @@ export function attachLive(el, src, onReady) {
   let hls;
   let timer;
   let stopped = false;
-  const start = () => {
-    hls = new Hls({ liveSyncDurationCount: 2, liveMaxLatencyDurationCount: 4, maxLiveSyncPlaybackRate: 1.1 });
-    hls.on(Hls.Events.MANIFEST_PARSED, onReady);
-    hls.on(Hls.Events.ERROR, (_e, data) => {
-      if (!data.fatal) return;
-      if (data.type === Hls.ErrorTypes.MEDIA_ERROR) return hls.recoverMediaError();
-      hls.destroy();
-      if (!stopped) timer = setTimeout(start, 3000);
-    });
-    hls.loadSource(src);
-    hls.attachMedia(el);
-  };
+  const start = () =>
+    loadHls()
+      .then((Hls) => {
+        if (stopped) return;
+        hls = new Hls({
+          liveSyncDurationCount: 2,
+          liveMaxLatencyDurationCount: 4,
+          maxLiveSyncPlaybackRate: 1.1,
+        });
+        hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+        hls.on(Hls.Events.ERROR, (_e, data) => {
+          if (!data.fatal) return;
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) return hls.recoverMediaError();
+          hls.destroy();
+          if (!stopped) timer = setTimeout(start, 3000);
+        });
+        hls.loadSource(src);
+        hls.attachMedia(el);
+      })
+      // The player itself didn't load (a dropped connection): try again, like a stream hiccup.
+      .catch(() => {
+        if (!stopped) timer = setTimeout(start, 3000);
+      });
   start();
   const cleanup = () => {
     stopped = true;
@@ -63,41 +90,46 @@ export function attachLive(el, src, onReady) {
   return cleanup;
 }
 
-// Loads playlists with an end marker added, so a recording still in progress plays as a finished video.
-class SnapshotLoader extends Hls.DefaultConfig.loader {
-  load(context, config, callbacks) {
-    const onSuccess = callbacks.onSuccess;
-    super.load(context, config, {
-      ...callbacks,
-      onSuccess: (response, stats, ctx, networkDetails) => {
-        if (
-          typeof response.data === 'string' &&
-          response.data.includes('#EXTINF') &&
-          !response.data.includes('#EXT-X-ENDLIST')
-        )
-          response.data = `${response.data.trimEnd()}
+// Loads playlists with an end marker added, so a recording still in progress plays as a finished video. Made once
+// hls.js has loaded (it extends hls.js's own loader).
+let SnapshotLoader = null;
+const snapshotLoader = (Hls) =>
+  (SnapshotLoader ||= class extends Hls.DefaultConfig.loader {
+    load(context, config, callbacks) {
+      const onSuccess = callbacks.onSuccess;
+      super.load(context, config, {
+        ...callbacks,
+        onSuccess: (response, stats, ctx, networkDetails) => {
+          if (
+            typeof response.data === 'string' &&
+            response.data.includes('#EXTINF') &&
+            !response.data.includes('#EXT-X-ENDLIST')
+          )
+            response.data = `${response.data.trimEnd()}
 #EXT-X-ENDLIST
 `;
-        onSuccess(response, stats, ctx, networkDetails);
-      },
-    });
-  }
-}
+          onSuccess(response, stats, ctx, networkDetails);
+        },
+      });
+    }
+  });
 
 // Plays the whole stream so far from the recording (MBJ-310), starting at `startAt` seconds from the beginning. The
 // recording's playlist grows while live, so hls.js treats it as live, but nothing pulls the viewer to the live edge.
 export function attachRecording(el, url, startAt, onReady, onEnd, { follow = false } = {}) {
   // Near live: follow the recording's growing end like a live stream (no snapshot, no start position).
   if (follow && !native(el)) {
-    const live = new Hls({ liveSyncDurationCount: 2 });
-    live.on(Hls.Events.MANIFEST_PARSED, onReady);
-    live.on(Hls.Events.ERROR, (_e, data) => {
-      if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) live.recoverMediaError();
-      else if (data.fatal) live.startLoad();
+    return withHls((Hls) => {
+      const live = new Hls({ liveSyncDurationCount: 2 });
+      live.on(Hls.Events.MANIFEST_PARSED, onReady);
+      live.on(Hls.Events.ERROR, (_e, data) => {
+        if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) live.recoverMediaError();
+        else if (data.fatal) live.startLoad();
+      });
+      live.loadSource(url);
+      live.attachMedia(el);
+      return () => live.destroy();
     });
-    live.loadSource(url);
-    live.attachMedia(el);
-    return () => live.destroy();
   }
   if (native(el)) {
     el.src = url;
@@ -114,18 +146,21 @@ export function attachRecording(el, url, startAt, onReady, onEnd, { follow = fal
   // Played as a finished video (what's recorded so far): a growing playlist makes hls.js treat it as live and line it
   // up by guesswork, which put playback ~45 s away from where the timeline said. With an end added, every position
   // maps exactly. onEnd fires when playback reaches the end of that snapshot, so the caller can reload or go live.
-  const hls = new Hls({ startPosition: startAt, pLoader: SnapshotLoader });
-  hls.on(Hls.Events.MANIFEST_PARSED, onReady);
   const ended = () => onEnd?.(el.currentTime);
   el.addEventListener('ended', ended);
-  hls.on(Hls.Events.ERROR, (_e, data) => {
-    if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-    else if (data.fatal) hls.startLoad();
+  const stop = withHls((Hls) => {
+    const hls = new Hls({ startPosition: startAt, pLoader: snapshotLoader(Hls) });
+    hls.on(Hls.Events.MANIFEST_PARSED, onReady);
+    hls.on(Hls.Events.ERROR, (_e, data) => {
+      if (data.fatal && data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+      else if (data.fatal) hls.startLoad();
+    });
+    hls.loadSource(url);
+    hls.attachMedia(el);
+    return () => hls.destroy();
   });
-  hls.loadSource(url);
-  hls.attachMedia(el);
   return () => {
     el.removeEventListener('ended', ended);
-    hls.destroy();
+    stop();
   };
 }

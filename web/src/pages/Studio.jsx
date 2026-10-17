@@ -36,9 +36,10 @@ export default function Studio({ user }) {
   const [saveError, setSaveError] = useState('');
   useTitle('Studio');
 
+  // fresh: recount the chat numbers now (otherwise they're up to 2 minutes old; the rest is always current).
   const load = useCallback(
-    () =>
-      api('/studio/overview')
+    (fresh = false) =>
+      api(fresh === true ? '/studio/overview?fresh=1' : '/studio/overview')
         .then(setData)
         .catch((e) => setError(e.message)),
     [],
@@ -152,6 +153,15 @@ export default function Studio({ user }) {
             <Stat label="Platform chat" value={t.nativeMsgs} />
             <Stat label="Super chats" value={t.paidMsgs} accent />
           </section>
+          {data.chatCountedAt && (
+            <p className="muted small stats-note">
+              Chat numbers as of{' '}
+              {new Date(data.chatCountedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.{' '}
+              <button type="button" className="text-btn" onClick={() => load(true)}>
+                Refresh
+              </button>
+            </p>
+          )}
           <div className="studio-cols">
             <div className="studio-stack">
               <section className="panel">

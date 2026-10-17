@@ -2981,6 +2981,10 @@ button.quote:hover {
   gap: 12px;
   margin-bottom: 24px;
 }
+/* "Chat numbers as of …  Refresh" under the dashboard's stats (sits in the stats' bottom margin). */
+.stats-note {
+  margin: -16px 0 20px;
+}
 .stat {
   background: var(--panel);
   border: 1px solid var(--line);

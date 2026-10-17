@@ -53,6 +53,7 @@ npm run captions:fetch         # save finished Stream captions into transcripts 
 npm run import:playlists -- <playlist or channel URL>   # YouTube playlists (order kept)
 npm run import:worker          # import helper: runs imports queued in Studio → Add videos and lists channels for From the channel (`-- --local` for local)
 npm run set-role -- <username> admin [--live]   # Studio access by account
+npm run recount-chat [-- --live]   # rebuild videos' chat counts from their messages (repair; see DATA_MODEL)
 npm run import:newsletter -- <customers.csv> [--live]   # Shopify's newsletter list into the email list
 node tools/library-uploader/build.mjs --ffmpeg <folder>   # build the Library Uploader zip for JimBob's PC
 node tools/library-uploader/publish.mjs        # put that zip in the bucket; Studio → Library uploader offers it
@@ -91,6 +92,11 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
 - SQL: parameterized queries only. Never interpolate user input into SQL.
 - Schema: every change is a new migration in `server/migrations/` (`npm run migrate:create -- <name>`, plain SQL with `-- Up Migration` / `-- Down Migration` sections). Never edit a migration that has been deployed.
 - Migrations run via `npm run migrate` (Render pre-deploy command, and before `dev:server`), never on app boot. `npm run migrate -- down` rolls back the latest one.
+- A video's chat count is kept, never counted per request: select `CHAT_COUNT_SQL` (`server/src/chatCounts.js`).
+  Triggers on `chat_messages` keep it right through any insert, delete, hide or move; never `TRUNCATE` chat
+  (it skips them).
+- hls.js loads only through `loadHls()` in `web/src/hlsLoader.js`, never a static import: iPhones and Safari
+  play HLS themselves and must never download it.
 - Chat messages always carry `offset_ms` (position in the video). That field is what makes replay sync work — never drop it.
 - Chat `source` is one of `youtube | rumble | native`. New sources get a new enum value, not a new table.
 - Tier checks happen on the server. The client only hides UI.

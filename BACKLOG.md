@@ -48,6 +48,8 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-006 | Extract YouTube replay parser | Foundation | 0 | Must | S | MBJ-001 |
 | MBJ-007 | Structured logging | Foundation | 0 | Should | S | — |
 | MBJ-008 | Staging environment | Foundation | 0 | Should | S | MBJ-003 |
+| MBJ-009 | Backup and restore drill | Foundation | 0 | Must | M | — |
+| MBJ-010 | Performance baseline and slow-request alerts | Foundation | 0 | Should | S | — |
 | MBJ-101 | Real authentication | Accounts & memberships | 1 | Must | L | MBJ-003 |
 | MBJ-102 | Roles and Studio access | Accounts & memberships | 1 | Must | S | MBJ-101 |
 | MBJ-103 | Signed playback URLs | Accounts & memberships | 1 | Must | M | MBJ-101 |
@@ -151,6 +153,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-506 | Move stored video to R2 (ADR-010) | Owned live & audio | 4 | Should | M | — |
 | MBJ-806 | Import the whole channel | Library & community | 4 | Should | M | MBJ-506 |
 | MBJ-818 | Library Uploader: a folder on JimBob's PC goes to R2 | Library & community | 4 | Must | L | MBJ-506, MBJ-806 |
+| MBJ-821 | Import health for the full library | Library & community | 4 | Should | S | MBJ-806, MBJ-818 |
 | MBJ-601 | Watch and listen tracking | Engagement & AI | 5 | Must | S | MBJ-101 |
 | MBJ-602 | XP, levels, badges | Engagement & AI | 5 | Should | M | MBJ-601 |
 | MBJ-603 | Leaderboards | Engagement & AI | 5 | Could | S | MBJ-602 |
@@ -221,13 +224,13 @@ Acceptance criteria:
 
 ### MBJ-005 — CI pipeline
 
-**Status:** In progress · **Phase 0 — Foundation** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-001, MBJ-002
+**Status:** Done · **Phase 0 — Foundation** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-001, MBJ-002
 
 As the developer, I want every PR checked before merge.
 
 Acceptance criteria:
-- [ ] GitHub Actions runs lint, test (with Postgres service), and build on PRs to main
-- [ ] Status check required to merge
+- [x] GitHub Actions runs lint, test (with Postgres service), and build on PRs to main
+- [x] Status check required to merge
 
 ### MBJ-006 — Extract YouTube replay parser
 
@@ -259,6 +262,29 @@ As the product owner, I want to review changes before they reach JimBob's audien
 Acceptance criteria:
 - [ ] Separate Render service + database for staging deployed from `staging` branch
 - [ ] Documented in README
+
+### MBJ-009 — Backup and restore drill
+
+**Status:** To do · **Phase 0 — Foundation** · **Priority:** Must · **Size:** M
+
+As JimBob, I want proof that the site, its members and the whole library can come back if a service fails or an account is lost.
+
+Acceptance criteria:
+- [ ] What's backed up and where: the Postgres database (Render's backups plus a copy outside Render), the R2 buckets (live recordings and the library), settings
+- [ ] A written restore runbook in docs/, and a drill done on a schedule: restore the database to a scratch instance and play a video from a restored copy
+- [ ] The drill's date and result recorded in STATUS
+- [ ] Raised by the Council review, 2026-10-17
+
+### MBJ-010 — Performance baseline and slow-request alerts
+
+**Status:** To do · **Phase 0 — Foundation** · **Priority:** Should · **Size:** S
+
+As the product owner, I want to know when the site gets slower, before members notice.
+
+Acceptance criteria:
+- [ ] Response times for the home page, a video page, /live, chat posting and Studio recorded before and after the full library import (starting from the 2026-10-17 scale check in STATUS)
+- [ ] Requests slower than a set limit are logged with what they were; repeated slowness reaches Ruben (email or Render alert)
+- [ ] Raised by the Council review, 2026-10-17
 
 ## Epic 1xx — Accounts & memberships
 
@@ -338,15 +364,15 @@ Acceptance criteria:
 
 ### MBJ-107 — Owned email list
 
-**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-101, MBJ-102
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S · **Depends on:** MBJ-101, MBJ-102
 
 As JimBob, I want my audience's contact info so no platform can take my audience away.
 
 Acceptance criteria:
-- [ ] Marketing opt-in checkbox at signup, stored with timestamp
-- [ ] Admin can export opted-in users as CSV from Studio
-- [ ] Unsubscribe link handling documented
-- [ ] Start from the existing Shopify newsletter list (export from Shopify customers who accepted marketing)
+- [x] Marketing opt-in checkbox at signup, stored with timestamp
+- [x] Admin can export opted-in users as CSV from Studio
+- [x] Unsubscribe link handling documented
+- [x] Start from the existing Shopify newsletter list (export from Shopify customers who accepted marketing)
 
 ### MBJ-108 — Registration
 
@@ -431,16 +457,16 @@ Acceptance criteria:
 
 ### MBJ-114 — Sending email (ADR)
 
-**Status:** In progress · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S
+**Status:** Done · **Phase 1 — VOD platform** · **Priority:** Must · **Size:** S
 
 As JimBob, I want account emails to arrive from my own domain and not land in spam.
 
 Acceptance criteria:
-- [ ] Pick a transactional email provider and record it as an ADR with the monthly cost at 1k, 10k, and 50k members (compare Resend, Postmark, Amazon SES)
-- [ ] Sender on JimBob's domain (e.g. hello@) with SPF, DKIM, and DMARC set up
-- [ ] Plain branded templates: verify email, reset password, email changed, new sign-in, account deleted
-- [ ] Bounces and complaints recorded; bounced addresses stop getting mail
-- [ ] Server tests never send real email (a stub records what would have been sent)
+- [x] Pick a transactional email provider and record it as an ADR with the monthly cost at 1k, 10k, and 50k members (compare Resend, Postmark, Amazon SES)
+- [x] Sender on JimBob's domain (e.g. hello@) with SPF, DKIM, and DMARC set up
+- [x] Plain branded templates: verify email, reset password, email changed, new sign-in, account deleted
+- [x] Bounces and complaints recorded; bounced addresses stop getting mail
+- [x] Server tests never send real email (a stub records what would have been sent)
 
 ### MBJ-115 — Welcome steps
 
@@ -1603,6 +1629,18 @@ Acceptance criteria:
 - [ ] No keys on his PC: he signs in with his site account once and the site hands out short-lived upload permission per file (presigned, multipart for big files)
 - [ ] Picks up where it left off after a restart, sleep or lost connection; skips what's already uploaded; anything added to the folder later goes up too
 - [ ] Build once JimBob's Cloudflare account and R2 bucket exist (MIGRATION.md step 5), so uploads land in his storage from the start
+
+### MBJ-821 — Import health for the full library
+
+**Status:** To do · **Phase 4 — Owned live + audio** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-806, MBJ-818
+
+As Ruben, I want to see how the full-library import is going without asking the database.
+
+Acceptance criteria:
+- [ ] Studio shows imported videos and chat messages so far, against what's expected (Takeout's list, the channel's count)
+- [ ] Failures with their reason, retries, and what's still queued; a stuck import is flagged
+- [ ] Chat counts checked against the messages after a large import (recount-chat reports nothing to fix)
+- [ ] Raised by the Council review, 2026-10-17
 
 ### MBJ-820 — MVP end-to-end test with JimBob and beta testers
 
