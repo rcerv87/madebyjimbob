@@ -1,0 +1,49 @@
+# Codemagic builds the iPhone app on a Mac in the cloud and sends it to TestFlight (docs/MOBILE.md "Building for
+# iPhone"). Builds start by hand from codemagic.io: the free tier has 500 Mac minutes a month, so nothing builds on
+# every push.
+#
+# Signing is automatic. Codemagic's team integration "MADEbyJIMBOB ASC" holds the App Store Connect API key, and the
+# environment group "ios_signing" holds CERTIFICATE_PRIVATE_KEY (the private key of the Apple Distribution
+# certificate; the first build creates that certificate and the App Store profile).
+workflows:
+  ios-testflight:
+    name: iPhone → TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: MADEbyJIMBOB ASC
+    environment:
+      node: 22
+      xcode: latest
+      groups:
+        - ios_signing
+      vars:
+        BUNDLE_ID: com.madebyjimbob.app
+        XCODE_PROJECT: mobile/ios/App/App.xcodeproj
+        XCODE_SCHEME: App
+    scripts:
+      - name: Install packages
+        script: npm ci
+      - name: Build the web app (it talks to https://madebyjimbob.app)
+        script: npm run build
+      - name: Copy it into the iPhone project (also drops the sign-in providers we don't use)
+        script: cd mobile && npx cap sync ios
+      - name: Get the signing certificate and App Store profile (created on the first build)
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles --project "$XCODE_PROJECT"
+      - name: Number this build (TestFlight needs a new number every time)
+        script: |
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/" \
+            "$XCODE_PROJECT/project.pbxproj"
+      - name: Build the app
+        script: xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

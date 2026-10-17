@@ -205,6 +205,10 @@ The apps' id is `com.madebyjimbob.app` (ADR-014) and can never change once an ap
 - [ ] **Apple Developer Program** ($99/year) in JimBob's name, or his company's (needs a D-U-N-S number, free, takes
   days). The account holder's name shows as the seller in the App Store.
 - [ ] **Google Play Console** ($25 once) in the same name; Google asks for ID verification.
+- [ ] **Codemagic** (iPhone builds, free tier): a Codemagic team in JimBob's name with the repo, his App Store Connect
+  API key as the integration "MADEbyJIMBOB ASC", and the `ios_signing` group (`CERTIFICATE_PRIVATE_KEY`). A new Apple
+  account means a new distribution certificate, which the first build creates (`docs/MOBILE.md`). Beta, 2026-10-17:
+  Ruben's Apple and Play accounts and Ruben's Codemagic.
 - [ ] Invite Ruben to both (Apple: App Store Connect → Users → Admin; Google: Users and permissions → Admin).
 - [ ] If the beta apps were published from Ruben's accounts first: Apple → App Store Connect → the app → App
   Information → Transfer App; Google → Play Console → transfer request. Both keep the reviews and installs.
