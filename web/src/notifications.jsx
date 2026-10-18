@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api, formatTime, timeAgo } from './api.js';
 import { usePush } from './push.js';
-import { isNativeApp, socketAuth, socketUrl } from './native.js';
+import { isNativeApp, nativePlatform, socketAuth, socketUrl } from './native.js';
 
 // Link a notification opens: the video at that moment, plus the comment thread for comments.
 export function notificationUrl(n) {
@@ -185,9 +185,11 @@ export function PushPrompt({ push }) {
   if (push.state === 'denied') {
     return (
       <p className="push-note">
-        {isNativeApp()
-          ? 'Notifications are off for this app. Turn them on in your phone’s Settings → Apps → MADEbyJIMBOB → Notifications.'
-          : 'Notifications are blocked for this site. Allow them in your browser settings.'}
+        {!isNativeApp()
+          ? 'Notifications are blocked for this site. Allow them in your browser settings.'
+          : nativePlatform() === 'ios'
+            ? 'Notifications are off for this app. Turn them on in your iPhone’s Settings → Jortlandia → Notifications.'
+            : 'Notifications are off for this app. Turn them on in your phone’s Settings → Apps → Jortlandia → Notifications.'}
       </p>
     );
   }

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import useTitle from '../useTitle.js';
 import { CONTACT_EMAIL } from './Privacy.jsx';
 
-const UPDATED = 'October 16, 2026';
+const UPDATED = 'October 17, 2026';
 
 // The terms of service (public; Google's sign-in consent screen and the app stores link to it).
 export default function Terms() {
@@ -12,10 +12,10 @@ export default function Terms() {
       <h1>Terms of service</h1>
       <p className="muted">Last updated {UPDATED}</p>
       <p>
-        These terms cover your use of MADEbyJIMBOB: the website madebyjimbob.app and the MADEbyJIMBOB apps. By
-        using them you agree to these terms and to the <Link to="/privacy">privacy policy</Link>. If you don’t
-        agree, please don’t use the service. Questions:{' '}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+        These terms cover your use of MADEbyJIMBOB: the website madebyjimbob.app and the Jortlandia app for
+        Android and iPhone. By using them you agree to these terms and to the{' '}
+        <Link to="/privacy">privacy policy</Link>. If you don’t agree, please don’t use the service.
+        Questions: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>
 
       <h2>Your account</h2>

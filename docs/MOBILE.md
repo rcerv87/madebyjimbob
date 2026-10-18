@@ -1,6 +1,10 @@
 # Phone apps
 
-The iPhone and Android apps are the web app wrapped with **Capacitor 8** (ADR-014). They live in `mobile/`: the
+The iPhone and Android apps are the web app wrapped with **Capacitor 8** (ADR-014). In the stores and under the icon
+they're called **Jortlandia** (2026-10-17: "MADEbyJIMBOB" was taken in the App Store, so both stores use Jortlandia);
+the website, the logo and everything inside the app stay MADEbyJIMBOB. The name under the icon is `app_name` in
+`mobile/android/app/src/main/res/values/strings.xml` and `CFBundleDisplayName` in `mobile/ios/App/App/Info.plist`;
+Apple expects it to match the App Store name. They live in `mobile/`: the
 Capacitor settings (`capacitor.config.json`), the Android project (`mobile/android`) and the iPhone project
 (`mobile/ios`). The pages themselves are the normal web build (`web/dist`), copied into each app.
 
