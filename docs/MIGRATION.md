@@ -201,7 +201,8 @@ Then on Render → `madebyjimbob` → Environment, replace `STRIPE_SECRET_KEY`, 
 The email list (MBJ-107) lives in the site's own database, so it moves with the database (step 7).
 
 ### 11. Phone apps (Apple and Google)
-The apps' id is `com.madebyjimbob.app` (ADR-014) and can never change once an app is in a store.
+The apps' id is `com.madebyjimbob.app` (ADR-014) and can never change once an app is in a store. Their store name is
+**Jortlandia** (App Store and Google Play; "MADEbyJIMBOB" was taken in the App Store). A transfer keeps the name.
 - [ ] **Apple Developer Program** ($99/year) in JimBob's name, or his company's (needs a D-U-N-S number, free, takes
   days). The account holder's name shows as the seller in the App Store.
 - [ ] **Google Play Console** ($25 once) in the same name; Google asks for ID verification.

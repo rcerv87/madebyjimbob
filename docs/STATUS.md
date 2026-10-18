@@ -89,7 +89,10 @@ and the Apple Developer account):
   `C:\Users\office\.madebyjimbob-keys\ios-distribution-certificate-key.pem`. The iPhone project now includes all
   six add-ons.
 - **Android:** 0.1.2 (versionCode 3) bundle ready for Play internal testing.
-- **Both:** version 0.1.2.
+- **Both:** version 0.1.2 is the first upload (still labelled MADEbyJIMBOB under the icon).
+- **Name:** "MADEbyJIMBOB" was taken in the App Store, so the store listings and the name under the icon are
+  **Jortlandia** on both phones (2026-10-17). The website and the logo inside the app stay MADEbyJIMBOB. The icon
+  label changes from the next builds, 0.1.3 (Android versionCode 4).
 
 **Next for Ruben:**
 0. **Back up the Android upload key** (both files in `C:\Users\office\.madebyjimbob-keys\`) to a password manager or a

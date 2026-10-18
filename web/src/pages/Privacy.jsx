@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import useTitle from '../useTitle.js';
 
 export const CONTACT_EMAIL = 'hello@madebyjimbob.app';
-const UPDATED = 'October 16, 2026';
+const UPDATED = 'October 17, 2026';
 
 // The privacy policy (public; Google's sign-in consent screen and the app stores link to it). Keep it in step with
 // what the site really collects: a new kind of personal data, service provider, or tracker means an update here.
@@ -14,7 +14,7 @@ export default function Privacy() {
       <p className="muted">Last updated {UPDATED}</p>
       <p>
         MADEbyJIMBOB is JimBob’s home for his videos, live streams, art and community, on madebyjimbob.app and
-        in the MADEbyJIMBOB apps for Android and iPhone. This page explains what we collect, why, who helps us
+        in the Jortlandia app for Android and iPhone. This page explains what we collect, why, who helps us
         run the site, and what you can do about it. Questions:{' '}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>

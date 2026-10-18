@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">MADEbyJIMBOB</string>
-    <string name="title_activity_main">MADEbyJIMBOB</string>
+    <string name="app_name">Jortlandia</string>
+    <string name="title_activity_main">Jortlandia</string>
     <string name="package_name">com.madebyjimbob.app</string>
     <string name="custom_url_scheme">com.madebyjimbob.app</string>
 </resources>
