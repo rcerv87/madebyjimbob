@@ -190,14 +190,14 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-909 | Jortlandia: mock ads | Jortlandia | 6 | Should | M | MBJ-908, MBJ-701 |
 | MBJ-910 | Jortlandia: the world and the map | Jortlandia | 6 | Should | L | MBJ-901 |
 | MBJ-911 | Jortlandia: owning and renting land | Jortlandia | 6 | Should | M | MBJ-902, MBJ-903, MBJ-910 |
-| MBJ-912 | Jortlandia: buildings, resources and improvements | Jortlandia | 6 | Should | L | MBJ-911 |
+| MBJ-912 | Jortlandia: buildings, taxes and public services | Jortlandia | 6 | Should | L | MBJ-911 |
 | MBJ-913 | Jortlandia: jobs and skill trees | Jortlandia | 6 | Should | XL | MBJ-902, MBJ-903 |
 | MBJ-914 | Jortlandia: dark skills, heat and criminal status | Jortlandia | 6 | Should | L | MBJ-913 |
 | MBJ-915 | Jortlandia: rumors, gangs, interrogation and protection | Jortlandia | 6 | Should | L | MBJ-914, MBJ-904 |
 | MBJ-916 | Jortlandia: death, revival and zombies | Jortlandia | 6 | Should | L | MBJ-903, MBJ-911, MBJ-914 |
 | MBJ-917 | Jortlandia: jail and the courts | Jortlandia | 6 | Should | M | MBJ-914 |
 | MBJ-918 | Jortlandia: duels | Jortlandia | 6 | Should | L | MBJ-913, MBJ-916 |
-| MBJ-919 | Jortlandia: taxes, decrees and laws | Jortlandia | 6 | Should | L | MBJ-911 |
+| MBJ-919 | Jortlandia: tax rates, decrees and laws | Jortlandia | 6 | Should | L | MBJ-911 |
 | MBJ-920 | Jortlandia: loyalty, rebellion and crowns | Jortlandia | 6 | Should | XL | MBJ-919, MBJ-915 |
 | MBJ-921 | Jortlandia: world events and war | Jortlandia | 6 | Should | L | MBJ-912, MBJ-920 |
 | MBJ-922 | Jortlandia: seasons | Jortlandia | 6 | Should | M | MBJ-921 |
@@ -2013,7 +2013,7 @@ Acceptance criteria:
 - [ ] Public places (shops, taverns) are open to all; homes are private
 - [ ] Dig a parcel for buried treasure, minesweeper style
 
-### MBJ-912 — Jortlandia: buildings, resources and improvements
+### MBJ-912 — Jortlandia: buildings, taxes and public services
 
 **Status:** To do · **Phase 6 — Jortlandia** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-911
 
@@ -2023,7 +2023,9 @@ Acceptance criteria:
 - [ ] Build shops, taverns and homes; a shop can be legit or a front
 - [ ] Resources renew slowly; overuse depletes a lot for a season
 - [ ] Improvements (dams, walls, wells) ripple: a dam can bring drought downstream; big projects need the crown; a full owner can act alone at a loyalty cost; a crown can make a lord undo one
-- [ ] Lords fund police, sanitation and doctors; players fill the posts for duty or pay; unfilled posts change nothing
+- [ ] Taxes: citizens' tax comes out of their base pay and service income on payday, at a standard rate until laws set it (MBJ-919), into their fiefdom's treasury, shown on the fiefdom page
+- [ ] The treasury pays for public services (JORTLANDIA rule 16): the lord budgets posts for police, sanitation and doctors; a player with the matching job fills a post for that pay on top of base pay, or unpaid for duty (reputation and loyalty); unfilled posts change nothing
+- [ ] A lord can move what's left into their own purse; every withdrawal shows on the fiefdom page, and unfunded posts raise crime, worsen sanitation and raise unrest
 - [ ] Area reputation: low areas pay less tax, get less protection and worse sanitation, and suffer more disasters
 
 ### MBJ-913 — Jortlandia: jobs and skill trees
@@ -2103,14 +2105,14 @@ Acceptance criteria:
 - [ ] Duel record on the stat card; results on the ticker
 - [ ] No duels with a character in their first two weeks; the same rival can't be challenged again for a week (JORTLANDIA rule 13)
 
-### MBJ-919 — Jortlandia: taxes, decrees and laws
+### MBJ-919 — Jortlandia: tax rates, decrees and laws
 
 **Status:** To do · **Phase 6 — Jortlandia** · **Priority:** Should · **Size:** L · **Depends on:** MBJ-911
 
 As a lord or crown, I want to tax, decree and set laws, and live with what follows.
 
 Acceptance criteria:
-- [ ] Citizens pay their lord: tax comes out of base pay and service income on payday, at the rate the law sets; evasion risks reputation if caught
+- [ ] The tax rate becomes a law (none, low, standard, high), replacing MBJ-912's standard rate; citizens can evade, which costs reputation if caught
 - [ ] Decrees: special levies, fines, seizure (felons, the dead without wills, traitors), tolls, trade monopolies; heavy decrees raise unrest toward revolt
 - [ ] The law menu (taxes, crime, punishment, immigration, rebellion, land, health) set by crowns and crownless lords, at most once a month, announced on the ticker, public on each kingdom and fiefdom page
 - [ ] Laws move crime, revolt risk and migration: renters move where life suits them

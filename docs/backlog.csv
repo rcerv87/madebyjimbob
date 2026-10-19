@@ -626,10 +626,12 @@ MBJ-911,Jortlandia: owning and renting land,Jortlandia,Phase 6 — Jortlandia,Sh
 - Vacant lots can be moved into or bought; abandoned land (a lapsed membership, a death without insurance, a defection) is open to claim
 - Public places (shops, taverns) are open to all; homes are private
 - Dig a parcel for buried treasure, minesweeper style","MBJ-902, MBJ-903, MBJ-910"
-MBJ-912,"Jortlandia: buildings, resources and improvements",Jortlandia,Phase 6 — Jortlandia,Should,L,To do,"As a landowner, I want to build and improve, knowing it can help or hurt my neighbors.","- Build shops, taverns and homes; a shop can be legit or a front
+MBJ-912,"Jortlandia: buildings, taxes and public services",Jortlandia,Phase 6 — Jortlandia,Should,L,To do,"As a landowner, I want to build and improve, knowing it can help or hurt my neighbors.","- Build shops, taverns and homes; a shop can be legit or a front
 - Resources renew slowly; overuse depletes a lot for a season
 - Improvements (dams, walls, wells) ripple: a dam can bring drought downstream; big projects need the crown; a full owner can act alone at a loyalty cost; a crown can make a lord undo one
-- Lords fund police, sanitation and doctors; players fill the posts for duty or pay; unfilled posts change nothing
+- Taxes: citizens' tax comes out of their base pay and service income on payday, at a standard rate until laws set it (MBJ-919), into their fiefdom's treasury, shown on the fiefdom page
+- The treasury pays for public services (JORTLANDIA rule 16): the lord budgets posts for police, sanitation and doctors; a player with the matching job fills a post for that pay on top of base pay, or unpaid for duty (reputation and loyalty); unfilled posts change nothing
+- A lord can move what's left into their own purse; every withdrawal shows on the fiefdom page, and unfunded posts raise crime, worsen sanitation and raise unrest
 - Area reputation: low areas pay less tax, get less protection and worse sanitation, and suffer more disasters",MBJ-911
 MBJ-913,Jortlandia: jobs and skill trees,Jortlandia,Phase 6 — Jortlandia,Should,XL,To do,"As a player, I want to work my job and earn skills that change what I can do.","- Jobs with stat minimums (garbage man, doctor, pharmacist, surgeon, artist, police, military, banker, lawyer, judge, surveyor, shop owner and more); job work earns XP for that job's stats
 - Services: a player performs their job's services for others (a doctor heals, a lawyer defends, a banker insures) at a price they set in Jort Coin; the customer sees the price before agreeing; each service done earns XP
@@ -660,7 +662,7 @@ MBJ-918,Jortlandia: duels,Jortlandia,Phase 6 — Jortlandia,Should,L,To do,"As a
 - The loser dies (MBJ-916) and is looted, unless skills let them survive or hide items; full protection means both
 - Duel record on the stat card; results on the ticker
 - No duels with a character in their first two weeks; the same rival can't be challenged again for a week (JORTLANDIA rule 13)","MBJ-913, MBJ-916"
-MBJ-919,"Jortlandia: taxes, decrees and laws",Jortlandia,Phase 6 — Jortlandia,Should,L,To do,"As a lord or crown, I want to tax, decree and set laws, and live with what follows.","- Citizens pay their lord: tax comes out of base pay and service income on payday, at the rate the law sets; evasion risks reputation if caught
+MBJ-919,"Jortlandia: tax rates, decrees and laws",Jortlandia,Phase 6 — Jortlandia,Should,L,To do,"As a lord or crown, I want to tax, decree and set laws, and live with what follows.","- The tax rate becomes a law (none, low, standard, high), replacing MBJ-912's standard rate; citizens can evade, which costs reputation if caught
 - Decrees: special levies, fines, seizure (felons, the dead without wills, traitors), tolls, trade monopolies; heavy decrees raise unrest toward revolt
 - The law menu (taxes, crime, punishment, immigration, rebellion, land, health) set by crowns and crownless lords, at most once a month, announced on the ticker, public on each kingdom and fiefdom page
 - Laws move crime, revolt risk and migration: renters move where life suits them",MBJ-911

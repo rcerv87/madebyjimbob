@@ -93,6 +93,8 @@ close to death.
   1,000 Jort Coin a week, a garbage man 500
 - Taxes and rent are paid in Jort Coin
 - When you perform a service, you charge the amount you choose; overcharge too often and your reputation takes a hit
+- Class doesn't change pay; your job does. Lords (the aristocrats) get their job pay plus their fiefdom's taxes, and
+  those taxes go back into paying for public services like police, sanitation and doctors
 
 **Money flows**
 
@@ -357,7 +359,7 @@ The stream is part of the map: watching pays, clues come from JB's content, and 
 # Part 2: building it on MadeByJimBob (2026-10-18)
 
 Jortlandia runs inside the site and apps that exist today: the same accounts, server, database and WebSocket, so it
-adds nothing to the monthly bill at beta scale. It's planned as seven releases (below). Fifteen rules need an answer
+adds nothing to the monthly bill at beta scale. It's planned as seven releases (below). Sixteen rules need an answer
 before the first one (rule 1 is decided); each open one has a recommendation that the plan assumes until Ruben or
 JimBob says otherwise.
 
@@ -393,7 +395,8 @@ JimBob says otherwise.
 | 12 | Age rating, and the word "illegals" | Answer the stores' age-rating forms for drug references, executions and violence; expect a higher rating for the app. Consider "outlanders" for illegals (the rules stay the same). | Store reviewers and the press may read "illegals" as being about real immigrants. Ruben's call. |
 | 13 | How are new players kept from being killed on day one? | Two weeks' protection for every new character: no duels, theft, interrogation or seizure against them, and they can't do those things either. A player can't challenge the same rival again for a week. | A month dead is harsh for someone who just joined, and new free members are the people the platform wants to keep and convert. |
 | 14 | What counts as overcharging? | Each service has a fair price, set in Studio (laws can cap prices later). The player sees it when they set their price, and the customer sees the price before agreeing. More than 1.5× the fair price is an overcharge; the third in 30 days costs reputation, and each one after costs more. | A line players can see before they charge, so the hit never feels random. Studio can move fair prices as the economy changes. |
-| 15 | When is payday, and does class change pay? | Weekly, since pay is quoted per week (the design said every two weeks). Taxes and living costs come out on payday, and rent is due the same day. Class doesn't change pay: it changes which jobs a character's stats allow, and free members' 7 random points mostly qualify for low-pay jobs, which keeps them near the edge. | A weekly payday gives members a reason to come back every week, and one day for pay, tax and rent keeps the balance easy to follow. |
+| 15 | When is payday, and does class change pay? | Weekly, since pay is quoted per week (the design said every two weeks). Taxes and living costs come out on payday, and rent is due the same day. **Decided (Ruben, 2026-10-18):** class doesn't change pay; it changes which jobs a character's stats allow, and free members' 7 random points mostly qualify for low-pay jobs, which keeps them near the edge. | A weekly payday gives members a reason to come back every week, and one day for pay, tax and rent keeps the balance easy to follow. |
+| 16 | Where do taxes go, and can a lord keep what's left? | **Decided (Ruben, 2026-10-18):** lords get their job pay plus their fiefdom's taxes, and the taxes pay for public services. Recommendation for the rest: taxes go into the fiefdom's treasury, shown on its public page. The lord sets a budget for each public post (police, sanitation, doctors); a player with the matching job who fills a post gets that pay on top of their base pay, or serves unpaid for duty (reputation and loyalty). The lord can move what's left into their own purse, but every withdrawal shows on the fiefdom page, and unfunded posts mean more crime, worse sanitation and more unrest. | Keeps taxes paying for services while leaving lords the choice to be generous or greedy, which is what drives revolts. Making withdrawals public lets citizens see a greedy lord. |
 
 ## How it's built
 
@@ -426,16 +429,16 @@ until there's trading and crime to talk about, the video chat is enough.
 | --- | --- | --- |
 | 1 Arrive and hunt | MBJ-601, 901–903, 905–908 | Make a character, see their class and stat card, earn Jort Coin from wages and watching, find objects in old and live streams, keep and trade items, follow the ticker under every stream. JimBob gets a Jortlandia tab in Studio and places the first treasure. |
 | 2 Rooms and mock ads | 904, 909 | Talk in the Tavern, Market and private group rooms; hunt from JimBob's mock ads; player shops buy ad spots |
-| 3 Land | 910–912 | Open the map beside the stream, own and rent lots, build shops, taverns and homes, dig parcels for treasure |
+| 3 Land | 910–912 | Open the map beside the stream, own and rent lots, build shops, taverns and homes, dig parcels for treasure; citizens pay taxes, and lords fund police, sanitation and doctors from them |
 | 4 Work and crime | 913–915 | Work jobs, earn skills, use dark skills, spread rumors, form gangs |
 | 5 Death, jail and duels | 916–918 | Die, come back, go to jail, duel to the death |
-| 6 Power | 919–920 | Set taxes and laws, pledge, rebel, defect, wear a crown |
+| 6 Power | 919–920 | Set tax rates and laws, issue decrees, pledge, rebel, defect, wear a crown |
 | 7 The world | 921–922 | Plagues, disasters, wars and seasons |
 
 ## Still open (for building)
 
 - [x] Ruben: rule 1, Jort Coin (decided 2026-10-18)
-- [ ] Ruben: rules 2–15 above (the plan assumes the recommendations)
+- [ ] Ruben: rules 2–16 above (the plan assumes the recommendations; parts of 15 and 16 are decided)
 - [ ] JimBob: the class names, the first crowns, and whether he'll trigger events and revive players on stream
 - [ ] The design's own open items (races, job minimums, numbers, crowns at launch); until then they're Studio
       settings with placeholder values, so they can change without a release
