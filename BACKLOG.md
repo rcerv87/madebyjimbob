@@ -1875,7 +1875,7 @@ Acceptance criteria:
 - [ ] Commands run on the server (`POST /api/game/command`) and answer with a screen of text and the next menu; an unknown command says what to type instead
 - [ ] Game code in `server/src/game/`, tables named `game_*`; every happening is a `game_events` row; a world tick every 5 minutes runs one copy at a time (advisory lock); ADR-015 accepted
 - [ ] Playing needs a signed-in account with a confirmed email; banned members can't play; timed-out members can't post in game chat (`refusedForTimeout()`)
-- [ ] Game data is in `exportData()`; deleting an account leaves its land abandoned and its history as "Deleted user"; the privacy policy and terms gain a Jortlandia section (Jort Coin has no money value, is never sold or cashed out, and can be rebalanced)
+- [ ] Game data is in `exportData()`; deleting an account leaves its land abandoned and its history as "Deleted user"; the privacy policy and terms gain a Jortlandia section (Jort Coin has no money value, is never sold or cashed out, and can be rebalanced; selling coin or items for real money outside the game is against the terms)
 - [ ] Docs: `docs/API.md` (endpoints), `docs/DATA_MODEL.md` (tables); tests for parsing, permissions and the tick lock
 - [ ] Store apps: the game's tier perks are web purchases used in the app (Apple 3.1.3(b)), so MBJ-406 is decided before an app with the game goes to App Review (JORTLANDIA rule 1)
 
@@ -1900,7 +1900,7 @@ Acceptance criteria:
 As a player, I want a wage and rewards for watching JimBob, so watching is how I survive and rise.
 
 Acceptance criteria:
-- [ ] Jort Coin as an append-only ledger with kept balances and a nightly check; coin is never bought or cashed out (JORTLANDIA rule 1)
+- [ ] Jort Coin as an append-only ledger with kept balances and a nightly check; an internal coin, never bought with real money, never cashed out, never given for super chats or payments (JORTLANDIA rule 1, decided 2026-10-18)
 - [ ] A biweekly wage by class and job; free members' food, care and housing are charged on the same schedule, so their wage barely covers living
 - [ ] Watching pays XP and coin from real watch time (MBJ-601): live pays more than replay; idle and muted background tabs, 2x speed and extra tabs earn nothing extra; daily cap
 - [ ] Alt accounts: rewards start when an account is 7 days old; gifts, trades and rent from accounts under 30 days old are capped; Studio flags an account that keeps feeding one other (JORTLANDIA rule 8)
@@ -1956,7 +1956,7 @@ As a player, I want to keep what I find and trade, sell or gift it.
 
 Acceptance criteria:
 - [ ] Items: one of a kind, limited copies, or common; an inventory on the stat card (private)
-- [ ] Trade, sell, gift, and sell to player shops, all as commands; every move logged
+- [ ] Buy and sell items for Jort Coin (between players and with player shops), trade item for item, or gift, all as commands; every move logged
 - [ ] Conspiracy items (demolition schematics, assassination receipts, flat earth photos): high value, raise heat, and draw the Emperor's system agents
 - [ ] Forged IDs: a free member can buy one from a forger to climb in status (the forger's side comes with MBJ-914)
 
