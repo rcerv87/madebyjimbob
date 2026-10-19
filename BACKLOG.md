@@ -1901,7 +1901,8 @@ As a player, I want a wage and rewards for watching JimBob, so watching is how I
 
 Acceptance criteria:
 - [ ] Jort Coin as an append-only ledger with kept balances and a nightly check; an internal coin, never bought with real money, never cashed out, never given for super chats or payments (JORTLANDIA rule 1, decided 2026-10-18)
-- [ ] A biweekly wage by class and job; free members' food, care and housing are charged on the same schedule, so their wage barely covers living
+- [ ] Base pay by profession, set per week in Studio (starting values: doctor 1,000, garbage man 500 Jort Coin a week), paid on a weekly payday (JORTLANDIA rule 15); class doesn't change pay, only which jobs a character's stats allow
+- [ ] Food, care and housing come out on payday, so a free member's low-pay job barely covers living
 - [ ] Watching pays XP and coin from real watch time (MBJ-601): live pays more than replay; idle and muted background tabs, 2x speed and extra tabs earn nothing extra; daily cap
 - [ ] Alt accounts: rewards start when an account is 7 days old; gifts, trades and rent from accounts under 30 days old are capped; Studio flags an account that keeps feeding one other (JORTLANDIA rule 8)
 - [ ] Ways to spend coin for good from the start (living costs, job rerolls, reskills), so new coin doesn't pile up
@@ -2033,6 +2034,8 @@ As a player, I want to work my job and earn skills that change what I can do.
 
 Acceptance criteria:
 - [ ] Jobs with stat minimums (garbage man, doctor, pharmacist, surgeon, artist, police, military, banker, lawyer, judge, surveyor, shop owner and more); job work earns XP for that job's stats
+- [ ] Services: a player performs their job's services for others (a doctor heals, a lawyer defends, a banker insures) at a price they set in Jort Coin; the customer sees the price before agreeing; each service done earns XP
+- [ ] Overcharging: each service has a fair price set in Studio, shown when the player sets their price; more than 1.5× it is an overcharge, and the third in 30 days costs reputation, each one after costing more (JORTLANDIA rule 14)
 - [ ] Seven trees of five skills at 2 / 4 / 6 / 8 / 10 in the stat; each skill earned with XP or Jort Coin, each costing more than the last
 - [ ] Passive skills always on; active skills cost coin and have cooldowns
 - [ ] Capstones are secret, each with a short list of exact effects, once a season (JORTLANDIA rule 11); the ticker reports only the effect
@@ -2107,7 +2110,7 @@ Acceptance criteria:
 As a lord or crown, I want to tax, decree and set laws, and live with what follows.
 
 Acceptance criteria:
-- [ ] Citizens pay their lord; evasion risks reputation if caught
+- [ ] Citizens pay their lord: tax comes out of base pay and service income on payday, at the rate the law sets; evasion risks reputation if caught
 - [ ] Decrees: special levies, fines, seizure (felons, the dead without wills, traitors), tolls, trade monopolies; heavy decrees raise unrest toward revolt
 - [ ] The law menu (taxes, crime, punishment, immigration, rebellion, land, health) set by crowns and crownless lords, at most once a month, announced on the ticker, public on each kingdom and fiefdom page
 - [ ] Laws move crime, revolt risk and migration: renters move where life suits them
