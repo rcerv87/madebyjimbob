@@ -13,7 +13,7 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Content | Checked 2026-10-18: 7 videos (4 of them live replays), 16,525 chat messages, 3,660 comments, JimBob's 9 YouTube playlists, 10 accounts. Nothing uploaded through the Library Uploader yet |
 | Phone apps | **Jortlandia** (app id `com.madebyjimbob.app`): Android in Google Play internal testing and installed on Ruben's phone (2026-10-18); iPhone builds through Codemagic to TestFlight (set up 2026-10-17, first build pending). Test script by persona: https://claude.ai/artifact/YKBUptfwxRyBtU91Phe9Wp |
 | Quality | 488 automated tests (270 server, 218 web), lint, formatting, CI on GitHub; migrations run before each deploy; `/api/health` reports the deployed commit |
-| Backlog | 132 stories; 35 done, 26 in progress |
+| Backlog | 154 stories; 35 done, 26 in progress. Jortlandia (the game, epic 9, 22 stories) planned 2026-10-18 in `docs/JORTLANDIA.md`, nothing built |
 
 ## Phone apps: Jortlandia (started 2026-10-15)
 
@@ -118,7 +118,11 @@ chatting at once; the delta table fixed both.
 6. **Back up the keys folder** `C:\Users\office\.madebyjimbob-keys\` (Android upload key and its passwords, the iPhone
    certificate key, the Firebase service account key, the App Store Connect `.p8`) to a password manager or a private
    cloud folder.
-7. Still open from before: `VAPID_PRIVATE_KEY` on Render (website notifications), a test email to
+7. **Jortlandia: answer the thirteen rules** in `docs/JORTLANDIA.md` ("Rules to settle first"), or say "go with the
+   recommendations". The big ones: Jort Coin is never sold (store rules), what happens to a lord's land when Premium
+   ends, death stopping the game but not the videos, and two weeks' protection for new players. Then show JimBob the
+   class names and ask who the first crowns are.
+8. Still open from before: `VAPID_PRIVATE_KEY` on Render (website notifications), a test email to
    hello@madebyjimbob.app (does it reach an inbox?), the Shopify newsletter import (`npm run import:newsletter`), the
    GitHub branch rule, JimBob reading the privacy policy and terms.
 
@@ -622,6 +626,7 @@ The current list is "Next for Ruben" under Phone apps at the top of this file; b
 | 2026-10-17 | iPhone builds on Codemagic (free tier, by hand) with automatic signing; Android builds on Ruben's PC (`npm run android -w mobile`) |
 | 2026-10-17 | The apps are named **Jortlandia** in both stores and under the icon ("MADEbyJIMBOB" was taken in the App Store); the site stays MADEbyJIMBOB |
 | 2026-10-18 | Testing is organized by persona (visitor, free, Plus/Premium, mod, JimBob, admin, timed out/banned, app checks) on a shareable checklist page |
+| 2026-10-18 | Ruben's Jortlandia game design is in the repo (`docs/JORTLANDIA.md`) and planned as epic 9 in seven releases; it runs inside the same server, database and apps (ADR-015, proposed). Thirteen rules wait on Ruben, each with a recommendation the plan assumes |
 
 ## Known limits (fine for a demo, not for launch)
 
@@ -680,9 +685,11 @@ reach 30 days around 2026-11-02.
 6. **Posts** — text, images, polls with threaded comments (MBJ-804).
 7. **Done 2026-10-11: Unwatched filter and binge queue** (MBJ-814) — quick win on top of saved watch progress: Unwatched / In
    progress / Watched chips and an automatic playlist of everything you haven't finished.
-8. **Gamification** — XP, levels, and activity badges for heavy chatters and commenters (MBJ-601, 602),
-   watch-time rewards such as a free t-shirt after a set number of hours, delivered as a Shopify code (MBJ-611),
-   and supporter shout-outs for super chats and Bob Chats, with a queue and optional on-stream overlay (MBJ-612).
+8. **Gamification** — now planned as **Jortlandia** (epic 9, `docs/JORTLANDIA.md`, ADR-015 proposed): release 1
+   (MBJ-601, 901–903, 905–908) gives every member a character whose class is their tier, Jort Coin from wages and
+   watching, items and treasure hidden in old and live streams, a news ticker under every stream and a Studio tab for
+   JimBob; then game chat rooms and mock ads, land, work and crime, death and duels, power, and the world. Its XP replaces MBJ-602's XP and levels if Ruben agrees
+   (rule 7). Watch-time rewards such as a free t-shirt (MBJ-611) and supporter shout-outs (MBJ-612) stay as planned.
 8b. **Retitle the library** (planned 2026-10-05, not built; flow in `docs/RETITLING.md`): transcripts overnight on a PC
    for free (YouTube's captions first, then Whisper, MBJ-614/615), drafts of an overview, key moments and 5 title ideas
    (free model on the PC, Claude Haiku 4.5 batch ~$0.04 a stream as the fallback, MBJ-616), a "Needs a new title" queue
