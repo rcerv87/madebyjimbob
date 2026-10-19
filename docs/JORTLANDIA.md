@@ -87,6 +87,13 @@ The world is 100,000 lots, and 1 lot is 4 parcels. New land opens only if Jortla
 Everyone is paid a biweekly wage in Jort Coin. Free members' wages barely cover food, care and housing, so they live
 close to death.
 
+**Pay and services (Ruben, 2026-10-18)**
+
+- Jort Coin is the game world's coin, and it comes from your profession: each job has a base pay. A doctor might earn
+  1,000 Jort Coin a week, a garbage man 500
+- Taxes and rent are paid in Jort Coin
+- When you perform a service, you charge the amount you choose; overcharge too often and your reputation takes a hit
+
 **Money flows**
 
 - **Rent:** paid to whoever owns the lot
@@ -344,13 +351,13 @@ The stream is part of the map: watching pays, clues come from JB's content, and 
 
 - [ ] Race list and each race's stat bonuses and penalties
 - [ ] Starting stat numbers per job (minimums for each occupation)
-- [ ] Exact Jort Coin wages, prices and skill costs
+- [ ] Exact Jort Coin wages (starting points: doctor 1,000 a week, garbage man 500), prices and skill costs
 - [ ] Number of crowns at launch (2–4) and their starting lands
 
 # Part 2: building it on MadeByJimBob (2026-10-18)
 
 Jortlandia runs inside the site and apps that exist today: the same accounts, server, database and WebSocket, so it
-adds nothing to the monthly bill at beta scale. It's planned as seven releases (below). Thirteen rules need an answer
+adds nothing to the monthly bill at beta scale. It's planned as seven releases (below). Fifteen rules need an answer
 before the first one (rule 1 is decided); each open one has a recommendation that the plan assumes until Ruben or
 JimBob says otherwise.
 
@@ -372,7 +379,7 @@ JimBob says otherwise.
 
 | # | Question | Recommendation | Why |
 | --- | --- | --- | --- |
-| 1 | Can Jort Coin be bought? | **Decided (Ruben, 2026-10-18):** Jort Coin is an internal coin, never bought with real money. Players use it to buy and sell items found in the game. It's earned only (wages, watching, hunts, play) and never cashed out; no coin or items for super chats or any other payment. Selling coin or items for real money outside the game is against the terms. The membership stays the only thing sold, on the website as now. | Apple and Google require their own payments for any currency sold in an app (Apple 3.1.1), and money-backed game coin brings gambling and money-transmitter rules. Keeps it apart from the real-money wallet (MBJ-111). Tier perks in the game (a lord's land, chosen stats) are web purchases used in the app, which Apple allows only if the app sells them too (3.1.3(b)): MBJ-406 must be decided before an app with the game goes to App Review. |
+| 1 | Can Jort Coin be bought? | **Decided (Ruben, 2026-10-18):** Jort Coin is an internal coin, never bought with real money. Players use it to buy and sell items found in the game. It's earned only (base pay from your profession, services, watching, hunts, play) and never cashed out; no coin or items for super chats or any other payment. Selling coin or items for real money outside the game is against the terms. The membership stays the only thing sold, on the website as now. | Apple and Google require their own payments for any currency sold in an app (Apple 3.1.1), and money-backed game coin brings gambling and money-transmitter rules. Keeps it apart from the real-money wallet (MBJ-111). Tier perks in the game (a lord's land, chosen stats) are web purchases used in the app, which Apple allows only if the app sells them too (3.1.3(b)): MBJ-406 must be decided before an app with the game goes to App Review. |
 | 2 | Which tier is which class? | Free = peasant or illegal (random), Plus = citizen, Premium = lord, JimBob = Emperor. JimBob names the first crowns from the lords. | The diagram's "lower tier" and "high tier", with today's three tiers. |
 | 3 | What happens when a membership ends? | 30 days' grace, then a lord becomes a citizen and keeps 1 lot of their choice; a citizen becomes a peasant (never an illegal) and rents. Land given up is abandoned land, open to claim. Stats and skills stay. | The design covers upgrades but not downgrades; abandoned land is already a rule. |
 | 4 | Is there land for every lord? | Make all 100,000 lots, but open them by region: the launch kingdoms open with about 10,000 lots, and the next region opens when 80% of the open land is owned. | At 100 lots each, 1,000 lords would own the whole world and leave none for citizens. With a few dozen players, 100,000 lots would feel empty. |
@@ -385,6 +392,8 @@ JimBob says otherwise.
 | 11 | What can a capstone force? | Each capstone gets a short list of exact effects and works once a season. Mind Control picks one of a few game actions; it never spends more than a set amount of coin or starts a duel. | "Force a player to act" with no limit takes the game away from the player it's used on. |
 | 12 | Age rating, and the word "illegals" | Answer the stores' age-rating forms for drug references, executions and violence; expect a higher rating for the app. Consider "outlanders" for illegals (the rules stay the same). | Store reviewers and the press may read "illegals" as being about real immigrants. Ruben's call. |
 | 13 | How are new players kept from being killed on day one? | Two weeks' protection for every new character: no duels, theft, interrogation or seizure against them, and they can't do those things either. A player can't challenge the same rival again for a week. | A month dead is harsh for someone who just joined, and new free members are the people the platform wants to keep and convert. |
+| 14 | What counts as overcharging? | Each service has a fair price, set in Studio (laws can cap prices later). The player sees it when they set their price, and the customer sees the price before agreeing. More than 1.5× the fair price is an overcharge; the third in 30 days costs reputation, and each one after costs more. | A line players can see before they charge, so the hit never feels random. Studio can move fair prices as the economy changes. |
+| 15 | When is payday, and does class change pay? | Weekly, since pay is quoted per week (the design said every two weeks). Taxes and living costs come out on payday, and rent is due the same day. Class doesn't change pay: it changes which jobs a character's stats allow, and free members' 7 random points mostly qualify for low-pay jobs, which keeps them near the edge. | A weekly payday gives members a reason to come back every week, and one day for pay, tax and rent keeps the balance easy to follow. |
 
 ## How it's built
 
@@ -426,7 +435,7 @@ until there's trading and crime to talk about, the video chat is enough.
 ## Still open (for building)
 
 - [x] Ruben: rule 1, Jort Coin (decided 2026-10-18)
-- [ ] Ruben: rules 2–13 above (the plan assumes the recommendations)
+- [ ] Ruben: rules 2–15 above (the plan assumes the recommendations)
 - [ ] JimBob: the class names, the first crowns, and whether he'll trigger events and revive players on stream
 - [ ] The design's own open items (races, job minimums, numbers, crowns at launch); until then they're Studio
       settings with placeholder values, so they can change without a release
