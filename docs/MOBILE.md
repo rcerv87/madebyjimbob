@@ -8,13 +8,19 @@ Apple expects it to match the App Store name. They live in `mobile/`: the
 Capacitor settings (`capacitor.config.json`), the Android project (`mobile/android`) and the iPhone project
 (`mobile/ios`). The pages themselves are the normal web build (`web/dist`), copied into each app.
 
-## Where we are (2026-10-15)
+## Where we are (2026-10-18)
 
+- **In the stores (2026-10-17/18):** Google Play has the app (Jortlandia) in **internal testing**, installed on Ruben's
+  phone from Play. The App Store has the app record (Jortlandia, SKU `madebyjimbob-ios`); iPhone builds go through
+  Codemagic to TestFlight ("Building for iPhone"), first build pending. The Play version is signed by Google's key, so
+  Google sign-in and links that open the app work there only after Play's fingerprints are added ("Google Play" below).
+- **Testing:** the persona test script (visitor, free, Plus/Premium, mod, JimBob, admin, timed out/banned, app checks)
+  is a checklist page testers tick through: https://claude.ai/artifact/YKBUptfwxRyBtU91Phe9Wp (private until shared).
 - **Android:** builds on Ruben's PC and runs in the emulator. Checked there: sign-up and sign-in (token), the welcome
   steps, a Cloudflare Stream video playing, chat (read and post), saving watch progress, notes, sign-out. Status bar
   and top bar fit Android 15's edge-to-edge screens. App icon and launch screen use JimBob's art.
-- **iPhone:** the project is generated (Swift Package Manager, no CocoaPods) but has never been built: that needs a
-  Mac. Untested: everything on iOS.
+- **iPhone:** the project (Swift Package Manager, no CocoaPods) lists all six add-ons and builds on Codemagic; no
+  build has run yet. Untested: everything on iOS (the list is in `docs/STATUS.md`, "iPhone: still to do or check").
 - **Android background audio and lock-screen controls (MBJ-403, 2026-10-15):** while something plays, Android shows a
   media card (title, JimBob, play/pause, progress, previous/next when there's somewhere to go) and runs a media
   service so the app isn't closed in the background. Checked in the emulator: home screen and a minute with the screen
@@ -102,8 +108,34 @@ takes days.
 npm run android:release -w mobile  # → app/build/outputs/bundle/release/app-release.aab (and a signed .apk)
 ```
 
-Raise `versionCode` in `mobile/android/app/build.gradle` for every upload (and `versionName`, which people see).
+Raise `versionCode` in `mobile/android/app/build.gradle` for every upload (and `versionName`, which people see), and
+set the iPhone's `MARKETING_VERSION` to the same version. Play never accepts a versionCode twice and never changes an
+uploaded bundle: a fix is always a new bundle with a higher code.
 Upload key fingerprint (SHA-256, public): `90:0D:10:83:10:C7:D6:B1:2D:03:9D:12:8D:77:2A:78:96:13:AD:D7:80:F8:1B:01:42:4E:38:B2:51:8D:36:B6`.
+
+| Version | versionCode | What |
+|---|---|---|
+| 0.1.0 | 1 | First builds: emulator, sideloaded test |
+| 0.1.1 | 2 | Google sign-in; on Ruben's Drive |
+| 0.1.2 | 3 | First Google Play upload (internal testing); still labelled MADEbyJIMBOB |
+| 0.1.3 | 4 | "Jortlandia" under the icon; also on Ruben's Drive |
+
+### Google Play
+
+- The app is called **Jortlandia** (store listing name; the bundle's label says the same from 0.1.3). Play App Signing
+  is on: Google holds the key that signs what people install; our upload key only proves uploads are ours.
+- **Internal testing** (no review, up to 100 testers): Test and release → Testing → Internal testing; testers are an
+  email list ("Team"), and each tester opens the list's **Join on the web** link
+  (`play.google.com/apps/internaltest/...`), accepts, then installs from Play with the same Google account.
+- **Closed testing** (reviewed by Google; the 12-testers-for-14-days rule counts only this): a track with a Google
+  Group of testers and countries; the opt-in link is https://play.google.com/apps/testing/com.madebyjimbob.app and
+  works only once the track is approved. Play needs the store listing (name, descriptions, 512 px icon, 1024×500
+  feature graphic, phone screenshots), content rating, data safety and the other "Set up your app" items first.
+- **After the first upload**: App integrity → App signing shows the **app signing key** SHA-1 and SHA-256. Add an
+  Android OAuth client with that SHA-1 (Google sign-in in the Play version) and put the SHA-256 in
+  `ANDROID_CERT_SHA256` with the upload key's, comma-separated (links that open the app).
+- A phone with a sideloaded build (Drive) must uninstall it before installing from Play: the signatures differ.
+- A brand-new app's first internal release can show "Item not found" for a while after it's published.
 
 **Google Play's rule for new personal developer accounts:** before an app can go to production, it needs a closed
 test with at least 12 testers who stay opted in for 14 days in a row. Organization accounts (a business, with a free
@@ -216,8 +248,8 @@ art. The current source is 512 px; a 1024 px original would give a sharper App S
 
 ## Before the stores (MBJ-407)
 
-- Developer accounts: Apple ($99/year) and Google Play ($25 once), ideally JimBob's (the account holder's name shows
-  as the seller; apps can be transferred later, but it's paperwork). See `docs/MIGRATION.md`.
+- Developer accounts: Apple ($99/year) and Google Play ($25 once). Ruben's for the beta (2026-10-17); the account
+  holder's name shows as the seller, and apps can be transferred later. See `docs/MIGRATION.md` step 11.
 - The store rules in ADR-014: Sign in with Apple if Google sign-in comes to the iPhone app; a decision on buying
   inside the apps; native features so the app isn't "just a website"; privacy labels and data safety forms.
 - Each R2 bucket's CORS policy allows `capacitor://localhost` and `https://localhost` (done 2026-10-16, both buckets).

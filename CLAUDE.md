@@ -35,8 +35,10 @@ Rumble, and native messages, tiered memberships (Free / Plus / Premium), and eng
   Serves the API, WebSockets, and the built web app.
 - `web/` React 18 + Vite + react-router + hls.js. Installable PWA (`web/public/manifest.webmanifest`, `sw.js`).
 - `mobile/` Capacitor 8 wraps the web build for iPhone and Android (ADR-014, `docs/MOBILE.md`); app id
-  `com.madebyjimbob.app`. Android builds on this PC with Android Studio's Java; iPhone builds need a Mac.
-- Account email via Resend (ADR-012). Postgres on Render. Video on Cloudflare Stream (R2 proposed, ADR-010). Shop and Art read JimBob's Shopify
+  `com.madebyjimbob.app`, named **Jortlandia** in the stores and under the icon (the site stays MADEbyJIMBOB).
+  Android builds on this PC with Android Studio's Java; iPhone builds run on Codemagic (`codemagic.yaml`, started by
+  hand) and go to TestFlight. Android is in Google Play internal testing.
+- Account email via Resend (ADR-012). Postgres on Render. Video on Cloudflare R2 (ADR-010; Stream for the first imports). Shop and Art read JimBob's Shopify
   store (ADR-011). Deploy via `render.yaml`.
 
 ## Commands
@@ -211,6 +213,38 @@ Run `npm test`, `npm run lint`, and `npm run format:check` before finishing any 
   `mobile/android/keystore.properties`). Never print, copy into the repo, or replace them.
 - Text a test finds by role and name: a label with a count badge reads as "Reports 2" in some cases and "Reports2" in
   others; match with a pattern.
+- Tests never wait in real time: use fake timers and run them (`vi.runAllTimersAsync()`). A real 2-second wait made a
+  test cross the 5-second limit when the whole suite ran at once.
+
+Learned 2026-10-16 to 18 (database, releases, stores):
+- Postgres statement-level triggers with transition tables: one event per trigger, and no column list (`UPDATE OF`);
+  Postgres refuses both. Never update a shared parent row (the video) from every child insert: each chat insert holds
+  a key-share lock on its video (the foreign key), so `FOR UPDATE` there deadlocked, and even `FOR NO KEY UPDATE` made
+  50 people chatting at once wait 2.3 s. Write small delta rows and fold them in batches (`chatCounts.js`). Measure a
+  trigger or counter at scale (1 million rows, 50 concurrent writers) before shipping it.
+- Releases: check `/api/live` first; a release restarts the server, which drops viewers' chat mid-stream. Confirm a
+  release with `/api/health`: its `version` must equal `git rev-parse --short=7 HEAD` of the merge (this works when the
+  website's files didn't change, unlike the `index-<hash>.js` check).
+- R2 behind Cloudflare: after changing a bucket's CORS policy, purge Cloudflare's cache (madebyjimbob.app → Caching →
+  Purge Everything); copies cached before the change keep the old answer.
+- Google Play: an uploaded bundle never changes and its versionCode can't be reused, so raise `versionCode` (and
+  `versionName`, with `MARKETING_VERSION` in the iPhone project) for every upload. Don't rebuild
+  `app-release.aab` while Ruben may be uploading it; check with a debug build instead. Play re-signs the app with its
+  own key: Google sign-in needs an Android OAuth client with Play's SHA-1, and links that open the app need Play's
+  SHA-256 in `ANDROID_CERT_SHA256`. A sideloaded build must be uninstalled before installing from Play. A new app's
+  first internal release can show "Item not found" for a while.
+- Google sign-in add-on (`@capgo/capacitor-social-login`): never pass `scopes` on Android (it then needs a changed
+  MainActivity); the default already gives the name, email and ID token. Its `capacitor:sync:before` hook drops the
+  providers that are off in `capacitor.config.json` from its iPhone package, so iPhone builds always run `cap sync ios`.
+- iPhone project: after adding a Capacitor add-on, run `npx cap sync ios` and commit
+  `mobile/ios/App/CapApp-SPM/Package.swift` (Swift Package Manager, no CocoaPods). The App Store icon must have no
+  transparency. `ITSAppUsesNonExemptEncryption` is false, so uploads skip the encryption question.
+- Ruben drives Apple, Google, Play and Codemagic consoles with the Claude in Chrome extension. Give him paste-ready
+  instructions with exact values and stop points where he picks a file on his PC or pastes a secret; the extension
+  never sees keys or passwords.
+- Big plans can get a Council review (ChatGPT, Gemini and Grok, through `/council` or pasted in by Ruben). Treat their
+  points as claims to check against the code, the docs and a test: one was a real Postgres limit, one a real lock
+  problem, one a misreading of the order.
 
 ## Known POC shortcuts (tracked in backlog)
 

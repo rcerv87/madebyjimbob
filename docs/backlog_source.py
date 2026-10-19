@@ -225,6 +225,12 @@ S = [
 ("208", 1, "Could", "M", "Chat search in Studio",
  "As JimBob, I want to find what people said.",
  ["Search by text, author, source, date range, video", "Results link to the video at that timestamp"], ["102"]),
+("120", 1, "Should", "S", "The membership table matches what the site does",
+ "As a member, I want what Plus and Premium promise to be what I actually get.",
+ ["Decide for each perk the table lists but the site doesn't enforce yet: Slow mode for free chat (MBJ-209) and Listen only and background audio for paid members only",
+  "Either enforce it (free chat slower than members'; Listen only and background audio locked for free accounts, on the website and in both apps) or take it off the table",
+  "Not built yet and marked as coming: the member podcast feed (MBJ-503) and call-ins (MBJ-606)",
+  "Found while writing the persona test script, 2026-10-18"], ["104"]),
 ("209", 1, "Should", "S", "Tier-based chat limits",
  "As JimBob, I want free chatters slowed down and members rewarded.",
  ["Free users: slow mode per PRD; Plus/Premium: normal rate", "Tier badge shown next to native usernames"], ["104"]),
@@ -843,19 +849,21 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "Done", "006": "Do
 # 102: users.role + npm run set-role (admin opens Studio); roles changed in Studio → Members (with MBJ-705); mod role use and /api/mod/* remain (MBJ-204).
 # 217: notes at a moment or stretch (public or private), pins on the strip, list with favorites first and a Favorites only switch, profile list, report / take down, same filter and block rules as comments. Remain: notes on the live page (rewind).
 # 613: thumbs; one-tap moment reactions and drag-to-mark stretches; the hotspot strip (reactions + chat per minute, tap to jump); fair counting. Remain: skip-boring and best-parts modes, Studio per-video chart, feeding AI notes.
-# 401: Capacitor project (ADR-014), app mode in the web app (live site, token sign-in, outside pages in the browser), Android builds on the PC and runs in the emulator, icons and launch screens. Remain: an Android phone test; the iPhone build on a Mac and an iPhone test.
-# 403: Android done (media-session plugin: lock-screen card, media service, pause/play from the card; checked in the emulator). Remain: iPhone (audio background mode, now-playing), PiP.
-# 405: Android working (2026-10-16): device_tokens, POST/DELETE /api/push/device, Firebase HTTP v1 sender in fcm.js next to Web Push, app permission/channel/register/tap/sign-out, notification icon; Firebase project madebyjimbob-e9aea; checked end to end in the emulator. Remain: a check on Ruben's phone, iPhone (APNs key, Firebase iPhone SDK or direct APNs), a go-live notification type.
-# 407: Android release signing (upload key outside the repo) and a signed .aab. Remain: the store accounts, store listings, the 12-tester closed test if the Play account is personal, iPhone signing.
-# 408: Android done (assetlinks.json with the upload key, manifest app links, links open the page whether the app is closed or open; back button and share sheet too). Remain: Play's app signing key in ANDROID_CERT_SHA256 once in Play; iPhone (APPLE_TEAM_ID, entitlement).
+# 401: Capacitor apps (ADR-014), named Jortlandia in the stores and under the icon (2026-10-17). Android: built on the PC, in Google Play internal testing and installed on Ruben's phone (2026-10-18). iPhone: codemagic.yaml builds to TestFlight (2026-10-17); first build pending. Remain: the first TestFlight build and an iPhone test; the persona test script on real phones.
+# 403: Android done (media-session plugin: lock-screen card, media service, pause/play from the card). iPhone: UIBackgroundModes audio set (2026-10-16); the lock-screen card comes from Media Session in the web view. Remain: check on an iPhone; PiP.
+# 405: Android working (2026-10-16): device_tokens, POST/DELETE /api/push/device, Firebase HTTP v1 sender in fcm.js next to Web Push, permission/channel/register/tap/sign-out, notification icon; Firebase project madebyjimbob-e9aea; checked end to end in the emulator. Remain: a check on Ruben's phone (Play build), iPhone (APNs key in Firebase plus the Firebase iPhone SDK, or direct APNs), a go-live notification type (with MBJ-805), VAPID_PRIVATE_KEY on Render for website push.
+# 407: Accounts: Ruben's Apple Developer and Google Play (2026-10-17). Google Play: app Jortlandia, Play App Signing, internal testing live and installed (0.1.2 then 0.1.3). App Store: app record Jortlandia (SKU madebyjimbob-ios); Codemagic to TestFlight set up. Remain: the compliance pass (hide Join, Upgrade, Super chat in the apps, MBJ-406), privacy labels and the data safety form, store listing assets, MBJ-810, the 12-tester closed test if the Play account is personal, App Review.
+# 408: Android done (assetlinks.json with the upload key, manifest app links). Remain: Play's app-signing SHA-256 in ANDROID_CERT_SHA256 (the Play-installed app can't open links until then); iPhone (APPLE_TEAM_ID, Associated Domains entitlement).
 # 005: Done 2026-10-17 (the workflow runs every check); the GitHub branch rule is Ruben's (STATUS, Waiting on Ruben).
 # 107: Done 2026-10-17; left for Ruben: run the Shopify newsletter import (npm run import:newsletter).
 # 114: Done 2026-10-17: email sends from madebyjimbob.app (reset emails delivered); moving the domain's DNS to JimBob is MIGRATION step 6.
+# 204: Note 2026-10-18: until mods get tools, Studio refuses them with "Studio is only for JimBob and mods", which misleads; fix that wording with this story (mods' own moderation screen, or "for JimBob and admins").
+# 209: Note 2026-10-18: the membership table already promises "Slow mode" for free chat; today everyone has the same 1.5-second limit. Decided with MBJ-120.
 # 705: list, search, filters (staff, new, banned, tier), role change, ban with reason / unban, mod_actions log. timeouts (this stream / 1 week / 2 weeks / custom date; can still watch and like; shown to the member; Timed out filter; links from reports and name cards). Remain: member page with history, hide all messages, highlight, staff notes, tier override, live over WebSocket (with MBJ-204).
 # 107: opt-in at sign-up and in Account settings, CSV export with unsubscribe links, unsubscribe page, Shopify importer (npm run import:newsletter). Remain: Ruben runs the Shopify import.
 # 814: chips with counts, Keep watching, binge queue, Mark as watched on the video page; marking from a card's menu on the Videos page not done.
 # 115: welcome dialog and Account checklist (email, notifications, YouTube, membership). Remain: avatar (MBJ-117) and live alerts.
-# 110: device list and sign out any device (in /account) done; Sign in with Google done (button appears once the Google keys are on Render; new members pick a username once; joins an existing account only when its email is confirmed). In the apps (2026-10-16): the phone's Google account picker (Android working, checked in the emulator with both signing keys; iPhone needs GOOGLE_IOS_CLIENT_ID, the URL scheme in Info.plist, and Sign in with Apple, which Apple requires alongside). Apple/X/Facebook, magic link, passkeys, linking YouTube through Google, add/remove sign-in methods remain.
+# 110: Device list and sign out any device done; Sign in with Google done on the website. In the apps (2026-10-16): the phone's Google account picker; Android working with the debug and upload keys. Remain: an Android OAuth client with Play's app-signing SHA-1 (Google sign-in in the Play-installed app); iPhone: GOOGLE_IOS_CLIENT_ID, the URL scheme in Info.plist, and Sign in with Apple (Apple requires it next to Google). Apple/X/Facebook on the website, magic links, passkeys, add/remove sign-in methods remain.
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():

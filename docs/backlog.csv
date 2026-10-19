@@ -146,6 +146,10 @@ MBJ-207,Native tipped messages (web),Chat & moderation,Phase 1 — VOD platform,
 - Bring in Bob Chats (today sold as a product on the Shopify store): shown and pinned like Super Chats, counted in the same totals",MBJ-104
 MBJ-208,Chat search in Studio,Chat & moderation,Phase 1 — VOD platform,Could,M,To do,"As JimBob, I want to find what people said.","- Search by text, author, source, date range, video
 - Results link to the video at that timestamp",MBJ-102
+MBJ-120,The membership table matches what the site does,Accounts & memberships,Phase 1 — VOD platform,Should,S,To do,"As a member, I want what Plus and Premium promise to be what I actually get.","- Decide for each perk the table lists but the site doesn't enforce yet: Slow mode for free chat (MBJ-209) and Listen only and background audio for paid members only
+- Either enforce it (free chat slower than members'; Listen only and background audio locked for free accounts, on the website and in both apps) or take it off the table
+- Not built yet and marked as coming: the member podcast feed (MBJ-503) and call-ins (MBJ-606)
+- Found while writing the persona test script, 2026-10-18",MBJ-104
 MBJ-209,Tier-based chat limits,Chat & moderation,Phase 1 — VOD platform,Should,S,To do,"As JimBob, I want free chatters slowed down and members rewarded.","- Free users: slow mode per PRD; Plus/Premium: normal rate
 - Tier badge shown next to native usernames",MBJ-104
 MBJ-210,Video comments,Chat & moderation,Phase 1 — VOD platform,Must,M,Done,"As a viewer, I want YouTube's comments and our members' comments under each video, like on YouTube.","- Import pulls YouTube comments with replies, likes, pinned, and creator flag; re-import refreshes likes

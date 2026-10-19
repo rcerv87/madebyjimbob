@@ -210,6 +210,11 @@ The apps' id is `com.madebyjimbob.app` (ADR-014) and can never change once an ap
   API key as the integration "MADEbyJIMBOB ASC", and the `ios_signing` group (`CERTIFICATE_PRIVATE_KEY`). A new Apple
   account means a new distribution certificate, which the first build creates (`docs/MOBILE.md`). Beta, 2026-10-17:
   Ruben's Apple and Play accounts and Ruben's Codemagic.
+- Beta state (2026-10-18), all on Ruben's accounts: App Store Connect app **Jortlandia** (SKU `madebyjimbob-ios`,
+  bundle id `com.madebyjimbob.app`), an App Store Connect API key "Codemagic" (App Manager; its `.p8` in the keys
+  folder), Codemagic linked to GitHub `rcerv87/madebyjimbob`; Google Play app **Jortlandia** with Play App Signing, in
+  internal testing with the "Team" tester list. Moving them means the transfers below, then a new API key and Codemagic
+  integration in JimBob's accounts.
 - [ ] Invite Ruben to both (Apple: App Store Connect → Users → Admin; Google: Users and permissions → Admin).
 - [ ] If the beta apps were published from Ruben's accounts first: Apple → App Store Connect → the app → App
   Information → Transfer App; Google → Play Console → transfer request. Both keep the reviews and installs.
