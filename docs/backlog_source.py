@@ -898,9 +898,11 @@ S = [
  ["Build shops, taverns and homes; a shop can be legit or a front",
   "Resources renew slowly; overuse depletes a lot for a season",
   "Improvements (dams, walls, wells) ripple: a dam can bring drought downstream; big projects need the crown; a full owner can act alone at a loyalty cost; a crown can make a lord undo one",
-  "Taxes: citizens' tax comes out of their base pay and service income on payday, at a standard rate until laws set it (MBJ-919), into their fiefdom's treasury, shown on the fiefdom page",
+  "Taxes: citizens' tax comes out of their base pay and service income on payday, at the rate the lord sets (none, low, standard, high; standard by default), into their fiefdom's treasury, shown on the fiefdom page; the crown's tax law caps it later (MBJ-919)",
   "The treasury pays for public services (JORTLANDIA rule 16): the lord budgets posts for police, sanitation and doctors; a player with the matching job fills a post for that pay on top of base pay, or unpaid for duty (reputation and loyalty); unfilled posts change nothing",
-  "A lord can move what's left into their own purse; every withdrawal shows on the fiefdom page, and unfunded posts raise crime, worsen sanitation and raise unrest",
+  "Bad lords (JORTLANDIA rule 16): a lord can overtax, underpay public servants (below a fair wage set in Studio) or leave posts unfilled, and move what's left into their own purse; every withdrawal shows on the fiefdom page",
+  "Unrest per fiefdom, worked out each payday from the tax rate, the share of taxes the lord kept, and posts unfilled or underpaid; citizens' loyalty and the lord's reputation follow it; unfunded posts also mean more crime and worse sanitation",
+  "Until revolts arrive (MBJ-920), high unrest lowers loyalty and reputation and drives renters to other fiefdoms; Studio shows each fiefdom's unrest",
   "Area reputation: low areas pay less tax, get less protection and worse sanitation, and suffer more disasters"], ["911"]),
 # Release 4: Work and crime
 ("913", 6, "Should", "XL", "Jortlandia: jobs and skill trees",
@@ -948,7 +950,7 @@ S = [
 # Release 6: Power
 ("919", 6, "Should", "L", "Jortlandia: tax rates, decrees and laws",
  "As a lord or crown, I want to tax, decree and set laws, and live with what follows.",
- ["The tax rate becomes a law (none, low, standard, high), replacing MBJ-912's standard rate; citizens can evade, which costs reputation if caught",
+ ["The crown's tax law (none, low, standard, high) caps the rate lords can set (MBJ-912); special levies on top count as overtaxing and add unrest; citizens can evade, which costs reputation if caught",
   "Decrees: special levies, fines, seizure (felons, the dead without wills, traitors), tolls, trade monopolies; heavy decrees raise unrest toward revolt",
   "The law menu (taxes, crime, punishment, immigration, rebellion, land, health) set by crowns and crownless lords, at most once a month, announced on the ticker, public on each kingdom and fiefdom page",
   "Laws move crime, revolt risk and migration: renters move where life suits them"], ["911"]),
@@ -956,6 +958,7 @@ S = [
  "As a player, I want to pledge, plot, defect and maybe wear a crown.",
  ["One loyalty system at every level: refuse, defect, ally or rebel under the same rules",
   "Rebellion recruited in secret by command; pitching a loyalist gets you tried before the lord, who rules mercy, jail, fines or execution; unpopular verdicts lower loyalty",
+  "Revolt opens once a fiefdom's unrest (MBJ-912) passes its threshold, lower for crownless lords; recruiting is easier the higher unrest is",
   "Defection and exile: diplomacy, then force; a defecting lord keeps the land they can hold; citizens can refuse to follow; crownless lords set their own laws with a much lower revolt threshold",
   "Crowns: JimBob names the first ones; a crown falls to revolt, conquest or death and the kingdom's lords choose the successor",
   "The government: each crown's enforcers (players) plus the Emperor's system agents who hunt contraband"], ["919", "915"]),
@@ -1039,7 +1042,7 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "Done", "006": "Do
 # 115: welcome dialog and Account checklist (email, notifications, YouTube, membership). Remain: avatar (MBJ-117) and live alerts.
 # 110: Device list and sign out any device done; Sign in with Google done on the website. In the apps (2026-10-16): the phone's Google account picker; Android working with the debug and upload keys. Remain: an Android OAuth client with Play's app-signing SHA-1 (Google sign-in in the Play-installed app); iPhone: GOOGLE_IOS_CLIENT_ID, the URL scheme in Info.plist, and Sign in with Apple (Apple requires it next to Google). Apple/X/Facebook on the website, magic links, passkeys, add/remove sign-in methods remain.
 # 602, 603: if Jortlandia goes ahead (docs/JORTLANDIA.md rule 7), its XP replaces MBJ-602's XP and levels, MBJ-602's badges become stat-card badges, and MBJ-603's leaderboards become season rankings (MBJ-922).
-# 9xx: Jortlandia planned 2026-10-18 from Ruben's design (docs/JORTLANDIA.md, ADR-015 proposed); waits on Ruben's answers to rules 2–16 there (rule 1, Jort Coin, decided 2026-10-18; pay by profession, service prices, and taxes paying for public services from Ruben the same day).
+# 9xx: Jortlandia planned 2026-10-18 from Ruben's design (docs/JORTLANDIA.md, ADR-015 proposed); waits on Ruben's answers to rules 2–15 there (rule 1, Jort Coin, and rule 16, taxes and bad lords, decided 2026-10-18; pay by profession and service prices from Ruben the same day).
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():
