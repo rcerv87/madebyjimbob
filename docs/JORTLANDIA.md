@@ -351,7 +351,8 @@ The stream is part of the map: watching pays, clues come from JB's content, and 
 
 Jortlandia runs inside the site and apps that exist today: the same accounts, server, database and WebSocket, so it
 adds nothing to the monthly bill at beta scale. It's planned as seven releases (below). Thirteen rules need an answer
-before the first one; each has a recommendation that the plan assumes until Ruben or JimBob says otherwise.
+before the first one (rule 1 is decided); each open one has a recommendation that the plan assumes until Ruben or
+JimBob says otherwise.
 
 ## What it builds on
 
@@ -371,7 +372,7 @@ before the first one; each has a recommendation that the plan assumes until Rube
 
 | # | Question | Recommendation | Why |
 | --- | --- | --- | --- |
-| 1 | Can Jort Coin be bought? | Never bought and never cashed out: earned only (wages, watching, hunts, play). No coin or items for super chats or any other payment either. The membership stays the only thing sold, on the website as now. | Apple and Google require their own payments for any currency sold in an app (Apple 3.1.1), and money-backed game coin brings gambling and money-transmitter rules. Keeps it apart from the real-money wallet (MBJ-111). Tier perks in the game (a lord's land, chosen stats) are web purchases used in the app, which Apple allows only if the app sells them too (3.1.3(b)): MBJ-406 must be decided before an app with the game goes to App Review. |
+| 1 | Can Jort Coin be bought? | **Decided (Ruben, 2026-10-18):** Jort Coin is an internal coin, never bought with real money. Players use it to buy and sell items found in the game. It's earned only (wages, watching, hunts, play) and never cashed out; no coin or items for super chats or any other payment. Selling coin or items for real money outside the game is against the terms. The membership stays the only thing sold, on the website as now. | Apple and Google require their own payments for any currency sold in an app (Apple 3.1.1), and money-backed game coin brings gambling and money-transmitter rules. Keeps it apart from the real-money wallet (MBJ-111). Tier perks in the game (a lord's land, chosen stats) are web purchases used in the app, which Apple allows only if the app sells them too (3.1.3(b)): MBJ-406 must be decided before an app with the game goes to App Review. |
 | 2 | Which tier is which class? | Free = peasant or illegal (random), Plus = citizen, Premium = lord, JimBob = Emperor. JimBob names the first crowns from the lords. | The diagram's "lower tier" and "high tier", with today's three tiers. |
 | 3 | What happens when a membership ends? | 30 days' grace, then a lord becomes a citizen and keeps 1 lot of their choice; a citizen becomes a peasant (never an illegal) and rents. Land given up is abandoned land, open to claim. Stats and skills stay. | The design covers upgrades but not downgrades; abandoned land is already a rule. |
 | 4 | Is there land for every lord? | Make all 100,000 lots, but open them by region: the launch kingdoms open with about 10,000 lots, and the next region opens when 80% of the open land is owned. | At 100 lots each, 1,000 lords would own the whole world and leave none for citizens. With a few dozen players, 100,000 lots would feel empty. |
@@ -424,7 +425,8 @@ until there's trading and crime to talk about, the video chat is enough.
 
 ## Still open (for building)
 
-- [ ] Ruben: the thirteen rules above (the plan assumes the recommendations)
+- [x] Ruben: rule 1, Jort Coin (decided 2026-10-18)
+- [ ] Ruben: rules 2–13 above (the plan assumes the recommendations)
 - [ ] JimBob: the class names, the first crowns, and whether he'll trigger events and revive players on stream
 - [ ] The design's own open items (races, job minimums, numbers, crowns at launch); until then they're Studio
       settings with placeholder values, so they can change without a release

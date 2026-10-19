@@ -813,7 +813,7 @@ S = [
   "Commands run on the server (`POST /api/game/command`) and answer with a screen of text and the next menu; an unknown command says what to type instead",
   "Game code in `server/src/game/`, tables named `game_*`; every happening is a `game_events` row; a world tick every 5 minutes runs one copy at a time (advisory lock); ADR-015 accepted",
   "Playing needs a signed-in account with a confirmed email; banned members can't play; timed-out members can't post in game chat (`refusedForTimeout()`)",
-  "Game data is in `exportData()`; deleting an account leaves its land abandoned and its history as \"Deleted user\"; the privacy policy and terms gain a Jortlandia section (Jort Coin has no money value, is never sold or cashed out, and can be rebalanced)",
+  "Game data is in `exportData()`; deleting an account leaves its land abandoned and its history as \"Deleted user\"; the privacy policy and terms gain a Jortlandia section (Jort Coin has no money value, is never sold or cashed out, and can be rebalanced; selling coin or items for real money outside the game is against the terms)",
   "Docs: `docs/API.md` (endpoints), `docs/DATA_MODEL.md` (tables); tests for parsing, permissions and the tick lock",
   "Store apps: the game's tier perks are web purchases used in the app (Apple 3.1.3(b)), so MBJ-406 is decided before an app with the game goes to App Review (JORTLANDIA rule 1)"], ["101"]),
 ("902", 6, "Must", "M", "Jortlandia: characters and the stat card",
@@ -826,7 +826,7 @@ S = [
   "Stat card: the public part on the member's profile and name card, the private part only to the player, the lifetime record always public"], ["901"]),
 ("903", 6, "Must", "M", "Jortlandia: Jort Coin, wages and watch rewards",
  "As a player, I want a wage and rewards for watching JimBob, so watching is how I survive and rise.",
- ["Jort Coin as an append-only ledger with kept balances and a nightly check; coin is never bought or cashed out (JORTLANDIA rule 1)",
+ ["Jort Coin as an append-only ledger with kept balances and a nightly check; an internal coin, never bought with real money, never cashed out, never given for super chats or payments (JORTLANDIA rule 1, decided 2026-10-18)",
   "A biweekly wage by class and job; free members' food, care and housing are charged on the same schedule, so their wage barely covers living",
   "Watching pays XP and coin from real watch time (MBJ-601): live pays more than replay; idle and muted background tabs, 2x speed and extra tabs earn nothing extra; daily cap",
   "Alt accounts: rewards start when an account is 7 days old; gifts, trades and rent from accounts under 30 days old are capped; Studio flags an account that keeps feeding one other (JORTLANDIA rule 8)",
@@ -859,7 +859,7 @@ S = [
 ("907", 6, "Must", "M", "Jortlandia: items and trading",
  "As a player, I want to keep what I find and trade, sell or gift it.",
  ["Items: one of a kind, limited copies, or common; an inventory on the stat card (private)",
-  "Trade, sell, gift, and sell to player shops, all as commands; every move logged",
+  "Buy and sell items for Jort Coin (between players and with player shops), trade item for item, or gift, all as commands; every move logged",
   "Conspiracy items (demolition schematics, assassination receipts, flat earth photos): high value, raise heat, and draw the Emperor's system agents",
   "Forged IDs: a free member can buy one from a forger to climb in status (the forger's side comes with MBJ-914)"], ["903"]),
 ("908", 6, "Must", "L", "Jortlandia: treasure hunts in the streams",
@@ -1034,7 +1034,7 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "Done", "006": "Do
 # 115: welcome dialog and Account checklist (email, notifications, YouTube, membership). Remain: avatar (MBJ-117) and live alerts.
 # 110: Device list and sign out any device done; Sign in with Google done on the website. In the apps (2026-10-16): the phone's Google account picker; Android working with the debug and upload keys. Remain: an Android OAuth client with Play's app-signing SHA-1 (Google sign-in in the Play-installed app); iPhone: GOOGLE_IOS_CLIENT_ID, the URL scheme in Info.plist, and Sign in with Apple (Apple requires it next to Google). Apple/X/Facebook on the website, magic links, passkeys, add/remove sign-in methods remain.
 # 602, 603: if Jortlandia goes ahead (docs/JORTLANDIA.md rule 7), its XP replaces MBJ-602's XP and levels, MBJ-602's badges become stat-card badges, and MBJ-603's leaderboards become season rankings (MBJ-922).
-# 9xx: Jortlandia planned 2026-10-18 from Ruben's design (docs/JORTLANDIA.md, ADR-015 proposed); waits on Ruben's answers to the thirteen rules there.
+# 9xx: Jortlandia planned 2026-10-18 from Ruben's design (docs/JORTLANDIA.md, ADR-015 proposed); waits on Ruben's answers to rules 2–13 there (rule 1, Jort Coin, decided 2026-10-18).
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():

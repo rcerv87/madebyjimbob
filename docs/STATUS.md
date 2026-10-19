@@ -118,9 +118,9 @@ chatting at once; the delta table fixed both.
 6. **Back up the keys folder** `C:\Users\office\.madebyjimbob-keys\` (Android upload key and its passwords, the iPhone
    certificate key, the Firebase service account key, the App Store Connect `.p8`) to a password manager or a private
    cloud folder.
-7. **Jortlandia: answer the thirteen rules** in `docs/JORTLANDIA.md` ("Rules to settle first"), or say "go with the
-   recommendations". The big ones: Jort Coin is never sold (store rules), what happens to a lord's land when Premium
-   ends, death stopping the game but not the videos, and two weeks' protection for new players. Then show JimBob the
+7. **Jortlandia: answer rules 2–13** in `docs/JORTLANDIA.md` ("Rules to settle first"), or say "go with the
+   recommendations" (rule 1, Jort Coin, decided 2026-10-18). The big ones left: what happens to a lord's land when
+   Premium ends, death stopping the game but not the videos, and two weeks' protection for new players. Then show JimBob the
    class names and ask who the first crowns are.
 8. Still open from before: `VAPID_PRIVATE_KEY` on Render (website notifications), a test email to
    hello@madebyjimbob.app (does it reach an inbox?), the Shopify newsletter import (`npm run import:newsletter`), the
@@ -627,6 +627,7 @@ The current list is "Next for Ruben" under Phone apps at the top of this file; b
 | 2026-10-17 | The apps are named **Jortlandia** in both stores and under the icon ("MADEbyJIMBOB" was taken in the App Store); the site stays MADEbyJIMBOB |
 | 2026-10-18 | Testing is organized by persona (visitor, free, Plus/Premium, mod, JimBob, admin, timed out/banned, app checks) on a shareable checklist page |
 | 2026-10-18 | Ruben's Jortlandia game design is in the repo (`docs/JORTLANDIA.md`) and planned as epic 9 in seven releases; it runs inside the same server, database and apps (ADR-015, proposed). Thirteen rules wait on Ruben, each with a recommendation the plan assumes |
+| 2026-10-18 | **Jort Coin is an internal coin, never bought with real money** (Ruben); players use it to buy and sell items found in the game. Never cashed out, never given for super chats or payments; selling it or items for real money outside the game is against the terms (JORTLANDIA rule 1) |
 
 ## Known limits (fine for a demo, not for launch)
 
