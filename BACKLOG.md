@@ -69,6 +69,7 @@ Current state, decisions, and what's next: `docs/STATUS.md`.
 | MBJ-117 | Edit profile | Accounts & memberships | 1 | Should | M | MBJ-116 |
 | MBJ-118 | Download my data and delete my account | Accounts & memberships | 1 | Must | M | MBJ-101, MBJ-114 |
 | MBJ-119 | Block and mute | Accounts & memberships | 1 | Should | S | MBJ-101 |
+| MBJ-120 | The membership table matches what the site does | Accounts & memberships | 1 | Should | S | MBJ-104 |
 | MBJ-201 | Chat replay polish | Chat & moderation | 1 | Should | M | — |
 | MBJ-202 | @mention autocomplete and notifications | Chat & moderation | 1 | Should | M | MBJ-101 |
 | MBJ-203 | Upvotes and top questions | Chat & moderation | 1 | Should | M | MBJ-101 |
@@ -531,6 +532,18 @@ Acceptance criteria:
 - [x] Mute (hide their messages) without them being able to tell
 - [x] Blocking never hides mods or JimBob
 - [x] Report a member (from the profile card, a message, or a comment) with a reason; reports land in a queue mods work from Studio (MBJ-204)
+
+### MBJ-120 — The membership table matches what the site does
+
+**Status:** To do · **Phase 1 — VOD platform** · **Priority:** Should · **Size:** S · **Depends on:** MBJ-104
+
+As a member, I want what Plus and Premium promise to be what I actually get.
+
+Acceptance criteria:
+- [ ] Decide for each perk the table lists but the site doesn't enforce yet: Slow mode for free chat (MBJ-209) and Listen only and background audio for paid members only
+- [ ] Either enforce it (free chat slower than members'; Listen only and background audio locked for free accounts, on the website and in both apps) or take it off the table
+- [ ] Not built yet and marked as coming: the member podcast feed (MBJ-503) and call-ins (MBJ-606)
+- [ ] Found while writing the persona test script, 2026-10-18
 
 ## Epic 2xx — Chat & moderation
 

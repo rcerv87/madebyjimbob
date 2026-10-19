@@ -93,8 +93,9 @@ Tests: create a second, disposable database (e.g. `createdb ... madebyjimbob_tes
 
 ## 5. Phone apps
 
-`mobile/` wraps this web app for iPhone and Android with Capacitor (ADR-014). How to build and test them (Android
-on this PC and its emulator; iPhone needs a Mac) is in `docs/MOBILE.md`.
+`mobile/` wraps this web app for iPhone and Android with Capacitor (ADR-014); in the stores the app is called
+**Jortlandia**. Android builds on this PC (`npm run android -w mobile`, `android:release` for Google Play); iPhone
+builds run on Codemagic (`codemagic.yaml`) and go to TestFlight. Details are in `docs/MOBILE.md`.
 
 ## How chat sync works
 

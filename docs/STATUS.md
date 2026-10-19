@@ -1,6 +1,6 @@
 # MadeByJimBob — status
 
-Last updated: 2026-10-15 (system map in `docs/ARCHITECTURE.md`; meeting summary on the strategy meeting page). Update this file when a story ships or a decision is made.
+Last updated: 2026-10-18 (system map in `docs/ARCHITECTURE.md`; meeting summary on the strategy meeting page). Update this file when a story ships or a decision is made.
 Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlog_source.py`).
 
 ## At a glance
@@ -10,49 +10,86 @@ Story details and acceptance criteria: `BACKLOG.md` (generated from `docs/backlo
 | Live site | https://madebyjimbob.app (Render: web service + Postgres; deploys on every push to `main`). Pages on madebyjimbob.onrender.com redirect there; the API answers on both |
 | Code | https://github.com/rcerv87/madebyjimbob (private), branch `main` |
 | Video | Cloudflare R2 (ADR-010). Live streams and replays: Ruben's bucket behind `live.madebyjimbob.app`. The YouTube library: JimBob's bucket (`LIBRARY_R2_*`, its r2.dev address for now), filled by the Library Uploader. Cloudflare Stream Starter ($5/mo) only for the first imports |
-| Content | Checked 2026-10-11: 7 videos (4 of them live replays), 16,525 chat messages, 3,660 comments, JimBob's 9 YouTube playlists, 9 accounts. Nothing uploaded through the Library Uploader yet |
-| Quality | 440 automated tests (250 server, 190 web), lint, formatting, CI on GitHub; migrations run before each deploy |
-| Backlog | 125 stories; 32 done, 24 in progress |
+| Content | Checked 2026-10-18: 7 videos (4 of them live replays), 16,525 chat messages, 3,660 comments, JimBob's 9 YouTube playlists, 10 accounts. Nothing uploaded through the Library Uploader yet |
+| Phone apps | **Jortlandia** (app id `com.madebyjimbob.app`): Android in Google Play internal testing and installed on Ruben's phone (2026-10-18); iPhone builds through Codemagic to TestFlight (set up 2026-10-17, first build pending). Test script by persona: https://claude.ai/artifact/YKBUptfwxRyBtU91Phe9Wp |
+| Quality | 488 automated tests (270 server, 218 web), lint, formatting, CI on GitHub; migrations run before each deploy; `/api/health` reports the deployed commit |
+| Backlog | 132 stories; 35 done, 26 in progress |
 
-## Phone apps (started 2026-10-15)
+## Phone apps: Jortlandia (started 2026-10-15)
 
-The iPhone and Android apps wrap this web app with Capacitor (ADR-014, replacing the Expo plan in ADR-008); how it
-works and how to build is in `docs/MOBILE.md`. **Built:** the `mobile/` project (app id `com.madebyjimbob.app`), the
-web app's app mode (it calls the live site and signs in with a token inside an app), the server allowing the apps'
-origins, icons and launch screens from JimBob's art. **Checked in the Android emulator:** sign-up, welcome steps, a
-video playing, chat, watch progress, notes, sign-out; and a build pointed at the live site plays its videos in 720p. The
-website is unchanged. **Not yet:** an iPhone build (needs
-a Mac), a real phone, native push, background audio, buying inside the apps.
+The iPhone and Android apps wrap this web app with Capacitor (ADR-014); how they work and how to build them is in
+`docs/MOBILE.md`. In the stores and under the icon they're called **Jortlandia** ("MADEbyJIMBOB" was taken in the App
+Store); the website, the logo and everything inside the app stay MADEbyJIMBOB. App id `com.madebyjimbob.app`.
 
-**Android, 2026-10-15:** background audio and lock-screen controls work (emulator: home screen and a minute with the
-screen off keep playing; the media card's pause and play work), and the store build is ready: a signed `.aab` from
-`./gradlew bundleRelease`, with the upload key in `C:\Users\office\.madebyjimbob-keys\` (**back it up**,
-`docs/MOBILE.md` "Release builds"). Google Play's first upload waits on the Play Console account.
-**2026-10-16:** the Android back button walks back through the app (closes menus first, leaves the app from home),
-links to the site's videos, playlists, live, posts and profiles open the app at that page, and Share opens
-Android's share sheet. **Notifications in the Android app (MBJ-405)** work: replies arrive as phone notifications
-through Firebase (project `madebyjimbob-e9aea`, set up by Ruben 2026-10-16, key on Render and in the local `.env`) and
-tapping one opens the thread. Checked end to end in the emulator; next is Ruben's own phone. The iPhone side waits on
-the Apple account. **Privacy policy and terms (2026-10-16):** `/privacy` and `/terms` are live, linked from the side
-menu and the sign-up box; Google's sign-in branding page and the app stores need them. They describe what the site
-really collects and who processes it, with **hello@madebyjimbob.app** as the contact (Cloudflare Email Routing on the
-domain). They're a plain-language starting point, not legal advice: JimBob (or a lawyer) should read both before the
-store release, and add his business name and state if he has one. **Google sign-in in the Android app (2026-10-16):**
-the phone's own account picker; Ruben made the two Android OAuth clients (upload key and debug key), and both builds
-signed in to the live site in the emulator. App 0.1.1 is on Ruben's Drive (MADEbyJIMBOB folder).
+**Rule (Ruben, 2026-10-16): every change is done for the website, Android and iPhone.** The apps run the same web
+build, so site changes reach both; native pieces are done for both phones in the same change, and what can't be checked
+on iPhone yet goes on the list below.
 
-**Efficiency pass (2026-10-17), ahead of the full library.** Reviewed by ChatGPT, Gemini and Grok (The Council)
-before building. Released together:
-- each video's chat count is kept instead of counted per request (`videos.chat_count` plus pending deltas, folded
-  every 30 s; `npm run recount-chat` repairs);
-- indexes for member lookups on chat and comments;
-- the Studio dashboard's chat numbers are kept for 2 minutes (Refresh recounts);
-- hls.js loads only where it's used (never on iPhone or Safari);
-- the home page's live banner checks only while it can be seen;
-- `/api/health` reports the deployed commit.
+**Android, working and checked in the emulator:**
+- sign-up and sign-in (token), Google sign-in with the phone's account picker (debug and upload keys), welcome steps;
+- videos (720p from the live site), chat, notes and reactions, watch progress;
+- background audio with lock-screen controls;
+- the back button, links that open the app, the share sheet;
+- phone notifications through Firebase (tap opens the reply; sign-out stops them), with Jortlandia's own icon.
 
-Scale check on the test database (1,000,400 chat messages over 900 videos, 20 of them with 30,000 each; local
-Postgres 18) is the baseline to compare against once the library is in:
+**Store status (2026-10-18):**
+- **Accounts:** Ruben has the Apple Developer and Google Play accounts (beta on his accounts; `docs/MIGRATION.md`
+  step 11 moves them to JimBob).
+- **Google Play:** app created; internal testing release live and **installed on Ruben's phone from Play** (2026-10-18).
+  Bundles so far: 0.1.2 (versionCode 3, the first upload) and 0.1.3 (versionCode 4, "Jortlandia" under the icon).
+  Play re-signs the app with its own key, so **Google sign-in and links that open the app don't work in the Play
+  version** until Play's app-signing SHA-1 has an Android OAuth client and its SHA-256 is in `ANDROID_CERT_SHA256`
+  (waiting on Ruben, below).
+- **App Store:** app record created as **Jortlandia** (SKU `madebyjimbob-ios`). Builds run on Codemagic
+  (`codemagic.yaml`, workflow "iPhone → TestFlight"); Ruben is finishing the Codemagic setup and the first build.
+- **Before any public release** (order agreed with the Council review, "What's next" item 2): store compliance pass
+  (hide Join, Upgrade and Super chat in both apps, privacy labels and Play's data safety form), MBJ-810 navigation
+  bar, store listing assets, and on Google Play the 12-tester closed test for 14 days if the developer account is
+  personal (closed-test link once approved: https://play.google.com/apps/testing/com.madebyjimbob.app).
+
+**iPhone: still to do or check** (built or working on Android):
+- The first TestFlight build: sign-in, video, chat, live, notes, Studio; the label says Jortlandia.
+- The video library (hls.js) is never downloaded on iPhone: check that no `hls-*.js` file is requested while a video and
+  /live play.
+- Background audio and lock-screen controls (MBJ-403): `UIBackgroundModes` audio is set; the lock-screen card comes from
+  the browser's Media Session in the web view.
+- Notifications (MBJ-405): an APNs key in Firebase plus Firebase's iPhone SDK (or sending to Apple directly); the app
+  shows no notification option on iPhone until then.
+- Links that open the app (MBJ-408): `APPLE_TEAM_ID` on Render and the Associated Domains entitlement.
+- Google sign-in (MBJ-110): an iOS client id (`GOOGLE_IOS_CLIENT_ID` and the URL scheme in Info.plist), together with
+  Sign in with Apple, which Apple requires next to it.
+- Share sheet, swipe-back, status bar and notch; going live from the phone later (MBJ-409: camera and microphone
+  permission wording).
+
+### Releases, 2026-10-15 to 18
+
+| Date | Release |
+|---|---|
+| 10-15 | Capacitor apps (ADR-014); Android background audio and lock-screen controls; signed Android store builds |
+| 10-16 | Android back button, links that open the app, share sheet; phone notifications through Firebase (MBJ-405) |
+| 10-16 | Privacy policy and terms of service (`/privacy`, `/terms`), linked from the side menu and the sign-up box |
+| 10-16 | Each copy of the site manages only its own Hetzner live servers (`mbj-site` label); iPhone audio background mode |
+| 10-16 | Google sign-in in the apps (Android working; iPhone waits on its client id and Sign in with Apple) |
+| 10-17 | Efficiency pass ahead of the full library (below), reviewed by ChatGPT, Gemini and Grok first |
+| 10-17 | Store setup: Codemagic builds the iPhone app to TestFlight; the iPhone project lists all six add-ons; 0.1.2 |
+| 10-17 | The apps are called Jortlandia under the icon and in the stores; 0.1.3 |
+
+R2 storage, 2026-10-16: both `madebyjimbob-live` buckets (Ruben's for live streams, JimBob's for the library) allow
+`https://madebyjimbob.app`, `https://www.madebyjimbob.app`, `https://madebyjimbob.onrender.com`,
+`http://localhost:3000`, `capacitor://localhost` and `https://localhost`. Ruben's had never allowed madebyjimbob.app,
+so the first stream after the domain move showed a broken player until that was fixed and Cloudflare's cache purged.
+
+Privacy policy and terms: plain-language, matching what the site really collects, with hello@madebyjimbob.app as the
+contact. Not legal advice: JimBob (or a lawyer) should read both before the public store release, and add his business
+name and state if he has one.
+
+### Performance baseline (2026-10-17)
+
+The efficiency pass kept each video's chat count instead of counting it per request (`videos.chat_count` plus deltas
+folded every 30 s; `npm run recount-chat` repairs), added indexes for member lookups, cached the Studio dashboard's
+chat numbers for 2 minutes, loads hls.js only where it's used, and makes the live banner check only while visible.
+Scale check on the test database (1,000,400 chat messages over 900 videos, 20 of them with 30,000 each; Postgres 18).
+Compare against these once the library is in (MBJ-010):
 
 | Measure | Before | After |
 |---|---|---|
@@ -62,68 +99,32 @@ Postgres 18) is the baseline to compare against once the library is in:
 | Importer-style batches of 500 | 22,007 msgs/s | 22,978 msgs/s (no slowdown) |
 | 50 people chatting on one video, insert p95 | 7.0 ms | 9.4 ms |
 
-The first design (updating the video's row on every message) deadlocked, then had a p95 of 2.3 s with 50 people
+The first counter design (updating the video's row on every message) deadlocked, then had a p95 of 2.3 s with 50 people
 chatting at once; the delta table fixed both.
 
-**Rule (Ruben, 2026-10-16): everything is done for the website, Android and iPhone.** The apps run the same web
-build, so site changes reach both; native pieces must be done for both.
+### Next for Ruben
 
-**iPhone: still to do or check** (built or working on Android; the iPhone app hasn't been built yet: needs a cloud Mac
-and the Apple Developer account):
-- Build it and run everything in it once (MBJ-401): sign-in, video, chat, live, notes, Studio.
-- The video library (hls.js) is never downloaded on iPhone (2026-10-17): on the first TestFlight build, check that no
-  `hls-*.js` file is requested while a video and /live play.
-- Background audio and lock-screen controls (MBJ-403): `UIBackgroundModes` audio is set (2026-10-16); the lock-screen
-  card comes from the browser's Media Session in the web view. Check on a phone.
-- Notifications (MBJ-405): an APNs key in Firebase plus Firebase's iPhone SDK (or sending to Apple directly); the app
-  shows no notification option on iPhone until then.
-- Links that open the app (MBJ-408): `APPLE_TEAM_ID` on Render and the Associated Domains entitlement.
-- Google sign-in in the app (MBJ-110, built for Android 2026-10-16) needs an iOS client id (`GOOGLE_IOS_CLIENT_ID` and the
-  URL scheme in Info.plist), and Apple then requires Sign in with Apple next to it.
-- Share sheet, the swipe-back gesture, the status bar and the notch: check on a phone.
-- Going live from the phone (MBJ-409, backlog): camera and microphone permission wording.
+1. **Send the Play app-signing fingerprints** (Play Console → Test and release → App integrity → App signing: SHA-1 and
+   SHA-256 of the *app signing key*). Then: a third Android OAuth client in Google Cloud with that SHA-1 (Google
+   sign-in), and `ANDROID_CERT_SHA256` on Render = the upload key's and Play's SHA-256, comma-separated (links).
+2. **Finish Codemagic** and run the first iPhone build; install it from TestFlight. Send the Apple **Team ID** (for
+   `APPLE_TEAM_ID`, links that open the iPhone app).
+3. **Play account type** (Play Console → Settings → Developer account): personal means the 12-testers-for-14-days
+   closed test before a public release; organization doesn't. Line up testers early if it's personal.
+4. **Test accounts by persona** (the test script's "Before you start"): tell Claude to set Plus and Premium on the
+   test accounts (no charge); make the mod account a Mod in Studio → Members.
+5. **Decide the two perks the membership table promises but the site doesn't enforce yet**: Slow mode for free chat
+   and Listen only for paid members. Build them, or take them off the table (MBJ-120).
+6. **Back up the keys folder** `C:\Users\office\.madebyjimbob-keys\` (Android upload key and its passwords, the iPhone
+   certificate key, the Firebase service account key, the App Store Connect `.p8`) to a password manager or a private
+   cloud folder.
+7. Still open from before: `VAPID_PRIVATE_KEY` on Render (website notifications), a test email to
+   hello@madebyjimbob.app (does it reach an inbox?), the Shopify newsletter import (`npm run import:newsletter`), the
+   GitHub branch rule, JimBob reading the privacy policy and terms.
 
-**Store work started 2026-10-17** (Ruben has the Apple Developer and Google Play accounts):
-- **iPhone:** builds in the cloud through Codemagic (`codemagic.yaml`, workflow `ios-testflight`) to TestFlight.
-  Signing is automatic: the first build makes the distribution certificate from the key in
-  `C:\Users\office\.madebyjimbob-keys\ios-distribution-certificate-key.pem`. The iPhone project now includes all
-  six add-ons.
-- **Android:** 0.1.2 (versionCode 3) bundle ready for Play internal testing.
-- **Both:** version 0.1.2 is the first upload (still labelled MADEbyJIMBOB under the icon).
-- **Name:** "MADEbyJIMBOB" was taken in the App Store, so the store listings and the name under the icon are
-  **Jortlandia** on both phones (2026-10-17). The website and the logo inside the app stay MADEbyJIMBOB. The icon
-  label changes from the next builds, 0.1.3 (Android versionCode 4).
-
-**Next for Ruben:**
-0. **Back up the Android upload key** (both files in `C:\Users\office\.madebyjimbob-keys\`) to a password manager or a
-   private cloud folder.
-1. **Which phone do you test on?** Android: a test build can go on it today (copy the `.apk` file over). iPhone: it
-   needs the Apple Developer account first (step 3).
-2. **Done 2026-10-16: the apps (and madebyjimbob.app) can load live video and replays from R2.** Both
-   `madebyjimbob-live` buckets (Ruben's, which live streams use, and JimBob's library one) allow `https://madebyjimbob.app`, `https://www.madebyjimbob.app`, `https://madebyjimbob.onrender.com`, `http://localhost:3000`, `capacitor://localhost`, `https://localhost`; GET and HEAD; headers `*`; max age 3600.
-   Ruben's bucket had never allowed `madebyjimbob.app`, so the first stream after the move to the domain showed a
-   broken player until this was fixed and Cloudflare's cache was purged (Caching → Purge Everything; old copies kept
-   the missing permission). Checked: the Oct 17 replay plays on madebyjimbob.app at phone size.
-3. **Developer accounts** ($99/year Apple, $25 once Google), ideally in JimBob's name: `docs/MIGRATION.md` step 11.
-   Google Play: a new **personal** account must run a closed test with 12+ testers for 14 days before going public;
-   an **organization** account (a business with a free D-U-N-S number) doesn't. Recommendation: an organization account
-   if JimBob has a business; otherwise line up 12 testers from his community.
-4. **Decide buying inside the apps** before the store release (ADR-014, MBJ-406). My recommendation: sell nothing
-   in the apps at first; members join on the website and their membership works in the apps.
-5. **Done 2026-10-16: Firebase for app notifications** ($0; `docs/MOBILE.md` "Notifications"). The steps, for the
-   record:
-   1. Go to console.firebase.google.com and sign in with the Google account that should own it (Ruben's for the beta).
-   2. **Create a project** → name `MADEbyJIMBOB` → Continue → turn **Google Analytics off** → Create project → Continue.
-   3. On the project's page, click the **Android** icon (Add app) → Android package name `com.madebyjimbob.app`, app
-      nickname `MADEbyJIMBOB` (leave SHA-1 empty) → **Register app** → **Download google-services.json** → save it as
-      `C:\madebyjimbob\mobile\android\app\google-services.json` → Next → Next → Continue to console. (This file isn't
-      secret, but git ignores it: GitHub flags the Google key inside. A copy sits next to the upload key.)
-   4. Gear icon (top left) → **Project settings** → **Service accounts** tab → **Generate new private key** → Generate
-      key. A `.json` file downloads: **this one is secret**. Move it to
-      `C:\Users\office\.madebyjimbob-keys\firebase-service-account.json` (next to the Android upload key).
-   5. Render → madebyjimbob → **Environment** → Add environment variable → key `FCM_SERVICE_ACCOUNT`, value: open that
-      file in Notepad, Ctrl+A, Ctrl+C, paste → **Save, rebuild, and deploy**.
-   6. For local tests, add the same to the local `.env` (or ask Claude to, from the file, without showing it).
+Done: R2 CORS for the apps and madebyjimbob.app (2026-10-16); Firebase for app notifications (2026-10-16, steps in
+`docs/MOBILE.md` "Notifications"); Google Cloud branding published and both Android OAuth clients made (2026-10-16);
+Apple Developer and Google Play accounts (2026-10-17).
 
 ## Where things stand (2026-10-11)
 
@@ -180,6 +181,8 @@ Read this first; the sections below have the detail.
 - A Money tab in Studio: members and revenue over time (MBJ-703).
 
 ## Waiting on Ruben
+
+The current list is "Next for Ruben" under Phone apps at the top of this file; below are older items, many done.
 
 - **Done: the site is on madebyjimbob.app** (checked 2026-10-11: madebyjimbob.onrender.com pages redirect there). The steps, for the record: 1) Render → madebyjimbob → Settings → Custom Domains:
   add `madebyjimbob.app` and `www.madebyjimbob.app`; 2) Cloudflare (Ruben's account) → madebyjimbob.app → DNS: the
@@ -429,6 +432,10 @@ Read this first; the sections below have the detail.
 ### App
 - Installable **PWA**: Home Screen icon, full screen, Install app button (Android/desktop), iPhone
   Add-to-Home-Screen hint; service worker for fast start and push.
+- **Jortlandia phone apps** (Capacitor, ADR-014): the same web build in an Android and an iPhone app. Android has
+  background audio with lock-screen controls, phone notifications, Google sign-in, the back button, links that open
+  the app and the share sheet; it's in Google Play internal testing. iPhone builds through Codemagic to TestFlight.
+  Current state and what's left: "Phone apps" at the top of this file and `docs/MOBILE.md`.
 
 ### Accounts, access, Studio
 - Real accounts (MBJ-101, Better Auth on our own tables, ADR-006): create an account with email, username, and
@@ -608,6 +615,13 @@ Read this first; the sections below have the detail.
 | 2026-10-11 | Reactions count fairly: signed-in only, one per kind per person per minute, stretches up to 30 minutes, and one person's marks past 30 minutes of a video count for less |
 | 2026-10-16 | Each copy of the site manages only its own Hetzner live servers (label `mbj-site`), after a local copy's clean-up deleted the live site's new server |
 | 2026-10-16 | Live streams stay in Ruben's R2 bucket until madebyjimbob.app's DNS moves to JimBob's Cloudflare (a bucket's address must be on a domain in the same account); then the recordings copy over and `R2_*` switches (MIGRATION step 5) |
+| 2026-10-16 | Every change covers the website, the Android app and the iPhone app (Ruben); iPhone gaps are listed in Phone apps until a build can check them |
+| 2026-10-17 | Big plans get a Council review first (ChatGPT, Gemini, Grok via `/council` or pasted in); their points are checked against the code, docs and tests before they change the plan |
+| 2026-10-17 | Chat counts are kept (`videos.chat_count` + `chat_count_deltas`, folded every 30 s), never counted per request; triggers keep them right; `npm run recount-chat` repairs |
+| 2026-10-17 | Store order: both apps into internal testing first (no review); before any review submission, the compliance pass (no Join, Upgrade or Super chat in the apps) and MBJ-810 navigation bar |
+| 2026-10-17 | iPhone builds on Codemagic (free tier, by hand) with automatic signing; Android builds on Ruben's PC (`npm run android -w mobile`) |
+| 2026-10-17 | The apps are named **Jortlandia** in both stores and under the icon ("MADEbyJIMBOB" was taken in the App Store); the site stays MADEbyJIMBOB |
+| 2026-10-18 | Testing is organized by persona (visitor, free, Plus/Premium, mod, JimBob, admin, timed out/banned, app checks) on a shareable checklist page |
 
 ## Known limits (fine for a demo, not for launch)
 
