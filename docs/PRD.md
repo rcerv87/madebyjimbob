@@ -69,6 +69,8 @@ interruption.
 - **E2** Leaderboards per stream and all-time.
 - **E3** Recap notes and chapter markers generated from transcript + chat.
 - **E4** Premium members can call in to live shows via a screened green room.
+- **E5** Jortlandia: a text strategy game where the tier is the member's class and watching earns Jort Coin
+  (`docs/JORTLANDIA.md`). If it goes ahead, its XP and badges carry E1 and its seasons carry E2.
 
 ### Creator tools (Studio)
 - **S1** Dashboard: views, chatters, message volume by source, tip totals.

@@ -42,6 +42,7 @@ apps' native features (ADR-014), a second web instance with Redis (MBJ-205). A s
 | **3 — Live via YouTube** | Watch live in-platform with unified chat | Live detection, chat ingest worker, posting to YouTube, Rumble ingest, auto-archive to Stream |
 | **4 — Owned live + audio** | Platform independence | Owned ingest to R2, audio-only rendition, podcast feeds |
 | **5 — Engagement** | Community stickiness | XP/levels/badges, recaps, analytics, call-ins, native tips |
+| **6 — Jortlandia** | The game that makes watching pay | Text strategy game in the same server and apps: tier = class, Jort Coin from watching, treasure in streams, land, crime, power (`docs/JORTLANDIA.md`, ADR-015 proposed) |
 
 Phases 2 and 3 can run in parallel once Phase 1 auth and entitlements are done.
 

@@ -26,6 +26,7 @@ Rumble, and native messages, tiered memberships (Free / Plus / Premium), and eng
 - API + WebSocket contract: `docs/API.md`
 - Moving to JimBob's accounts (every service, its settings, and the steps): `docs/MIGRATION.md`
 - Mobile app: `docs/MOBILE.md`
+- Jortlandia, the game (design, rules to settle, releases): `docs/JORTLANDIA.md`, ADR-015
 - Decisions: `docs/adr/`
 - Work items: `BACKLOG.md` (also `docs/backlog.csv` for Jira/GitHub import)
 
