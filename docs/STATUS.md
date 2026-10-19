@@ -118,7 +118,7 @@ chatting at once; the delta table fixed both.
 6. **Back up the keys folder** `C:\Users\office\.madebyjimbob-keys\` (Android upload key and its passwords, the iPhone
    certificate key, the Firebase service account key, the App Store Connect `.p8`) to a password manager or a private
    cloud folder.
-7. **Jortlandia: answer rules 2–15** in `docs/JORTLANDIA.md` ("Rules to settle first"), or say "go with the
+7. **Jortlandia: answer rules 2–16** in `docs/JORTLANDIA.md` ("Rules to settle first"), or say "go with the
    recommendations" (rule 1, Jort Coin, decided 2026-10-18). The big ones left: what happens to a lord's land when
    Premium ends, death stopping the game but not the videos, two weeks' protection for new players, and a weekly
    payday. Then show JimBob the class names and ask who the first crowns are.
@@ -629,6 +629,7 @@ The current list is "Next for Ruben" under Phone apps at the top of this file; b
 | 2026-10-18 | Ruben's Jortlandia game design is in the repo (`docs/JORTLANDIA.md`) and planned as epic 9 in seven releases; it runs inside the same server, database and apps (ADR-015, proposed). Thirteen rules wait on Ruben, each with a recommendation the plan assumes |
 | 2026-10-18 | **Jort Coin is an internal coin, never bought with real money** (Ruben); players use it to buy and sell items found in the game. Never cashed out, never given for super chats or payments; selling it or items for real money outside the game is against the terms (JORTLANDIA rule 1) |
 | 2026-10-18 | **Jort Coin comes from your profession** (Ruben): each job has a base pay (e.g. doctor 1,000 a week, garbage man 500); taxes and rent are paid in Jort Coin; players set their own price for a service, and overcharging too often costs reputation. Proposed with it: a weekly payday, and overcharging = more than 1.5× a Studio fair price, the third in 30 days (JORTLANDIA rules 14, 15) |
+| 2026-10-18 | **Class doesn't change pay; your job does** (Ruben). Lords get their job pay plus their fiefdom's taxes, and the taxes pay for public services (police, sanitation, doctors). Taxes and public posts move to release 3 with land (MBJ-912); laws set the rate later (MBJ-919). Proposed: the lord can keep what's left, but withdrawals are public (JORTLANDIA rule 16) |
 
 ## Known limits (fine for a demo, not for launch)
 

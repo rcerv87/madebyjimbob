@@ -893,12 +893,14 @@ S = [
   "Vacant lots can be moved into or bought; abandoned land (a lapsed membership, a death without insurance, a defection) is open to claim",
   "Public places (shops, taverns) are open to all; homes are private",
   "Dig a parcel for buried treasure, minesweeper style"], ["902", "903", "910"]),
-("912", 6, "Should", "L", "Jortlandia: buildings, resources and improvements",
+("912", 6, "Should", "L", "Jortlandia: buildings, taxes and public services",
  "As a landowner, I want to build and improve, knowing it can help or hurt my neighbors.",
  ["Build shops, taverns and homes; a shop can be legit or a front",
   "Resources renew slowly; overuse depletes a lot for a season",
   "Improvements (dams, walls, wells) ripple: a dam can bring drought downstream; big projects need the crown; a full owner can act alone at a loyalty cost; a crown can make a lord undo one",
-  "Lords fund police, sanitation and doctors; players fill the posts for duty or pay; unfilled posts change nothing",
+  "Taxes: citizens' tax comes out of their base pay and service income on payday, at a standard rate until laws set it (MBJ-919), into their fiefdom's treasury, shown on the fiefdom page",
+  "The treasury pays for public services (JORTLANDIA rule 16): the lord budgets posts for police, sanitation and doctors; a player with the matching job fills a post for that pay on top of base pay, or unpaid for duty (reputation and loyalty); unfilled posts change nothing",
+  "A lord can move what's left into their own purse; every withdrawal shows on the fiefdom page, and unfunded posts raise crime, worsen sanitation and raise unrest",
   "Area reputation: low areas pay less tax, get less protection and worse sanitation, and suffer more disasters"], ["911"]),
 # Release 4: Work and crime
 ("913", 6, "Should", "XL", "Jortlandia: jobs and skill trees",
@@ -944,9 +946,9 @@ S = [
   "Duel record on the stat card; results on the ticker",
   "No duels with a character in their first two weeks; the same rival can't be challenged again for a week (JORTLANDIA rule 13)"], ["913", "916"]),
 # Release 6: Power
-("919", 6, "Should", "L", "Jortlandia: taxes, decrees and laws",
+("919", 6, "Should", "L", "Jortlandia: tax rates, decrees and laws",
  "As a lord or crown, I want to tax, decree and set laws, and live with what follows.",
- ["Citizens pay their lord: tax comes out of base pay and service income on payday, at the rate the law sets; evasion risks reputation if caught",
+ ["The tax rate becomes a law (none, low, standard, high), replacing MBJ-912's standard rate; citizens can evade, which costs reputation if caught",
   "Decrees: special levies, fines, seizure (felons, the dead without wills, traitors), tolls, trade monopolies; heavy decrees raise unrest toward revolt",
   "The law menu (taxes, crime, punishment, immigration, rebellion, land, health) set by crowns and crownless lords, at most once a month, announced on the ticker, public on each kingdom and fiefdom page",
   "Laws move crime, revolt risk and migration: renters move where life suits them"], ["911"]),
@@ -1037,7 +1039,7 @@ STATUS = {"001": "Done", "002": "Done", "003": "Done", "005": "Done", "006": "Do
 # 115: welcome dialog and Account checklist (email, notifications, YouTube, membership). Remain: avatar (MBJ-117) and live alerts.
 # 110: Device list and sign out any device done; Sign in with Google done on the website. In the apps (2026-10-16): the phone's Google account picker; Android working with the debug and upload keys. Remain: an Android OAuth client with Play's app-signing SHA-1 (Google sign-in in the Play-installed app); iPhone: GOOGLE_IOS_CLIENT_ID, the URL scheme in Info.plist, and Sign in with Apple (Apple requires it next to Google). Apple/X/Facebook on the website, magic links, passkeys, add/remove sign-in methods remain.
 # 602, 603: if Jortlandia goes ahead (docs/JORTLANDIA.md rule 7), its XP replaces MBJ-602's XP and levels, MBJ-602's badges become stat-card badges, and MBJ-603's leaderboards become season rankings (MBJ-922).
-# 9xx: Jortlandia planned 2026-10-18 from Ruben's design (docs/JORTLANDIA.md, ADR-015 proposed); waits on Ruben's answers to rules 2–15 there (rule 1, Jort Coin, decided 2026-10-18; pay by profession and service prices from Ruben the same day).
+# 9xx: Jortlandia planned 2026-10-18 from Ruben's design (docs/JORTLANDIA.md, ADR-015 proposed); waits on Ruben's answers to rules 2–16 there (rule 1, Jort Coin, decided 2026-10-18; pay by profession, service prices, and taxes paying for public services from Ruben the same day).
 # 005: workflow is in place; "status check required to merge" needs the GitHub branch rule (README step 5).
 
 def main():
